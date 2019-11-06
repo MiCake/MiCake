@@ -10,6 +10,6 @@ namespace MiCake.Core.Abstractions.DependencyInjection
     /// 注入服务时的回调事件
     /// </summary>
     /// <param name="services"><see cref="IServiceCollection"/></param>
-    /// <param name="injectType">injectType 被注入的类型</param>
-    public delegate void InjectServiceRegistCallback(IServiceCollection services, Type injectType);
+    /// <param name="callBackContext">injectType 被注入的类型上下文</param>
+    public delegate void InjectServiceRegistCallback(IServiceCollection services, InjectServiceCallBackContext callBackContext);
 }

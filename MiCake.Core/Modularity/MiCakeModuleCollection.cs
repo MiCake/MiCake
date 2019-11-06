@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using MiCake.Core.Abstractions.Modularity;
 
@@ -44,6 +46,14 @@ namespace MiCake.Core.Modularity
         public void CopyTo(MiCakeModuleDescriptor[] array, int arrayIndex)
         {
             _descriptors.CopyTo(array, arrayIndex);
+        }
+
+        public Assembly[] GetAllReferAssembly()
+        {
+            Assembly[] assemblies = { };
+            assemblies = _descriptors.Select(s => s.Assembly).Distinct().ToArray();
+
+            return assemblies;
         }
 
         public IEnumerator<MiCakeModuleDescriptor> GetEnumerator()

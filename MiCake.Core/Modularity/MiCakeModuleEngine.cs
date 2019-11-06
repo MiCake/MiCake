@@ -17,6 +17,8 @@ namespace MiCake.Core.Modularity
         private readonly IMiCakeModuleCollection _miCakeModules = new MiCakeModuleCollection();
         public IMiCakeModuleCollection MiCakeModules { get => _miCakeModules; }
 
+        private Action<MiCakeModuleDescriptor> _configureModule;
+
         public MiCakeModuleEngine(IServiceCollection services, ILogger<MiCakeModuleEngine> logger)
         {
             _services = services;
@@ -58,6 +60,8 @@ namespace MiCake.Core.Modularity
 
                 var miCakeLiftTime = (MiCakeModule)miCakeModule.ModuleInstance;
                 miCakeLiftTime.Start(moduleContext);
+
+                _configureModule?.Invoke(miCakeModule);
             }
 
             //OnStart
@@ -78,7 +82,7 @@ namespace MiCake.Core.Modularity
 
             _logger.LogInformation("MiCake:ShutDownModules...");
 
-            var reverseModules =  _miCakeModules.Reverse().ToList();
+            var reverseModules = _miCakeModules.Reverse().ToList();
             //PreShuntdown
             foreach (var miCakeModule in reverseModules)
             {
@@ -153,5 +157,10 @@ namespace MiCake.Core.Modularity
             return descriptors;
         }
 
+        public virtual IMiCakeModuleEngine ConfigureModule(Action<MiCakeModuleDescriptor> configureModule)
+        {
+            _configureModule += configureModule;
+            return this;
+        }
     }
 }

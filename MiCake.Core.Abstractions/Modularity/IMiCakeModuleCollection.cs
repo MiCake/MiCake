@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Reflection;
 
 namespace MiCake.Core.Abstractions.Modularity
 {
@@ -9,5 +8,7 @@ namespace MiCake.Core.Abstractions.Modularity
     /// </summary>
     public interface IMiCakeModuleCollection:IList<MiCakeModuleDescriptor>
     {
+        //Get the assemblies in all micake modules
+        Assembly[] GetAllReferAssembly();
     }
 }

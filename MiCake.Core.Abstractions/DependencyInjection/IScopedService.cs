@@ -7,7 +7,7 @@ namespace MiCake.Core.Abstractions.DependencyInjection
     /// <summary>
     /// mark a scoped service
     /// </summary>
-    public interface IScopedService
+    public interface IScopedService:IAutoInjectService
     {
     }
 }

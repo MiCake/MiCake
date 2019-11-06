@@ -14,7 +14,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// </summary>
         public static string EnsureEndsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
         {
-            CheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(str, nameof(str));
 
             if (str.EndsWith(c.ToString(), comparisonType))
             {
@@ -29,7 +29,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// </summary>
         public static string EnsureStartsWith(this string str, char c, StringComparison comparisonType = StringComparison.Ordinal)
         {
-            CheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(str, nameof(str));
 
             if (str.StartsWith(c.ToString(), comparisonType))
             {
@@ -62,7 +62,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <exception cref="ArgumentException">Thrown if <paramref name="len"/> is bigger that string's length</exception>
         public static string Left(this string str, int len)
         {
-            CheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(str, nameof(str));
 
             if (str.Length < len)
             {
@@ -88,7 +88,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <param name="n">Count of the occurrence</param>
         public static int NthIndexOf(this string str, char c, int n)
         {
-            CheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(str, nameof(str));
 
             var count = 0;
             for (var i = 0; i < str.Length; i++)
@@ -191,7 +191,7 @@ namespace MiCake.Core.Util.CommonTypes
 
         public static string ReplaceFirst(this string str, string search, string replace, StringComparison comparisonType = StringComparison.Ordinal)
         {
-            CheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(str, nameof(str));
 
             var pos = str.IndexOf(search, comparisonType);
             if (pos < 0)
@@ -209,7 +209,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <exception cref="ArgumentException">Thrown if <paramref name="len"/> is bigger that string's length</exception>
         public static string Right(this string str, int len)
         {
-            CheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(str, nameof(str));
 
             if (str.Length < len)
             {
@@ -299,7 +299,7 @@ namespace MiCake.Core.Util.CommonTypes
         public static T ToEnum<T>(this string value)
             where T : struct
         {
-            CheckValue.NotNull(value, nameof(value));
+            McCheckValue.NotNull(value, nameof(value));
             return (T)Enum.Parse(typeof(T), value);
         }
 
@@ -313,7 +313,7 @@ namespace MiCake.Core.Util.CommonTypes
         public static T ToEnum<T>(this string value, bool ignoreCase)
             where T : struct
         {
-            CheckValue.NotNull(value, nameof(value));
+            McCheckValue.NotNull(value, nameof(value));
             return (T)Enum.Parse(typeof(T), value, ignoreCase);
         }
 
@@ -448,8 +448,8 @@ namespace MiCake.Core.Util.CommonTypes
         /// </summary>
         public static byte[] GetBytes(this string str, Encoding encoding)
         {
-            CheckValue.NotNull(str, nameof(str));
-            CheckValue.NotNull(encoding, nameof(encoding));
+            McCheckValue.NotNull(str, nameof(str));
+            McCheckValue.NotNull(encoding, nameof(encoding));
 
             return encoding.GetBytes(str);
         }

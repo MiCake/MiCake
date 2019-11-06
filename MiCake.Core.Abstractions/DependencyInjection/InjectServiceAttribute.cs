@@ -12,17 +12,22 @@ namespace MiCake.Core.Abstractions.DependencyInjection
     [AttributeUsage(AttributeTargets.Class)]
     public class InjectServiceAttribute : Attribute
     {
-        public Type Type { get; set; }
+        public virtual Type Type { get; set; }
 
-        public ServiceLifetime Lifetime { get; set; } = ServiceLifetime.Singleton;
+        public virtual MiCakeServiceLifeTime? Lifetime { get; set; }
 
-        public bool TryRegister { get; set; }
+        public virtual bool TryRegister { get; set; }
 
-        public bool ReplaceServices { get; set; }
+        public virtual bool ReplaceServices { get; set; }
 
-        public InjectServiceAttribute(Type type)
+        public InjectServiceAttribute()
+        {
+        }
+
+        public InjectServiceAttribute(Type type, MiCakeServiceLifeTime lifeTime)
         {
             Type = type;
+            Lifetime = lifeTime;
         }
     }
 }

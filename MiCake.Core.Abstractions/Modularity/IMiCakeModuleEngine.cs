@@ -10,6 +10,8 @@ namespace MiCake.Core.Abstractions.Modularity
     /// </summary>
     public interface IMiCakeModuleEngine
     {
+        IMiCakeModuleCollection MiCakeModules { get; }
+
         /// <summary>
         /// Load and resolving micake module.
         /// 加载和解析Micake模块。
@@ -17,6 +19,12 @@ namespace MiCake.Core.Abstractions.Modularity
         /// <param name="startUpModule">初始化模块入口点</param>
         /// <returns></returns>
         IEnumerable<MiCakeModuleDescriptor> LoadMiCakeModules(Type startUpModule);
+
+        /// <summary>
+        /// Add module configuration delegation, which will be called when the engine Initialize
+        /// 加入模块配置的委托，将在引擎加载时候调用.
+        /// </summary>
+        IMiCakeModuleEngine ConfigureModule(Action<MiCakeModuleDescriptor> configureModule);
 
         /// <summary>
         /// Load All Micake Modules
