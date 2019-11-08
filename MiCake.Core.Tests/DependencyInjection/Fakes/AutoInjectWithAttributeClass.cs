@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MiCake.Core.Tests.DependencyInjection.Fakes
 {
-    [InjectService(typeof(AutoInjectWithAttributeClass))]
+    [InjectService()]
     public class AutoInjectWithAttributeClass
     {
         public string BackString()

@@ -106,8 +106,7 @@ namespace MiCake.Core.DependencyInjection
                     ImplementationType = type,
                     ReplaceServices = false,
                     Lifetime = serviceLifeTime,
-                    TryRegister = true,
-                    Callback = null
+                    TryRegister = true
                 };
             }
 

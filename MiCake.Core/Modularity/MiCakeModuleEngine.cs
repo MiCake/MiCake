@@ -17,7 +17,7 @@ namespace MiCake.Core.Modularity
         private readonly IMiCakeModuleCollection _miCakeModules = new MiCakeModuleCollection();
         public IMiCakeModuleCollection MiCakeModules { get => _miCakeModules; }
 
-        private Action<MiCakeModuleDescriptor> _configureModule;
+        private Action<IMiCakeModuleCollection> _configureModule;
 
         public MiCakeModuleEngine(IServiceCollection services, ILogger<MiCakeModuleEngine> logger)
         {
@@ -60,9 +60,9 @@ namespace MiCake.Core.Modularity
 
                 var miCakeLiftTime = (MiCakeModule)miCakeModule.ModuleInstance;
                 miCakeLiftTime.Start(moduleContext);
-
-                _configureModule?.Invoke(miCakeModule);
             }
+
+            _configureModule?.Invoke(_miCakeModules);
 
             //OnStart
             foreach (var miCakeModule in _miCakeModules)
@@ -157,7 +157,7 @@ namespace MiCake.Core.Modularity
             return descriptors;
         }
 
-        public virtual IMiCakeModuleEngine ConfigureModule(Action<MiCakeModuleDescriptor> configureModule)
+        public virtual IMiCakeModuleEngine ConfigureModule(Action<IMiCakeModuleCollection> configureModule)
         {
             _configureModule += configureModule;
             return this;

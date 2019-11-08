@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +18,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Builder\" />
   </ItemGroup>
 
 </Project>

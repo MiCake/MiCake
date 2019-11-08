@@ -24,7 +24,7 @@ namespace MiCake.Core.Abstractions.Modularity
         /// Add module configuration delegation, which will be called when the engine Initialize
         /// 加入模块配置的委托，将在引擎加载时候调用.
         /// </summary>
-        IMiCakeModuleEngine ConfigureModule(Action<MiCakeModuleDescriptor> configureModule);
+        IMiCakeModuleEngine ConfigureModule(Action<IMiCakeModuleCollection> configureModule);
 
         /// <summary>
         /// Load All Micake Modules
