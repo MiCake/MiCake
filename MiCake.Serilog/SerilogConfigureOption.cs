@@ -15,5 +15,11 @@ namespace MiCake.Serilog
         /// </summary>
         public LogLevel FilterLogLevel { get; set; }
 
+        /// <summary>
+        /// provide a customer error log handler to log you error info with serilog.
+        /// <see cref="ILogErrorHandlerProvider "/>
+        /// </summary>
+        public ILogErrorHandlerProvider logErrorHandlerProvider { get; set; }
+
     }
 }
