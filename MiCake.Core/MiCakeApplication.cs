@@ -4,8 +4,6 @@ using MiCake.Core.Abstractions.Modularity;
 using MiCake.Core.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Core
 {
@@ -19,18 +17,19 @@ namespace MiCake.Core
         private IServiceCollection _services;
         public IServiceCollection Services => _services;
 
+        private IMiCakeApplicationOption _miCakeApplicationOption;
+        public IMiCakeApplicationOption MiCakeApplicationOption { get => _miCakeApplicationOption; set => _miCakeApplicationOption = value; }
+
         private IMiCakeBuilder _miCakeBuilder;
 
-        public MiCakeApplication(Type startUpType, IServiceCollection services)
+        public MiCakeApplication(Type startUpType, IServiceCollection services, Action<IMiCakeApplicationOption> optionAction = null)
         {
             StartUpType = startUpType;
             _services = services;
+            _miCakeApplicationOption = new MiCakeApplicationOption(_services);
 
-            _miCakeBuilder = new MiCakeBuilder(_services);
+            _miCakeBuilder = new MiCakeBuilder(this, optionAction);
             _miCakeBuilder.UseStarpUp(startUpType);
-            _miCakeBuilder.Build();
-
-            _miCakeModuleEngine = _miCakeBuilder.ModuleEngine;
         }
 
         public virtual void ShutDown(Action<IMiCakeModuleEngine> shutdownAction = null)
@@ -39,6 +38,13 @@ namespace MiCake.Core
 
             if (StartUpType != null)
                 _miCakeModuleEngine.ShutDownModules();
+        }
+
+        public void Init()
+        {
+            _miCakeBuilder.Build();
+
+            _miCakeModuleEngine = _miCakeBuilder.ModuleEngine;
         }
     }
 }

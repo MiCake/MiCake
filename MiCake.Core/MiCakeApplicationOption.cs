@@ -8,6 +8,12 @@ namespace MiCake.Core
 {
     public class MiCakeApplicationOption : IMiCakeApplicationOption
     {
+
+        public MiCakeApplicationOption(IServiceCollection services)
+        {
+            Services = services;
+        }
+
         public IServiceCollection Services { get; set; }
     }
 }

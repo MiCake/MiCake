@@ -6,6 +6,10 @@ using System.Linq;
 using Serilog.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiCake.Serilog.ExceptionHanding;
+using MiCake.Core.Abstractions.Logging;
+using ILogger = Serilog.ILogger;
+using Serilog.Core;
+using System.Reflection;
 
 namespace MiCake.Serilog
 {
@@ -29,23 +33,29 @@ namespace MiCake.Serilog
             SerilogConfigureOption serilogOption = new SerilogConfigureOption();
             serilogOptionAction(serilogOption);
 
-            //add serilog Log instance
-
+            //add serilog Log instance if is not has serilog Log 
+            if (true)
+            {
+                if (serilogOption.SerilogLoggerConfiguration != null)
+                    Log.Logger = serilogOption.SerilogLoggerConfiguration.CreateLogger();
+                else
+                    Log.Logger = GetDefaultSerilog();
+            }
 
             //replace errorHandler
             var errorHandlerInstance = serilogOption.logErrorHandlerProvider ?? new SerilogErrorHandlerProvider(serilogOption);
-            _services.Replace(new ServiceDescriptor(ILogErrorHandlerProvider, errorHandlerInstance, ServiceLifetime.Singleton));
+            _services.Replace(new ServiceDescriptor(typeof(ILogErrorHandlerProvider), errorHandlerInstance));
         }
 
-        public void GetDefaultSerilog()
+        public Logger GetDefaultSerilog()
         {
-            new LoggerConfiguration()
-            .MinimumLevel.Information()
-            .WriteTo.Console()
-            .WriteTo.File("log.txt",
-                rollingInterval: RollingInterval.Day,
-                rollOnFileSizeLimit: true)
-            .CreateLogger();
+            return new LoggerConfiguration()
+              .MinimumLevel.Information()
+              .WriteTo.Console()
+              .WriteTo.File("log.txt",
+                  rollingInterval: RollingInterval.Day,
+                  rollOnFileSizeLimit: true)
+              .CreateLogger();
         }
 
     }

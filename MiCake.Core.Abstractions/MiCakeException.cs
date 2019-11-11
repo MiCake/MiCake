@@ -1,11 +1,11 @@
-﻿using MiCake.Core.Abstractions.Log;
+﻿using MiCake.Core.Abstractions.Logging;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace MiCake.Core
+namespace MiCake.Core.Abstractions
 {
     /// <summary>
     /// Base exception type for Micake farmework.

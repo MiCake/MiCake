@@ -17,7 +17,7 @@ namespace MiCake.Core.Modularity
                 typeInfo.IsClass &&
                 !typeInfo.IsAbstract &&
                 !typeInfo.IsGenericType &&
-                typeof(IMiCakeModule).GetTypeInfo().IsAssignableFrom(type);
+                typeof(MiCakeModule).GetTypeInfo().IsAssignableFrom(type);
         }
 
         internal static void CheckModule(Type type)

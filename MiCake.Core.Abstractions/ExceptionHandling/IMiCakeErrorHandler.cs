@@ -16,6 +16,10 @@ namespace MiCake.Core.Abstractions.ExceptionHandling
         /// <param name="errorInfo"><see cref="MiCakeErrorInfo"/></param>
         IMiCakeErrorHandler ConfigureHandlerService(Action<MiCakeErrorInfo> errorInfo);
 
-        void Handle();
+        /// <summary>
+        /// hand micake exception
+        /// </summary>
+        /// <param name="micakeException"></param>
+        void Handle(MiCakeException micakeException);
     }
 }

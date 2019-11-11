@@ -16,10 +16,18 @@ namespace MiCake.Core.Abstractions
         IMiCakeModuleEngine ModuleEngine { get; }
 
         /// <summary>
+        /// <see cref=" IMiCakeApplicationOption"/>
+        /// </summary>
+        IMiCakeApplicationOption MiCakeApplicationOption { get; set; }
+
+        /// <summary>
         /// List of services registered to this application.
         /// Can not add new services to this collection after application initialize.
         /// </summary>
         IServiceCollection Services { get; }
+
+
+        void Init();
 
         /// <summary>
         /// Used to gracefully shutdown the application and all modules.

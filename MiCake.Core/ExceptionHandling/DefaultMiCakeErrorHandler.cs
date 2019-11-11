@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Abstractions.ExceptionHandling;
+﻿using MiCake.Core.Abstractions;
+using MiCake.Core.Abstractions.ExceptionHandling;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,11 +10,8 @@ namespace MiCake.Core.ExceptionHandling
     {
         private Action<MiCakeErrorInfo> _dispacthActions;
 
-        private readonly MiCakeException _exception;
-
-        public DefaultMiCakeErrorHandler(MiCakeException exception)
+        public DefaultMiCakeErrorHandler()
         {
-            _exception = exception;
         }
 
         public virtual IMiCakeErrorHandler ConfigureHandlerService(Action<MiCakeErrorInfo> dispacthErrorAction)
@@ -22,12 +20,13 @@ namespace MiCake.Core.ExceptionHandling
             return this;
         }
 
-        public virtual void Handle()
+        public virtual void Handle(MiCakeException micakeException)
         {
-            if (_exception == null) return;
+            if (micakeException == null) return;
             
-            MiCakeErrorInfo errorInfo = new MiCakeErrorInfo(_exception.Code, _exception.Details, _exception);
+            MiCakeErrorInfo errorInfo = new MiCakeErrorInfo(micakeException.Code, micakeException.Details, micakeException);
             _dispacthActions?.Invoke(errorInfo);
         }
+
     }
 }

@@ -120,7 +120,7 @@ namespace MiCake.Core.Modularity
             var moduleTypes = MiCakeModuleHelper.FindAllModuleTypes(startUp);
             foreach (var moduleTye in moduleTypes)
             {
-                IMiCakeModule instance = (IMiCakeModule)Activator.CreateInstance(moduleTye);
+                MiCakeModule instance = (MiCakeModule)Activator.CreateInstance(moduleTye);
                 miCakeModuleDescriptors.Add(new MiCakeModuleDescriptor(moduleTye, instance));
 
                 _services.AddSingleton(moduleTye, instance);

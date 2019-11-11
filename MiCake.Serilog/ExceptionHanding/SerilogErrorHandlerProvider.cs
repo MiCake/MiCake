@@ -1,6 +1,6 @@
 ﻿using MiCake.Core;
 using MiCake.Core.Abstractions.ExceptionHandling;
-using MiCake.Core.Abstractions.Log;
+using MiCake.Core.Abstractions.Logging;
 using MiCake.Core.ExceptionHandling;
 using System;
 

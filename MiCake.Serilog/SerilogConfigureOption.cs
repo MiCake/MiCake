@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MiCake.Core.Abstractions.Logging;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -20,6 +22,11 @@ namespace MiCake.Serilog
         /// <see cref="ILogErrorHandlerProvider "/>
         /// </summary>
         public ILogErrorHandlerProvider logErrorHandlerProvider { get; set; }
+
+        /// <summary>
+        /// <see cref="LoggerConfiguration"/>
+        /// </summary>
+        public LoggerConfiguration SerilogLoggerConfiguration { get; set; }
 
     }
 }

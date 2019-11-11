@@ -78,7 +78,7 @@ namespace MiCake.Core.DependencyInjection
                 serviceInfo = new InjectServiceInfo()
                 {
                     Type = type,
-                    ImplementationType = injectServiceAttribute.Type,
+                    ImplementationType = injectServiceAttribute.Type ?? type,
                     ReplaceServices = injectServiceAttribute.ReplaceServices,
                     Lifetime = injectServiceAttribute.Lifetime,
                     TryRegister = injectServiceAttribute.TryRegister,

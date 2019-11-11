@@ -18,8 +18,8 @@ namespace MiCake.Core.Abstractions.Modularity
         void PreStart(ModuleContext context);
 
         /// <summary>
-        /// Called when  module startup
-        /// 在模块启动时候调用
+        /// Calls after module startup and optionAction execution <see cref="IMiCakeApplicationOption"/> 
+        /// 在模块启动以及系统配置委托执行完成后调用
         /// </summary>
         /// <param name="context"><see cref="ModuleContext"/></param>
         void OnStart(ModuleContext context);

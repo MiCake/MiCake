@@ -1,0 +1,36 @@
+2019-11-11 18:11:13.324 +08:00 [INF] MiCake:InitializeModules...
+2019-11-11 18:11:13.437 +08:00 [INF] MiCake LiftTime-PreStart:BaseMiCakeModule
+2019-11-11 18:11:13.446 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAspNetCoreModule
+2019-11-11 18:11:13.447 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeSerilogModule
+2019-11-11 18:11:13.447 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAutofacModule
+2019-11-11 18:11:13.448 +08:00 [INF] MiCake LiftTime-Start:BaseMiCakeModule
+2019-11-11 18:11:13.448 +08:00 [INF] MiCake LiftTime-Start:MiCakeAspNetCoreModule
+2019-11-11 18:11:13.448 +08:00 [INF] MiCake LiftTime-Start:MiCakeSerilogModule
+2019-11-11 18:11:13.449 +08:00 [INF] MiCake LiftTime-Start:MiCakeAutofacModule
+2019-11-11 18:20:30.194 +08:00 [INF] MiCake:InitializeModules...
+2019-11-11 18:20:30.286 +08:00 [INF] MiCake LiftTime-PreStart:BaseMiCakeModule
+2019-11-11 18:20:30.289 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAspNetCoreModule
+2019-11-11 18:20:30.290 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeSerilogModule
+2019-11-11 18:20:30.291 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAutofacModule
+2019-11-11 18:20:30.292 +08:00 [INF] MiCake LiftTime-Start:BaseMiCakeModule
+2019-11-11 18:20:30.293 +08:00 [INF] MiCake LiftTime-Start:MiCakeAspNetCoreModule
+2019-11-11 18:20:30.293 +08:00 [INF] MiCake LiftTime-Start:MiCakeSerilogModule
+2019-11-11 18:20:30.294 +08:00 [INF] MiCake LiftTime-Start:MiCakeAutofacModule
+2019-11-11 18:22:28.933 +08:00 [INF] MiCake:InitializeModules...
+2019-11-11 18:22:29.051 +08:00 [INF] MiCake LiftTime-PreStart:BaseMiCakeModule
+2019-11-11 18:22:29.055 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAspNetCoreModule
+2019-11-11 18:22:29.055 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeSerilogModule
+2019-11-11 18:22:29.056 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAutofacModule
+2019-11-11 18:22:29.057 +08:00 [INF] MiCake LiftTime-Start:BaseMiCakeModule
+2019-11-11 18:22:29.058 +08:00 [INF] MiCake LiftTime-Start:MiCakeAspNetCoreModule
+2019-11-11 18:22:29.059 +08:00 [INF] MiCake LiftTime-Start:MiCakeSerilogModule
+2019-11-11 18:22:29.060 +08:00 [INF] MiCake LiftTime-Start:MiCakeAutofacModule
+2019-11-11 18:24:19.235 +08:00 [INF] MiCake:InitializeModules...
+2019-11-11 18:24:19.471 +08:00 [INF] MiCake LiftTime-PreStart:BaseMiCakeModule
+2019-11-11 18:24:19.497 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAspNetCoreModule
+2019-11-11 18:24:19.498 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeSerilogModule
+2019-11-11 18:24:19.498 +08:00 [INF] MiCake LiftTime-PreStart:MiCakeAutofacModule
+2019-11-11 18:24:19.499 +08:00 [INF] MiCake LiftTime-Start:BaseMiCakeModule
+2019-11-11 18:24:19.499 +08:00 [INF] MiCake LiftTime-Start:MiCakeAspNetCoreModule
+2019-11-11 18:24:19.500 +08:00 [INF] MiCake LiftTime-Start:MiCakeSerilogModule
+2019-11-11 18:24:19.500 +08:00 [INF] MiCake LiftTime-Start:MiCakeAutofacModule
