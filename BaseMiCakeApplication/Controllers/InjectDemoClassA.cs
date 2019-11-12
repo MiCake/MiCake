@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Controllers
 {
-    [InjectService()]
+    [InjectService(Lifetime =MiCakeServiceLifeTime.Singleton)]
     public class InjectDemoClassA
     {
         public string StrWrite()

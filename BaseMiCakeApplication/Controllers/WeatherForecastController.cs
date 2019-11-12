@@ -24,7 +24,7 @@ namespace BaseMiCakeApplication.Controllers
         private IServiceProvider _serviceProvider;
         private InjectDemoClassA demoClassA;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IServiceProvider serviceProvider)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IServiceProvider serviceProvider,InjectDemoClassA demoClassA)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
@@ -35,9 +35,8 @@ namespace BaseMiCakeApplication.Controllers
         {
             var rng = new Random();
 
-            var instance = _serviceProvider.GetService(typeof(ILogger));
+            var instance = _serviceProvider.GetService(typeof(InjectDemoClassA));
 
-            var errlogHandler = _serviceProvider.GetService(typeof(InjectDemoClassA));
             var a = _serviceProvider.GetService(typeof(Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory));
             _logger.LogInformation("lalalala");
             Log.Information("asdfaf");

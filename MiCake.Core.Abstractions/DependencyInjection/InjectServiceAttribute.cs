@@ -14,7 +14,7 @@ namespace MiCake.Core.Abstractions.DependencyInjection
     {
         public virtual Type Type { get; set; }
 
-        public virtual MiCakeServiceLifeTime? Lifetime { get; set; }
+        public virtual MiCakeServiceLifeTime Lifetime { get; set; } = MiCakeServiceLifeTime.Transient;
 
         public virtual bool TryRegister { get; set; }
 

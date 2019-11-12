@@ -34,7 +34,9 @@ namespace MiCake.Serilog
             serilogOptionAction(serilogOption);
 
             //add serilog Log instance if is not has serilog Log 
-            if (true)
+            //if serilog not configure ,will create a silentLogger.Instance,but its not have HasOverrideMap property.
+            var isConfiguraSerilog = Log.Logger.GetType().GetProperty("HasOverrideMap", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public) != null;
+            if (!isConfiguraSerilog)
             {
                 if (serilogOption.SerilogLoggerConfiguration != null)
                     Log.Logger = serilogOption.SerilogLoggerConfiguration.CreateLogger();
