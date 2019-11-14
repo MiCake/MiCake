@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.AspNetCore.Extension
 {
@@ -10,8 +11,9 @@ namespace MiCake.AspNetCore.Extension
     {
         public static IApplicationBuilder InitMiCake(this IApplicationBuilder app)
         {
-            var micakeApp = app.ApplicationServices.GetService(typeof(IMiCakeApplication));
-            ((IMiCakeApplication)micakeApp)?.Init();
+            var provider = app.ApplicationServices;
+            var micakeApp = provider.GetRequiredService(typeof(IMiCakeApplicationProvider));
+            ((IMiCakeApplicationProvider)micakeApp)?.Initialize(provider);
 
             return app;
         }

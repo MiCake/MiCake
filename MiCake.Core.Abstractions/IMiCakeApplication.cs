@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Abstractions.Builder;
+using MiCake.Core.Abstractions.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -6,32 +7,28 @@ using System.Text;
 
 namespace MiCake.Core.Abstractions
 {
-    public interface IMiCakeApplication
+    public interface IMiCakeApplication : IDisposable
     {
-        Type StartUpType { get; set; }
+        Type StartUpType { get; }
 
-        /// <summary>
-        /// <see cref=" IMiCakeModuleEngine"/>
-        /// </summary>
-        IMiCakeModuleEngine ModuleEngine { get; }
+        IMiCakeBuilder Builder { get; }
 
-        /// <summary>
-        /// <see cref=" IMiCakeApplicationOption"/>
-        /// </summary>
-        IMiCakeApplicationOption MiCakeApplicationOption { get; set; }
-
-        /// <summary>
-        /// List of services registered to this application.
-        /// Can not add new services to this collection after application initialize.
-        /// </summary>
         IServiceCollection Services { get; }
 
+        IServiceProvider ServiceProvider { get; }
 
         void Init();
 
         /// <summary>
+        /// To configure Mike's extension, you can use <see cref="IMiCakeBuilder"/> to add services to <see cref="IServiceCollection"/>
+        /// 
+        /// 配置Micake的扩展，可以利用IMiCakeBuilder向IServiceCollection中添加服务.
+        /// </summary>
+        IMiCakeApplication Configure(Action<IMiCakeBuilder> builderConfigAction);
+
+        /// <summary>
         /// Used to gracefully shutdown the application and all modules.
         /// </summary>
-        void ShutDown(Action<IMiCakeModuleEngine> shutdownAction = null);
+        void ShutDown(Action<ModuleBearingContext> shutdownAction = null);
     }
 }

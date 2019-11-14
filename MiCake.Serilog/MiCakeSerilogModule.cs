@@ -15,32 +15,39 @@ namespace MiCake.Serilog
         {
         }
 
-        public override void OnShuntdown(ModuleContext context)
+        public override void ConfigServices(ModuleConfigServiceContext context)
         {
         }
 
-        public override void OnStart(ModuleContext context)
+        public override void Initialization(ModuleBearingContext context)
         {
-            var serviceProvide = context.Services.BuildServiceProvider();
-            var micakeErrorHandler =  serviceProvide.GetService<IMiCakeErrorHandler>();
-            var serilogHandlerProvide = serviceProvide.GetService<ILogErrorHandlerProvider>();
+        }
+
+        public override void PostConfigServices(ModuleConfigServiceContext context)
+        {
+            var micakeErrorHandler = GetServiceFromCollection<IMiCakeErrorHandler>(context.Services);
+            var serilogHandlerProvide = GetServiceFromCollection<ILogErrorHandlerProvider>(context.Services);
 
             micakeErrorHandler?.ConfigureHandlerService(serilogHandlerProvide.GetErrorHandler());
         }
 
-        public override void PreShuntdown(ModuleContext context)
+        public override void PostModuleInitialization(ModuleBearingContext context)
         {
         }
 
-        public override void PreStart(ModuleContext context)
+        public override void PreConfigServices(ModuleConfigServiceContext context)
         {
         }
 
-        public override void Shuntdown(ModuleContext context)
+        public override void PreModuleInitialization(ModuleBearingContext context)
         {
         }
 
-        public override void Start(ModuleContext context)
+        public override void PreModuleShutDown(ModuleBearingContext context)
+        {
+        }
+
+        public override void Shuntdown(ModuleBearingContext context)
         {
         }
     }

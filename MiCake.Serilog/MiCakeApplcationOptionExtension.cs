@@ -5,19 +5,19 @@ namespace MiCake.Serilog
 {
     public static class MiCakeApplcationOptionExtension
     {
-        public static IMiCakeApplicationOption UseSerilog(this IMiCakeApplicationOption miCakeOption)
+        public static IMiCakeApplication AddSerilog(this IMiCakeApplication miCakeApp)
         {
-            return UseSerilog(miCakeOption, null);
+            return AddSerilog(miCakeApp, null);
         }
 
-        public static IMiCakeApplicationOption UseSerilog(this IMiCakeApplicationOption miCakeOption, Action<SerilogConfigureOption> serilogOptionAction)
+        public static IMiCakeApplication AddSerilog(this IMiCakeApplication miCakeApp, Action<SerilogConfigureOption> serilogOptionAction)
         {
             serilogOptionAction ??= defaultOption;
 
-            var provide = new SerilogProvider(miCakeOption.Services);
+            var provide = new SerilogProvider(miCakeApp.Services);
             provide.AddSerilogInMiCake(serilogOptionAction);
 
-            return miCakeOption;
+            return miCakeApp;
 
             void defaultOption(SerilogConfigureOption option)
             {

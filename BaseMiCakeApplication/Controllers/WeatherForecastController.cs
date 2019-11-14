@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MiCake.Core.Abstractions;
 using MiCake.Core.Abstractions.ExceptionHandling;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,12 +23,13 @@ namespace BaseMiCakeApplication.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
         private IServiceProvider _serviceProvider;
-        private InjectDemoClassA demoClassA;
+        private IClassA demoClassA;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IServiceProvider serviceProvider,InjectDemoClassA demoClassA)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
+            demoClassA = (IClassA)serviceProvider.GetRequiredService(typeof(IClassA));
         }
 
         [HttpGet]
@@ -35,11 +37,9 @@ namespace BaseMiCakeApplication.Controllers
         {
             var rng = new Random();
 
-            var instance = _serviceProvider.GetService(typeof(InjectDemoClassA));
-
-            var a = _serviceProvider.GetService(typeof(Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory));
             _logger.LogInformation("lalalala");
             Log.Information("asdfaf");
+            Log.Information(demoClassA.StrWrite());
 
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {

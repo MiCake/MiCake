@@ -20,7 +20,7 @@ namespace MiCake.Serilog
         {
             _services = services;
 
-            var loggerProvides = _services.BuildServiceProvider().GetServices<ILoggerFactory>();
+            var loggerProvides = _services.BuildServiceProvider(false).GetServices<ILoggerFactory>();
             var isAddSerilog = loggerProvides.Any(provide => provide is SerilogLoggerFactory);
 
             if (!isAddSerilog)

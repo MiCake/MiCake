@@ -8,9 +8,9 @@ namespace MiCake.Core
 {
     public class MiCakeApplictionFactory
     {
-        public static IMiCakeApplication Create<TStartupModule>(IServiceCollection services, Action<IMiCakeApplicationOption> optionAction = null)
+        public static IMiCakeApplication Create<TStartupModule>(IServiceCollection services)
         {
-            return new MiCakeMianApplication(typeof(TStartupModule), services, optionAction);
+            return new DefaultMiCakeApplicationProvider(typeof(TStartupModule), services);
         }
     }
 }

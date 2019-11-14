@@ -10,24 +10,6 @@ namespace MiCake.Core.Tests.Modularity
 {
     public class ModuleCollection_Test
     {
-        [Fact]
-        public void ModuleCollectionGetAllAssemblyTest()
-        {
-            var engine = CreateMiCakeModuleEngine();
-            engine.LoadMiCakeModules(typeof(StarpUpModule));
-            var ass = engine.MiCakeModules.GetAllReferAssembly();
 
-            Assert.Single(ass);
-        }
-
-        private IMiCakeModuleEngine CreateMiCakeModuleEngine()
-        {
-            var servers = new Mock<IServiceCollection>();
-            var logger = new Mock<ILogger<MiCakeModuleEngine>>();
-
-            IMiCakeModuleEngine miCakeModuleEngine = new DefaultMiCakeModuleEngine(servers.Object, logger.Object);
-
-            return miCakeModuleEngine;
-        }
     }
 }

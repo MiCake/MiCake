@@ -1,50 +1,103 @@
 ﻿using MiCake.Core.Abstractions;
 using MiCake.Core.Abstractions.Builder;
+using MiCake.Core.Abstractions.DependencyInjection;
+using MiCake.Core.Abstractions.ExceptionHandling;
+using MiCake.Core.Abstractions.Logging;
 using MiCake.Core.Abstractions.Modularity;
 using MiCake.Core.Builder;
+using MiCake.Core.DependencyInjection;
+using MiCake.Core.ExceptionHandling;
+using MiCake.Core.Logging;
+using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MiCake.Core
 {
-    public abstract class MiCakeApplication : IMiCakeApplication
+    public class MiCakeApplication : IMiCakeApplication
     {
-        public Type StartUpType { get; set; }
+        public Type StartUpType { get; }
 
-        private IMiCakeModuleEngine _miCakeModuleEngine;
-        public IMiCakeModuleEngine ModuleEngine => _miCakeModuleEngine;
+        public IMiCakeBuilder Builder { get; }
 
-        private IServiceCollection _services;
-        public IServiceCollection Services => _services;
+        public IServiceProvider ServiceProvider { get; private set; }
 
-        private IMiCakeApplicationOption _miCakeApplicationOption;
-        public IMiCakeApplicationOption MiCakeApplicationOption { get => _miCakeApplicationOption; set => _miCakeApplicationOption = value; }
+        public IServiceCollection Services { get; private set; }
 
-        private IMiCakeBuilder _miCakeBuilder;
+        private Type _startUp;
 
-        public MiCakeApplication(Type startUpType, IServiceCollection services, Action<IMiCakeApplicationOption> optionAction = null)
+        public MiCakeApplication(Type startUp, IServiceCollection services)
         {
-            StartUpType = startUpType;
-            _services = services;
-            _miCakeApplicationOption = new MiCakeApplicationOption(_services);
+            if (startUp == null)
+                throw new ArgumentException("Please add startUp type when you use AddMiCake().");
 
-            _miCakeBuilder = new MiCakeBuilder(this, optionAction);
-            _miCakeBuilder.UseStarpUp(startUpType);
+            _startUp = startUp;
+            Services = services;
+
+            var micakeModuleManager = new MiCakeModuleManager();
+            micakeModuleManager.PopulateDefaultModule(_startUp);
+            micakeModuleManager.ActivateServices(services, s =>
+            {
+                //auto activate has micake support services
+                var diManager = new DefaultMiCakeDIManager(services);
+                diManager.PopulateAutoService(s);
+            });
+
+            Builder = new MiCakeBuilder(services, micakeModuleManager);
+
+            services.AddSingleton<IMiCakeModuleManager>(micakeModuleManager);
+            services.AddSingleton<IMiCakeBuilder>(Builder);
+
+            //add micake core serivces
+            AddMiCakeCoreSerivces(services);
         }
 
-        public virtual void ShutDown(Action<IMiCakeModuleEngine> shutdownAction = null)
+        public virtual IMiCakeApplication Configure(Action<IMiCakeBuilder> builderConfigAction)
         {
-            shutdownAction?.Invoke(_miCakeModuleEngine);
+            if (Builder == null)
+                throw new ArgumentException("MiCake Application is not activation.Please use services.AddMiCake() in your Startup.cs.");
 
-            if (StartUpType != null)
-                _miCakeModuleEngine.ShutDownModules();
+            builderConfigAction(Builder);
+
+            return this;
         }
 
-        public void Init()
+        public virtual void Init()
         {
-            _miCakeBuilder.Build();
+            if (ServiceProvider == null)
+                throw new ArgumentNullException(nameof(ServiceProvider));
 
-            _miCakeModuleEngine = _miCakeBuilder.ModuleEngine;
+            using var scpoe = ServiceProvider.CreateScope();
+            var moduleBoot = (IMiCakeModuleBoot)scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
+            moduleBoot.Initialization(new ModuleBearingContext(ServiceProvider, Builder.ModuleManager.miCakeModules));
+        }
+
+        public virtual void ShutDown(Action<ModuleBearingContext> shutdownAction = null)
+        {
+            using var scpoe = ServiceProvider.CreateScope();
+            var moduleBoot = (IMiCakeModuleBoot)scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
+            var context = new ModuleBearingContext(ServiceProvider, Builder.ModuleManager.miCakeModules);
+            shutdownAction?.Invoke(context);
+            moduleBoot.ShutDown(context);
+        }
+
+        public virtual void Dispose()
+        {
+        }
+
+        protected virtual IMiCakeApplication SetServiceProvider(IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+            return this;
+        }
+
+
+        private void AddMiCakeCoreSerivces(IServiceCollection services)
+        {
+            services.AddSingleton<IMiCakeModuleBoot, MiCakeModuleBoot>();
+            services.AddSingleton<IDIContainer>(new DefaultDIContainer(services));
+            services.AddSingleton<IMiCakeErrorHandler, DefaultMiCakeErrorHandler>();
+            services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
         }
     }
 }

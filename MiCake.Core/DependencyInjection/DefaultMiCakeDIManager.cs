@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Core.DependencyInjection
 {
-    public class DefaultMiCakeDIManager : BaseMiCakeDIManager
+    internal class DefaultMiCakeDIManager : BaseMiCakeDIManager
     {
         public DefaultMiCakeDIManager(IServiceCollection services) : base(services)
         {
@@ -77,8 +77,8 @@ namespace MiCake.Core.DependencyInjection
             {
                 serviceInfo = new InjectServiceInfo()
                 {
-                    Type = type,
-                    ImplementationType = injectServiceAttribute.Type ?? type,
+                    Type = injectServiceAttribute.Type ?? type,
+                    ImplementationType = type,
                     ReplaceServices = injectServiceAttribute.ReplaceServices,
                     Lifetime = injectServiceAttribute.Lifetime,
                     TryRegister = injectServiceAttribute.TryRegister,

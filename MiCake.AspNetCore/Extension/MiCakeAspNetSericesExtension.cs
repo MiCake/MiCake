@@ -7,10 +7,9 @@ namespace MiCake.AspNetCore.Extension
 {
     public static class MiCakeAspNetSericesExtension
     {
-        public static IServiceCollection AddMiCake<TStartupModule>(this IServiceCollection services, Action<IMiCakeApplicationOption> optionAction = null)
+        public static IMiCakeApplication AddMiCake<TStartupModule>(this IServiceCollection services)
         {
-            MiCakeApplictionFactory.Create<TStartupModule>(services, optionAction);
-            return services;
+            return MiCakeApplictionFactory.Create<TStartupModule>(services);
         }
     }
 }

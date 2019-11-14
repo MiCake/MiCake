@@ -6,8 +6,8 @@ namespace MiCake.Core.Abstractions.Modularity
 {
     public interface IMiCakeModule
     {
-        void Start(ModuleContext context);
+        void Initialization(ModuleBearingContext context);
 
-        void Shuntdown(ModuleContext context);
+        void Shuntdown(ModuleBearingContext context);
     }
 }
