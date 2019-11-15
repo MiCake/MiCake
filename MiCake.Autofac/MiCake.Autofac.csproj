@@ -5,6 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac" Version="4.9.4" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="5.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MiCake.Core.Abstractions\MiCake.Core.Abstractions.csproj" />
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
   </ItemGroup>

@@ -34,6 +34,9 @@ namespace MiCake.Core
             _startUp = startUp;
             Services = services;
 
+            //add micake core serivces
+            AddMiCakeCoreSerivces(services);
+
             var micakeModuleManager = new MiCakeModuleManager();
             micakeModuleManager.PopulateDefaultModule(_startUp);
             micakeModuleManager.ActivateServices(services, s =>
@@ -46,10 +49,7 @@ namespace MiCake.Core
             Builder = new MiCakeBuilder(services, micakeModuleManager);
 
             services.AddSingleton<IMiCakeModuleManager>(micakeModuleManager);
-            services.AddSingleton<IMiCakeBuilder>(Builder);
-
-            //add micake core serivces
-            AddMiCakeCoreSerivces(services);
+            services.AddSingleton(Builder);
         }
 
         public virtual IMiCakeApplication Configure(Action<IMiCakeBuilder> builderConfigAction)

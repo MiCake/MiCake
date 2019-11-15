@@ -25,7 +25,7 @@ namespace MiCake.Core.DependencyInjection
             var assemblies = miCakeModules.GetAllReferAssembly();
             foreach (var assembly in assemblies)
             {
-                var types = assembly.GetTypes().Where(type => type.IsClass & !type.IsAbstract).ToList();
+                var types = assembly.GetTypes().Where(type => type.IsClass & !type.IsAbstract & !type.IsSealed).ToList();
 
                 foreach (var type in types)
                 {

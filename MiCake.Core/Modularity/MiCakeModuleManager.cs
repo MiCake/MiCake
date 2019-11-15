@@ -48,15 +48,16 @@ namespace MiCake.Core.Modularity
                 logger.LogInformation($"MiCake LiftTime-PreConfigServices:{ miCakeModule.Type.Name }");
                 miCakeModule.ModuleInstance.PreConfigServices(context);
             }
+
+            //Activate Other Part Services 
+            otherPartActivateAction?.Invoke(miCakeModules);
+
             //ConfigServiices
             foreach (var miCakeModule in miCakeModules)
             {
                 logger.LogInformation($"MiCake ConfigServiices:{ miCakeModule.Type.Name }");
                 miCakeModule.ModuleInstance.ConfigServices(context);
             }
-
-            //Activate Other Part Services 
-            otherPartActivateAction?.Invoke(miCakeModules);
 
             //PostConfigServices
             foreach (var miCakeModule in miCakeModules)
