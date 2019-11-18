@@ -11,8 +11,9 @@ namespace MiCake.Core.Abstractions.Modularity
     /// </summary>
     public interface IMiCakeModuleManager
     {
-        IMiCakeModuleCollection miCakeModules { get; }
+         IMiCakeModuleCollection miCakeModules { get; }
 
-        void PopulateDefaultModule(Type startUp);
+        // [todo]: this method is only use to internal.
+        // void PopulateDefaultModule(Type startUp);
     }
 }

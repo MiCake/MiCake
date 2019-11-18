@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MiCake.Core.Abstractions;
+using MiCake.Core.Abstractions.DependencyInjection;
 using MiCake.Core.Abstractions.ExceptionHandling;
+using MiCake.Core.Abstractions.Logging;
+using MiCake.Core.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -36,6 +39,9 @@ namespace BaseMiCakeApplication.Controllers
         public IEnumerable<WeatherForecast> Get()
         {
             var rng = new Random();
+
+            var demoA = ServiceLocator.Instance.Locator.GetService<IClassA>();
+            var handler = ServiceLocator.Instance.GetSerivce<ILogErrorHandlerProvider>();
 
             _logger.LogInformation("lalalala");
             Log.Information("asdfaf");

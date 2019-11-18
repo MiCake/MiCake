@@ -1,9 +1,7 @@
 ﻿using MiCake.Autofac;
+using MiCake.Core.Abstractions.DependencyInjection;
 using MiCake.Core.Abstractions.Modularity;
 using MiCake.Serilog;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.AspNetCore
 {
@@ -14,6 +12,12 @@ namespace MiCake.AspNetCore
     {
         public MiCakeAspNetCoreModule()
         {
+        }
+
+        public override void PostModuleInitialization(ModuleBearingContext context)
+        {
+            base.PostModuleInitialization(context);
+            context.ServiceProvider.GetService(typeof(IServiceLocator ));
         }
     }
 }

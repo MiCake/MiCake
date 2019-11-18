@@ -1,11 +1,11 @@
 ﻿using MiCake.Core.Abstractions.Modularity;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions.DependencyInjection
+namespace MiCake.Core.DependencyInjection
 {
-    public interface IMiCakeDIManager
+    /// <summary>
+    /// Manage the services that need to be injected automatically in MiCake
+    /// </summary>
+    internal interface IMiCakeDIManager
     {
         /// <summary>
         /// inject the service that impletement <see cref="IAutoInjectService"/>

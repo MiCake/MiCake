@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace MiCake.Core.Modularity
@@ -15,7 +16,7 @@ namespace MiCake.Core.Modularity
 
         public IMiCakeModuleCollection miCakeModules { get; } = new MiCakeModuleCollection();
 
-        public void PopulateDefaultModule(Type startUp)
+        internal void PopulateDefaultModule(Type startUp)
         {
             if (isPopulate)
                 throw new InvalidOperationException("PopulateDefaultModule can only be called once.");
@@ -82,7 +83,7 @@ namespace MiCake.Core.Modularity
 
             miCakeModuleDescriptors.SortByDependencies(s => s.Dependencies);
 
-            //获取Module的依赖关系
+            //Get module dependencies
             foreach (var miCakeModuleDescriptor in miCakeModuleDescriptors)
             {
                 var depencies = GetMiCakeModuleDescriptorDepencyies(miCakeModuleDescriptors, miCakeModuleDescriptor);

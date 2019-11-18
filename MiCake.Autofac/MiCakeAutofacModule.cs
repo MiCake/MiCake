@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using Autofac;
+using MiCake.Core.Abstractions.Modularity;
 using System;
 using System.Collections.Generic;
 using System.Text;

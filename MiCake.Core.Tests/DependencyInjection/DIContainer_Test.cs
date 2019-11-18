@@ -14,16 +14,6 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void DIContainerAddServiceTest()
         {
-            var services = CreateMockServiceCollection();
-
-            DefaultDIContainer dIContainer = new DefaultDIContainer(services);
-
-            dIContainer.AddService<ITestA,ClassA>(MiCakeServiceLifeTime.Singleton);
-            var instance = dIContainer.GetService(typeof(ITestA));
-            var instanceB = dIContainer.GetService<ITestA>();
-
-            Assert.IsAssignableFrom<ITestA>(instance);
-            Assert.Equal(instance.GetType(), instanceB.GetType());
         }
 
 

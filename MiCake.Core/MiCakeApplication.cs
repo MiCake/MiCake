@@ -17,13 +17,9 @@ namespace MiCake.Core
     public class MiCakeApplication : IMiCakeApplication
     {
         public Type StartUpType { get; }
-
         public IMiCakeBuilder Builder { get; }
 
-        public IServiceProvider ServiceProvider { get; private set; }
-
-        public IServiceCollection Services { get; private set; }
-
+        private IServiceProvider _serviceProvider;
         private Type _startUp;
 
         public MiCakeApplication(Type startUp, IServiceCollection services)
@@ -32,7 +28,6 @@ namespace MiCake.Core
                 throw new ArgumentException("Please add startUp type when you use AddMiCake().");
 
             _startUp = startUp;
-            Services = services;
 
             //add micake core serivces
             AddMiCakeCoreSerivces(services);
@@ -64,19 +59,25 @@ namespace MiCake.Core
 
         public virtual void Init()
         {
-            if (ServiceProvider == null)
-                throw new ArgumentNullException(nameof(ServiceProvider));
+            if (_serviceProvider == null)
+                throw new ArgumentNullException(nameof(_serviceProvider));
 
-            using var scpoe = ServiceProvider.CreateScope();
-            var moduleBoot = (IMiCakeModuleBoot)scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
-            moduleBoot.Initialization(new ModuleBearingContext(ServiceProvider, Builder.ModuleManager.miCakeModules));
+            using var scpoe = _serviceProvider.CreateScope();
+            //active service locator
+            scpoe.ServiceProvider.GetRequiredService<IServiceLocator>();
+
+            var moduleBoot = scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
+            moduleBoot.Initialization(new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.miCakeModules));
         }
 
         public virtual void ShutDown(Action<ModuleBearingContext> shutdownAction = null)
         {
-            using var scpoe = ServiceProvider.CreateScope();
-            var moduleBoot = (IMiCakeModuleBoot)scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
-            var context = new ModuleBearingContext(ServiceProvider, Builder.ModuleManager.miCakeModules);
+            if (_serviceProvider == null)
+                throw new ArgumentNullException(nameof(ServiceProvider));
+
+            using var scpoe = _serviceProvider.CreateScope();
+            var moduleBoot = scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
+            var context = new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.miCakeModules);
             shutdownAction?.Invoke(context);
             moduleBoot.ShutDown(context);
         }
@@ -87,15 +88,18 @@ namespace MiCake.Core
 
         protected virtual IMiCakeApplication SetServiceProvider(IServiceProvider serviceProvider)
         {
-            ServiceProvider = serviceProvider;
+            _serviceProvider = serviceProvider;
             return this;
         }
-
 
         private void AddMiCakeCoreSerivces(IServiceCollection services)
         {
             services.AddSingleton<IMiCakeModuleBoot, MiCakeModuleBoot>();
-            services.AddSingleton<IDIContainer>(new DefaultDIContainer(services));
+            services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
+            {
+                ServiceLocator.Instance.Locator = provider;
+                return ServiceLocator.Instance;
+            });
             services.AddSingleton<IMiCakeErrorHandler, DefaultMiCakeErrorHandler>();
             services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
         }

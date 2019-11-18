@@ -5,20 +5,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using MiCake.Core.Util.Collections;
-using MiCake.Core.Util;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Core.DependencyInjection
 {
-    internal class DefaultMiCakeDIManager : BaseMiCakeDIManager
+    internal class DefaultMiCakeDIManager : IMiCakeDIManager
     {
-        public DefaultMiCakeDIManager(IServiceCollection services) : base(services)
+        public IServiceCollection _services;
+
+        public DefaultMiCakeDIManager(IServiceCollection services)
         {
+            _services = services;
         }
 
-        public override void PopulateAutoService(IMiCakeModuleCollection miCakeModules)
+        public virtual void PopulateAutoService(IMiCakeModuleCollection miCakeModules)
         {
             var injectServices = new List<InjectServiceInfo>();
 
@@ -111,6 +111,27 @@ namespace MiCake.Core.DependencyInjection
             }
 
             return serviceInfo;
+        }
+
+        //根据type继承的接口类型返回服务生命周期
+        protected virtual MiCakeServiceLifeTime? GetServiceLifetime(Type type)
+        {
+            if (typeof(ITransientService).GetTypeInfo().IsAssignableFrom(type))
+            {
+                return MiCakeServiceLifeTime.Transient;
+            }
+
+            if (typeof(ISingletonService).GetTypeInfo().IsAssignableFrom(type))
+            {
+                return MiCakeServiceLifeTime.Singleton;
+            }
+
+            if (typeof(IScopedService).GetTypeInfo().IsAssignableFrom(type))
+            {
+                return MiCakeServiceLifeTime.Scoped;
+            }
+
+            return null;
         }
 
         protected class InjectServiceInfo

@@ -13,10 +13,6 @@ namespace MiCake.Core.Abstractions
 
         IMiCakeBuilder Builder { get; }
 
-        IServiceCollection Services { get; }
-
-        IServiceProvider ServiceProvider { get; }
-
         void Init();
 
         /// <summary>

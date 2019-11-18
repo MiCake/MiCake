@@ -14,8 +14,11 @@ namespace MiCake.Serilog
         {
             serilogOptionAction ??= defaultOption;
 
-            var provide = new SerilogProvider(miCakeApp.Services);
-            provide.AddSerilogInMiCake(serilogOptionAction);
+            miCakeApp.Configure(builder =>
+            {
+                var provide = new SerilogProvider(builder.Services);
+                provide.AddSerilogInMiCake(serilogOptionAction);
+            });
 
             return miCakeApp;
 
