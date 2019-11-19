@@ -6,7 +6,7 @@ using System.Text;
 
 namespace MiCake.Core.Util.Reflection
 {
-    public static class McTypeHelper
+    public static class TypeHelper
     {
         public static bool IsFunc(object obj)
         {

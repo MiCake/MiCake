@@ -33,8 +33,8 @@ namespace MiCake.Core
             AddMiCakeCoreSerivces(services);
 
             var micakeModuleManager = new MiCakeModuleManager();
-            micakeModuleManager.PopulateDefaultModule(_startUp);
-            micakeModuleManager.ActivateServices(services, s =>
+            micakeModuleManager.PopulateModules(_startUp);
+            micakeModuleManager.ConfigServices(services, s =>
             {
                 //auto activate has micake support services
                 var diManager = new DefaultMiCakeDIManager(services);
@@ -67,7 +67,7 @@ namespace MiCake.Core
             scpoe.ServiceProvider.GetRequiredService<IServiceLocator>();
 
             var moduleBoot = scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
-            moduleBoot.Initialization(new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.miCakeModules));
+            moduleBoot.Initialization(new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.MiCakeModules));
         }
 
         public virtual void ShutDown(Action<ModuleBearingContext> shutdownAction = null)
@@ -77,7 +77,7 @@ namespace MiCake.Core
 
             using var scpoe = _serviceProvider.CreateScope();
             var moduleBoot = scpoe.ServiceProvider.GetRequiredService<IMiCakeModuleBoot>();
-            var context = new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.miCakeModules);
+            var context = new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.MiCakeModules);
             shutdownAction?.Invoke(context);
             moduleBoot.ShutDown(context);
         }

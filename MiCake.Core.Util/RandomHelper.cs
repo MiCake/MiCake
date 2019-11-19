@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MiCake.Core.Util
 {
-    public class McRandomHelper
+    public class RandomHelper
     {
         private static readonly Random Rnd = new Random();
 
@@ -63,7 +63,7 @@ namespace MiCake.Core.Util
         /// <param name="objs">List of object to select a random one</param>
         public static T GetRandomOf<T>(params T[] objs)
         {
-            McCheckValue.NotNullOrEmpty(objs, nameof(objs));
+            CheckValue.NotNullOrEmpty(objs, nameof(objs));
 
             return objs[GetRandom(0, objs.Length)];
         }
@@ -75,7 +75,7 @@ namespace MiCake.Core.Util
         /// <param name="list">List of object to select a random one</param>
         public static T GetRandomOfList<T>(IList<T> list)
         {
-            McCheckValue.NotNullOrEmpty(list, nameof(list));
+            CheckValue.NotNullOrEmpty(list, nameof(list));
 
             return list[GetRandom(0, list.Count)];
         }
@@ -87,14 +87,14 @@ namespace MiCake.Core.Util
         /// <param name="items">items</param>
         public static List<T> GenerateRandomizedList<T>(IEnumerable<T> items)
         {
-            McCheckValue.NotNull(items, nameof(items));
+            CheckValue.NotNull(items, nameof(items));
 
             var currentList = new List<T>(items);
             var randomList = new List<T>();
 
             while (currentList.Any())
             {
-                var randomIndex = McRandomHelper.GetRandom(0, currentList.Count);
+                var randomIndex = RandomHelper.GetRandom(0, currentList.Count);
                 randomList.Add(currentList[randomIndex]);
                 currentList.RemoveAt(randomIndex);
             }

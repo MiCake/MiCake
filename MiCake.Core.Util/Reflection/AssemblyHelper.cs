@@ -7,7 +7,7 @@ using System.Runtime.Loader;
 
 namespace MiCake.Core.Util.Reflection
 {
-    public static class McAssemblyHelper
+    public static class AssemblyHelper
     {
         public static List<Assembly> LoadAssemblies(string folderPath, SearchOption searchOption)
         {

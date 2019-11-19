@@ -6,7 +6,7 @@ using System.Text;
 
 namespace MiCake.Core.Util.Reflection
 {
-    public static class McReflectionHelper
+    public static class ReflectionHelper
     {
         /// <summary>
         /// Checks whether <paramref name="givenType"/> implements/inherits <paramref name="genericType"/>.

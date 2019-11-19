@@ -162,7 +162,7 @@ namespace MiCake.Core.Util.Collections
 
         public static T GetOrAdd<T>(this IList<T> source, Func<T, bool> selector, Func<T> factory)
         {
-            McCheckValue.NotNull(source, nameof(source));
+            CheckValue.NotNull(source, nameof(source));
 
             var item = source.FirstOrDefault(selector);
 

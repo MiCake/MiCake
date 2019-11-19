@@ -38,7 +38,7 @@ namespace MiCake.Core.Modularity
 
             _logger.LogInformation("Initialization MiCake Application...");
 
-            var modules = _miCakeBuilder.ModuleManager.miCakeModules;
+            var modules = _miCakeBuilder.ModuleManager.MiCakeModules;
 
             //preInit
             foreach (var module in modules)
@@ -71,7 +71,7 @@ namespace MiCake.Core.Modularity
 
             _logger.LogInformation("ShutDown MiCake Application...");
 
-            var modules = _miCakeBuilder.ModuleManager.miCakeModules;
+            var modules = _miCakeBuilder.ModuleManager.MiCakeModules;
 
             //PreModuleShutDown
             foreach (var module in modules)

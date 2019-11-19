@@ -24,7 +24,7 @@ namespace MiCake.Core.Util.Collections
         /// <returns>Returns True if added, returns False if not.</returns>
         public static bool AddIfNotContains<T>(  this ICollection<T> source, T item)
         {
-            McCheckValue.NotNull(source, nameof(source));
+            CheckValue.NotNull(source, nameof(source));
 
             if (source.Contains(item))
             {
@@ -44,7 +44,7 @@ namespace MiCake.Core.Util.Collections
         /// <returns>Returns the added items.</returns>
         public static IEnumerable<T> AddIfNotContains<T>(  this ICollection<T> source, IEnumerable<T> items)
         {
-            McCheckValue.NotNull(source, nameof(source));
+            CheckValue.NotNull(source, nameof(source));
 
             var addedItems = new List<T>();
 
@@ -72,9 +72,9 @@ namespace MiCake.Core.Util.Collections
         /// <returns>Returns True if added, returns False if not.</returns>
         public static bool AddIfNotContains<T>(  this ICollection<T> source,   Func<T, bool> predicate,   Func<T> itemFactory)
         {
-            McCheckValue.NotNull(source, nameof(source));
-            McCheckValue.NotNull(predicate, nameof(predicate));
-            McCheckValue.NotNull(itemFactory, nameof(itemFactory));
+            CheckValue.NotNull(source, nameof(source));
+            CheckValue.NotNull(predicate, nameof(predicate));
+            CheckValue.NotNull(itemFactory, nameof(itemFactory));
 
             if (source.Any(predicate))
             {

@@ -23,7 +23,7 @@ namespace MiCake.Core
 
         public void Initialize(IServiceProvider serviceProvider)
         {
-            McCheckValue.NotNull(serviceProvider, nameof(serviceProvider));
+            CheckValue.NotNull(serviceProvider, nameof(serviceProvider));
 
             SetServiceProvider(serviceProvider);
 

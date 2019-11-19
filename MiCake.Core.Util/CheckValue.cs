@@ -6,7 +6,7 @@ using System.Text;
 
 namespace MiCake.Core.Util
 {
-    public static class McCheckValue
+    public static class CheckValue
     {
         public static T NotNull<T>(T value, string parameterName)
         {
