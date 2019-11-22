@@ -25,7 +25,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.AspNetCore", "MiCake
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "integration_test", "integration_test", "{8436B979-6C9B-4CF7-B020-548E84408B77}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaseMiCakeApplication", "BaseMiCakeApplication\BaseMiCakeApplication.csproj", "{CA700B3C-94E0-485D-B58D-79019DEF5318}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BaseMiCakeApplication", "BaseMiCakeApplication\BaseMiCakeApplication.csproj", "{CA700B3C-94E0-485D-B58D-79019DEF5318}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.DDD.Tests", "MiCake.DDD.Tests\MiCake.DDD.Tests.csproj", "{E31200E9-DDAC-4E44-A5AB-21D8C31F420B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +71,10 @@ Global
 		{CA700B3C-94E0-485D-B58D-79019DEF5318}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA700B3C-94E0-485D-B58D-79019DEF5318}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA700B3C-94E0-485D-B58D-79019DEF5318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E31200E9-DDAC-4E44-A5AB-21D8C31F420B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E31200E9-DDAC-4E44-A5AB-21D8C31F420B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E31200E9-DDAC-4E44-A5AB-21D8C31F420B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E31200E9-DDAC-4E44-A5AB-21D8C31F420B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -78,6 +84,7 @@ Global
 		{3A971FFD-1137-43E9-9D37-4720363BD034} = {9B48FE3E-C162-42F1-BB22-043C286AE7B0}
 		{04F41B08-CF0E-488E-90D4-90FADA23272D} = {9B48FE3E-C162-42F1-BB22-043C286AE7B0}
 		{CA700B3C-94E0-485D-B58D-79019DEF5318} = {8436B979-6C9B-4CF7-B020-548E84408B77}
+		{E31200E9-DDAC-4E44-A5AB-21D8C31F420B} = {DD51C453-21A0-4639-9163-4EBF895F4546}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C31E5600-E4DC-4009-A5F6-E5250C8085F4}

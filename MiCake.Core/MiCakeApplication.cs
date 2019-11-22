@@ -22,7 +22,10 @@ namespace MiCake.Core
         private IServiceProvider _serviceProvider;
         private Type _startUp;
 
-        public MiCakeApplication(Type startUp, IServiceCollection services)
+        public MiCakeApplication(
+            Type startUp,
+            IServiceCollection services,
+            Action<IMiCakeBuilder> builderConfigAction)
         {
             if (startUp == null)
                 throw new ArgumentException("Please add startUp type when you use AddMiCake().");
@@ -32,29 +35,17 @@ namespace MiCake.Core
             //add micake core serivces
             AddMiCakeCoreSerivces(services);
 
-            var micakeModuleManager = new MiCakeModuleManager();
-            micakeModuleManager.PopulateModules(_startUp);
-            micakeModuleManager.ConfigServices(services, s =>
+            Builder = new MiCakeBuilder(services, new MiCakeModuleManager());
+            builderConfigAction?.Invoke(Builder);
+            //populate normal and feature modules
+            ((MiCakeModuleManager)Builder.ModuleManager).PopulateModules(_startUp);
+            ((MiCakeModuleManager)Builder.ModuleManager).ConfigServices(services, s =>
             {
                 //auto activate has micake support services
                 var diManager = new DefaultMiCakeDIManager(services);
                 diManager.PopulateAutoService(s);
             });
-
-            Builder = new MiCakeBuilder(services, micakeModuleManager);
-
-            services.AddSingleton<IMiCakeModuleManager>(micakeModuleManager);
             services.AddSingleton(Builder);
-        }
-
-        public virtual IMiCakeApplication Configure(Action<IMiCakeBuilder> builderConfigAction)
-        {
-            if (Builder == null)
-                throw new ArgumentException("MiCake Application is not activation.Please use services.AddMiCake() in your Startup.cs.");
-
-            builderConfigAction(Builder);
-
-            return this;
         }
 
         public virtual void Init()

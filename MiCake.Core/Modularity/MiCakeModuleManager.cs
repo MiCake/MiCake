@@ -34,10 +34,12 @@ namespace MiCake.Core.Modularity
             //feature module
             foreach (var featureModule in _featureModules)
             {
-                var moduleDescript = new MiCakeModuleDescriptor(featureModule.GetType(), (MiCakeModule)Activator.CreateInstance(featureModule.GetType()));
+                if (!featureModule.AutoRegisted) continue;
+
+                var moduleDescript = new MiCakeModuleDescriptor(featureModule.GetType(), (MiCakeModule)featureModule);
                 FeatureModules.AddIfNotContains(moduleDescript);
             }
-            SortModulesDepencyies((List<MiCakeModuleDescriptor>)FeatureModules);
+            SortModulesDepencyies(FeatureModules.ToList());
         }
 
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
@@ -58,39 +60,38 @@ namespace MiCake.Core.Modularity
                 throw new ArgumentNullException(nameof(services));
 
             if (!_isPopulate)
-                throw new InvalidOperationException("MiCake Modules is not activate. Please run PopulateDefaultModule(startUp) first.");
+                throw new InvalidOperationException("MiCake Modules is not activate. Please run PopulateModules(startUp) first.");
 
             var logger = services.BuildServiceProvider().GetRequiredService<ILogger<MiCakeModuleManager>>();
 
             logger.LogInformation("MiCake:ActivateServices...");
 
             var context = new ModuleConfigServiceContext(services);
+            var allModules = MiCakeModuleHelper.CombineNoralAndFeatureModules(MiCakeModules, FeatureModules);
 
             //PreConfigServices
-            foreach (var miCakeModule in MiCakeModules)
+            foreach (var miCakeModule in allModules)
             {
-                logger.LogInformation($"MiCake LiftTime-PreConfigServices:{ miCakeModule.Type.Name }");
+                logger.LogInformation($"MiCake LiftTime-PreConfigServices:{ GetModuleInfoString(miCakeModule) }");
                 miCakeModule.ModuleInstance.PreConfigServices(context);
             }
-
-            //Activate Other Part Services 
-            otherPartActivateAction?.Invoke(MiCakeModules);
-
-            //ConfigServiices
-            foreach (var miCakeModule in MiCakeModules)
+            //ConfigServices
+            foreach (var miCakeModule in allModules)
             {
-                logger.LogInformation($"MiCake ConfigServiices:{ miCakeModule.Type.Name }");
+                logger.LogInformation($"MiCake ConfigServiices:{ GetModuleInfoString(miCakeModule) }");
                 miCakeModule.ModuleInstance.ConfigServices(context);
             }
-
             //PostConfigServices
-            foreach (var miCakeModule in MiCakeModules)
+            foreach (var miCakeModule in allModules)
             {
-                logger.LogInformation($"MiCake LiftTime-OnStart:{ miCakeModule.Type.Name }");
+                logger.LogInformation($"MiCake LiftTime-PostConfigServices:{ GetModuleInfoString(miCakeModule) }");
                 miCakeModule.ModuleInstance.PostConfigServices(context);
             }
 
-            logger.LogInformation("MiCake:ActivateServices Completed");
+            //Activate Other Part Services 
+            otherPartActivateAction?.Invoke(allModules);
+
+            logger.LogInformation("MiCake:ActivateServices Completed.....");
         }
 
         private IEnumerable<MiCakeModuleDescriptor> ResolvingMiCakeModules(Type startUp)
@@ -139,6 +140,10 @@ namespace MiCake.Core.Modularity
             return descriptors;
         }
 
-
+        private string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
+        {
+            var featerTag = (moduleDesciptor.ModuleInstance is IFeatureModule) ? "[Feature] - " : string.Empty;
+            return featerTag + moduleDesciptor.Type.Name;
+        }
     }
 }

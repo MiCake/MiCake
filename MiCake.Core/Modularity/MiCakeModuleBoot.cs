@@ -38,24 +38,26 @@ namespace MiCake.Core.Modularity
 
             _logger.LogInformation("Initialization MiCake Application...");
 
-            var modules = _miCakeBuilder.ModuleManager.MiCakeModules;
+            var modules = MiCakeModuleHelper.CombineNoralAndFeatureModules(
+                                                _miCakeBuilder.ModuleManager.MiCakeModules,
+                                                _miCakeBuilder.ModuleManager.FeatureModules);
 
             //preInit
             foreach (var module in modules)
             {
-                _logger.LogInformation($"MiCake LiftTime-PreModuleInitialization:{ module.Type.Name }");
+                _logger.LogInformation($"MiCake LiftTime-PreModuleInitialization:{ GetModuleInfoString(module) }");
                 module.ModuleInstance.PreModuleInitialization(context);
             }
             //Init
             foreach (var module in modules)
             {
-                _logger.LogInformation($"MiCake LiftTime-Initialization:{ module.Type.Name }");
+                _logger.LogInformation($"MiCake LiftTime-Initialization:{ GetModuleInfoString(module) }");
                 module.ModuleInstance.Initialization(context);
             }
             //PostInit
             foreach (var module in modules)
             {
-                _logger.LogInformation($"MiCake LiftTime-PostModuleInitialization:{ module.Type.Name }");
+                _logger.LogInformation($"MiCake LiftTime-PostModuleInitialization:{ GetModuleInfoString(module) }");
                 module.ModuleInstance.PostModuleInitialization(context);
             }
             _logger.LogInformation("Initialization MiCake Application Completed.");
@@ -71,21 +73,29 @@ namespace MiCake.Core.Modularity
 
             _logger.LogInformation("ShutDown MiCake Application...");
 
-            var modules = _miCakeBuilder.ModuleManager.MiCakeModules;
+            var modules = MiCakeModuleHelper.CombineNoralAndFeatureModules(
+                                                _miCakeBuilder.ModuleManager.MiCakeModules,
+                                                _miCakeBuilder.ModuleManager.FeatureModules);
 
             //PreModuleShutDown
             foreach (var module in modules)
             {
-                _logger.LogInformation($"MiCake LiftTime-PreModuleShutDown:{ module.Type.Name }");
+                _logger.LogInformation($"MiCake LiftTime-PreModuleShutDown:{ GetModuleInfoString(module) }");
                 module.ModuleInstance.PreModuleShutDown(context);
             }
             //Shuntdown
             foreach (var module in modules)
             {
-                _logger.LogInformation($"MiCake LiftTime-Shuntdown:{ module.Type.Name }");
+                _logger.LogInformation($"MiCake LiftTime-Shuntdown:{ GetModuleInfoString(module) }");
                 module.ModuleInstance.Shuntdown(context);
             }
             _logger.LogInformation("ShutDown MiCake Application Completed.");
+        }
+
+        private string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
+        {
+            var featerTag = (moduleDesciptor.ModuleInstance is IFeatureModule) ? "[Feature] - " : string.Empty;
+            return featerTag + moduleDesciptor.Type.Name;
         }
     }
 }

@@ -1,16 +1,15 @@
 ﻿using MiCake.Core.Abstractions.ExceptionHandling;
 using MiCake.Core.Abstractions.Logging;
 using MiCake.Core.Abstractions.Modularity;
-using MiCake.Serilog.ExceptionHanding;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Serilog
 {
-    public class MiCakeSerilogModule : MiCakeModule
+    public class MiCakeSerilogModule : MiCakeModule, IFeatureModule
     {
+
+        public FeatureModuleLoadOrder Order { get; set; }
+        public bool AutoRegisted { get; set; }
+
         public MiCakeSerilogModule()
         {
         }

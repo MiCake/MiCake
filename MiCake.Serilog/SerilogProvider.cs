@@ -7,7 +7,6 @@ using Serilog.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiCake.Serilog.ExceptionHanding;
 using MiCake.Core.Abstractions.Logging;
-using ILogger = Serilog.ILogger;
 using Serilog.Core;
 using System.Reflection;
 

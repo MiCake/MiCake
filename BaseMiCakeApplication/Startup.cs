@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MiCake.AspNetCore.Extension;
 using MiCake.Serilog;
+using MiCake.Autofac;
 
 namespace BaseMiCakeApplication
 {
@@ -22,9 +23,11 @@ namespace BaseMiCakeApplication
         {
             services.AddControllers().AddControllersAsServices();
 
-            services.AddMiCake<BaseMiCakeModule>()
-                    .AddSerilog();
-                
+            services.AddMiCake<BaseMiCakeModule>(builer =>
+            {
+                builer.UseSerilog();
+                builer.UseAutofac();
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

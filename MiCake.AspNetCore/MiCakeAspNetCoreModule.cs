@@ -5,9 +5,6 @@ using MiCake.Serilog;
 
 namespace MiCake.AspNetCore
 {
-    [DependOn(
-        typeof(MiCakeSerilogModule),
-        typeof(MiCakeAutofacModule))]
     public class MiCakeAspNetCoreModule : MiCakeModule
     {
         public MiCakeAspNetCoreModule()

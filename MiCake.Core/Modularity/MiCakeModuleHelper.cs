@@ -28,6 +28,33 @@ namespace MiCake.Core.Modularity
             }
         }
 
+        internal static IMiCakeModuleCollection CombineNoralAndFeatureModules(
+            IMiCakeModuleCollection normalModules,
+            IMiCakeModuleCollection featureModules)
+        {
+            IMiCakeModuleCollection miCakeModules = new MiCakeModuleCollection();
+            //before feature modules
+            var beforeModules = featureModules.Where(s => ((IFeatureModule)s.ModuleInstance).Order == FeatureModuleLoadOrder.BeforeCommonModule).ToList();
+            var afterModules = featureModules.Where(s => ((IFeatureModule)s.ModuleInstance).Order == FeatureModuleLoadOrder.AfterCommonModule).ToList();
+
+            Queue<List<MiCakeModuleDescriptor>> moduleQueue = new Queue<List<MiCakeModuleDescriptor>>();
+            moduleQueue.Enqueue(beforeModules);
+            moduleQueue.Enqueue(normalModules.ToList());
+            moduleQueue.Enqueue(afterModules);
+
+            var count = moduleQueue.Count;
+            for (int i = 0; i < count; i++)
+            {
+                var modules = moduleQueue.Dequeue();
+                foreach (var module in modules)
+                {
+                    miCakeModules.AddIfNotContains(module);
+                }
+            }
+
+            return miCakeModules;
+        }
+
         internal static List<Type> FindAllModuleTypes(Type startupModuleType)
         {
             var moduleTypes = new List<Type>();
