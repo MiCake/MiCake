@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Event\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
+  </ItemGroup>
+
+</Project>

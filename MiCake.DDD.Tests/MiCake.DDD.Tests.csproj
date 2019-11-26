@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.DDD\MiCake.DDD.csproj" />
+    <ProjectReference Include="..\MiCake.DDD.Application\MiCake.DDD.Application.csproj" />
   </ItemGroup>
 
 </Project>
