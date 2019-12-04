@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Event\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
   </ItemGroup>
 

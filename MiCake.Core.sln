@@ -27,9 +27,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BaseMiCakeApplication", "Ba
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Tests", "MiCake.DDD.Tests\MiCake.DDD.Tests.csproj", "{E31200E9-DDAC-4E44-A5AB-21D8C31F420B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.DDD.Domain", "MiCake.DDD.Domain\MiCake.DDD.Domain.csproj", "{EA319D0F-58CE-4498-BE35-5218EDAC1F38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Domain", "MiCake.DDD.Domain\MiCake.DDD.Domain.csproj", "{EA319D0F-58CE-4498-BE35-5218EDAC1F38}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.DDD.Application", "MiCake.DDD.Application\MiCake.DDD.Application.csproj", "{DD6092D2-EFFD-4745-B3C6-C7EBD8EE16CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Application", "MiCake.DDD.Application\MiCake.DDD.Application.csproj", "{DD6092D2-EFFD-4745-B3C6-C7EBD8EE16CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.Uow", "MiCake.Uow\MiCake.Uow.csproj", "{736D15D4-8731-4C5C-9C24-FD65868AC025}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{DD6092D2-EFFD-4745-B3C6-C7EBD8EE16CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD6092D2-EFFD-4745-B3C6-C7EBD8EE16CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD6092D2-EFFD-4745-B3C6-C7EBD8EE16CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{736D15D4-8731-4C5C-9C24-FD65868AC025}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{736D15D4-8731-4C5C-9C24-FD65868AC025}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{736D15D4-8731-4C5C-9C24-FD65868AC025}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{736D15D4-8731-4C5C-9C24-FD65868AC025}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,6 +2,7 @@
 using MiCake.DDD.Tests.Fakes.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Text;
 using Xunit;
 
@@ -36,5 +37,6 @@ namespace MiCake.DDD.Tests
                 var convertEntity = (IEntity)generticEntity;
             });
         }
+
     }
 }
