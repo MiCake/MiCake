@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Domain
 {
     /// <summary>
-    /// a ddd repository interface
+    /// a ddd repository interface.Please use <see cref="IRepository<>"/>.
     /// </summary>
     public interface IRepository
     {
