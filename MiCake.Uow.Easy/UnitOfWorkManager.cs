@@ -20,14 +20,14 @@ namespace MiCake.Uow.Easy
 
         public IUnitOfWork Create(UnitOfWorkOptions options)
         {
-            // 暂不实现RequireNew等操作
-            IUnitOfWork unitOfWork = null;
-
             //考虑是否需要一个IUnitOfFactory来保持依赖注入中对工作单元的创建
-            unitOfWork = (IUnitOfWork)_serviceProvider.GetService(typeof(IUnitOfWork));
-            currentUow = unitOfWork;
+            if (currentUow == null)
+            {
+                var uow = new UnitOfWork();
+                currentUow = uow;
+            }
 
-            return unitOfWork;
+            return currentUow;
         }
 
         public IUnitOfWork GetCurrentUnitOfWork()

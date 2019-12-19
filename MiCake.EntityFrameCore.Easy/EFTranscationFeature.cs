@@ -1,6 +1,5 @@
 ﻿using MiCake.Uow.Easy;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,26 +16,27 @@ namespace MiCake.EntityFrameCore.Easy
 
         public void Commit()
         {
+            _dbContext.SaveChanges();
         }
 
-        public Task CommitAsync(CancellationToken cancellationToken = default)
+        public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+
         }
 
         public void Rollback()
         {
-            throw new NotImplementedException();
+
         }
 
         public Task RollbackAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.Delay(0);
         }
     }
 }
