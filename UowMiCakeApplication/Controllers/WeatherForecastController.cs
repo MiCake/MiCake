@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using UowMiCakeApplication.Repositories;
 using UowMiCakeApplication.AggregateRoots;
+using MiCake.Core.Abstractions;
 
 namespace UowMiCakeApplication.Controllers
 {
@@ -31,7 +32,9 @@ namespace UowMiCakeApplication.Controllers
         public IEnumerable<WeatherForecast> Get()
         {
             var rng = new Random();
-            _itineraryRepository.Add(new Itinerary("1", "2", "3", "4", "5"));
+
+            throw new ArgumentException();
+            //_itineraryRepository.Add(new Itinerary("1", "2", "3", "4", "5"));
 
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {

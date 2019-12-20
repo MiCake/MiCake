@@ -42,7 +42,7 @@ namespace MiCake.Uow.Easy
 
             _isDisposed = true;
 
-            currentUow.Dispose();
+            currentUow?.Dispose();
         }
     }
 }
