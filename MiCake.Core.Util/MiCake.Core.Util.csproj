@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.1.0</Version>
+    <Authors>uoyoCsharp</Authors>
+    <Company>MiCake</Company>
+    <Product>MiCake</Product>
+    <Description>米蛋糕工具库文件</Description>
+    <PackageReleaseNotes>预览版本，该版本仅供测试调试使用，暂不能用于实际项目</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

@@ -3,6 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Authors>uoyoCsharp</Authors>
+    <Company>MiCake</Company>
+    <Product>MiCake</Product>
+    <Description>米蛋糕核心文件</Description>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <Version>0.1.0</Version>
+    <PackageReleaseNotes>预览版本，该版本仅供测试调试使用，暂不能用于实际项目</PackageReleaseNotes>
+    <PackageProjectUrl />
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
