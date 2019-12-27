@@ -35,7 +35,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow", "MiCake.Uow\Mi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow.Test", "MiCake.Uow.Test\MiCake.Uow.Test.csproj", "{CFB74A96-DC93-4714-A3EF-ADFAD670DDCB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.EntityFrameCore", "MiCake.EntityFrameCore\MiCake.EntityFrameCore.csproj", "{ABBB6A93-2015-4EEC-B324-6B779CC3CC38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore", "MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj", "{ABBB6A93-2015-4EEC-B324-6B779CC3CC38}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

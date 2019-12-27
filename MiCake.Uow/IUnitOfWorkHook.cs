@@ -7,7 +7,7 @@ namespace MiCake.Uow
 {
     internal interface IUnitOfWorkHook
     {
-        EventHandler<IUnitOfWork> DisposeHandler { get; set; }
+        event EventHandler<IUnitOfWork> DisposeHandler;
 
         void OnSaveChanged(Action action);
         void OnRollBacked(Action action);

@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,8 +11,9 @@ namespace MiCake.Uow
     {
         public Guid ID { get; private set; }
         public bool IsDisposed { get; private set; }
-        public EventHandler<IUnitOfWork> DisposeHandler { get; set; }
+        public event EventHandler<IUnitOfWork> DisposeHandler;
         public UnitOfWorkOptions UnitOfWorkOptions { get; private set; }
+        public IServiceProvider ServiceProvider { get; private set; }
 
         private readonly Dictionary<string, ITransactionFeature> _transactionFeatures;
         private Action _saveChangedAction;
@@ -19,15 +21,21 @@ namespace MiCake.Uow
         private bool _isSaveChanged;
         private bool _isRollbacked;
 
-        public UnitOfWork(UnitOfWorkOptions options)
+        public UnitOfWork(
+            IOptions<UnitOfWorkDefaultOptions> defaultOptions,
+            IServiceProvider serviceProvider)
         {
-            UnitOfWorkOptions = options;
+            if (defaultOptions.Value == null)
+                throw new ArgumentNullException($"can not get default UnitOfWorkDefaultOptions!");
+
+            UnitOfWorkOptions = defaultOptions.Value.ConvertToUnitOfWorkOptions();
+            ServiceProvider = serviceProvider;
 
             _transactionFeatures = new Dictionary<string, ITransactionFeature>();
         }
 
         public virtual ITransactionFeature GetOrAddTransactionFeature(
-            [NotNull]string key, 
+            [NotNull]string key,
             [NotNull] ITransactionFeature transcationFeature)
         {
             if (_transactionFeatures.ContainsKey(key))
@@ -48,7 +56,7 @@ namespace MiCake.Uow
         }
 
         public virtual void RegisteTranasctionFeature(
-            [NotNull]string key, 
+            [NotNull]string key,
             [NotNull]ITransactionFeature transcationFeature)
         {
             if (_transactionFeatures.ContainsKey(key))
@@ -205,6 +213,11 @@ namespace MiCake.Uow
         {
             _rollBackedAction += action
                 ;
+        }
+
+        public void SetOptions(UnitOfWorkOptions options)
+        {
+            UnitOfWorkOptions = options.Clone();
         }
     }
 }

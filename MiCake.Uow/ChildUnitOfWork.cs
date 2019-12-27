@@ -10,8 +10,9 @@ namespace MiCake.Uow
         public Guid ID { get; private set; }
         public bool IsDisposed { get; private set; }
         public UnitOfWorkOptions UnitOfWorkOptions => _parentUow.UnitOfWorkOptions;
+        public IServiceProvider ServiceProvider => _parentUow.ServiceProvider;
 
-        public EventHandler<IUnitOfWork> DisposeHandler { get; set; }
+        public event EventHandler<IUnitOfWork> DisposeHandler;
 
         private IUnitOfWork _parentUow;
         private bool _isSaveChanged;
@@ -110,6 +111,15 @@ namespace MiCake.Uow
         public void OnRollBacked(Action action)
         {
             (_parentUow as IUnitOfWorkHook)?.OnRollBacked(action);
+        }
+
+        /// <summary>
+        /// Child unit of work invalid settings.because it's use parent options
+        /// </summary>
+        /// <param name="options"></param>
+        public void SetOptions(UnitOfWorkOptions options)
+        {
+            //_parentUow.SetOptions(options);
         }
     }
 }

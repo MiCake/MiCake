@@ -31,5 +31,10 @@ namespace MiCake.Uow
             Timeout = timeOut;
             Limit = unitOfWorkLimit;
         }
+
+        public UnitOfWorkOptions Clone()
+        {
+            return new UnitOfWorkOptions(IsolationLevel, Timeout, Limit);
+        }
     }
 }
