@@ -9,17 +9,10 @@ namespace MiCake.Uow
     /// </summary>
     public class UnitOfWorkCallContext
     {
-        private UowContextStruct _rootContext;
         private UowContextStruct _currentContext;
 
-        public UnitOfWorkCallContext(IUnitOfWork root)
+        public UnitOfWorkCallContext()
         {
-            _rootContext = new UowContextStruct()
-            {
-                Parent = null,
-                Current = root,
-            };
-            _currentContext = _rootContext;
         }
 
         public IUnitOfWork GetCurrentUow()
@@ -27,8 +20,24 @@ namespace MiCake.Uow
             return _currentContext.Current;
         }
 
+        public IUnitOfWork GetUowByID(Guid id)
+        {
+            IUnitOfWork result = null;
+
+            var tempContext = _currentContext;
+            while (tempContext.Parent.Current != null)
+            {
+                if (tempContext.Current.ID.Equals(id))
+                    return tempContext.Current;
+
+                tempContext = tempContext.Parent;
+            }
+            
+            return result;
+        }
+
         /// <summary>
-        /// Remove unit of work from tree
+        /// get a previous unit of work.
         /// </summary>
         public IUnitOfWork PopUnitOfWork()
         {

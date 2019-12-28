@@ -17,17 +17,51 @@ namespace MiCake.Uow
 
         public IUnitOfWork Create(UnitOfWorkOptions options)
         {
-            throw new NotImplementedException();
+            IUnitOfWork resultUow;
+
+            if (NeedCreateNewUnitOfWork(options))
+            {
+                resultUow = CreateNewUnitOfWork(options);
+                _callcontext.PushUnitOfWork(resultUow);
+            }
+            else
+            {
+                resultUow = new ChildUnitOfWork(_callcontext.GetCurrentUow());
+            }
+
+            return resultUow;
         }
 
         public IUnitOfWork GetCurrentUnitOfWork()
         {
-            throw new NotImplementedException();
+            return _callcontext.GetCurrentUow();
         }
 
         public IUnitOfWork GetUnitOfWork(Guid Id)
         {
-            throw new NotImplementedException();
+            return _callcontext.GetUowByID(Id);
+        }
+
+        //Determine whether a new unit of work needs to be created
+        private bool NeedCreateNewUnitOfWork(UnitOfWorkOptions options)
+        {
+            bool result = false;
+
+            switch (options.Limit)
+            {
+                case UnitOfWorkLimit.Required:
+                    result = _callcontext.GetCurrentUow() != null;
+                    break;
+                case UnitOfWorkLimit.RequiresNew:
+                    result = true;
+                    break;
+                case UnitOfWorkLimit.Suppress:
+                    result = true;
+                    break;
+                default:
+                    break;
+            }
+            return result;
         }
 
         //Create a new unitofwork 
@@ -47,6 +81,7 @@ namespace MiCake.Uow
                 (result as IUnitOfWorkHook).DisposeHandler += (sender, args) =>
                 {
                     uowScope.Dispose();
+                    _callcontext.PopUnitOfWork();
                 };
             }
             catch (Exception ex)

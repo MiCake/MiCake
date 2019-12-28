@@ -18,7 +18,7 @@ namespace MiCake.Uow
         private bool _isSaveChanged;
         private bool _isRollbacked;
 
-        public ChildUnitOfWork([NotNull]UnitOfWork parentUow)
+        public ChildUnitOfWork([NotNull]IUnitOfWork parentUow)
         {
             _parentUow = parentUow;
             ID = Guid.NewGuid();
