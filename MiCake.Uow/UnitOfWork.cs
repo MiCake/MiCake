@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using MiCake.Uow.Options;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace MiCake.Uow
             if (defaultOptions.Value == null)
                 throw new ArgumentNullException($"can not get default UnitOfWorkDefaultOptions!");
 
+            ID = Guid.NewGuid();
             UnitOfWorkOptions = defaultOptions.Value.ConvertToUnitOfWorkOptions();
             ServiceProvider = serviceProvider;
 
@@ -180,7 +182,7 @@ namespace MiCake.Uow
         public void Dispose()
         {
             if (IsDisposed)
-                throw new InvalidOperationException("this unit of work is already dispose");
+                return;
 
             IsDisposed = true;
 

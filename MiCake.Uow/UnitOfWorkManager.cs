@@ -1,18 +1,29 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Uow.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Uow
 {
-    internal class UnitOfWorkManager : IUnitOfWorkManager
+    public class UnitOfWorkManager : IUnitOfWorkManager
     {
         private IServiceProvider _serviceProvider;
         private UnitOfWorkCallContext _callcontext;
+        private UnitOfWorkDefaultOptions _defaultOptions;
 
-        public UnitOfWorkManager(IServiceProvider serviceProvider)
+        public UnitOfWorkManager(
+            IServiceProvider serviceProvider,
+            IOptions<UnitOfWorkDefaultOptions> defaultOptions)
         {
             _serviceProvider = serviceProvider;
+            _defaultOptions = defaultOptions.Value;
+
+            _callcontext = new UnitOfWorkCallContext();
+        }
+
+        public IUnitOfWork Create()
+        {
+            return Create(_defaultOptions.ConvertToUnitOfWorkOptions());
         }
 
         public IUnitOfWork Create(UnitOfWorkOptions options)
@@ -22,12 +33,16 @@ namespace MiCake.Uow
             if (NeedCreateNewUnitOfWork(options))
             {
                 resultUow = CreateNewUnitOfWork(options);
-                _callcontext.PushUnitOfWork(resultUow);
             }
             else
             {
                 resultUow = new ChildUnitOfWork(_callcontext.GetCurrentUow());
+                (resultUow as IUnitOfWorkHook).DisposeHandler += (sender, args) =>
+                {
+                    _callcontext.PopUnitOfWork();
+                };
             }
+            _callcontext.PushUnitOfWork(resultUow);
 
             return resultUow;
         }
@@ -50,7 +65,7 @@ namespace MiCake.Uow
             switch (options.Limit)
             {
                 case UnitOfWorkLimit.Required:
-                    result = _callcontext.GetCurrentUow() != null;
+                    result = _callcontext.GetCurrentUow() == null;
                     break;
                 case UnitOfWorkLimit.RequiresNew:
                     result = true;

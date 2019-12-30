@@ -1,4 +1,4 @@
-﻿using MiCake.AspNetCore;
+﻿using MiCake.AspNetCore.Modules;
 using MiCake.Core.Abstractions.Modularity;
 
 namespace BaseMiCakeApplication

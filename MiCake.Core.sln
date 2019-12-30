@@ -37,6 +37,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow.Test", "MiCake.U
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore", "MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj", "{ABBB6A93-2015-4EEC-B324-6B779CC3CC38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.EntityFrameworkCore.Tests", "MiCake.EntityFrameworkCore.Tests\MiCake.EntityFrameworkCore.Tests.csproj", "{29944367-170C-446E-856D-4373726871EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,10 @@ Global
 		{ABBB6A93-2015-4EEC-B324-6B779CC3CC38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABBB6A93-2015-4EEC-B324-6B779CC3CC38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABBB6A93-2015-4EEC-B324-6B779CC3CC38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29944367-170C-446E-856D-4373726871EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29944367-170C-446E-856D-4373726871EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29944367-170C-446E-856D-4373726871EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29944367-170C-446E-856D-4373726871EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,6 +116,7 @@ Global
 		{CA700B3C-94E0-485D-B58D-79019DEF5318} = {8436B979-6C9B-4CF7-B020-548E84408B77}
 		{E31200E9-DDAC-4E44-A5AB-21D8C31F420B} = {DD51C453-21A0-4639-9163-4EBF895F4546}
 		{CFB74A96-DC93-4714-A3EF-ADFAD670DDCB} = {DD51C453-21A0-4639-9163-4EBF895F4546}
+		{29944367-170C-446E-856D-4373726871EA} = {DD51C453-21A0-4639-9163-4EBF895F4546}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C31E5600-E4DC-4009-A5F6-E5250C8085F4}

@@ -1,10 +1,9 @@
 ﻿using MiCake.Core.Abstractions.Modularity;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using MiCake.Uow.Modules;
 
-namespace MiCake.EntityFrameCore
+namespace MiCake.EntityFrameCore.Modules
 {
+    [DependOn(typeof(MiCakeUowModule))]
     internal class MiCakeEFCoreModule : MiCakeModule
     {
         public MiCakeEFCoreModule()

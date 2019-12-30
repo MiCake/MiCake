@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace MiCake.Uow
+namespace MiCake.Uow.Options
 {
     /// <summary>
     /// this option is default unit of work setting
@@ -23,7 +23,7 @@ namespace MiCake.Uow
         }
     }
 
-    public static class UnitOfWorkDefaultOptionsExtensiong
+    public static class UnitOfWorkDefaultOptionsExtension
     {
         /// <summary>
         /// convert UnitOfWorkDefaultOptions to UnitOfWorkOptions.

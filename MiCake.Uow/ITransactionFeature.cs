@@ -13,6 +13,8 @@ namespace MiCake.Uow
     {
         public bool IsCommit { get; }
 
+        public bool IsRollback { get; }
+
         /// <summary>
         /// Commits all changes made to the database in the current transaction.
         /// </summary>

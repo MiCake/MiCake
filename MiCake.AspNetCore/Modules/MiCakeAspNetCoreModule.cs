@@ -3,7 +3,7 @@ using MiCake.Core.Abstractions.DependencyInjection;
 using MiCake.Core.Abstractions.Modularity;
 using MiCake.Serilog;
 
-namespace MiCake.AspNetCore
+namespace MiCake.AspNetCore.Modules
 {
     public class MiCakeAspNetCoreModule : MiCakeModule
     {
