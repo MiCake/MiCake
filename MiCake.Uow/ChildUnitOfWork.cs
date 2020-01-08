@@ -48,11 +48,11 @@ namespace MiCake.Uow
             return _parentUow.GetTransactionFeature(key);
         }
 
-        public void RegisteTranasctionFeature(
+        public void RegisteTransactionFeature(
             [NotNull] string key,
             [NotNull] ITransactionFeature transactionFeature)
         {
-            _parentUow.RegisteTranasctionFeature(key, transactionFeature);
+            _parentUow.RegisteTransactionFeature(key, transactionFeature);
         }
 
         public void RemoveTransaction([NotNull] string key)

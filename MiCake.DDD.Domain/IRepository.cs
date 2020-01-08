@@ -39,7 +39,7 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Add a new aggregateRoot.and return this aggregate.you can get it Primary key
         /// </summary>
-        TAggregateRoot AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
+        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.
@@ -59,6 +59,6 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Delete aggregateRoot from repository
         /// </summary>
-        void DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
+        Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
     }
 }

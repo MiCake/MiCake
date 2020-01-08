@@ -7,7 +7,7 @@ namespace MiCake.Uow
     /// </summary>
     public interface ITransactionFeatureContainer
     {
-        void RegisteTranasctionFeature([NotNull]string key, [NotNull]ITransactionFeature transactionFeature);
+        void RegisteTransactionFeature([NotNull]string key, [NotNull]ITransactionFeature transactionFeature);
 
         ITransactionFeature GetOrAddTransactionFeature([NotNull]string key, [NotNull]ITransactionFeature transactionFeature);
 

@@ -1,6 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,41 +10,30 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// <summary>
     /// A read-only EF Core Repository base class.
     /// </summary>
-    public class EFReadOnlyRepository<TDbContext, TAggregateRoot, TKey> : IReadOnlyRepository<TAggregateRoot, TKey>
+    public class EFReadOnlyRepository<TDbContext, TAggregateRoot, TKey> :
+        EFRepositoryBase<TDbContext, TAggregateRoot, TKey>,
+        IReadOnlyRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>
         where TDbContext : DbContext
     {
-        public virtual TDbContext DbContext
+        public EFReadOnlyRepository(IUnitOfWorkManager uowManager) : base(uowManager)
         {
-            get
-            {
-                return _dbContextFactory.CreateDbContext();
-            }
         }
 
-        private readonly IUnitOfWorkManager _uowManager;
-        private IUowDbContextFactory<TDbContext> _dbContextFactory;
-
-        public EFReadOnlyRepository(IUnitOfWorkManager uowManager)
-        {
-            _uowManager = uowManager;
-
-            _dbContextFactory = new UowDbContextFactory<TDbContext>(_uowManager);
-        }
-
-        public virtual TAggregateRoot Find(TKey ID)
+        public TAggregateRoot Find(TKey ID)
         {
             return DbContext.Find<TAggregateRoot>(ID);
         }
 
-        public virtual Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
+        public async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
-            return DbContext.FindAsync<TAggregateRoot>(ID, cancellationToken).AsTask();
+            return await DbContext.FindAsync<TAggregateRoot>(ID);
         }
 
-        public virtual long GetCount()
+        public long GetCount()
         {
-            return DbContext.Set<TAggregateRoot>().LongCountAsync().Result;
+            return DbSet.CountAsync().Result;
         }
+
     }
 }

@@ -7,6 +7,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MiCake.Autofac\MiCake.Autofac.csproj" />
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
+    <ProjectReference Include="..\MiCake.DDD.Domain\MiCake.DDD.Domain.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\MiCake.Serilog\MiCake.Serilog.csproj" />
   </ItemGroup>
 

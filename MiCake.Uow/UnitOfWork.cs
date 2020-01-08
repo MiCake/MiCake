@@ -57,7 +57,7 @@ namespace MiCake.Uow
             _transactionFeatures.Remove(key);
         }
 
-        public virtual void RegisteTranasctionFeature(
+        public virtual void RegisteTransactionFeature(
             [NotNull]string key,
             [NotNull]ITransactionFeature transcationFeature)
         {

@@ -1,7 +1,6 @@
 ﻿using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System;
 
 namespace MiCake.EntityFrameworkCore
@@ -10,6 +9,7 @@ namespace MiCake.EntityFrameworkCore
          where TDbContext : DbContext
     {
         private readonly IUnitOfWorkManager _uowManager;
+        private string _key => $"EFCore - {typeof(TDbContext).FullName}";
 
         public UowDbContextFactory(IUnitOfWorkManager uowManager)
         {
@@ -23,6 +23,10 @@ namespace MiCake.EntityFrameworkCore
             if (currentUow == null)
                 throw new NullReferenceException("Cannot get a unit of work,Please check create root unit of work correctly");
 
+            var cacheDbContext = currentUow.GetTransactionFeature(_key);
+            if (cacheDbContext != null)
+                return (TDbContext)((EFTransactionFeature)cacheDbContext).DbContext;
+
             var wantedDbContext = (TDbContext)currentUow.ServiceProvider.GetService(typeof(TDbContext));
 
             if (wantedDbContext == null)
@@ -31,13 +35,12 @@ namespace MiCake.EntityFrameworkCore
             AddDbTransactionFeatureToUow(currentUow, wantedDbContext);
 
             return wantedDbContext;
+
         }
 
         private void AddDbTransactionFeatureToUow(IUnitOfWork uow, TDbContext dbContext)
         {
-            string key = $"EFCore - {dbContext.ContextId.InstanceId.ToString()}";
-
-            var efFeature = (EFTransactionFeature)uow.GetOrAddTransactionFeature(key, new EFTransactionFeature(dbContext));
+            var efFeature = (EFTransactionFeature)uow.GetOrAddTransactionFeature(_key, new EFTransactionFeature(dbContext));
 
             //todo : if there have transaction scope. need set this feature UseAmbientTransaction;
 

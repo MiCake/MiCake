@@ -1,4 +1,5 @@
 ﻿using MiCake.DDD.Domain;
+using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading;
@@ -6,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
-    public class EFRepository<TDbContext, TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey>
+    public class EFRepository<TDbContext, TAggregateRoot, TKey> :
+        EFReadOnlyRepository<TDbContext, TAggregateRoot, TKey>,
+        IRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>
         where TDbContext : DbContext
     {
-
-        public EFRepository()
+        public EFRepository(IUnitOfWorkManager uowManager) : base(uowManager)
         {
-
         }
 
         public void Add(TAggregateRoot aggregateRoot)
@@ -26,7 +27,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             throw new NotImplementedException();
         }
 
-        public TAggregateRoot AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
@@ -41,22 +42,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             throw new NotImplementedException();
         }
 
-        public void DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public TAggregateRoot Find(TKey ID)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long GetCount()
+        public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

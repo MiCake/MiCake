@@ -12,6 +12,7 @@ namespace MiCake.Uow.Modules
 
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
+            //todo : if iunitofworkmanager life is singleton,Internal context will be in conflict.
             context.Services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             context.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 

@@ -16,20 +16,25 @@ namespace MiCake.EntityFrameworkCore.Uow
         public bool IsCommit { get; private set; }
         public bool IsRollback { get; private set; }
         public bool IsOpenTransaction => _isOpenTransaction;
+        public DbContext DbContext { get; private set; }
 
         private bool _isOpenTransaction;
         private bool _isDispose;
         private IDbContextTransaction _dbContextTransaction;
-        private DbContext _dbContext;
 
         public EFTransactionFeature(DbContext dbContext)
         {
-            _dbContext = dbContext;
+            DbContext = dbContext;
         }
 
         public void SetTransaction(IDbContextTransaction dbContextTransaction)
         {
+            // [todo] : need throw exception when repeat settings.
+            //if (_isOpenTransaction)
+            //    throw new MiCakeException("this transaction feature is already set transaction!");
 
+            _isOpenTransaction = true;
+            _dbContextTransaction = dbContextTransaction;
         }
 
         public void UseAmbientTransaction()
@@ -47,7 +52,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             IsCommit = true;
 
-            _dbContext.SaveChanges();
+            DbContext.SaveChanges();
             _dbContextTransaction?.Commit();
         }
 
@@ -58,7 +63,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             IsCommit = true;
 
-            await _dbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync();
             await _dbContextTransaction?.CommitAsync(cancellationToken);
         }
 
@@ -70,7 +75,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _isDispose = true;
 
             _dbContextTransaction?.Dispose();
-            _dbContext?.Dispose();
+            DbContext?.Dispose();
         }
 
         public void Rollback()
