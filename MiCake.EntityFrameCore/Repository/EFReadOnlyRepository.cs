@@ -27,7 +27,7 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
-            return await DbContext.FindAsync<TAggregateRoot>(ID);
+            return await DbContext.FindAsync<TAggregateRoot>(ID, cancellationToken);
         }
 
         public long GetCount()

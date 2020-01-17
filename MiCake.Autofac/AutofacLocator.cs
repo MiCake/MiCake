@@ -23,7 +23,5 @@ namespace MiCake.Autofac
 
             return Locator.Resolve<T>();
         }
-
-
     }
 }

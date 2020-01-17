@@ -6,10 +6,6 @@ using Microsoft.Extensions.Hosting;
 using MiCake.AspNetCore.Extension;
 using MiCake.Serilog;
 using MiCake.Autofac;
-using MiCake.DDD.Domain;
-using BaseMiCakeApplication.Domain.Aggregates;
-using System;
-using MiCake.EntityFrameworkCore.Repository;
 
 namespace BaseMiCakeApplication
 {
@@ -26,12 +22,6 @@ namespace BaseMiCakeApplication
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers().AddControllersAsServices();
-
-            services.AddTransient(typeof(IReadOnlyRepository<,>), (s =>
-            {
-
-                return null;
-            }));
 
             services.AddMiCake<BaseMiCakeModule>(builer =>
             {
