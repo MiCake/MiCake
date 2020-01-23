@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MiCake.Core.DependencyInjection
 {
@@ -31,6 +32,19 @@ namespace MiCake.Core.DependencyInjection
                 throw new ArgumentException("the Locator is null.Please check if you are calling after the Startup.cs Configure method. ");
 
             return (T)Locator.GetRequiredService(typeof(T));
+        }
+
+        /// <summary>
+        /// Get services in ioc container
+        /// [The "service locator" is not recommended if you can try constructor injection]
+        /// </summary>
+        /// <param name="type">service type</param>
+        public IEnumerable<T> GetSerivces<T>()
+        {
+            if (Locator == null)
+                throw new ArgumentException("the Locator is null.Please check if you are calling after the Startup.cs Configure method. ");
+
+            return (IEnumerable<T>)Locator.GetServices(typeof(T));
         }
     }
 }

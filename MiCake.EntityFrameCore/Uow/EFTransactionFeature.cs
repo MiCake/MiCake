@@ -1,8 +1,6 @@
 ﻿using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using System;
-using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 

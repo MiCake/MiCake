@@ -56,6 +56,44 @@ namespace MiCake.Core.Util.Reflection
             return t;
         }
 
+        /// <summary>
+        /// Get all parameters of the generic interface inherited by the type
+        /// </summary>
+        /// <param name="type">Inherited types</param>
+        /// <param name="genericType">generic interface type</param>
+        /// <returns>interface generic arguments</returns>
+        public static Type[] GetGenericArguments(Type type, Type genericType)
+        {
+            return type.GetInterfaces()
+                            .Where(i => IsGenericType(i))
+                            .SelectMany(i => i.GetGenericArguments())
+                            .ToArray();
+
+            bool IsGenericType(Type type1)
+                => type1.IsGenericType && type1.GetGenericTypeDefinition() == genericType;
+        }
+
+        /// <summary>
+        /// Get generic interface inherited by the type
+        /// </summary>
+        /// <param name="type">Inherited types</param>
+        /// <param name="genericType">generic interface type</param>
+        /// <returns>Generic interface information for specific types</returns>
+        public static Type GetGenericInterface(Type type, Type genericType)
+        {
+            return type.GetInterfaces()
+                            .Where(i => IsGenericType(i))
+                            .FirstOrDefault();
+
+            bool IsGenericType(Type type1)
+                => type1.IsGenericType && type1.GetGenericTypeDefinition() == genericType;
+        }
+
+        public static bool IsImplementedGenericInterface(Type type, Type generic)
+        {
+            return type.GetInterfaces().Any(x => generic == (x.IsGenericType ? x.GetGenericTypeDefinition() : x));
+        }
+
         private static bool IsPrimitiveExtendedInternal(Type type, bool includeEnums)
         {
             if (type.IsPrimitive)

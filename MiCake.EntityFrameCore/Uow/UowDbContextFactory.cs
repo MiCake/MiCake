@@ -3,7 +3,7 @@ using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
 
-namespace MiCake.EntityFrameworkCore
+namespace MiCake.EntityFrameworkCore.Uow
 {
     internal class UowDbContextFactory<TDbContext> : IUowDbContextFactory<TDbContext>
          where TDbContext : DbContext

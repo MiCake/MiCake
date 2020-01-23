@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
-    <ProjectReference Include="..\MiCake.Identity\MiCake.Identity.csproj" />
   </ItemGroup>
 
 </Project>

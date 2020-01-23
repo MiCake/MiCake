@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace MiCake.Core.Abstractions.DependencyInjection
 {
     public interface IServiceLocator 
     {
-
         /// <summary>
         /// Providing a "service locator"
         /// Please get the service through constructor or property injection first
@@ -17,5 +17,10 @@ namespace MiCake.Core.Abstractions.DependencyInjection
         /// <param name="type">service type</param>
         T GetSerivce<T>();
 
+        /// <summary>
+        /// Get services in ioc container
+        /// </summary>
+        /// <param name="type">service type</param>
+        IEnumerable<T> GetSerivces<T>();
     }
 }

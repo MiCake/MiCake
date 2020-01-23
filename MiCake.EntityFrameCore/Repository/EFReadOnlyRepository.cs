@@ -1,7 +1,6 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,6 +33,5 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             return DbSet.CountAsync().Result;
         }
-
     }
 }

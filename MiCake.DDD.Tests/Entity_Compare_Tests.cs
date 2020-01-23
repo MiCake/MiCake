@@ -27,16 +27,5 @@ namespace MiCake.DDD.Tests
 
             Assert.Equal(entityA, inheritEntity);
         }
-
-        [Fact]
-        public void GenericGuidEntity_ConvertToIEntity_Test()
-        {
-            var generticEntity = new GenericEntityA() { Id = Guid.NewGuid() };
-            Assert.Throws<InvalidCastException>(() =>
-            {
-                var convertEntity = (IEntity)generticEntity;
-            });
-        }
-
     }
 }
