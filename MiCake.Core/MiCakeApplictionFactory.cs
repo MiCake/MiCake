@@ -9,12 +9,16 @@ namespace MiCake.Core
     {
         public static IMiCakeApplication Create<TStartupModule>(IServiceCollection services)
         {
-            return new DefaultMiCakeApplicationProvider(typeof(TStartupModule), services, null);
+            MiCakeApplicationOptions defalutOptions = new MiCakeApplicationOptions();
+            return new DefaultMiCakeApplicationProvider(typeof(TStartupModule), services, defalutOptions, null);
         }
 
-        public static IMiCakeApplication Create<TStartupModule>(IServiceCollection services, Action<IMiCakeBuilder> builderConfigAction)
+        public static IMiCakeApplication Create<TStartupModule>(
+            IServiceCollection services, 
+            MiCakeApplicationOptions options, 
+            Action<IMiCakeBuilder> builderConfigAction)
         {
-            return new DefaultMiCakeApplicationProvider(typeof(TStartupModule), services, builderConfigAction);
+            return new DefaultMiCakeApplicationProvider(typeof(TStartupModule), services, options, builderConfigAction);
         }
     }
 }

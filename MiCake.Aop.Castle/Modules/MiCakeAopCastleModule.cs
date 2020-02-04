@@ -8,6 +8,8 @@ namespace MiCake.Aop.Castle.Modules
 {
     public class MiCakeAopCastleModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
             context.Services.AddSingleton<IMiCakeProxyProvider, CastleMiCakeProxyProvider>();

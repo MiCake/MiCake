@@ -39,12 +39,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore.Tests", "MiCake.EntityFrameworkCore.Tests\MiCake.EntityFrameworkCore.Tests.csproj", "{29944367-170C-446E-856D-4373726871EA}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F7605934-1B9C-4201-954F-729E3528493D}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Infrastructure", "MiCake.DDD.Infrastructure\MiCake.DDD.Infrastructure.csproj", "{2BD2FF44-CF3F-4C3E-B120-E17ED05D66D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Extensions", "MiCake.DDD.Infrastructure\MiCake.DDD.Extensions.csproj", "{2BD2FF44-CF3F-4C3E-B120-E17ED05D66D3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Aop", "MiCake.Aop\MiCake.Aop.csproj", "{C212AB05-6186-440D-BE14-22A95F54E1A1}"
 EndProject
@@ -58,7 +53,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Identity", "MiCake.I
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore.Extensions", "MiCake.EntityFrameworkCore.Extensions\MiCake.EntityFrameworkCore.Extensions.csproj", "{A134A782-7A15-444A-BADC-2C6DBDE83B14}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.Audit.Tests", "MiCake.Audit.Tests\MiCake.Audit.Tests.csproj", "{5BB19B5F-9E60-47AB-A41D-B90FED3BE474}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Audit.Tests", "MiCake.Audit.Tests\MiCake.Audit.Tests.csproj", "{5BB19B5F-9E60-47AB-A41D-B90FED3BE474}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -8,7 +8,7 @@ namespace MiCake.DDD.Domain
     /// Provides the ability for entities to create snapshots
     /// </summary>
     /// <typeparam name="TEntity"><see cref="IEntity"/></typeparam>
-    public interface IEntityHasSnapshot<TSnapshot>
+    public interface IEntityHasSnapshot<TSnapshot> : IEntityHasSnapshot
     {
         /// <summary>
         /// Get a entity snapshot

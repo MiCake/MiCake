@@ -28,7 +28,7 @@ namespace MiCake.Core.Modularity
             }
         }
 
-        internal static IMiCakeModuleCollection CombineNoralAndFeatureModules(
+        internal static IMiCakeModuleCollection CombineNormalAndFeatureModules(
             IMiCakeModuleCollection normalModules,
             IMiCakeModuleCollection featureModules)
         {

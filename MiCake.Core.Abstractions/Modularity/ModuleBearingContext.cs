@@ -4,13 +4,13 @@ using System.Text;
 
 namespace MiCake.Core.Abstractions.Modularity
 {
-    public struct ModuleBearingContext
+    public class ModuleBearingContext
     {
-        public IServiceProvider ServiceProvider { get; }
+        public IServiceProvider ServiceProvider { get; private set; }
 
-        public IMiCakeModuleCollection MiCakeModules { get; }
+        public IMiCakeModuleCollection MiCakeModules { get; private set; }
 
-        public ModuleBearingContext(IServiceProvider serviceProvider,IMiCakeModuleCollection miCakeModules)
+        public ModuleBearingContext(IServiceProvider serviceProvider, IMiCakeModuleCollection miCakeModules)
         {
             ServiceProvider = serviceProvider;
 

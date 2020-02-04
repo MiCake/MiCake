@@ -1,33 +1,55 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Core.Util.Collections;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace MiCake.Core.Abstractions.DependencyInjection
 {
     /// <summary>
-    /// Mark that the class is injected into the di framework
-    /// 标记该类被注入到DI框架中
+    /// Mark that the class is injected into the dependency injection framework
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public class InjectServiceAttribute : Attribute
     {
-        public virtual Type Type { get; set; }
+        /// <summary>
+        /// The service types
+        /// </summary>
+        public Type[] ServiceTypes { get; set; }
 
-        public virtual MiCakeServiceLifeTime Lifetime { get; set; } = MiCakeServiceLifeTime.Transient;
+        /// <summary>
+        /// service life time.<see cref=" MiCakeServiceLifeTime"/>
+        /// </summary>
+        public MiCakeServiceLifeTime Lifetime { get; set; } = MiCakeServiceLifeTime.Transient;
 
-        public virtual bool TryRegister { get; set; }
+        /// <summary>
+        /// Add itself type to the collection.
+        /// </summary>
+        public bool IncludeSelf { get; set; } = true;
 
-        public virtual bool ReplaceServices { get; set; }
+        /// <summary>
+        /// Adds the specified descriptor to the collection if the service type hasn't already been registered.
+        /// </summary>
+        public bool TryRegister { get; set; } = false;
 
-        public InjectServiceAttribute()
+        /// <summary>
+        ///  Removes the first service in ServiceCollection
+        ///  with the same service type as descriptor and adds descriptor to the collection.
+        /// </summary>
+        public bool ReplaceServices { get; set; } = false;
+
+        public InjectServiceAttribute(params Type[] serviceTypes)
         {
+            ServiceTypes = serviceTypes;
         }
 
-        public InjectServiceAttribute(Type type, MiCakeServiceLifeTime lifeTime)
+        public List<Type> GetServiceTypes(Type itself)
         {
-            Type = type;
-            Lifetime = lifeTime;
+            var serviceTypes = ServiceTypes == null? new List<Type>(): ServiceTypes.AsEnumerable().ToList();
+
+            if (IncludeSelf)
+                serviceTypes.AddIfNotContains(itself);
+
+            return serviceTypes;
         }
     }
 }

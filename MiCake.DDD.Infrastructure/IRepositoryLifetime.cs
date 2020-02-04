@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MiCake.DDD.Infrastructure
+namespace MiCake.DDD.Extensions
 {
     /// <summary>
     /// Provide a life cycle interface of repository operation process

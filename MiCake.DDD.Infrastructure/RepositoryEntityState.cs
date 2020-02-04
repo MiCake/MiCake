@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MiCake.DDD.Infrastructure
+namespace MiCake.DDD.Extensions
 {
     /// <summary>
     /// The state in which the domain object is about to be changed in the repository

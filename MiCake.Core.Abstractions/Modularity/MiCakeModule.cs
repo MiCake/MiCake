@@ -5,6 +5,21 @@ namespace MiCake.Core.Abstractions.Modularity
 {
     public abstract class MiCakeModule : IMiCakeModule, IModuleConfigServicesLifeTime, IModuleLifeTime
     {
+        /// <summary>
+        /// Tag this module is farmework level.
+        /// Framework level modules do not need to be traversed.
+        /// </summary>
+        public virtual bool IsFrameworkLevel => false;
+
+        /// <summary>
+        /// Auto register service to dependency injection framework.
+        /// </summary>
+        public virtual bool IsAutoRegisterServices => true;
+
+        public MiCakeModule()
+        {
+        }
+
         public virtual void ConfigServices(ModuleConfigServiceContext context)
         {
         }

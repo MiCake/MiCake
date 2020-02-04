@@ -10,6 +10,8 @@ namespace MiCake.Autofac
 {
     public class MiCakeAutofacModule : MiCakeModule, IFeatureModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public FeatureModuleLoadOrder Order { get; set; }
         public bool AutoRegisted { get; set; }
 

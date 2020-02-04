@@ -6,6 +6,8 @@ namespace MiCake.Uow.Modules
 {
     public class MiCakeUowModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public MiCakeUowModule()
         {
         }

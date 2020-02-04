@@ -8,6 +8,8 @@ namespace MiCake.Aop.Modules
 {
     public class MiCakeAopModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
             context.Services.AddTransient(provider =>

@@ -62,7 +62,9 @@ namespace MiCake.EntityFrameworkCore.Uow
             IsCommit = true;
 
             await DbContext.SaveChangesAsync();
-            await _dbContextTransaction?.CommitAsync(cancellationToken);
+
+            if (_dbContextTransaction != null)
+                await _dbContextTransaction.CommitAsync(cancellationToken);
         }
 
         public void Dispose()

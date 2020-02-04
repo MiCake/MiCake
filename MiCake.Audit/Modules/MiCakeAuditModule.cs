@@ -5,6 +5,8 @@ namespace MiCake.Audit.Modules
 {
     public class MiCakeAuditModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;

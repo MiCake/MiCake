@@ -3,9 +3,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MiCake.EntityFrameworkCore;
+using BaseMiCakeApplication.EFCore;
+using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql.Storage;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using System;
 using MiCake.AspNetCore.Extension;
-using MiCake.Serilog;
-using MiCake.Autofac;
 
 namespace BaseMiCakeApplication
 {
@@ -21,13 +25,27 @@ namespace BaseMiCakeApplication
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddControllersAsServices();
+            services.AddControllers(options =>
+            {
+
+            });
+
+            services.AddDbContext<BaseAppDbContext>(options =>
+            {
+                options.UseMySql("Server=localhost;Database=micakeexample;User=root;Password=a12345;", mySqlOptions => mySqlOptions
+                    .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
+            });
 
             services.AddMiCake<BaseMiCakeModule>(builer =>
             {
-                builer.UseSerilog();
-                builer.UseAutofac();
+                builer.UseAspNetCore(mvcOptions =>
+                {
+                });
+                builer.UseEFCore<BaseAppDbContext>();
             });
+
+            //Add Swagger
+            services.AddSwaggerDocument(document => document.DocumentName = "MiCake Demo Application");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,6 +68,9 @@ namespace BaseMiCakeApplication
             });
 
             app.InitMiCake();
+
+            app.UseOpenApi();
+            app.UseSwaggerUi3();
         }
     }
 }

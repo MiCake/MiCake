@@ -5,8 +5,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 
 namespace MiCake.Core.Modularity
 {
@@ -63,28 +61,28 @@ namespace MiCake.Core.Modularity
                 throw new InvalidOperationException("MiCake Modules is not activate. Please run PopulateModules(startUp) first.");
 
             var logger = services.BuildServiceProvider().GetRequiredService<ILogger<MiCakeModuleManager>>();
-
             logger.LogInformation("MiCake:ActivateServices...");
+            var moduleLogger = new MiCakeModuleLogger(logger);
 
-            var context = new ModuleConfigServiceContext(services);
-            var allModules = MiCakeModuleHelper.CombineNoralAndFeatureModules(MiCakeModules, FeatureModules);
+            var allModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(MiCakeModules, FeatureModules);
+            var context = new ModuleConfigServiceContext(services, allModules);
 
             //PreConfigServices
             foreach (var miCakeModule in allModules)
             {
-                logger.LogInformation($"MiCake LiftTime-PreConfigServices:{ GetModuleInfoString(miCakeModule) }");
+                moduleLogger.LogModuleInfo(miCakeModule, "MiCake PreConfigServices: ");
                 miCakeModule.ModuleInstance.PreConfigServices(context);
             }
             //ConfigServices
             foreach (var miCakeModule in allModules)
             {
-                logger.LogInformation($"MiCake ConfigServiices:{ GetModuleInfoString(miCakeModule) }");
+                moduleLogger.LogModuleInfo(miCakeModule, "MiCake ConfigServiices: ");
                 miCakeModule.ModuleInstance.ConfigServices(context);
             }
             //PostConfigServices
             foreach (var miCakeModule in allModules)
             {
-                logger.LogInformation($"MiCake LiftTime-PostConfigServices:{ GetModuleInfoString(miCakeModule) }");
+                moduleLogger.LogModuleInfo(miCakeModule, "MiCake PostConfigServices: ");
                 miCakeModule.ModuleInstance.PostConfigServices(context);
             }
 
@@ -120,12 +118,15 @@ namespace MiCake.Core.Modularity
                     miCakeModuleDescriptor.AddDependency(depency);
                 }
             }
-            miCakeModuleDescriptors.SortByDependencies(s => s.Dependencies);
+            // sort by modules dependencies
+            miCakeModuleDescriptors = miCakeModuleDescriptors.SortByDependencies(s => s.Dependencies);
 
             return miCakeModuleDescriptors;
         }
 
-        private List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDepencyies(List<MiCakeModuleDescriptor> modules, MiCakeModuleDescriptor moduleDescriptor)
+        private List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDepencyies(
+            List<MiCakeModuleDescriptor> modules,
+            MiCakeModuleDescriptor moduleDescriptor)
         {
             List<MiCakeModuleDescriptor> descriptors = new List<MiCakeModuleDescriptor>();
 
@@ -138,12 +139,6 @@ namespace MiCake.Core.Modularity
             }
 
             return descriptors;
-        }
-
-        private string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
-        {
-            var featerTag = (moduleDesciptor.ModuleInstance is IFeatureModule) ? "[Feature] - " : string.Empty;
-            return featerTag + moduleDesciptor.Type.Name;
         }
     }
 }

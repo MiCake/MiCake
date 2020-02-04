@@ -1,7 +1,7 @@
-﻿using MiCake.EntityFrameworkCore.Uow;
-using MiCake.Uow;
+﻿using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Diagnostics;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
@@ -23,40 +23,54 @@ namespace MiCake.EntityFrameworkCore.Uow
             if (currentUow == null)
                 throw new NullReferenceException("Cannot get a unit of work,Please check create root unit of work correctly");
 
-            var cacheDbContext = currentUow.GetTransactionFeature(_key);
-            if (cacheDbContext != null)
-                return (TDbContext)((EFTransactionFeature)cacheDbContext).DbContext;
+            var transactionFeature = currentUow.GetTransactionFeature(_key);
+            if (transactionFeature != null && transactionFeature is EFTransactionFeature efTransacationFeature)
+            {
+                var cacheDbContext = (TDbContext)efTransacationFeature.DbContext;
+                if (!efTransacationFeature.IsOpenTransaction)
+                {
+                    //is need open transaction
+                    OpenTransaction(efTransacationFeature, currentUow, cacheDbContext);
+                }
+
+                return cacheDbContext;
+            }
 
             var wantedDbContext = (TDbContext)currentUow.ServiceProvider.GetService(typeof(TDbContext));
 
             if (wantedDbContext == null)
                 throw new NullReferenceException("Cannot get DbContext.Please check add ef services correctly");
 
-            AddDbTransactionFeatureToUow(currentUow, wantedDbContext);
+            var newEFTransactionFeature = new EFTransactionFeature(wantedDbContext);
+            currentUow.GetOrAddTransactionFeature(_key, newEFTransactionFeature);
+
+            OpenTransaction(newEFTransactionFeature, currentUow, wantedDbContext);
 
             return wantedDbContext;
 
         }
 
-        private void AddDbTransactionFeatureToUow(IUnitOfWork uow, TDbContext dbContext)
+        private void OpenTransaction(
+            EFTransactionFeature eFTransactionFeature,
+            IUnitOfWork uow,
+            TDbContext dbContext,
+            Func<bool> externalRule = null)
         {
-            var efFeature = (EFTransactionFeature)uow.GetOrAddTransactionFeature(_key, new EFTransactionFeature(dbContext));
+            var externalCheckResult = externalRule == null ? true : externalRule.Invoke();
 
-            //todo : if there have transaction scope. need set this feature UseAmbientTransaction;
-
-            if (IsFeatureNeedOpenTransaction(uow, efFeature))
+            if (InternalOpenRuleCheck(eFTransactionFeature, uow) && externalCheckResult)
             {
+                Debug.Print("open a transaction.");
+
                 var dbcontextTransaction = uow.UnitOfWorkOptions.IsolationLevel.HasValue ?
                                             dbContext.Database.BeginTransaction(uow.UnitOfWorkOptions.IsolationLevel.Value) :
                                             dbContext.Database.BeginTransaction();
 
-                efFeature.SetTransaction(dbcontextTransaction);
+                eFTransactionFeature.SetTransaction(dbcontextTransaction);
             }
-        }
 
-        private bool IsFeatureNeedOpenTransaction(IUnitOfWork uow, EFTransactionFeature efFeature)
-        {
-            return uow.UnitOfWorkOptions.Limit != UnitOfWorkLimit.Suppress && !efFeature.IsOpenTransaction;
+            bool InternalOpenRuleCheck(EFTransactionFeature efFeature, IUnitOfWork uow)
+              => uow.UnitOfWorkOptions.Limit != UnitOfWorkLimit.Suppress && !efFeature.IsOpenTransaction;
         }
     }
 }

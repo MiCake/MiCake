@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BaseMiCakeApplication.Domain.Aggregates;
 using MiCake.Core.DependencyInjection;
+using MiCake.DDD.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -17,13 +19,12 @@ namespace BaseMiCakeApplication.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
-        private IServiceProvider _serviceProvider;
-        private IClassA demoClassA;
+        private readonly IRepository<Itinerary, Guid> _repository;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IServiceProvider serviceProvider)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IRepository<Itinerary, Guid> repository)
         {
             _logger = logger;
-            _serviceProvider = serviceProvider;
+            _repository = repository;
         }
 
         [HttpGet]

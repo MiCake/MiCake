@@ -1,11 +1,13 @@
 ﻿using MiCake.Core.Abstractions.Modularity;
 using MiCake.Uow.Modules;
 
-namespace MiCake.EntityFrameCore.Modules
+namespace MiCake.EntityFrameworkCore.Modules
 {
     [DependOn(typeof(MiCakeUowModule))]
-    internal class MiCakeEFCoreModule : MiCakeModule
+    public class MiCakeEFCoreModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public MiCakeEFCoreModule()
         {
         }

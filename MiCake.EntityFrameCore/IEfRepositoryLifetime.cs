@@ -1,4 +1,4 @@
-﻿using MiCake.DDD.Infrastructure;
+﻿using MiCake.DDD.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;

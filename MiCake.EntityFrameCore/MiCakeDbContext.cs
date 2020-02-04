@@ -1,7 +1,8 @@
 ﻿using JetBrains.Annotations;
-using MiCake.Core.DependencyInjection;
-using MiCake.DDD.Infrastructure;
+using MiCake.DDD.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -11,15 +12,19 @@ namespace MiCake.EntityFrameworkCore
 {
     public class MiCakeDbContext : DbContext
     {
-        private List<IRepositoryLifetime> _repositoryLifetimes;
+        protected List<IEfRepositoryLifetime> RepositoryLifetimeInstance { get; private set; }
+        protected IServiceProvider ServiceProvider { get; }
 
-        public MiCakeDbContext([NotNull] DbContextOptions options) : base(options)
+        protected MiCakeDbContext()
         {
-            var lifetimes = ServiceLocator.Instance.GetSerivces<IRepositoryLifetime>();
+        }
 
-            _repositoryLifetimes = lifetimes.Count() == 0 ?
-                new List<IRepositoryLifetime>() : 
-                lifetimes.Where(s => s is IEfRepositoryLifetime).ToList();
+        public MiCakeDbContext(
+            [NotNull] DbContextOptions options, 
+            IServiceProvider serviceProvider) : base(options)
+        {
+            ServiceProvider = serviceProvider;
+            RepositoryLifetimeInstance = serviceProvider.GetServices<IEfRepositoryLifetime>().ToList();
         }
 
         public override int SaveChanges()
@@ -63,12 +68,12 @@ namespace MiCake.EntityFrameworkCore
 
         protected virtual void ApplyPreSaveChangeLifetime()
         {
-            if (_repositoryLifetimes.Count == 0)
+            if (RepositoryLifetimeInstance.Count == 0)
                 return;
 
             ChangeTracker.Entries().ToList().ForEach(entity =>
             {
-                _repositoryLifetimes.ForEach(repositoryLifetime =>
+                RepositoryLifetimeInstance.ForEach(repositoryLifetime =>
                 {
                     repositoryLifetime.PreSaveChanges(ConvertDbContextEntityState(entity.State), entity.Entity);
                 });
@@ -77,12 +82,12 @@ namespace MiCake.EntityFrameworkCore
 
         protected virtual void ApplyPostSaveChangeLifetime()
         {
-            if (_repositoryLifetimes.Count == 0)
+            if (RepositoryLifetimeInstance.Count == 0)
                 return;
 
             ChangeTracker.Entries().ToList().ForEach(entity =>
             {
-                _repositoryLifetimes.ForEach(repositoryLifetime =>
+                RepositoryLifetimeInstance.ForEach(repositoryLifetime =>
                 {
                     repositoryLifetime.PostSaveChanges(ConvertDbContextEntityState(entity.State), entity.Entity);
                 });

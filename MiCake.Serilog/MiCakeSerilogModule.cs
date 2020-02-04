@@ -6,6 +6,7 @@ namespace MiCake.Serilog
 {
     public class MiCakeSerilogModule : MiCakeModule, IFeatureModule
     {
+        public override bool IsFrameworkLevel => true;
 
         public FeatureModuleLoadOrder Order { get; set; }
         public bool AutoRegisted { get; set; }

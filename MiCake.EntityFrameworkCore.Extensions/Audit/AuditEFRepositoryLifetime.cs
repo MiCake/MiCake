@@ -1,5 +1,5 @@
 ﻿using MiCake.Audit;
-using MiCake.DDD.Infrastructure;
+using MiCake.DDD.Extensions;
 
 namespace MiCake.EntityFrameworkCore.Extensions.Audit
 {
