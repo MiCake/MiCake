@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
+    <ProjectReference Include="..\..\framework\MiCake.Audit\MiCake.Audit.csproj" />
   </ItemGroup>
 
 </Project>
