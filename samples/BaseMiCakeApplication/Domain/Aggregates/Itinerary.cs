@@ -1,4 +1,5 @@
-﻿using BaseMiCakeApplication.Infrastructure.StroageModel;
+﻿using BaseMiCakeApplication.Domain.Aggregates.Events;
+using BaseMiCakeApplication.Infrastructure.StroageModel;
 using MiCake.Audit;
 using MiCake.DDD.Domain;
 using System;
@@ -37,6 +38,8 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void ChangeNote(string content)
         {
             Note = new ItineraryNote(content);
+
+            AddDomainEvent(new ItineraryNoteChanged(this.Id));
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using MiCake.DDD.Domain;
+using MiCake.DDD.Extensions;
 using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,11 @@ namespace MiCake.EntityFrameworkCore.Repository
         protected virtual TAggregateRoot CreateFromSnapshot(TSnapshot snapshot)
         {
             return (TAggregateRoot)Activator.CreateInstance(typeof(TAggregateRoot), snapshot);
+        }
+
+        protected virtual TSnapshot ToSnapShot(TAggregateRoot aggregateRoot)
+        {
+            return aggregateRoot.ToSnapshot();
         }
     }
 }

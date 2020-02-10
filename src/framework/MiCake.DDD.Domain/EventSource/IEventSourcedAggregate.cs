@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MiCake.DDD.Domain.Event
+namespace MiCake.DDD.Domain.EventSource
 {
     /// <summary>
     /// A aggregate root use event source

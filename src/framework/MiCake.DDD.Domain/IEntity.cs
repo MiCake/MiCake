@@ -6,6 +6,14 @@ namespace MiCake.DDD.Domain
 {
     public interface IEntity
     {
+        /// <summary>
+        /// Collection of domain events
+        /// </summary>
+        List<IDomainEvent> DomainEvents { get; }
+
+        void AddDomainEvent(IDomainEvent domainEvent);
+
+        void RemoveDomainEvent(IDomainEvent domainEvent);
     }
 
     /// <summary>

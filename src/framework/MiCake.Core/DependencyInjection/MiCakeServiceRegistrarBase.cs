@@ -29,7 +29,7 @@ namespace MiCake.Core.DependencyInjection
             var needRegitsterModules = miCakeModules.Where(s => s.ModuleInstance.IsAutoRegisterServices)
                                                     .ToMiCakeModuleCollection();
 
-            var assemblies = needRegitsterModules.GetAllReferAssembly();
+            var assemblies = needRegitsterModules.GetAssemblies();
             foreach (var assembly in assemblies)
             {
                 var types = assembly.GetTypes().Where(type => type.IsClass & !type.IsAbstract & !type.IsSealed).ToList();
@@ -94,7 +94,7 @@ namespace MiCake.Core.DependencyInjection
             return null;
         }
 
-        #region
+        #region InjectServiceInfo
         protected class InjectServiceInfo
         {
             public Type Type { get; set; }

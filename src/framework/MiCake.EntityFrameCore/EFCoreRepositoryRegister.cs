@@ -1,11 +1,11 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
-using MiCake.DDD.Extensions;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Repository.Freedom;
 using System;
 using System.Reflection;
 using JetBrains.Annotations;
+using MiCake.DDD.Extensions.Register;
 
 namespace MiCake.EntityFrameworkCore
 {

@@ -52,7 +52,9 @@ namespace MiCake.Core.Modularity
             _featureModules.AddIfNotContains(featureModule);
         }
 
-        internal void ConfigServices(IServiceCollection services, Action<IMiCakeModuleCollection> otherPartActivateAction)
+        internal void ConfigServices(
+            IServiceCollection services,
+            Action<IServiceCollection, IMiCakeModuleCollection> otherPartActivateAction = null)
         {
             if (services == null)
                 throw new ArgumentNullException(nameof(services));
@@ -87,7 +89,7 @@ namespace MiCake.Core.Modularity
             }
 
             //Activate Other Part Services 
-            otherPartActivateAction?.Invoke(allModules);
+            otherPartActivateAction?.Invoke(services, allModules);
 
             logger.LogInformation("MiCake:ActivateServices Completed.....");
         }

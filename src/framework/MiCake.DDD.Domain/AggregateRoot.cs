@@ -6,13 +6,7 @@ namespace MiCake.DDD.Domain
     {
     }
 
-    [Serializable]
-    public abstract class AggregateRoot<TKey> : IAggregateRoot<TKey>
+    public abstract class AggregateRoot<TKey> :Entity<TKey>,IAggregateRoot<TKey>
     {
-        public TKey Id { get; set; }
-
-        public AggregateRoot()
-        {
-        }
     }
 }

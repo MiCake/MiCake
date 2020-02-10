@@ -1,6 +1,7 @@
 ﻿using MiCake.Audit.Modules;
 using MiCake.Core.Abstractions.Modularity;
 using MiCake.EntityFrameworkCore.Extensions.Audit;
+using MiCake.EntityFrameworkCore.Extensions.DDD;
 using MiCake.EntityFrameworkCore.Modules;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,7 +18,9 @@ namespace MiCake.EntityFrameworkCore.Extensions.Modules
             var services = context.Services;
 
             //add audit life time
-            services.AddScoped<IEfRepositoryLifetime, AuditEFRepositoryLifetime>();
+            services.AddScoped<IEfRepositoryPreSaveChanges, AuditEFRepositoryLifetime>();
+            //domain events dispatcher
+            services.AddScoped<IEfRepositoryPreSaveChanges, DomainEventsEFRepositoryLifetime>();
         }
     }
 }

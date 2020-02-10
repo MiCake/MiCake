@@ -8,7 +8,7 @@ namespace MiCake.Core.Abstractions.Modularity
     /// </summary>
     public interface IMiCakeModuleCollection:IList<MiCakeModuleDescriptor>
     {
-        //Get the assemblies in all micake modules
-        Assembly[] GetAllReferAssembly();
+        //Get the assemblies of all micake modules
+        Assembly[] GetAssemblies();
     }
 }

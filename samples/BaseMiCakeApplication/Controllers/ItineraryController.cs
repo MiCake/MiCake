@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace BaseMiCakeApplication.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[Action]")]
     public class ItineraryController : ControllerBase
     {
         private readonly IRepository<Itinerary, Guid> _repository;
@@ -31,6 +31,13 @@ namespace BaseMiCakeApplication.Controllers
         {
             Itinerary itinerary = new Itinerary(content);
             await _repository.AddAsync(itinerary);
+        }
+
+        [HttpPost]
+        public async Task ChangeItineraryNoteAsync(Guid id, string content)
+        {
+            var entity = await _repository.FindAsync(id);
+            entity.ChangeNote(content);
         }
     }
 }

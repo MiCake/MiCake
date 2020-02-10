@@ -24,40 +24,40 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
         {
-            var addSnapshotEntity = DbContext.Add(aggregateRoot.GetSnapshot()).Entity;
+            var addSnapshotEntity = DbContext.Add(ToSnapShot(aggregateRoot)).Entity;
             return CreateFromSnapshot(addSnapshotEntity);
         }
 
         public async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            var addSnapshotEntity = await DbContext.AddAsync(aggregateRoot.GetSnapshot(), cancellationToken);
+            var addSnapshotEntity = await DbContext.AddAsync(ToSnapShot(aggregateRoot), cancellationToken);
             return CreateFromSnapshot(addSnapshotEntity.Entity);
         }
 
         public async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            await DbContext.AddAsync(aggregateRoot.GetSnapshot(), cancellationToken);
+            await DbContext.AddAsync(ToSnapShot(aggregateRoot), cancellationToken);
         }
 
         public void Delete(TAggregateRoot aggregateRoot)
         {
-            DbSet.Remove(aggregateRoot.GetSnapshot());
+            DbSet.Remove(ToSnapShot(aggregateRoot));
         }
 
         public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbSet.Remove(aggregateRoot.GetSnapshot());
+            DbSet.Remove(ToSnapShot(aggregateRoot));
             return Task.CompletedTask;
         }
 
         public void Update(TAggregateRoot aggregateRoot)
         {
-            DbSet.Update(aggregateRoot.GetSnapshot());
+            DbSet.Update(ToSnapShot(aggregateRoot));
         }
 
         public Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbSet.Update(aggregateRoot.GetSnapshot());
+            DbSet.Update(ToSnapShot(aggregateRoot));
             return Task.CompletedTask;
         }
     }

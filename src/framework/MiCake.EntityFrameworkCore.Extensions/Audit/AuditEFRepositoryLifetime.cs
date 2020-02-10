@@ -1,9 +1,11 @@
 ﻿using MiCake.Audit;
 using MiCake.DDD.Extensions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Extensions.Audit
 {
-    public class AuditEFRepositoryLifetime : IEfRepositoryLifetime
+    internal class AuditEFRepositoryLifetime : IEfRepositoryPreSaveChanges
     {
         private readonly IAuditContext _auditContext;
 
@@ -26,9 +28,11 @@ namespace MiCake.EntityFrameworkCore.Extensions.Audit
             if (entityState == RepositoryEntityState.Deleted)
                 _auditContext.ObjectSetter.SetDeletionInfo(entity);
         }
-
-        public void PostSaveChanges(RepositoryEntityState entityState, object entity)
+       
+        public Task PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
+            PreSaveChanges(entityState, entity);
+            return Task.CompletedTask;
         }
     }
 }

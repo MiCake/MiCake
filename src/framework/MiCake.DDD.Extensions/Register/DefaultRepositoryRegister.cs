@@ -7,8 +7,9 @@ using System.Linq;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using MiCake.DDD.Domain.Freedom;
+using MiCake.Core.Util.Reflection;
 
-namespace MiCake.DDD.Extensions
+namespace MiCake.DDD.Extensions.Register
 {
     public abstract class DefaultRepositoryRegister : IRepositoryRegister
     {
@@ -60,7 +61,9 @@ namespace MiCake.DDD.Extensions
             var aggregateRoots = new List<Type>();
             foreach (var assembly in hasDomainObjectAsm)
             {
-                aggregateRoots.AddRange(assembly.GetTypes().AsEnumerable().Where(type => EntityHelper.IsAggregateRoot(type)));
+                aggregateRoots.AddRange(assembly.GetTypes().AsEnumerable()
+                    .Where(type => TypeHelper.IsConcrete(type))
+                    .Where(type => EntityHelper.IsAggregateRoot(type)));
             }
 
             foreach (var aggregateRoot in aggregateRoots)
@@ -71,7 +74,7 @@ namespace MiCake.DDD.Extensions
             }
         }
 
-        protected abstract Type GetAggregateRepositoryImplementationType(Type entityType);
+        protected abstract Type GetAggregateRepositoryImplementationType(Type entityTypet);
 
         protected virtual void RegisterAggregateRepositoryToServices(
             Type entityType, Type ImpType,
@@ -97,7 +100,9 @@ namespace MiCake.DDD.Extensions
             var entitys = new List<Type>();
             foreach (var assembly in hasDomainObjectAsm)
             {
-                entitys.AddRange(assembly.GetTypes().AsEnumerable().Where(type => EntityHelper.IsEntity(type)));
+                entitys.AddRange(assembly.GetTypes().AsEnumerable()
+                    .Where(type => TypeHelper.IsConcrete(type))
+                    .Where(type => EntityHelper.IsEntity(type)));
             }
 
             foreach (var entity in entitys)

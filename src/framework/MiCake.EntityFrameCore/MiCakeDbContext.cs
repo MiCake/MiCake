@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using MiCake.DDD.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,8 @@ namespace MiCake.EntityFrameworkCore
 {
     public class MiCakeDbContext : DbContext
     {
-        protected List<IEfRepositoryLifetime> RepositoryLifetimeInstance { get; private set; }
+        protected List<IEfRepositoryPreSaveChanges> PreLifetimeInstance { get; private set; }
+        protected List<IEfRepositoryPostSaveChanges> PostLifetimeInstance { get; private set; }
         protected IServiceProvider ServiceProvider { get; }
 
         protected MiCakeDbContext()
@@ -20,22 +22,25 @@ namespace MiCake.EntityFrameworkCore
         }
 
         public MiCakeDbContext(
-            [NotNull] DbContextOptions options, 
+            [NotNull] DbContextOptions options,
             IServiceProvider serviceProvider) : base(options)
         {
             ServiceProvider = serviceProvider;
-            RepositoryLifetimeInstance = serviceProvider.GetServices<IEfRepositoryLifetime>().ToList();
+
+            PreLifetimeInstance = serviceProvider.GetServices<IEfRepositoryPreSaveChanges>().ToList();
+            PostLifetimeInstance = serviceProvider.GetServices<IEfRepositoryPostSaveChanges>().ToList();
         }
 
         public override int SaveChanges()
         {
             int saveResult;
+            var trackerEntities = ChangeTracker.Entries().ToList();
 
-            ApplyPreSaveChangeLifetime();
+            ApplyRepositoryPreLifetime(trackerEntities);
 
             saveResult = base.SaveChanges();
 
-            ApplyPostSaveChangeLifetime();
+            ApplyRepositoryPostLifetime(trackerEntities);
 
             return saveResult;
         }
@@ -43,12 +48,13 @@ namespace MiCake.EntityFrameworkCore
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             int saveResult;
+            var trackerEntities = ChangeTracker.Entries().ToList();
 
-            ApplyPreSaveChangeLifetime();
+            await ApplyRepositoryPreLifetimeAsync(trackerEntities, cancellationToken);
 
             saveResult = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
-            ApplyPostSaveChangeLifetime();
+            await ApplyRepositoryPostLifetimeAsync(trackerEntities, cancellationToken);
 
             return saveResult;
         }
@@ -56,42 +62,81 @@ namespace MiCake.EntityFrameworkCore
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             int saveResult;
+            var trackerEntities = ChangeTracker.Entries().ToList();
 
-            ApplyPreSaveChangeLifetime();
+            await ApplyRepositoryPreLifetimeAsync(trackerEntities,cancellationToken);
 
             saveResult = await base.SaveChangesAsync(cancellationToken);
 
-            ApplyPostSaveChangeLifetime();
+            await ApplyRepositoryPostLifetimeAsync(trackerEntities, cancellationToken);
 
             return saveResult;
         }
 
-        protected virtual void ApplyPreSaveChangeLifetime()
+        protected virtual void ApplyRepositoryPreLifetime(List<EntityEntry> trackerEntities)
         {
-            if (RepositoryLifetimeInstance.Count == 0)
+            if (PreLifetimeInstance.Count == 0)
                 return;
 
-            ChangeTracker.Entries().ToList().ForEach(entity =>
+            PreLifetimeInstance.ForEach(repositoryLifetime =>
             {
-                RepositoryLifetimeInstance.ForEach(repositoryLifetime =>
+                trackerEntities.ForEach(entity =>
                 {
                     repositoryLifetime.PreSaveChanges(ConvertDbContextEntityState(entity.State), entity.Entity);
                 });
             });
         }
 
-        protected virtual void ApplyPostSaveChangeLifetime()
+        protected virtual void ApplyRepositoryPostLifetime(List<EntityEntry> trackerEntities)
         {
-            if (RepositoryLifetimeInstance.Count == 0)
+            if (PostLifetimeInstance.Count == 0)
                 return;
 
-            ChangeTracker.Entries().ToList().ForEach(entity =>
+            PostLifetimeInstance.ForEach(repositoryLifetime =>
             {
-                RepositoryLifetimeInstance.ForEach(repositoryLifetime =>
+                trackerEntities.ForEach(entity =>
                 {
                     repositoryLifetime.PostSaveChanges(ConvertDbContextEntityState(entity.State), entity.Entity);
                 });
             });
+        }
+
+        protected virtual async Task ApplyRepositoryPreLifetimeAsync(
+            List<EntityEntry> trackerEntities,
+            CancellationToken cancellationToken)
+        {
+            if (PreLifetimeInstance.Count == 0)
+                return;
+
+            foreach (var repositoryLifetime in PreLifetimeInstance)
+            {
+                foreach (var entity in trackerEntities)
+                {
+                    await repositoryLifetime.PreSaveChangesAsync(
+                        ConvertDbContextEntityState(entity.State),
+                        entity.Entity,
+                        cancellationToken);
+                }
+            }
+        }
+
+        protected virtual async Task ApplyRepositoryPostLifetimeAsync(
+            List<EntityEntry> trackerEntities,
+            CancellationToken cancellationToken)
+        {
+            if (PostLifetimeInstance.Count == 0)
+                return;
+
+            foreach (var repositoryLifetime in PostLifetimeInstance)
+            {
+                foreach (var entity in trackerEntities)
+                {
+                    await repositoryLifetime.PostSaveChangesAsync(
+                        ConvertDbContextEntityState(entity.State),
+                        entity.Entity,
+                        cancellationToken);
+                }
+            }
         }
 
         protected virtual RepositoryEntityState ConvertDbContextEntityState(EntityState dbcontextEntityState)

@@ -94,6 +94,16 @@ namespace MiCake.Core.Util.Reflection
             return type.GetInterfaces().Any(x => generic == (x.IsGenericType ? x.GetGenericTypeDefinition() : x));
         }
 
+        public static bool IsConcrete(Type type)
+        {
+            return !type.GetTypeInfo().IsAbstract && !type.GetTypeInfo().IsInterface;
+        }
+
+        public static bool IsOpenGeneric(Type type)
+        {
+            return type.GetTypeInfo().IsGenericTypeDefinition || type.GetTypeInfo().ContainsGenericParameters;
+        }
+
         private static bool IsPrimitiveExtendedInternal(Type type, bool includeEnums)
         {
             if (type.IsPrimitive)

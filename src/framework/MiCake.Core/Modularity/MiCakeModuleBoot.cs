@@ -11,24 +11,18 @@ namespace MiCake.Core.Modularity
     public class MiCakeModuleBoot : IMiCakeModuleBoot
     {
         private ILogger<MiCakeModuleBoot> _logger;
-        private IServiceProvider _serviceProvider;
         private IMiCakeBuilder _miCakeBuilder;
 
         public MiCakeModuleBoot(
             ILogger<MiCakeModuleBoot> logger,
-            IServiceProvider serviceProvider,
             IMiCakeBuilder miCakeBuilder)
         {
             _logger = logger;
-            _serviceProvider = serviceProvider;
             _miCakeBuilder = miCakeBuilder;
         }
 
         public void Initialization(ModuleBearingContext context)
         {
-            if (_serviceProvider == null)
-                throw new ArgumentException(nameof(_serviceProvider));
-
             if (_miCakeBuilder == null)
                 throw new ArgumentException(nameof(_miCakeBuilder));
 
@@ -63,9 +57,6 @@ namespace MiCake.Core.Modularity
 
         public void ShutDown(ModuleBearingContext context)
         {
-            if (_serviceProvider == null)
-                throw new ArgumentException(nameof(_serviceProvider));
-
             if (_miCakeBuilder == null)
                 throw new ArgumentException(nameof(_miCakeBuilder));
 

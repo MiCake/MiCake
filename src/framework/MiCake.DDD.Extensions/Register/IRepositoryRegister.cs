@@ -1,10 +1,7 @@
 ﻿using MiCake.Core.Abstractions.Modularity;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.DDD.Extensions
+namespace MiCake.DDD.Extensions.Register
 {
     /// <summary>
     /// this interface provider register the repository into the dependency injection framework.
