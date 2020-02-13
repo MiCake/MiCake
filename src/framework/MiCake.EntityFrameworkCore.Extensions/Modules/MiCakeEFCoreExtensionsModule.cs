@@ -2,6 +2,7 @@
 using MiCake.Core.Abstractions.Modularity;
 using MiCake.EntityFrameworkCore.Extensions.Audit;
 using MiCake.EntityFrameworkCore.Extensions.DDD;
+using MiCake.EntityFrameworkCore.LifeTime;
 using MiCake.EntityFrameworkCore.Modules;
 using Microsoft.Extensions.DependencyInjection;
 

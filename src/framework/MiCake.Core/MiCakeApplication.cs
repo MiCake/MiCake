@@ -23,6 +23,7 @@ namespace MiCake.Core
 
         private IMiCakeModuleBoot _miCakeModuleBoot;
         private IServiceProvider _serviceProvider;
+        private IServiceScope _appServiceScope;
         private Type _startUp;
 
         public MiCakeApplication(
@@ -56,9 +57,12 @@ namespace MiCake.Core
             if (_serviceProvider == null)
                 throw new ArgumentNullException(nameof(_serviceProvider));
 
-            _miCakeModuleBoot = new MiCakeModuleBoot(_serviceProvider.GetService<ILogger<MiCakeModuleBoot>>(), Builder);
+            _appServiceScope = _serviceProvider.CreateScope();
 
-            var context = new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.MiCakeModules);
+            var scopedServiceProvider = _appServiceScope.ServiceProvider;
+            _miCakeModuleBoot = new MiCakeModuleBoot(scopedServiceProvider.GetService<ILogger<MiCakeModuleBoot>>(), Builder);
+
+            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.MiCakeModules);
             _miCakeModuleBoot.Initialization(context);
         }
 
@@ -67,9 +71,13 @@ namespace MiCake.Core
             if (_serviceProvider == null)
                 throw new ArgumentNullException(nameof(ServiceProvider));
 
-            var context = new ModuleBearingContext(_serviceProvider, Builder.ModuleManager.MiCakeModules);
+            var scopedServiceProvider = _appServiceScope.ServiceProvider;
+
+            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.MiCakeModules);
             shutdownAction?.Invoke(context);
             _miCakeModuleBoot.ShutDown(context);
+
+            _appServiceScope.Dispose();
         }
 
         public virtual void Dispose()

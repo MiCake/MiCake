@@ -6,10 +6,9 @@ using System;
 
 namespace BaseMiCakeApplication.EFCore
 {
-    public class BaseAppDbContext : MiCakeDbContext
+    public class BaseAppDbContext : DbContext
     {
-        public BaseAppDbContext([NotNull] DbContextOptions options, IServiceProvider serviceProvider)
-            : base(options, serviceProvider)
+        public BaseAppDbContext([NotNull] DbContextOptions options) : base(options)
         {
         }
 

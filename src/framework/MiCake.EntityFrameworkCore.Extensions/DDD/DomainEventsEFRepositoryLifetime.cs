@@ -1,6 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Extensions;
+using MiCake.EntityFrameworkCore.LifeTime;
 using System.Threading;
 using System.Threading.Tasks;
 

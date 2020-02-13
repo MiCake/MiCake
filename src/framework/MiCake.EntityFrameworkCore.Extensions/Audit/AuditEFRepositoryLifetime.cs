@@ -1,5 +1,6 @@
 ﻿using MiCake.Audit;
 using MiCake.DDD.Extensions;
+using MiCake.EntityFrameworkCore.LifeTime;
 using System.Threading;
 using System.Threading.Tasks;
 

@@ -1,20 +1,26 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using MiCake.DDD.Domain;
 using MiCake.Uow;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Controllers
 {
     [ApiController]
-    [Route("[controller]/[Action]")]
+    [Route("[controller]/[action]")]
     public class ItineraryController : ControllerBase
     {
         private readonly IRepository<Itinerary, Guid> _repository;
         private IServiceProvider _serviceProvider;
 
-        public ItineraryController(IRepository<Itinerary, Guid> repository, IServiceProvider serviceProvider)
+        private IHttpContextAccessor _httpContextAccessor;
+
+        public ItineraryController(
+            IRepository<Itinerary, Guid> repository,
+            IServiceProvider serviceProvider)
         {
             _repository = repository;
             _serviceProvider = serviceProvider;
@@ -38,6 +44,8 @@ namespace BaseMiCakeApplication.Controllers
         {
             var entity = await _repository.FindAsync(id);
             entity.ChangeNote(content);
+
+            await _repository.UpdateAsync(entity);
         }
     }
 }
