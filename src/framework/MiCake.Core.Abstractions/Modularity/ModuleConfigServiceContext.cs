@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace MiCake.Core.Abstractions.Modularity
+namespace MiCake.Core.Modularity
 {
     public class ModuleConfigServiceContext
     {

@@ -1,5 +1,5 @@
-﻿using System;
-using Castle.DynamicProxy;
+﻿using Castle.DynamicProxy;
+using System;
 using System.Linq;
 
 namespace MiCake.Aop.Castle
@@ -48,7 +48,7 @@ namespace MiCake.Aop.Castle
             return _proxyGenerator.CreateInterfaceProxyWithTarget(interfaceToProxy, target, AdaptorMiCakeInterceptorsToCastle(interceptors));
         }
 
-        public TInterface CreateInterfaceProxyWithTarget<TInterface>(object target, params IMiCakeInterceptor[] interceptors) where TInterface:class
+        public TInterface CreateInterfaceProxyWithTarget<TInterface>(object target, params IMiCakeInterceptor[] interceptors) where TInterface : class
         {
             if (interceptors.Length == 0)
                 return (TInterface)target;

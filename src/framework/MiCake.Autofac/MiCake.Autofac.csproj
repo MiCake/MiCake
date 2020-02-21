@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Core.Abstractions\MiCake.Core.Abstractions.csproj" />
+    <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
   </ItemGroup>
 

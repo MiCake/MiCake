@@ -1,9 +1,6 @@
-﻿using MiCake.Core.Abstractions.Logging;
+﻿using MiCake.Core.Logging;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Serilog
 {

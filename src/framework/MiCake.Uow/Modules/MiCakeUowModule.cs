@@ -1,6 +1,6 @@
-﻿using MiCake.Core.Abstractions.Modularity;
-using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Core.Modularity;
 using MiCake.Uow.Options;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.Uow.Modules
 {

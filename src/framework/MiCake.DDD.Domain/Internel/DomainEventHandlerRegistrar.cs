@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Core.Modularity;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 using System.Collections.Generic;
-using MiCake.Core.Abstractions.Modularity;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.DDD.Domain.Internel
 {

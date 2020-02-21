@@ -42,7 +42,7 @@ namespace MiCake.DDD.Tests
             HasEventsAggregate aggregate = new HasEventsAggregate();
             aggregate.OneAddEventCase();
 
-            var orignalDomainEvent =(CreateOrderEvents)aggregate.DomainEvents.First();
+            var orignalDomainEvent = (CreateOrderEvents)aggregate.DomainEvents.First();
 
             disptcher.DispatchAsync(orignalDomainEvent);
 

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Identity.User
+﻿namespace MiCake.Identity.User
 {
     /// <summary>
     /// This is a statement to the current user.Please use <see cref="ICurrentUser{TKeyType}"/>

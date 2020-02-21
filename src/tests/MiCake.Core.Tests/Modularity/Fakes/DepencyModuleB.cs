@@ -1,12 +1,9 @@
-﻿using MiCake.Core.Abstractions.Modularity;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.Core.Modularity;
 
 namespace MiCake.Core.Tests.Modularity.Fakes
 {
     [DependOn(typeof(DepencyModuleA))]
-    public class DepencyModuleB: MiCakeModule
+    public class DepencyModuleB : MiCakeModule
     {
     }
 }

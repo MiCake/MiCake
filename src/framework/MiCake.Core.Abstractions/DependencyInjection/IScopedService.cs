@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Core.Abstractions.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// mark a scoped service
     /// </summary>
-    public interface IScopedService:IAutoInjectService
+    public interface IScopedService : IAutoInjectService
     {
     }
 }

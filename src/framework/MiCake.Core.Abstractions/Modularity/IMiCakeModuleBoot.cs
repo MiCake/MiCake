@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Core.Abstractions.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Micake module boot.use to initialization module and shutdown module.

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.DDD.Domain
+﻿namespace MiCake.DDD.Domain
 {
     /// <summary>
     /// Provide a factory to create complex entity(aggregate) or value object.

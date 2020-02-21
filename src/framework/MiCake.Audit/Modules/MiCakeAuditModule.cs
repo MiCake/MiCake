@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.Audit.Modules

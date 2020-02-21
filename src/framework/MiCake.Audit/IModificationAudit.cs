@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Audit
+﻿namespace MiCake.Audit
 {
     /// <summary>
     /// Mark a class with has Modification time and Modifier

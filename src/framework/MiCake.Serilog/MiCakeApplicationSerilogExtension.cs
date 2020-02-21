@@ -1,6 +1,5 @@
-﻿using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.Builder;
-using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Builder;
+using MiCake.Core.Modularity;
 using System;
 
 namespace MiCake.Serilog
@@ -17,7 +16,7 @@ namespace MiCake.Serilog
         {
             //regist serilog to micake framework
             builder.ModuleManager.AddFeatureModule(new MiCakeSerilogModule() { AutoRegisted = true, Order = FeatureModuleLoadOrder.BeforeCommonModule });
-            
+
             var provide = new SerilogProvider(builder.Services);
             provide.AddSerilogInMiCake(serilogOptionAction ??= defaultOption);
 

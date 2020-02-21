@@ -1,9 +1,7 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using MiCake.DDD.Domain;
-using MiCake.Uow;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 

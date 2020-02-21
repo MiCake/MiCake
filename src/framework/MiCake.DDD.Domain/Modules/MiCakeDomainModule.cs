@@ -1,7 +1,7 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
 using MiCake.DDD.Domain.EventDispatch;
-using Microsoft.Extensions.DependencyInjection;
 using MiCake.DDD.Domain.Internel;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Domain.Modules
 {

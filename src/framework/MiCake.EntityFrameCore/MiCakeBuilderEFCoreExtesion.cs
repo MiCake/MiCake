@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.Builder;
+﻿using MiCake.Core.Builder;
 using System;
 
 namespace MiCake.EntityFrameworkCore

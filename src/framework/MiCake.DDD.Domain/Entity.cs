@@ -1,7 +1,7 @@
-﻿using System;
+﻿using MiCake.DDD.Domain.Helper;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using MiCake.DDD.Domain.Helper;
 
 namespace MiCake.DDD.Domain
 {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace MiCake.Core.Abstractions.Logging
+namespace MiCake.Core.Logging
 {
     /// <summary>
     /// Realize the logging level for the service

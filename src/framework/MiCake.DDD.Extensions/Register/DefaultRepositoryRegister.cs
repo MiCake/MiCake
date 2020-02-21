@@ -1,13 +1,13 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
+using MiCake.Core.Util.Reflection;
+using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.Freedom;
+using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Linq;
-using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Helper;
-using MiCake.DDD.Domain.Freedom;
-using MiCake.Core.Util.Reflection;
+using System.Reflection;
 
 namespace MiCake.DDD.Extensions.Register
 {

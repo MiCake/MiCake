@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions.Modularity
+namespace MiCake.Core.Modularity
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class DependOnAttribute : Attribute, IDependedTypesProvider

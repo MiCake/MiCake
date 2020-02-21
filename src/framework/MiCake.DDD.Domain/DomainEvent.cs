@@ -3,7 +3,7 @@
     /// <summary>
     /// a base class for domain event
     /// </summary>
-    public abstract class DomainEvent:IDomainEvent
+    public abstract class DomainEvent : IDomainEvent
     {
     }
 }

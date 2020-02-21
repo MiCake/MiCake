@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Core.Abstractions.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Feature Module:Unlike normal modules, they may be independent of the framework.

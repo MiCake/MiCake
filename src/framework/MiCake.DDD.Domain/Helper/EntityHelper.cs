@@ -1,9 +1,8 @@
 ﻿using JetBrains.Annotations;
-using MiCake.Core.Util.Reflection;
+using MiCake.DDD.Domain.Store;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 namespace MiCake.DDD.Domain.Helper
 {
@@ -19,9 +18,9 @@ namespace MiCake.DDD.Domain.Helper
             return typeof(IAggregateRoot).IsAssignableFrom(type);
         }
 
-        public static bool IsEntityHasSnapshot([NotNull] Type type)
+        public static bool HasStorageModel([NotNull] Type type)
         {
-            return typeof(IEntityHasSnapshot).IsAssignableFrom(type);
+            return typeof(IHasStorageModel).IsAssignableFrom(type);
         }
 
         public static bool HasDefaultId<TKey>([NotNull] IEntity<TKey> entity)
@@ -34,30 +33,25 @@ namespace MiCake.DDD.Domain.Helper
             return false;
         }
 
-        public static bool IsSnapshotEntity([NotNull]Type type)
+        public static Type FindEntityStorageType<TEntity>()
+            where TEntity : IEntity, IHasStorageModel
         {
-            return typeof(IEntityHasSnapshot).IsAssignableFrom(type);
+            return FindEntityStorageType(typeof(TEntity));
         }
 
-        public static Type FindEntitySnapshotType<TEntity>()
-            where TEntity : IEntity, IEntityHasSnapshot
-        {
-            return FindEntitySnapshotType(typeof(TEntity));
-        }
-
-        public static Type FindEntitySnapshotType(Type entityType)
+        public static Type FindEntityStorageType(Type entityType)
         {
             if (!typeof(IEntity).IsAssignableFrom(entityType))
             {
                 throw new ArgumentException($"Given {nameof(entityType)} is not an entity. It should implement {typeof(IEntity).AssemblyQualifiedName}!");
             }
 
-            if (!typeof(IEntityHasSnapshot).IsAssignableFrom(entityType))
+            if (!typeof(IHasStorageModel).IsAssignableFrom(entityType))
             {
-                throw new ArgumentException($"Given {nameof(entityType)} is not an entity. It should implement {typeof(IEntityHasSnapshot).AssemblyQualifiedName}!");
+                throw new ArgumentException($"Given {nameof(entityType)} is not an entity. It should implement {typeof(IHasStorageModel).AssemblyQualifiedName}!");
             }
 
-            return TypeHelper.GetGenericArguments(entityType, typeof(IEntityHasSnapshot<>))[0];
+            return null;
         }
 
         public static Type FindPrimaryKeyType<TEntity>()

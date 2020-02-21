@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions.ExceptionHandling
+namespace MiCake.Core.ExceptionHandling
 {
     /// <summary>
     /// Error handler generated in MiCake framework.

@@ -1,31 +1,15 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates.Events;
-using BaseMiCakeApplication.Infrastructure.StroageModel;
-using MiCake.Audit;
-using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.Store;
 using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
-    public class Itinerary : HasSnapshotAggregateRoot<Guid, ItinerarySnapshotModel>,IHasCreationTime
+    public class Itinerary : StorageModelAggregateRoot<Guid>
     {
         public ItineraryNote Note { get; private set; }
-        public DateTime CreationTime { get; set; }
 
-        //must have this ctor
-        public Itinerary(ItinerarySnapshotModel snapshot) : base(snapshot)
+        public Itinerary()
         {
-            Note = new ItineraryNote(snapshot.Content);
-            Id = snapshot.ID;
-        }
-
-        public override ItinerarySnapshotModel GetSnapshot()
-        {
-            return new ItinerarySnapshotModel()
-            {
-                Content = Note.Content,
-                ID = Id,
-                NoteTime = Note.NoteTime
-            };
         }
 
         //ctor
@@ -39,7 +23,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         {
             Note = new ItineraryNote(content);
 
-            AddDomainEvent(new ItineraryNoteChanged(this.Id));
+            AddDomainEvent(new ItineraryNoteChanged(Id));
         }
     }
 }

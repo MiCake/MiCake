@@ -1,14 +1,12 @@
-﻿using System;
+﻿using MiCake.Core.Util.Collections;
+using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 using System.Collections.Immutable;
-using MiCake.Core.Util.Collections;
+using System.Reflection;
 
-namespace MiCake.Core.Abstractions.Modularity
+namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// MiCake 模块<see cref=" MiCakeModule "/>的描述信息，包含模块的详细信息 
     /// Description of the Mike module <see cref=" MiCakeModule "/>, including details of the module
     /// </summary>
     public class MiCakeModuleDescriptor

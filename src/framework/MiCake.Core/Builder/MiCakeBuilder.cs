@@ -1,7 +1,6 @@
-﻿using MiCake.Core.Abstractions.Builder;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using MiCake.Core.Abstractions.Modularity;
 
 namespace MiCake.Core.Builder
 {

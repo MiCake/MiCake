@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.Builder;
+﻿using MiCake.Core.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -14,8 +13,8 @@ namespace MiCake.Core
         }
 
         public static IMiCakeApplication Create<TStartupModule>(
-            IServiceCollection services, 
-            MiCakeApplicationOptions options, 
+            IServiceCollection services,
+            MiCakeApplicationOptions options,
             Action<IMiCakeBuilder> builderConfigAction)
         {
             return new DefaultMiCakeApplicationProvider(typeof(TStartupModule), services, options, builderConfigAction);

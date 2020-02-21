@@ -1,9 +1,5 @@
-﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Tests.Fakes.Entities;
+﻿using MiCake.DDD.Tests.Fakes.Entities;
 using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Text;
 using Xunit;
 
 namespace MiCake.DDD.Tests

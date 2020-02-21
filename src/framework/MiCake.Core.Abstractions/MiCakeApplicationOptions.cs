@@ -1,9 +1,6 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.Core.DependencyInjection;
 
-namespace MiCake.Core.Abstractions
+namespace MiCake.Core
 {
     /// <summary>
     /// The configuration of building the core program of micake

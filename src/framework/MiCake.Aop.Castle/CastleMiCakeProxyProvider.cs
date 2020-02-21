@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Aop.Castle
+﻿namespace MiCake.Aop.Castle
 {
     public class CastleMiCakeProxyProvider : IMiCakeProxyProvider
     {

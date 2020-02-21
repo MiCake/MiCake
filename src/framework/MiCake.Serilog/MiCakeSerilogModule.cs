@@ -1,6 +1,6 @@
-﻿using MiCake.Core.Abstractions.ExceptionHandling;
-using MiCake.Core.Abstractions.Logging;
-using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.ExceptionHandling;
+using MiCake.Core.Logging;
+using MiCake.Core.Modularity;
 
 namespace MiCake.Serilog
 {

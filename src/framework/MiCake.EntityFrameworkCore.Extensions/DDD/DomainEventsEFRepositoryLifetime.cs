@@ -1,6 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Extensions;
+using MiCake.DDD.Extensions.Store;
 using MiCake.EntityFrameworkCore.LifeTime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,6 +44,7 @@ namespace MiCake.EntityFrameworkCore.Extensions.DDD
 
         public async Task PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
+            // this entity may be storageModel
             var currentEntity = GetActualEntity(entity);
 
             if (currentEntity != null)
@@ -67,21 +69,19 @@ namespace MiCake.EntityFrameworkCore.Extensions.DDD
             }
         }
 
-        private IEntity GetActualEntity(object storeEntityType)
+        private IEntity GetActualEntity(object entity)
         {
-            var currentEntity = storeEntityType as IEntity;
+            if (!(entity is IEntity))
+                return null;
 
-            if (currentEntity != null)
+            if (entity is IStorageModel)
             {
-                return currentEntity;
+                return null;
             }
-            else if (EntitySnapshotStore.GetEntity(storeEntityType, out currentEntity))
+            else
             {
-                EntitySnapshotStore.RemoveMapping(storeEntityType);
-                return currentEntity;
+                return (IEntity)entity;
             }
-
-            return null;
         }
     }
 }

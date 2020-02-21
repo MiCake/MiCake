@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Abstractions.Modularity;
-using MiCake.Core.Util.Collections;
+﻿using MiCake.Core.Util.Collections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;

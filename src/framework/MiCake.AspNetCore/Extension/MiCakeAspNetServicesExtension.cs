@@ -1,6 +1,5 @@
 ﻿using MiCake.Core;
-using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.Builder;
+using MiCake.Core.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 

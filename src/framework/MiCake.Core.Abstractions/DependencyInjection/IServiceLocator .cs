@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MiCake.Core.Abstractions.DependencyInjection
+namespace MiCake.Core.DependencyInjection
 {
-    public interface IServiceLocator 
+    public interface IServiceLocator
     {
         /// <summary>
         /// Providing a "service locator"

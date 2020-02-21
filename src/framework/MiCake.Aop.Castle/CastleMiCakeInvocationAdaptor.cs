@@ -32,7 +32,7 @@ namespace MiCake.Aop.Castle
             Invocation = invocation;
             ProceedInfo = proceedInfo;
 
-           // ProceedInfo = invocation.CaptureProceedInfo();  if there is in async,will throw a exception in other thread.
+            // ProceedInfo = invocation.CaptureProceedInfo();  if there is in async,will throw a exception in other thread.
         }
 
         public void Proceed()
@@ -44,8 +44,8 @@ namespace MiCake.Aop.Castle
         {
             ProceedInfo.Invoke();
 
-            return Method.GetMethodType() == MethodType.Synchronous ? 
-                        Task.FromResult(Invocation.ReturnValue) : 
+            return Method.GetMethodType() == MethodType.Synchronous ?
+                        Task.FromResult(Invocation.ReturnValue) :
                         (Task)Invocation.ReturnValue;
         }
     }

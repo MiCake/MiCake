@@ -1,9 +1,4 @@
-﻿using MiCake.Core.Abstractions.Modularity;
-using MiCake.Core.Modularity;
-using MiCake.Core.Tests.Modularity.Fakes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Moq;
+﻿using MiCake.Core.Modularity;
 using Xunit;
 
 namespace MiCake.Core.Tests.Modularity
@@ -14,7 +9,7 @@ namespace MiCake.Core.Tests.Modularity
         public void MiCakeModuleManagerPopulateDefaultModule_Test()
         {
             var moduleManager = new MiCakeModuleManager();
-         //   moduleManager.PopulateDefaultModule(typeof(StarpUpModule));
+            //   moduleManager.PopulateDefaultModule(typeof(StarpUpModule));
         }
     }
 }

@@ -1,8 +1,6 @@
-﻿using BaseMiCakeApplication.Infrastructure.StroageModel;
+﻿using BaseMiCakeApplication.Infrastructure.StroageModels;
 using JetBrains.Annotations;
-using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace BaseMiCakeApplication.EFCore
 {
@@ -13,7 +11,6 @@ namespace BaseMiCakeApplication.EFCore
         }
 
         public DbSet<ItinerarySnapshotModel> Itinerary { get; set; }
-
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

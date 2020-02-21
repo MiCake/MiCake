@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.Builder;
+﻿using MiCake.Core.Builder;
 using MiCake.Identity.User;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

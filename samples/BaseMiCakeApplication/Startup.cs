@@ -1,15 +1,14 @@
+using BaseMiCakeApplication.EFCore;
+using MiCake.AspNetCore.Extension;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MiCake.EntityFrameworkCore;
-using BaseMiCakeApplication.EFCore;
-using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Storage;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Pomelo.EntityFrameworkCore.MySql.Storage;
 using System;
-using MiCake.AspNetCore.Extension;
 
 namespace BaseMiCakeApplication
 {
@@ -36,13 +35,7 @@ namespace BaseMiCakeApplication
                     .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
             });
 
-            services.AddMiCake<BaseMiCakeModule>(builer =>
-            {
-                builer.UseAspNetCore(mvcOptions =>
-                {
-                });
-                builer.UseEFCore<BaseAppDbContext>();
-            });
+            services.AddMiCake<BaseMiCakeModule>();
 
             //Add Swagger
             services.AddSwaggerDocument(document => document.DocumentName = "MiCake Demo Application");

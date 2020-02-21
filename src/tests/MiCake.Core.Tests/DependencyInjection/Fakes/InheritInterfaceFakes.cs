@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
 
 namespace MiCake.Core.Tests.DependencyInjection.Fakes
 {

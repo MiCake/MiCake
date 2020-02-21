@@ -1,11 +1,11 @@
-﻿using MiCake.DDD.Domain;
+﻿using JetBrains.Annotations;
+using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
+using MiCake.DDD.Extensions.Register;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Repository.Freedom;
 using System;
 using System.Reflection;
-using JetBrains.Annotations;
-using MiCake.DDD.Extensions.Register;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -29,10 +29,10 @@ namespace MiCake.EntityFrameworkCore
                 return null;
 
             Type impType;
-            if (EntityHelper.IsEntityHasSnapshot(entityType))
+            if (EntityHelper.HasStorageModel(entityType))
             {
-                var snapshotType = EntityHelper.FindEntitySnapshotType(entityType);
-                impType = typeof(EFSnapshotRepository<,,,>)
+                var snapshotType = EntityHelper.FindEntityStorageType(entityType);
+                impType = typeof(EFStorageModelRepository<,,,>)
                             .MakeGenericType(_options.DbContextType, entityType, snapshotType, primaryKeyType);
             }
             else

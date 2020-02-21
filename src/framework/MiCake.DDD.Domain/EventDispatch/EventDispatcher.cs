@@ -24,7 +24,7 @@ namespace MiCake.DDD.Domain.EventDispatch
         }
 
         public Task DispatchAsync<TDomainEvent>(TDomainEvent domainEvent, CancellationToken cancellationToken = default)
-            where TDomainEvent :IDomainEvent
+            where TDomainEvent : IDomainEvent
         {
             if (domainEvent == null)
                 return Task.CompletedTask;

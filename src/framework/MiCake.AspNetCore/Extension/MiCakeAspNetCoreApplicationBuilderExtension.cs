@@ -1,8 +1,5 @@
-﻿using MiCake.Core.Abstractions;
+﻿using MiCake.Core;
 using Microsoft.AspNetCore.Builder;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.AspNetCore.Extension

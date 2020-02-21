@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions
+namespace MiCake.Core
 {
     public interface IMiCakeApplicationProvider
     {

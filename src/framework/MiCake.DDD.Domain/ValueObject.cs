@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace MiCake.DDD.Domain
 {
@@ -25,7 +23,7 @@ namespace MiCake.DDD.Domain
 
         protected virtual IEnumerable<object> GetAtomicValues()
         {
-            var properties = this.GetType().GetProperties();
+            var properties = GetType().GetProperties();
             foreach (var property in properties)
             {
                 yield return property.GetValue(this);

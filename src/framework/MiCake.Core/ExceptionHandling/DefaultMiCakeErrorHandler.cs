@@ -1,8 +1,4 @@
-﻿using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.ExceptionHandling;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 
 namespace MiCake.Core.ExceptionHandling
 {
@@ -23,7 +19,7 @@ namespace MiCake.Core.ExceptionHandling
         public virtual void Handle(MiCakeException micakeException)
         {
             if (micakeException == null) return;
-            
+
             MiCakeErrorInfo errorInfo = new MiCakeErrorInfo(micakeException.Code, micakeException.Details, micakeException);
             _dispacthActions?.Invoke(errorInfo);
         }

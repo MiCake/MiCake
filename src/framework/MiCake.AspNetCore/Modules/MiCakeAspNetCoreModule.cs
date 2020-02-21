@@ -1,5 +1,5 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
-using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore.Extensions.Modules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;

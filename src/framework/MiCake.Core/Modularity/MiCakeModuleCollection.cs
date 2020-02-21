@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using MiCake.Core.Abstractions.Modularity;
 
 namespace MiCake.Core.Modularity
 {
@@ -50,6 +49,18 @@ namespace MiCake.Core.Modularity
         {
             Assembly[] assemblies = { };
             assemblies = _descriptors.Select(s => s.Assembly).Distinct().ToArray();
+
+            return assemblies;
+        }
+
+        public Assembly[] GetAssemblies(bool includeFrameworkModule)
+        {
+            Assembly[] assemblies = { };
+            assemblies = _descriptors.Where(s =>
+                                            includeFrameworkModule ?
+                                            true :
+                                            s.ModuleInstance.IsFrameworkLevel == includeFrameworkModule)
+                                        .Select(s => s.Assembly).Distinct().ToArray();
 
             return assemblies;
         }

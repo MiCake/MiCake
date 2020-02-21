@@ -1,5 +1,6 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
 using MiCake.DDD.Domain.Modules;
+using MiCake.DDD.Extensions.Modules;
 using MiCake.EntityFrameworkCore.Diagnostics;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ namespace MiCake.EntityFrameworkCore.Modules
 {
     [DependOn(
         typeof(MiCakeUowModule),
+        typeof(MiCakeDDDExtensionsModule),
         typeof(MiCakeDomainModule))]
     public class MiCakeEFCoreModule : MiCakeModule
     {
