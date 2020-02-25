@@ -19,8 +19,8 @@ namespace MiCake.EntityFrameworkCore
             optionsBulder?.Invoke(options);
 
             //register the repository
-            var eFCoreRepositoryRegister = new EFCoreRepositoryRegister(options);
-            eFCoreRepositoryRegister.Register(builder.ModuleManager.MiCakeModules, builder.Services);
+            var efCoreRepositoryRegister = new EFCoreRepositoryRegister(builder.Services, options);
+            efCoreRepositoryRegister.Register(builder.ModuleManager.MiCakeModules, builder.Services);
 
             return builder;
         }

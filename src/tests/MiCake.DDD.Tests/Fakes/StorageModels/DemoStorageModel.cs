@@ -2,7 +2,7 @@
 
 namespace MiCake.DDD.Tests.Fakes.StorageModels
 {
-    public class DemoStorageModel : StorageModel<DemoAggregateRoot>
+    public class DemoStorageModel : StorageModel<HasStorageModelAggregateRoot>
     {
         public int No { get; set; }
         public string Name { get; set; }

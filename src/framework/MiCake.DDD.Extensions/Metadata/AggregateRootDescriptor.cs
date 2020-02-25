@@ -11,7 +11,7 @@ namespace MiCake.DDD.Extensions.Metadata
     /// <summary>
     /// Describes an <see cref="IAggregateRoot"/>
     /// </summary>
-    public class AggregateRootDescriptor : EntityDescriptor
+    public class AggregateRootDescriptor : ObjectDescriptor
     {
         /// <summary>
         /// Is the aggregate root declared as <see cref="IHasStorageModel"/>
@@ -23,6 +23,22 @@ namespace MiCake.DDD.Extensions.Metadata
         /// </summary>
         public Type StorageModel { get; private set; }
 
+        private Type _keyType;
+        /// <summary>
+        /// The primary key of <see cref="IEntity"/>
+        /// </summary>
+        public Type PrimaryKey
+        {
+            get
+            {
+                if (_keyType == null)
+                {
+                    _keyType = EntityHelper.FindPrimaryKeyType(Type);
+                }
+                return _keyType;
+            }
+        }
+
         public AggregateRootDescriptor(Type type) : base(type)
         {
             HasStorageModel = EntityHelper.HasStorageModel(type);
@@ -33,7 +49,7 @@ namespace MiCake.DDD.Extensions.Metadata
             if (!ReflectionHelper.IsAssignableToGenericType(storageType, typeof(StorageModel<>)))
                 throw new ArgumentException($"The type {storageType.Name} is not implements/inherits {nameof(StorageModel)}.");
 
-            var entityType = TypeHelper.GetGenericArguments(storageType, typeof(StorageModel<>)).FirstOrDefault();
+            var entityType = TypeHelper.GetGenericArguments(storageType, typeof(IStorageModel<>)).FirstOrDefault();
             if (!Type.Equals(entityType))
                 throw new ArgumentException($"The type {storageType.Name} generic parameter must be {Type.Name}.But now is {entityType?.Name}");
 

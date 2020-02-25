@@ -4,9 +4,9 @@ namespace MiCake.Core.Tests.Modularity.Fakes
 {
     [DependOn(typeof(DepencyModuleA))]
     [DependOn(typeof(DepencyModuleB))]
-    public class StarpUpModule : MiCakeModule
+    public class StartUpModule : MiCakeModule
     {
-        public StarpUpModule()
+        public StartUpModule()
         {
         }
     }

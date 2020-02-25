@@ -19,8 +19,32 @@ namespace MiCake.Core.Modularity
                 typeof(MiCakeModule).GetTypeInfo().IsAssignableFrom(type);
         }
 
+        internal static bool IsFeatureModule(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+
+            return
+                typeInfo.IsClass &&
+                !typeInfo.IsAbstract &&
+                !typeInfo.IsGenericType &&
+                typeof(IFeatureModule).GetTypeInfo().IsAssignableFrom(type);
+        }
+
         internal static void CheckModule(Type type)
         {
+            if (!IsMiCakeModule(type))
+            {
+                throw new ArgumentException("Given type is not an MiCake module: " + type.AssemblyQualifiedName);
+            }
+        }
+
+        internal static void CheckFeatureModule(Type type)
+        {
+            if (!IsFeatureModule(type))
+            {
+                throw new ArgumentException("Given type is not an Feature module: " + type.AssemblyQualifiedName);
+            }
+
             if (!IsMiCakeModule(type))
             {
                 throw new ArgumentException("Given type is not an MiCake module: " + type.AssemblyQualifiedName);
@@ -32,14 +56,12 @@ namespace MiCake.Core.Modularity
             IMiCakeModuleCollection featureModules)
         {
             IMiCakeModuleCollection miCakeModules = new MiCakeModuleCollection();
-            //before feature modules
-            var beforeModules = featureModules.Where(s => ((IFeatureModule)s.ModuleInstance).Order == FeatureModuleLoadOrder.BeforeCommonModule).ToList();
-            var afterModules = featureModules.Where(s => ((IFeatureModule)s.ModuleInstance).Order == FeatureModuleLoadOrder.AfterCommonModule).ToList();
+            var assignFeatureModules = AssignFeatureModules(featureModules);
 
-            Queue<List<MiCakeModuleDescriptor>> moduleQueue = new Queue<List<MiCakeModuleDescriptor>>();
-            moduleQueue.Enqueue(beforeModules);
-            moduleQueue.Enqueue(normalModules.ToList());
-            moduleQueue.Enqueue(afterModules);
+            Queue<IMiCakeModuleCollection> moduleQueue = new Queue<IMiCakeModuleCollection>();
+            moduleQueue.Enqueue(assignFeatureModules.before);
+            moduleQueue.Enqueue(normalModules);
+            moduleQueue.Enqueue(assignFeatureModules.after);
 
             var count = moduleQueue.Count;
             for (int i = 0; i < count; i++)
@@ -50,8 +72,31 @@ namespace MiCake.Core.Modularity
                     miCakeModules.AddIfNotContains(module);
                 }
             }
-
             return miCakeModules;
+        }
+
+        private static (IMiCakeModuleCollection before, IMiCakeModuleCollection after) AssignFeatureModules(IMiCakeModuleCollection featureModules)
+        {
+            var beforeFeatureModules = new MiCakeModuleCollection();
+            var afterFeatureModules = new MiCakeModuleCollection();
+
+            foreach (var featureModule in featureModules)
+            {
+                bool depencyIsAfter = featureModule.Dependencies.Any(module =>
+                                        ((IFeatureModule)module.ModuleInstance).Order == FeatureModuleLoadOrder.AfterCommonModule);
+
+                var currentOrder = ((IFeatureModule)featureModule.ModuleInstance).Order;
+                if (!depencyIsAfter && currentOrder == FeatureModuleLoadOrder.BeforeCommonModule)
+                {
+                    beforeFeatureModules.Add(featureModule);
+                }
+                else
+                {
+                    afterFeatureModules.Add(featureModule);
+                }
+            }
+
+            return (beforeFeatureModules, afterFeatureModules);
         }
 
         internal static List<Type> FindAllModuleTypes(Type startupModuleType)

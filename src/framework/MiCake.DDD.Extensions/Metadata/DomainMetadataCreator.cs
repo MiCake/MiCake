@@ -12,11 +12,15 @@ namespace MiCake.DDD.Extensions.Metadata
     {
         private List<IObjectDescriptorProvider> providers = new List<IObjectDescriptorProvider>();
         private IMiCakeModuleCollection _miCakeModules;
+        private Assembly[] _domainLayerAssemblies;
         private bool isDispose = false;
 
-        public DomainMetadataCreator(IMiCakeModuleCollection miCakeModules)
+        public DomainMetadataCreator(
+            IMiCakeModuleCollection miCakeModules,
+            Assembly[] domainLayerAssemblies = null)
         {
             _miCakeModules = miCakeModules;
+            _domainLayerAssemblies = domainLayerAssemblies;
         }
 
         public void AddDescriptorProvider(IObjectDescriptorProvider provider)
@@ -26,13 +30,19 @@ namespace MiCake.DDD.Extensions.Metadata
 
         public virtual IDomainMetadata Create()
         {
-            var allObjectDescriptor = GetObjectDescriptors();
 
             var domainMetadata = new DomainMetadata();
 
-            domainMetadata.Entities = allObjectDescriptor.Where(s => s is EntityDescriptor).Cast<EntityDescriptor>().ToList();
-            domainMetadata.AggregateRoots = allObjectDescriptor.Where(s => s is AggregateRootDescriptor).Cast<AggregateRootDescriptor>().ToList();
-            domainMetadata.DomainLayerAssembly = GetDomianLayer();
+            domainMetadata.DomainLayerAssembly = _domainLayerAssemblies ?? GetDomianLayer();
+
+            var allObjectDescriptor = GetObjectDescriptors();
+            domainMetadata.Entities = allObjectDescriptor.Where(s => s is EntityDescriptor)
+                                                         .Cast<EntityDescriptor>()
+                                                         .ToList();
+
+            domainMetadata.AggregateRoots = allObjectDescriptor.Where(s => s is AggregateRootDescriptor)
+                                                               .Cast<AggregateRootDescriptor>()
+                                                               .ToList();
 
             return domainMetadata;
         }
@@ -41,7 +51,7 @@ namespace MiCake.DDD.Extensions.Metadata
         {
             var descriptors = new List<IObjectDescriptor>();
 
-            var asm = _miCakeModules.GetAssemblies(false);
+            var asm = _domainLayerAssemblies ?? _miCakeModules.GetAssemblies(false);
             var types = asm.SelectMany(s => s.GetTypes().Where(type => TypeHelper.IsConcrete(type)));
 
             foreach (var findType in types)

@@ -1,5 +1,6 @@
 using BaseMiCakeApplication.EFCore;
 using MiCake.AspNetCore.Extension;
+using MiCake.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +36,10 @@ namespace BaseMiCakeApplication
                     .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
             });
 
-            services.AddMiCake<BaseMiCakeModule>();
+            services.AddMiCake<BaseMiCakeModule>(builder =>
+            {
+                builder.UseEFCore<BaseAppDbContext>();
+            });
 
             //Add Swagger
             services.AddSwaggerDocument(document => document.DocumentName = "MiCake Demo Application");

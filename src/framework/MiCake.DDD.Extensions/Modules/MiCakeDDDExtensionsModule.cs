@@ -1,22 +1,27 @@
 ﻿using MiCake.Core.Modularity;
+using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.Mapster.Modules;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Extensions.Modules
 {
-    [DependOn(typeof(MiCakeMapsterModule))]
+    [DependOn(typeof(MiCakeMapsterModule), typeof(MiCakeDomainModule))]
     public class MiCakeDDDExtensionsModule : MiCakeModule
     {
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
             IDomainMetadata domainMetadata;
-            using (var domainMetadataCreator = new DomainMetadataCreator(context.MiCakeModules))
+            var domianLayerAsm = context.MiCakeApplicationOptions.DomianLayerAssemblies;
+
+            using (var domainMetadataCreator = new DomainMetadataCreator(context.MiCakeModules, domianLayerAsm))
             {
+                domainMetadataCreator.AddDescriptorProvider(new EntityDescriptorProvider());
+                domainMetadataCreator.AddDescriptorProvider(new AggregateRootDescriptorProvider(context.MiCakeModules));
+
                 domainMetadata = domainMetadataCreator.Create();
             }
-
-            context.Services.AddSingleton<IDomainMetadata>(domainMetadata);
+            context.Services.AddSingleton(domainMetadata);
         }
     }
 }

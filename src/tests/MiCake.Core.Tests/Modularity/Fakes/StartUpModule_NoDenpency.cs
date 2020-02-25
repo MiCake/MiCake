@@ -2,7 +2,7 @@
 
 namespace MiCake.Core.Tests.Modularity.Fakes
 {
-    public class DepencyModuleA : MiCakeModule
+    public class StartUpModule_NoDenpency : MiCakeModule
     {
     }
 }

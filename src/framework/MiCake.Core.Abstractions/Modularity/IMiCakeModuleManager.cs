@@ -7,6 +7,11 @@ namespace MiCake.Core.Modularity
     /// </summary>
     public interface IMiCakeModuleManager
     {
+        /// <summary>
+        /// Include MiCakeModules and FeatureModules.
+        /// </summary>
+        IMiCakeModuleCollection AllModules { get; }
+
         IMiCakeModuleCollection MiCakeModules { get; }
 
         IMiCakeModuleCollection FeatureModules { get; }
@@ -21,9 +26,6 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Add third-party extension module for micake
         /// </summary>
-        void AddFeatureModule(IFeatureModule featureModule);
-
-        // [todo]: this method is only use to internal.
-        // void PopulateDefaultModule(Type startUp);
+        void AddFeatureModule(Type featureModule);
     }
 }

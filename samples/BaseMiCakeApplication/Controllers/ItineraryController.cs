@@ -1,6 +1,6 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using MiCake.DDD.Domain;
-using Microsoft.AspNetCore.Http;
+using MiCake.DDD.Extensions.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -14,14 +14,16 @@ namespace BaseMiCakeApplication.Controllers
         private readonly IRepository<Itinerary, Guid> _repository;
         private IServiceProvider _serviceProvider;
 
-        private IHttpContextAccessor _httpContextAccessor;
+        private IDomainMetadata _domainMetadata;
 
         public ItineraryController(
             IRepository<Itinerary, Guid> repository,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IDomainMetadata domainMetadata)
         {
             _repository = repository;
             _serviceProvider = serviceProvider;
+            _domainMetadata = domainMetadata;
         }
 
         [HttpGet]

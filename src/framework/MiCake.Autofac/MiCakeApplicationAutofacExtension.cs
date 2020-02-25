@@ -1,5 +1,4 @@
 ﻿using MiCake.Core.Builder;
-using MiCake.Core.Modularity;
 
 namespace MiCake.Autofac
 {
@@ -7,7 +6,7 @@ namespace MiCake.Autofac
     {
         public static IMiCakeBuilder UseAutofac(this IMiCakeBuilder builder)
         {
-            builder.ModuleManager.AddFeatureModule(new MiCakeAutofacModule() { AutoRegisted = true, Order = FeatureModuleLoadOrder.BeforeCommonModule });
+            builder.ModuleManager.AddFeatureModule(typeof(MiCakeAutofacModule));
 
             return builder;
         }

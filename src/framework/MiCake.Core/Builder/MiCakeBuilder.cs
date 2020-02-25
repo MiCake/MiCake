@@ -10,7 +10,9 @@ namespace MiCake.Core.Builder
 
         public IServiceCollection Services { get; }
 
-        public MiCakeBuilder(IServiceCollection services, IMiCakeModuleManager manager)
+        public MiCakeBuilder(
+            IServiceCollection services,
+            IMiCakeModuleManager manager)
         {
             if (services == null)
             {

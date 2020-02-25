@@ -10,11 +10,7 @@
         /// <summary>
         /// need before or after normal module to start
         /// </summary>
-        FeatureModuleLoadOrder Order { get; set; }
+        FeatureModuleLoadOrder Order { get; }
 
-        /// <summary>
-        /// need auto register when micake init
-        /// </summary>
-        bool AutoRegisted { get; set; }
     }
 }

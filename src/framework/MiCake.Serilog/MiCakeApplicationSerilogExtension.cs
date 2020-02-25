@@ -1,5 +1,4 @@
 ﻿using MiCake.Core.Builder;
-using MiCake.Core.Modularity;
 using System;
 
 namespace MiCake.Serilog
@@ -15,7 +14,7 @@ namespace MiCake.Serilog
         public static IMiCakeBuilder UseSerilog(this IMiCakeBuilder builder, Action<SerilogConfigureOption> serilogOptionAction)
         {
             //regist serilog to micake framework
-            builder.ModuleManager.AddFeatureModule(new MiCakeSerilogModule() { AutoRegisted = true, Order = FeatureModuleLoadOrder.BeforeCommonModule });
+            builder.ModuleManager.AddFeatureModule(typeof(MiCakeSerilogModule));
 
             var provide = new SerilogProvider(builder.Services);
             provide.AddSerilogInMiCake(serilogOptionAction ??= defaultOption);

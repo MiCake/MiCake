@@ -5,7 +5,7 @@ using System;
 
 namespace MiCake.DDD.Tests.Fakes.StorageModels
 {
-    public class DemoAggregateRoot : StorageModelAggregateRoot<Guid>
+    public class HasStorageModelAggregateRoot : StorageModelAggregateRoot<Guid>
     {
         public int No { get; private set; }
         public string Name { get; private set; }

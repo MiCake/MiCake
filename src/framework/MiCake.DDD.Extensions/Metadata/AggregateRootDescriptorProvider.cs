@@ -34,7 +34,8 @@ namespace MiCake.DDD.Extensions.Metadata
             var result = new AggregateRootDescriptor(type);
 
             //get storage Model
-            var findStorageModel = storageModels.FirstOrDefault(s => TypeHelper.GetGenericArguments(s, typeof(StorageModel<>)).FirstOrDefault() == type);
+            var findStorageModel = storageModels.FirstOrDefault(s =>
+                                        TypeHelper.GetGenericArguments(s, typeof(IStorageModel<>)).FirstOrDefault() == type);
 
             if (findStorageModel != null)
                 result.SetStorageModel(findStorageModel);
