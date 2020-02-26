@@ -8,6 +8,10 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public string Content { get; private set; }
         public DateTime NoteTime { get; private set; }
 
+        public ItineraryNote()
+        {
+        }
+
         public ItineraryNote(string content)
         {
             if (content.Length > 200)

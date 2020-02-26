@@ -20,7 +20,7 @@ namespace MiCake.DDD.Extensions.Metadata
         private void FindStorageModels(IMiCakeModuleCollection miCakeModules)
         {
             var ranges = miCakeModules.GetAssemblies(false).SelectMany(s =>
-               s.GetTypes().Where(type => typeof(IStorageModel).IsAssignableFrom(type)));
+               s.GetTypes().Where(type => TypeHelper.IsConcrete(type) && typeof(IStorageModel).IsAssignableFrom(type)));
 
             if (ranges.Count() > 0)
                 storageModels.AddRange(ranges);

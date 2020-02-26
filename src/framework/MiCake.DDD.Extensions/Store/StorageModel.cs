@@ -1,5 +1,4 @@
-﻿using Mapster;
-using MiCake.DDD.Domain;
+﻿using MiCake.DDD.Domain;
 
 namespace MiCake.DDD.Extensions.Store
 {
@@ -9,15 +8,15 @@ namespace MiCake.DDD.Extensions.Store
     /// </summary>
     public interface IStorageModel
     {
+        /// <summary>
+        /// Configure relationship mapping between <see cref="IEntity"/> and storage model
+        /// </summary>
+        void ConfigureMapping();
     }
 
     public interface IStorageModel<TEntity> : IStorageModel
         where TEntity : IAggregateRoot
     {
-        /// <summary>
-        /// Configure relationship mapping between <see cref="IEntity"/> and storage model
-        /// </summary>
-        void ConfigureMapping();
     }
 
     /// <summary>
@@ -28,11 +27,8 @@ namespace MiCake.DDD.Extensions.Store
     public abstract class StorageModel<TEntity> : IStorageModel<TEntity>
         where TEntity : IAggregateRoot
     {
-        protected TypeAdapterConfig TypeConfig;
-
         /// <summary>
         /// Configure relationship mapping between <see cref="IEntity"/> and storage model.
-        /// You can use <see cref="TypeConfig"/> property to config mapping.
         /// </summary>
         public abstract void ConfigureMapping();
     }

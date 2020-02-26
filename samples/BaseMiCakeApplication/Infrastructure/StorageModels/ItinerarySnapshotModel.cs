@@ -1,4 +1,5 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
+using Mapster;
 using MiCake.Audit;
 using MiCake.DDD.Extensions.Store;
 using System;
@@ -14,6 +15,11 @@ namespace BaseMiCakeApplication.Infrastructure.StroageModels
 
         public override void ConfigureMapping()
         {
+            TypeAdapterConfig<Itinerary, ItinerarySnapshotModel>.NewConfig()
+                .TwoWays()
+                .Map(s => s.Content, d => d.Note.Content)
+                .Map(s => s.NoteTime, d => d.Note.NoteTime)
+                .Map(s => s.ID, d => d.Id);
         }
     }
 }

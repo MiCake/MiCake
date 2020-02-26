@@ -1,4 +1,6 @@
-﻿using MiCake.Core.Builder;
+﻿using MiCake.Core.Abstractions.DependencyInjection;
+using MiCake.Core.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MiCake.EntityFrameworkCore
@@ -18,9 +20,7 @@ namespace MiCake.EntityFrameworkCore
             MiCakeEFCoreOptions options = new MiCakeEFCoreOptions(typeof(TDbContext));
             optionsBulder?.Invoke(options);
 
-            //register the repository
-            var efCoreRepositoryRegister = new EFCoreRepositoryRegister(builder.Services, options);
-            efCoreRepositoryRegister.Register(builder.ModuleManager.MiCakeModules, builder.Services);
+            builder.Services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
 
             return builder;
         }
