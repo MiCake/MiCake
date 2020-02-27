@@ -95,7 +95,8 @@ namespace MiCake.EntityFrameworkCore.Repository
 
             if (_entityRelationship.TryGetValue(aggregateRoot, out var model))
             {
-                storageModel = aggregateRoot.Adapt((TStorageModel)model);
+                TStorageModel convertModel = (TStorageModel)model;
+                storageModel = aggregateRoot.Adapt(convertModel);
             }
             else
             {

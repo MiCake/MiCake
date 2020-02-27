@@ -27,7 +27,6 @@ namespace BaseMiCakeApplication
         {
             services.AddControllers(options =>
             {
-
             });
 
             services.AddDbContext<BaseAppDbContext>(options =>

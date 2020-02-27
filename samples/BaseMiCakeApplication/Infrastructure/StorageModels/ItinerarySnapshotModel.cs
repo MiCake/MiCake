@@ -16,6 +16,7 @@ namespace BaseMiCakeApplication.Infrastructure.StroageModels
         public override void ConfigureMapping()
         {
             TypeAdapterConfig<Itinerary, ItinerarySnapshotModel>.NewConfig()
+                .MapDomainEvent()
                 .TwoWays()
                 .Map(s => s.Content, d => d.Note.Content)
                 .Map(s => s.NoteTime, d => d.Note.NoteTime)

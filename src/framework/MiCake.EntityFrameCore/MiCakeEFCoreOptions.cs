@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
 using System;
 
 namespace MiCake.EntityFrameworkCore

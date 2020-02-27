@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Modules;

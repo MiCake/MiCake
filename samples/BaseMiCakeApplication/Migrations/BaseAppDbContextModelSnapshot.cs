@@ -17,7 +17,7 @@ namespace BaseMiCakeApplication.Migrations
                 .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("BaseMiCakeApplication.Infrastructure.StroageModel.ItinerarySnapshotModel", b =>
+            modelBuilder.Entity("BaseMiCakeApplication.Infrastructure.StroageModels.ItinerarySnapshotModel", b =>
                 {
                     b.Property<Guid>("ID")
                         .ValueGeneratedOnAdd()

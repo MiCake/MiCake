@@ -1,4 +1,6 @@
 ﻿using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.Internel;
+using System.Collections.Generic;
 
 namespace MiCake.DDD.Extensions.Store
 {
@@ -6,8 +8,12 @@ namespace MiCake.DDD.Extensions.Store
     /// Defines an storage model.
     /// Mabey you need use generic type <see cref="IStorageModel{TEntity}"/>
     /// </summary>
-    public interface IStorageModel
+    public interface IStorageModel : IDomianEventProvider
     {
+        IStorageModel AddDomainEvents(List<IDomainEvent> domainEvents);
+
+        IStorageModel ClearDomainEvents();
+
         /// <summary>
         /// Configure relationship mapping between <see cref="IEntity"/> and storage model
         /// </summary>
@@ -27,9 +33,28 @@ namespace MiCake.DDD.Extensions.Store
     public abstract class StorageModel<TEntity> : IStorageModel<TEntity>
         where TEntity : IAggregateRoot
     {
+        private List<IDomainEvent> _domainEvents;
+
+        public IStorageModel AddDomainEvents(List<IDomainEvent> domainEvents)
+        {
+            _domainEvents = domainEvents;
+            return this;
+        }
+
+        public IStorageModel ClearDomainEvents()
+        {
+            _domainEvents = null;
+            return this;
+        }
+
+        public List<IDomainEvent> GetDomainEvents()
+            => _domainEvents;
+
         /// <summary>
         /// Configure relationship mapping between <see cref="IEntity"/> and storage model.
         /// </summary>
         public abstract void ConfigureMapping();
+
+
     }
 }

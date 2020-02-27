@@ -1,4 +1,4 @@
-﻿namespace MiCake.Core.Abstractions.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// Used to wrap an object for easy access in the dependency injection framework
