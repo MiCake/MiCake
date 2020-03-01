@@ -3,7 +3,7 @@ using MiCake.Core.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.AspNetCore.Extension
+namespace MiCake
 {
     public static class MiCakeAspNetServicesExtension
     {

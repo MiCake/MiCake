@@ -14,7 +14,7 @@ namespace Mapster
             where TAggregateRoot : IAggregateRoot
             where TStorageModel : IStorageModel
         {
-            return setter.MapToTargetWith((s, d) => (TStorageModel)d.AddDomainEvents(s.GetDomainEvents()));
+            return setter.AfterMapping((s, d) => d.AddDomainEvents(s.GetDomainEvents()));
         }
     }
 }

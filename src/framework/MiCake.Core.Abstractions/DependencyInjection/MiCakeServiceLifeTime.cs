@@ -3,7 +3,7 @@
     /// <summary>
     /// Specifies the lifetime of a service
     /// </summary>
-    public enum MiCakeServiceLifeTime
+    public enum MiCakeServiceLifetime
     {
         Singleton = 0,
         Scoped = 1,

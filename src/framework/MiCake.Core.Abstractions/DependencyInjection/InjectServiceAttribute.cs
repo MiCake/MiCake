@@ -17,9 +17,9 @@ namespace MiCake.Core.DependencyInjection
         public Type[] ServiceTypes { get; set; }
 
         /// <summary>
-        /// service life time.<see cref=" MiCakeServiceLifeTime"/>
+        /// service life time.<see cref=" MiCakeServiceLifetime"/>
         /// </summary>
-        public MiCakeServiceLifeTime Lifetime { get; set; } = MiCakeServiceLifeTime.Transient;
+        public MiCakeServiceLifetime Lifetime { get; set; } = MiCakeServiceLifetime.Transient;
 
         /// <summary>
         /// Add itself type to the collection.

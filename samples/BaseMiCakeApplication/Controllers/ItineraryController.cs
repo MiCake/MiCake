@@ -1,7 +1,8 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
-using MiCake.DDD.Domain;
+using BaseMiCakeApplication.Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Controllers
@@ -10,10 +11,10 @@ namespace BaseMiCakeApplication.Controllers
     [Route("[controller]/[action]")]
     public class ItineraryController : ControllerBase
     {
-        private readonly IRepository<Itinerary, Guid> _repository;
+        private readonly IItineraryRepository _repository;
 
         public ItineraryController(
-            IRepository<Itinerary, Guid> repository)
+            IItineraryRepository repository)
         {
             _repository = repository;
         }
@@ -22,6 +23,12 @@ namespace BaseMiCakeApplication.Controllers
         public async Task<Itinerary> GetItineraryAsync(Guid id)
         {
             return await _repository.FindAsync(id);
+        }
+
+        [HttpGet]
+        public List<Itinerary> GetItineraryLastWeekInfo()
+        {
+            return _repository.GetLastWeekItineraryInfo();
         }
 
         [HttpPost]

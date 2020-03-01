@@ -71,18 +71,18 @@ namespace MiCake.EntityFrameworkCore.Repository
             return result;
         }
 
-        protected virtual IList<TAggregateRoot> ToEntity(IList<TStorageModel> snapshot)
+        protected virtual List<TAggregateRoot> ToEntity(List<TStorageModel> snapshot)
         {
-            IList<TAggregateRoot> result;
+            List<TAggregateRoot> result;
 
             var key = _entityRelationship.GetFirstKeyByValue(snapshot);
             if (key != null)
             {
-                result = snapshot.Adapt((IList<TAggregateRoot>)key);
+                result = snapshot.Adapt((List<TAggregateRoot>)key);
             }
             else
             {
-                result = snapshot.Adapt<IList<TAggregateRoot>>();
+                result = snapshot.Adapt<List<TAggregateRoot>>();
                 _entityRelationship.TryAdd(result, snapshot);
             }
 
@@ -107,17 +107,17 @@ namespace MiCake.EntityFrameworkCore.Repository
             return storageModel;
         }
 
-        protected virtual IList<TStorageModel> ToStorageModel(IList<TAggregateRoot> aggregateRoot)
+        protected virtual List<TStorageModel> ToStorageModel(List<TAggregateRoot> aggregateRoot)
         {
-            IList<TStorageModel> storageModel;
+            List<TStorageModel> storageModel;
 
             if (_entityRelationship.TryGetValue(aggregateRoot, out var model))
             {
-                storageModel = aggregateRoot.Adapt((IList<TStorageModel>)model);
+                storageModel = aggregateRoot.Adapt((List<TStorageModel>)model);
             }
             else
             {
-                storageModel = aggregateRoot.Adapt<IList<TStorageModel>>();
+                storageModel = aggregateRoot.Adapt<List<TStorageModel>>();
                 _entityRelationship.TryAdd(aggregateRoot, storageModel);
             }
 

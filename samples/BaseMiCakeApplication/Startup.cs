@@ -1,5 +1,7 @@
+using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.EFCore;
-using MiCake.AspNetCore.Extension;
+using BaseMiCakeApplication.EFCore.Repositories;
+using MiCake;
 using MiCake.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +39,7 @@ namespace BaseMiCakeApplication
 
             services.AddMiCake<BaseMiCakeModule>(builder =>
             {
+                builder.RegisterRepository<IItineraryRepository, ItineraryRepository>();
                 builder.UseEFCore<BaseAppDbContext>();
             });
 

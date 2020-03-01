@@ -29,10 +29,10 @@ namespace MiCake.Core.Tests.DependencyInjection.Fakes
     [InjectService(IncludeSelf = false)]
     public class NotIncludeItSelfAttributeClass { }
 
-    [InjectService(Lifetime = MiCakeServiceLifeTime.Singleton)]
+    [InjectService(Lifetime = MiCakeServiceLifetime.Singleton)]
     public class SinglethonAttributeClass { }
 
-    [InjectService(Lifetime = MiCakeServiceLifeTime.Scoped)]
+    [InjectService(Lifetime = MiCakeServiceLifetime.Scoped)]
     public class ScopedAttributeClass { }
 
     public interface InjectServiceOne { }
