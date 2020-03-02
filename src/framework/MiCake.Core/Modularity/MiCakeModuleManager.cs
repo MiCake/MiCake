@@ -14,7 +14,7 @@ namespace MiCake.Core.Modularity
         private bool _isPopulate;
         private List<Type> _featureModules = new List<Type>();
 
-        internal void PopulateModules(Type startUp)
+        internal void PopulateModules(Type entryType)
         {
             if (_isPopulate)
                 throw new InvalidOperationException("PopulateDefaultModule can only be called once.");
@@ -22,7 +22,7 @@ namespace MiCake.Core.Modularity
             _isPopulate = true;
 
             //normal module
-            foreach (var module in ResolvingMiCakeModules(startUp))
+            foreach (var module in ResolvingMiCakeModules(entryType))
             {
                 MiCakeModules.AddIfNotContains(module);
             }
