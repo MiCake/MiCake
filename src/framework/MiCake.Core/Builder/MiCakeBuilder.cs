@@ -14,18 +14,8 @@ namespace MiCake.Core.Builder
             IServiceCollection services,
             IMiCakeModuleManager manager)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (manager == null)
-            {
-                throw new ArgumentNullException(nameof(manager));
-            }
-
-            Services = services;
-            ModuleManager = manager;
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+            ModuleManager = manager ?? throw new ArgumentNullException(nameof(manager));
         }
     }
 }

@@ -11,7 +11,7 @@ namespace MiCake.Core
             Type startUp,
             IServiceCollection services,
             MiCakeApplicationOptions options,
-            Action<IMiCakeBuilder> builderConfigAction) : base(startUp, services, options, builderConfigAction)
+            Action<IMiCakeBuilder> builderConfigAction) : base(services, options, builderConfigAction)
         {
             services.AddSingleton<IMiCakeApplicationProvider>(this);
         }
@@ -27,7 +27,7 @@ namespace MiCake.Core
 
             SetServiceProvider(serviceProvider);
 
-            Init();
+            Start();
         }
     }
 }

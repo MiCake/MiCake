@@ -31,6 +31,8 @@ namespace BaseMiCakeApplication
             {
             });
 
+            services.AddHealthChecks();
+
             services.AddDbContext<BaseAppDbContext>(options =>
             {
                 options.UseMySql("Server=localhost;Database=micakeexample;User=root;Password=a12345;", mySqlOptions => mySqlOptions

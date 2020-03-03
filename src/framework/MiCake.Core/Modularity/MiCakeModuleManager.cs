@@ -7,33 +7,43 @@ namespace MiCake.Core.Modularity
 {
     public class MiCakeModuleManager : IMiCakeModuleManager
     {
-        public IMiCakeModuleCollection MiCakeModules { get; private set; } = new MiCakeModuleCollection();
-        public IMiCakeModuleCollection FeatureModules { get; private set; } = new MiCakeModuleCollection();
-        public IMiCakeModuleCollection AllModules { get; private set; } = new MiCakeModuleCollection();
+        public Func<Type, object> ServiceCtor { get; private set; } = Activator.CreateInstance;
+
+        private MiCakeModuleContext _moduleContext;
+        public IMiCakeModuleContext ModuleContext => _moduleContext;
+
+        public bool IsPopulated => throw new NotImplementedException();
 
         private bool _isPopulate;
         private List<Type> _featureModules = new List<Type>();
 
-        internal void PopulateModules(Type entryType)
+        public void PopulateModules(Type entryType)
         {
             if (_isPopulate)
                 throw new InvalidOperationException("PopulateDefaultModule can only be called once.");
 
             _isPopulate = true;
 
-            //normal module
+            IMiCakeModuleCollection normalModules = new MiCakeModuleCollection();
+            IMiCakeModuleCollection featureModules = new MiCakeModuleCollection();
+            IMiCakeModuleCollection allModules = new MiCakeModuleCollection();
+
+            //normal modules
             foreach (var module in ResolvingMiCakeModules(entryType))
             {
-                MiCakeModules.AddIfNotContains(module);
+                normalModules.AddIfNotContains(module);
             }
 
-            //feature module
+            //feature modules
             foreach (var featureModule in ResolvingFeatureModules(_featureModules))
             {
-                FeatureModules.AddIfNotContains(featureModule);
+                featureModules.AddIfNotContains(featureModule);
             }
 
-            AllModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(MiCakeModules, FeatureModules);
+            //all modules
+            allModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(normalModules, featureModules);
+
+            _moduleContext = new MiCakeModuleContext(normalModules, featureModules, allModules);
         }
 
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
@@ -55,7 +65,7 @@ namespace MiCake.Core.Modularity
             var moduleTypes = MiCakeModuleHelper.FindAllModuleTypes(startUp);
             foreach (var moduleTye in moduleTypes)
             {
-                MiCakeModule instance = (MiCakeModule)Activator.CreateInstance(moduleTye);
+                MiCakeModule instance = (MiCakeModule)ServiceCtor(moduleTye);
                 miCakeModuleDescriptors.Add(new MiCakeModuleDescriptor(moduleTye, instance));
             }
 
@@ -70,7 +80,7 @@ namespace MiCake.Core.Modularity
             {
                 MiCakeModuleHelper.CheckFeatureModule(featureModule);
 
-                MiCakeModule instance = (MiCakeModule)Activator.CreateInstance(featureModule);
+                MiCakeModule instance = (MiCakeModule)ServiceCtor(featureModule);
                 featureModuleDescriptors.AddIfNotContains(new MiCakeModuleDescriptor(featureModule, instance));
             }
             return SortModulesDepencyies(featureModuleDescriptors);
@@ -109,6 +119,16 @@ namespace MiCake.Core.Modularity
             }
 
             return descriptors;
+        }
+
+        public void AddMiCakeModule()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IMiCakeModuleManager.PopulateModules(Type entryType)
+        {
+            throw new NotImplementedException();
         }
     }
 }

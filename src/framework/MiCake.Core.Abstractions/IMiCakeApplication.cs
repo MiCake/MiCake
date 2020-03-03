@@ -1,20 +1,37 @@
-﻿using MiCake.Core.Builder;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using System;
 
 namespace MiCake.Core
 {
+    /// <summary>
+    /// Represents a micake application.
+    /// </summary>
     public interface IMiCakeApplication : IDisposable
     {
-        Type StartUpType { get; }
+        /// <summary>
+        /// <see cref="IMiCakeModuleManager"/>
+        /// </summary>
+        IMiCakeModuleManager ModuleManager { get; }
 
-        IMiCakeBuilder Builder { get; }
+        /// <summary>
+        /// Set entry module to start micake.
+        /// </summary>
+        /// <param name="type"></param>
+        void SetEntry(Type type);
 
-        void Init();
+        /// <summary>
+        /// Use to build micake modules and trigger config services lifetime.
+        /// </summary>
+        void Initialize();
+
+        /// <summary>
+        /// Start micake appliction.
+        /// </summary>
+        void Start();
 
         /// <summary>
         /// Used to gracefully shutdown the application and all modules.
         /// </summary>
-        void ShutDown(Action<ModuleBearingContext> shutdownAction = null);
+        void ShutDown();
     }
 }

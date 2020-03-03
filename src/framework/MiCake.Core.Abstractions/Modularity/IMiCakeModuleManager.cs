@@ -8,13 +8,26 @@ namespace MiCake.Core.Modularity
     public interface IMiCakeModuleManager
     {
         /// <summary>
-        /// Include MiCakeModules and FeatureModules.
+        /// Include all modules info <see cref="IMiCakeModuleContext"/>
         /// </summary>
-        IMiCakeModuleCollection AllModules { get; }
+        IMiCakeModuleContext ModuleContext { get; }
 
-        IMiCakeModuleCollection MiCakeModules { get; }
+        /// <summary>
+        /// Indicates whether the module has been populated
+        /// </summary>
+        bool IsPopulated { get; }
 
-        IMiCakeModuleCollection FeatureModules { get; }
+        /// <summary>
+        /// Add <see cref="IMiCakeModule"/> to collection.
+        /// It's will be populated when call <see cref="PopulateModules(Type)"/>
+        /// </summary>
+        void AddMiCakeModule();
+
+        /// <summary>
+        /// Populate modules.
+        /// </summary>
+        /// <param name="entryType"></param>
+        void PopulateModules(Type entryType);
 
         /// <summary>
         /// Get a micake module info from manager.
