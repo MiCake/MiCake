@@ -1,15 +1,17 @@
+using BaseMiCakeApplication.Domain.Repositories;
+using BaseMiCakeApplication.EFCore;
+using BaseMiCakeApplication.EFCore.Repositories;
+using MiCake;
+using MiCake.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MiCake.EntityFrameworkCore;
-using BaseMiCakeApplication.EFCore;
-using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Storage;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Pomelo.EntityFrameworkCore.MySql.Storage;
 using System;
-using MiCake.AspNetCore.Extension;
 
 namespace BaseMiCakeApplication
 {
@@ -27,7 +29,6 @@ namespace BaseMiCakeApplication
         {
             services.AddControllers(options =>
             {
-
             });
 
             services.AddDbContext<BaseAppDbContext>(options =>
@@ -36,12 +37,10 @@ namespace BaseMiCakeApplication
                     .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
             });
 
-            services.AddMiCake<BaseMiCakeModule>(builer =>
+            services.AddMiCake<BaseMiCakeModule>(builder =>
             {
-                builer.UseAspNetCore(mvcOptions =>
-                {
-                });
-                builer.UseEFCore<BaseAppDbContext>();
+                builder.RegisterRepository<IItineraryRepository, ItineraryRepository>();
+                builder.UseEFCore<BaseAppDbContext>();
             });
 
             //Add Swagger

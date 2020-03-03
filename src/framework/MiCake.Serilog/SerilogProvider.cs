@@ -1,13 +1,13 @@
-﻿using System;
+﻿using MiCake.Core.Logging;
+using MiCake.Serilog.ExceptionHanding;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using System.Linq;
-using Serilog.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using MiCake.Serilog.ExceptionHanding;
-using MiCake.Core.Abstractions.Logging;
 using Serilog.Core;
+using Serilog.Extensions.Logging;
+using System;
+using System.Linq;
 using System.Reflection;
 
 namespace MiCake.Serilog

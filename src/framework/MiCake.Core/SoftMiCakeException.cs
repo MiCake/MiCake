@@ -1,10 +1,7 @@
-﻿using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.ExceptionHandling;
+﻿using MiCake.Core.ExceptionHandling;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace MiCake.Core
 {
@@ -21,9 +18,9 @@ namespace MiCake.Core
         {
         }
 
-        public SoftMiCakeException(string message, 
-            string code = null, 
-            string details = null, 
+        public SoftMiCakeException(string message,
+            string code = null,
+            string details = null,
             Exception innerException = null) : base(message, code, details, innerException, LogLevel.Warning)
         {
         }

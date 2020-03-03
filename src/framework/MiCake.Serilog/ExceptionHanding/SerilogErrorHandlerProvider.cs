@@ -1,7 +1,5 @@
-﻿using MiCake.Core;
-using MiCake.Core.Abstractions.ExceptionHandling;
-using MiCake.Core.Abstractions.Logging;
-using MiCake.Core.ExceptionHandling;
+﻿using MiCake.Core.ExceptionHandling;
+using MiCake.Core.Logging;
 using System;
 
 namespace MiCake.Serilog.ExceptionHanding

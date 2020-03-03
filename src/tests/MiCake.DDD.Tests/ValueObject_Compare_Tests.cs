@@ -1,8 +1,4 @@
-﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Tests.Fakes.ValueObjects;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.DDD.Tests.Fakes.ValueObjects;
 using Xunit;
 
 namespace MiCake.DDD.Tests

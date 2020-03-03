@@ -1,7 +1,7 @@
-﻿using System;
+﻿using MiCake.DDD.Domain.Helper;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using MiCake.DDD.Domain.Helper;
 
 namespace MiCake.DDD.Domain
 {
@@ -16,17 +16,15 @@ namespace MiCake.DDD.Domain
         public virtual TKey Id { get; set; }
 
         protected List<IDomainEvent> _domainEvents = new List<IDomainEvent>();
-        public List<IDomainEvent> DomainEvents => _domainEvents;
 
         public virtual void AddDomainEvent(IDomainEvent domainEvent)
-        {
-            _domainEvents.Add(domainEvent);
-        }
+          => _domainEvents.Add(domainEvent);
 
         public virtual void RemoveDomainEvent(IDomainEvent domainEvent)
-        {
-            _domainEvents.Remove(domainEvent);
-        }
+          => _domainEvents.Remove(domainEvent);
+
+        public List<IDomainEvent> GetDomainEvents()
+          => _domainEvents;
 
         public override bool Equals(object obj)
         {

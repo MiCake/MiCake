@@ -1,10 +1,4 @@
-﻿using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.Builder;
-using MiCake.Core.Abstractions.DependencyInjection;
-using MiCake.Core.Abstractions.ExceptionHandling;
-using MiCake.Core.Abstractions.Logging;
-using MiCake.Core.Abstractions.Modularity;
-using MiCake.Core.Builder;
+﻿using MiCake.Core.Builder;
 using MiCake.Core.DependencyInjection;
 using MiCake.Core.ExceptionHandling;
 using MiCake.Core.Logging;
@@ -32,24 +26,21 @@ namespace MiCake.Core
             MiCakeApplicationOptions options,
             Action<IMiCakeBuilder> builderConfigAction)
         {
-            if (startUp == null)
-                throw new ArgumentException("Please add startUp type when you use AddMiCake().");
-
-            _startUp = startUp;
+            _startUp = startUp ?? throw new ArgumentException("Please add startUp type when you use AddMiCake().");
             ApplicationOptions = options;
 
-            //add micake core serivces
             AddMiCakeCoreSerivces(services);
+            PopulateModules(out var moduleManager);
 
-            var moduleManager = new MiCakeModuleManager();
             Builder = new MiCakeBuilder(services, moduleManager);
-
-            //populate normal and feature modules
-            moduleManager.PopulateModules(_startUp);
-
             builderConfigAction?.Invoke(Builder);
 
-            moduleManager.ConfigServices(services, AutoRegisterServices);
+            _miCakeModuleBoot = new MiCakeModuleBoot(
+                services.BuildServiceProvider().GetService<ILogger<MiCakeModuleBoot>>(),
+                Builder);
+
+            var configServiceContext = new ModuleConfigServiceContext(services, moduleManager.AllModules, options);
+            _miCakeModuleBoot.ConfigServices(configServiceContext, AutoRegisterServices);
         }
 
         public virtual void Init()
@@ -60,9 +51,7 @@ namespace MiCake.Core
             _appServiceScope = _serviceProvider.CreateScope();
 
             var scopedServiceProvider = _appServiceScope.ServiceProvider;
-            _miCakeModuleBoot = new MiCakeModuleBoot(scopedServiceProvider.GetService<ILogger<MiCakeModuleBoot>>(), Builder);
-
-            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.MiCakeModules);
+            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
         }
 
@@ -73,7 +62,7 @@ namespace MiCake.Core
 
             var scopedServiceProvider = _appServiceScope.ServiceProvider;
 
-            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.MiCakeModules);
+            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.MiCakeModules, ApplicationOptions);
             shutdownAction?.Invoke(context);
             _miCakeModuleBoot.ShutDown(context);
 
@@ -93,13 +82,13 @@ namespace MiCake.Core
             return this;
         }
 
-        private void AutoRegisterServices(IServiceCollection services, IMiCakeModuleCollection miCakeModules)
+        private void AutoRegisterServices(ModuleConfigServiceContext context)
         {
-            var serviceRegistrar = new DefaultServiceRegistrar(services);
+            var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
             if (ApplicationOptions.FindAutoServiceTypes != null)
                 serviceRegistrar.SetServiceTypesFinder(ApplicationOptions.FindAutoServiceTypes);
 
-            serviceRegistrar.Register(miCakeModules);
+            serviceRegistrar.Register(context.MiCakeModules);
         }
 
         private void AddMiCakeCoreSerivces(IServiceCollection services)
@@ -111,6 +100,14 @@ namespace MiCake.Core
             });
             services.AddSingleton<IMiCakeErrorHandler, DefaultMiCakeErrorHandler>();
             services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
+        }
+
+        private void PopulateModules(out IMiCakeModuleManager moduleManager)
+        {
+            var manager = new MiCakeModuleManager();
+            manager.PopulateModules(_startUp);
+
+            moduleManager = manager;
         }
     }
 }

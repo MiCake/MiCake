@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Uow
+﻿namespace MiCake.Uow
 {
     public enum UnitOfWorkLimit
     {

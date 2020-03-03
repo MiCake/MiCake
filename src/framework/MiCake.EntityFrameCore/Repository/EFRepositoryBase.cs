@@ -2,9 +2,6 @@
 using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {

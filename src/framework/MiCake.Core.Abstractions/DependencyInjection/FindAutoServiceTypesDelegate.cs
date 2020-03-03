@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MiCake.Core.Abstractions.DependencyInjection
+namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// When a class that implements an <see cref="ITransientService"/> or <see cref="ISingletonService"/>

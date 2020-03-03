@@ -1,8 +1,5 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Aop.Castle.Modules
 {

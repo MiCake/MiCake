@@ -1,9 +1,4 @@
-﻿using MiCake.Core.Abstractions;
-using MiCake.Core.Abstractions.Builder;
-using MiCake.Core.Abstractions.Modularity;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.Core.Builder;
 
 namespace MiCake.Autofac
 {
@@ -11,7 +6,7 @@ namespace MiCake.Autofac
     {
         public static IMiCakeBuilder UseAutofac(this IMiCakeBuilder builder)
         {
-            builder.ModuleManager.AddFeatureModule(new MiCakeAutofacModule() { AutoRegisted = true, Order = FeatureModuleLoadOrder.BeforeCommonModule });
+            builder.ModuleManager.AddFeatureModule(typeof(MiCakeAutofacModule));
 
             return builder;
         }

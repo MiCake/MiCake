@@ -1,8 +1,5 @@
-﻿using MiCake.Core.Abstractions.ExceptionHandling;
-using MiCake.Core.Abstractions.Logging;
+﻿using MiCake.Core.ExceptionHandling;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Core.Logging
 {

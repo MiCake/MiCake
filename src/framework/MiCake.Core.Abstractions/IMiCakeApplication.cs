@@ -1,11 +1,8 @@
-﻿using MiCake.Core.Abstractions.Builder;
-using MiCake.Core.Abstractions.Modularity;
-using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Core.Builder;
+using MiCake.Core.Modularity;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions
+namespace MiCake.Core
 {
     public interface IMiCakeApplication : IDisposable
     {

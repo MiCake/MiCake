@@ -25,7 +25,7 @@ namespace MiCake.DDD.Tests
             HasEventsAggregate aggregate = new HasEventsAggregate();
             aggregate.OneAddEventCase();
 
-            var hasEvent = aggregate.DomainEvents.First();
+            var hasEvent = aggregate.GetDomainEvents().First();
 
             Assert.NotNull(hasEvent);
             Assert.IsType<CreateOrderEvents>(hasEvent);
@@ -42,7 +42,7 @@ namespace MiCake.DDD.Tests
             HasEventsAggregate aggregate = new HasEventsAggregate();
             aggregate.OneAddEventCase();
 
-            var orignalDomainEvent =(CreateOrderEvents)aggregate.DomainEvents.First();
+            var orignalDomainEvent = (CreateOrderEvents)aggregate.GetDomainEvents().First();
 
             disptcher.DispatchAsync(orignalDomainEvent);
 

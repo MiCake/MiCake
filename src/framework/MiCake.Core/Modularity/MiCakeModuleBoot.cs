@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Abstractions.Builder;
-using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Builder;
 using Microsoft.Extensions.Logging;
 using System;
 
@@ -11,44 +10,80 @@ namespace MiCake.Core.Modularity
     public class MiCakeModuleBoot : IMiCakeModuleBoot
     {
         private ILogger<MiCakeModuleBoot> _logger;
-        private IMiCakeBuilder _miCakeBuilder;
+
+        private IMiCakeModuleCollection Modules;
+        private MiCakeModuleLogger ModuleLogger;
 
         public MiCakeModuleBoot(
             ILogger<MiCakeModuleBoot> logger,
             IMiCakeBuilder miCakeBuilder)
         {
+            if (miCakeBuilder == null)
+                throw new ArgumentException(nameof(IMiCakeBuilder));
+
             _logger = logger;
-            _miCakeBuilder = miCakeBuilder;
+            ModuleLogger = new MiCakeModuleLogger(_logger);
+            Modules = miCakeBuilder.ModuleManager.AllModules;
         }
 
-        public void Initialization(ModuleBearingContext context)
+        public void ConfigServices(
+            ModuleConfigServiceContext context,
+            Action<ModuleConfigServiceContext> otherPartConfigServicesAction = null)
         {
-            if (_miCakeBuilder == null)
-                throw new ArgumentException(nameof(_miCakeBuilder));
+            var services = context.Services;
 
+            if (services == null)
+                throw new ArgumentNullException(nameof(services));
+
+            _logger.LogInformation("MiCake:ActivateServices...");
+
+            //PreConfigServices
+            foreach (var miCakeModule in Modules)
+            {
+                ModuleLogger.LogModuleInfo(miCakeModule, "MiCake PreConfigServices: ");
+                miCakeModule.ModuleInstance.PreConfigServices(context);
+            }
+            //ConfigServices
+            foreach (var miCakeModule in Modules)
+            {
+                ModuleLogger.LogModuleInfo(miCakeModule, "MiCake ConfigServiices: ");
+                miCakeModule.ModuleInstance.ConfigServices(context);
+            }
+            //PostConfigServices
+            foreach (var miCakeModule in Modules)
+            {
+                ModuleLogger.LogModuleInfo(miCakeModule, "MiCake PostConfigServices: ");
+                miCakeModule.ModuleInstance.PostConfigServices(context);
+            }
+
+            //Activate Other Part Services 
+            otherPartConfigServicesAction?.Invoke(context);
+
+            _logger.LogInformation("MiCake:ActivateServices Completed.....");
+        }
+
+        public void Initialization(
+            ModuleBearingContext context,
+            Action<ModuleBearingContext> otherPartInitAction = null)
+        {
             _logger.LogInformation("Initialization MiCake Application...");
-            var moduleLogger = new MiCakeModuleLogger(_logger);
-
-            var modules = MiCakeModuleHelper.CombineNormalAndFeatureModules(
-                                                _miCakeBuilder.ModuleManager.MiCakeModules,
-                                                _miCakeBuilder.ModuleManager.FeatureModules);
 
             //preInit
-            foreach (var module in modules)
+            foreach (var module in Modules)
             {
-                moduleLogger.LogModuleInfo(module, "MiCake PreModuleInitialization: ");
+                ModuleLogger.LogModuleInfo(module, "MiCake PreModuleInitialization: ");
                 module.ModuleInstance.PreModuleInitialization(context);
             }
             //Init
-            foreach (var module in modules)
+            foreach (var module in Modules)
             {
-                moduleLogger.LogModuleInfo(module, "MiCake Initialization: ");
+                ModuleLogger.LogModuleInfo(module, "MiCake Initialization: ");
                 module.ModuleInstance.Initialization(context);
             }
             //PostInit
-            foreach (var module in modules)
+            foreach (var module in Modules)
             {
-                moduleLogger.LogModuleInfo(module, "MiCake PostModuleInitialization: ");
+                ModuleLogger.LogModuleInfo(module, "MiCake PostModuleInitialization: ");
                 module.ModuleInstance.PostModuleInitialization(context);
             }
 
@@ -57,26 +92,18 @@ namespace MiCake.Core.Modularity
 
         public void ShutDown(ModuleBearingContext context)
         {
-            if (_miCakeBuilder == null)
-                throw new ArgumentException(nameof(_miCakeBuilder));
-
             _logger.LogInformation("ShutDown MiCake Application...");
-            var moduleLogger = new MiCakeModuleLogger(_logger);
-
-            var modules = MiCakeModuleHelper.CombineNormalAndFeatureModules(
-                                                _miCakeBuilder.ModuleManager.MiCakeModules,
-                                                _miCakeBuilder.ModuleManager.FeatureModules);
 
             //PreModuleShutDown
-            foreach (var module in modules)
+            foreach (var module in Modules)
             {
-                moduleLogger.LogModuleInfo(module, "MiCake PreModuleShutDown: ");
+                ModuleLogger.LogModuleInfo(module, "MiCake PreModuleShutDown: ");
                 module.ModuleInstance.PreModuleShutDown(context);
             }
             //Shuntdown
-            foreach (var module in modules)
+            foreach (var module in Modules)
             {
-                moduleLogger.LogModuleInfo(module, "MiCake Shuntdown: ");
+                ModuleLogger.LogModuleInfo(module, "MiCake Shuntdown: ");
                 module.ModuleInstance.Shuntdown(context);
             }
 

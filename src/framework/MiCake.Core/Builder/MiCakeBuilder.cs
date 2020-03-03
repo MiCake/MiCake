@@ -1,7 +1,6 @@
-﻿using MiCake.Core.Abstractions.Builder;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using MiCake.Core.Abstractions.Modularity;
 
 namespace MiCake.Core.Builder
 {
@@ -11,7 +10,9 @@ namespace MiCake.Core.Builder
 
         public IServiceCollection Services { get; }
 
-        public MiCakeBuilder(IServiceCollection services, IMiCakeModuleManager manager)
+        public MiCakeBuilder(
+            IServiceCollection services,
+            IMiCakeModuleManager manager)
         {
             if (services == null)
             {

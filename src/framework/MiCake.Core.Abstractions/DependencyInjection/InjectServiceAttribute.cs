@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MiCake.Core.Abstractions.DependencyInjection
+namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// Mark that the class is injected into the dependency injection framework
@@ -17,9 +17,9 @@ namespace MiCake.Core.Abstractions.DependencyInjection
         public Type[] ServiceTypes { get; set; }
 
         /// <summary>
-        /// service life time.<see cref=" MiCakeServiceLifeTime"/>
+        /// service life time.<see cref=" MiCakeServiceLifetime"/>
         /// </summary>
-        public MiCakeServiceLifeTime Lifetime { get; set; } = MiCakeServiceLifeTime.Transient;
+        public MiCakeServiceLifetime Lifetime { get; set; } = MiCakeServiceLifetime.Transient;
 
         /// <summary>
         /// Add itself type to the collection.
@@ -44,7 +44,7 @@ namespace MiCake.Core.Abstractions.DependencyInjection
 
         public List<Type> GetServiceTypes(Type itself)
         {
-            var serviceTypes = ServiceTypes == null? new List<Type>(): ServiceTypes.AsEnumerable().ToList();
+            var serviceTypes = ServiceTypes == null ? new List<Type>() : ServiceTypes.AsEnumerable().ToList();
 
             if (IncludeSelf)
                 serviceTypes.AddIfNotContains(itself);

@@ -16,10 +16,10 @@ namespace MiCake.Audit
 
     public class HasAuditObject<TUserKeyType> : IHasAudit<TUserKeyType>
     {
-        public DateTime CreationTime { get ; set ; }
-        public TUserKeyType CreatorID { get ; set ; }
-        public DateTime? ModficationTime { get ; set ; }
-        public TUserKeyType ModifierID { get ; set ; }
+        public DateTime CreationTime { get; set; }
+        public TUserKeyType CreatorID { get; set; }
+        public DateTime? ModficationTime { get; set; }
+        public TUserKeyType ModifierID { get; set; }
 
         public HasAuditObject()
         {

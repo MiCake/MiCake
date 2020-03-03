@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace MiCake.Core.Util.Collections
 {
@@ -10,7 +9,7 @@ namespace MiCake.Core.Util.Collections
         /// <summary>
         /// CheckValues whatever given collection object is null or has no item.
         /// </summary>
-        public static bool IsNullOrEmpty<T>(  this ICollection<T> source)
+        public static bool IsNullOrEmpty<T>(this ICollection<T> source)
         {
             return source == null || source.Count <= 0;
         }
@@ -22,7 +21,7 @@ namespace MiCake.Core.Util.Collections
         /// <param name="item">Item to CheckValue and add</param>
         /// <typeparam name="T">Type of the items in the collection</typeparam>
         /// <returns>Returns True if added, returns False if not.</returns>
-        public static bool AddIfNotContains<T>(  this ICollection<T> source, T item)
+        public static bool AddIfNotContains<T>(this ICollection<T> source, T item)
         {
             CheckValue.NotNull(source, nameof(source));
 
@@ -42,7 +41,7 @@ namespace MiCake.Core.Util.Collections
         /// <param name="items">Item to CheckValue and add</param>
         /// <typeparam name="T">Type of the items in the collection</typeparam>
         /// <returns>Returns the added items.</returns>
-        public static IEnumerable<T> AddIfNotContains<T>(  this ICollection<T> source, IEnumerable<T> items)
+        public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
         {
             CheckValue.NotNull(source, nameof(source));
 
@@ -70,7 +69,7 @@ namespace MiCake.Core.Util.Collections
         /// <param name="itemFactory">A factory that returns the item</param>
         /// <typeparam name="T">Type of the items in the collection</typeparam>
         /// <returns>Returns True if added, returns False if not.</returns>
-        public static bool AddIfNotContains<T>(  this ICollection<T> source,   Func<T, bool> predicate,   Func<T> itemFactory)
+        public static bool AddIfNotContains<T>(this ICollection<T> source, Func<T, bool> predicate, Func<T> itemFactory)
         {
             CheckValue.NotNull(source, nameof(source));
             CheckValue.NotNull(predicate, nameof(predicate));
@@ -92,7 +91,7 @@ namespace MiCake.Core.Util.Collections
         /// <param name="source">The collection</param>
         /// <param name="predicate">The condition to remove the items</param>
         /// <returns>List of removed items</returns>
-        public static IList<T> RemoveAll<T>(  this ICollection<T> source, Func<T, bool> predicate)
+        public static IList<T> RemoveAll<T>(this ICollection<T> source, Func<T, bool> predicate)
         {
             var items = source.Where(predicate).ToList();
 

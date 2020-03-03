@@ -6,7 +6,7 @@ namespace MiCake.DDD.Extensions.LifeTime
     /// <summary>
     /// Provide a life cycle interface of repository operation process
     /// </summary>
-    public interface  IRepositoryPostSaveChanges:IRepositoryLifetime
+    public interface IRepositoryPostSaveChanges : IRepositoryLifetime
     {
         /// <summary>
         /// Operations after domain object persistence

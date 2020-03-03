@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Core.Abstractions.ExceptionHandling
+﻿namespace MiCake.Core.ExceptionHandling
 {
     /// <summary>
     /// Low level errors, do not cause program interruption

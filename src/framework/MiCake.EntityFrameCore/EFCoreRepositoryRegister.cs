@@ -1,11 +1,10 @@
-﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Helper;
+﻿using JetBrains.Annotations;
+using MiCake.DDD.Extensions.Metadata;
+using MiCake.DDD.Extensions.Register;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Repository.Freedom;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Reflection;
-using JetBrains.Annotations;
-using MiCake.DDD.Extensions.Register;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -13,45 +12,35 @@ namespace MiCake.EntityFrameworkCore
     {
         protected override bool IsRegisterDefaultRepository => _options.RegisterDefaultRepository;
         protected override bool IsRegisterFreeRepository => _options.RegisterFreeRepository;
-        protected override Assembly[] DomainObjectAssembly => _options.DomainObjectAssembly;
 
         private MiCakeEFCoreOptions _options;
 
-        public EFCoreRepositoryRegister([NotNull]MiCakeEFCoreOptions options)
+        public EFCoreRepositoryRegister(IServiceCollection services, [NotNull]MiCakeEFCoreOptions options) : base(services)
         {
             _options = options;
         }
 
-        protected override Type GetAggregateRepositoryImplementationType(Type entityType)
+        protected override Type GetAggregateRepositoryImplementationType(AggregateRootDescriptor descriptor)
         {
-            var primaryKeyType = EntityHelper.FindPrimaryKeyType(entityType);
-            if (primaryKeyType == null || (entityType is IAggregateRoot))
-                return null;
-
             Type impType;
-            if (EntityHelper.IsEntityHasSnapshot(entityType))
+            if (descriptor.HasStorageModel && descriptor.StorageModel != null)
             {
-                var snapshotType = EntityHelper.FindEntitySnapshotType(entityType);
-                impType = typeof(EFSnapshotRepository<,,,>)
-                            .MakeGenericType(_options.DbContextType, entityType, snapshotType, primaryKeyType);
+                impType = typeof(EFStorageModelRepository<,,,>)
+                            .MakeGenericType(_options.DbContextType, descriptor.Type, descriptor.StorageModel, descriptor.PrimaryKey);
             }
             else
             {
                 impType = typeof(EFRepository<,,>)
-                            .MakeGenericType(_options.DbContextType, entityType, primaryKeyType);
+                            .MakeGenericType(_options.DbContextType, descriptor.Type, descriptor.PrimaryKey);
             }
 
             return impType;
         }
 
-        protected override Type GetFreeRepositoryImplementationType(Type entityType)
+        protected override Type GetFreeRepositoryImplementationType(EntityDescriptor descriptor)
         {
-            var primaryKeyType = EntityHelper.FindPrimaryKeyType(entityType);
-            if (primaryKeyType == null || (entityType is IEntity))
-                return null;
-
             return typeof(EFFreeRepository<,,>)
-                            .MakeGenericType(_options.DbContextType, entityType, primaryKeyType);
+                            .MakeGenericType(_options.DbContextType, descriptor.Type, descriptor.PrimaryKey);
         }
     }
 }

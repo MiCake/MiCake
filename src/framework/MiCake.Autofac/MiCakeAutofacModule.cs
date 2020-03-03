@@ -1,10 +1,7 @@
-﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using MiCake.Core.Abstractions.Modularity;
+﻿using Autofac.Extensions.DependencyInjection;
+using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.Autofac
 {

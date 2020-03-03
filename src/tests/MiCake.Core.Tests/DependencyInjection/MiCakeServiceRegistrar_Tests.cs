@@ -1,11 +1,10 @@
-﻿using MiCake.Core.Abstractions.Modularity;
-using MiCake.Core.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
 using MiCake.Core.Modularity;
+using MiCake.Core.Tests.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using Xunit;
 using System.Linq;
-using MiCake.Core.Tests.DependencyInjection.Fakes;
+using Xunit;
 
 namespace MiCake.Core.Tests.DependencyInjection
 {
@@ -50,7 +49,7 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void InheritInterface_HasTwoInterface_ShouldOnlyOneCount()
         {
-            var injectServiceCount = Services.Where(service => 
+            var injectServiceCount = Services.Where(service =>
                                     service.ImplementationType == typeof(HasTwoInterfaceClass)).Count();
 
             Assert.Equal(1, injectServiceCount);

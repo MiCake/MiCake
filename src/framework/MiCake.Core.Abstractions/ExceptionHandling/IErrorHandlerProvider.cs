@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions.ExceptionHandling
+namespace MiCake.Core.ExceptionHandling
 {
     /// <summary>
     ///Provide error handling interception action

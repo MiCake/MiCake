@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Core.Abstractions.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     public interface IAutoInjectService
     {

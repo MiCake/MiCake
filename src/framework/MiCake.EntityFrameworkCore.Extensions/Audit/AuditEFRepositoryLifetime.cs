@@ -29,7 +29,7 @@ namespace MiCake.EntityFrameworkCore.Extensions.Audit
             if (entityState == RepositoryEntityState.Deleted)
                 _auditContext.ObjectSetter.SetDeletionInfo(entity);
         }
-       
+
         public Task PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
             PreSaveChanges(entityState, entity);

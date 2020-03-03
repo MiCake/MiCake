@@ -1,13 +1,12 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using JetBrains.Annotations;
+using MiCake.Core.Modularity;
+using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.Freedom;
+using MiCake.DDD.Domain.Helper;
+using MiCake.DDD.Extensions.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Linq;
-using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Helper;
-using MiCake.DDD.Domain.Freedom;
-using MiCake.Core.Util.Reflection;
 
 namespace MiCake.DDD.Extensions.Register
 {
@@ -24,57 +23,43 @@ namespace MiCake.DDD.Extensions.Register
         protected virtual bool IsRegisterFreeRepository => true;
 
         /// <summary>
-        /// Place the assembly of the domain object
-        /// If it is not indicated that the assembly system will traverse all user module lookups
+        /// <see cref="IDomainMetadata"/>
         /// </summary>
-        protected virtual Assembly[] DomainObjectAssembly => null;
+        protected virtual IDomainMetadata DomainMetadata { get; private set; }
+
+        public DefaultRepositoryRegister([NotNull]IServiceCollection services)
+        {
+            var domainMetadata = services.BuildServiceProvider().GetService<IDomainMetadata>();
+            if (domainMetadata == null)
+                throw new NullReferenceException($"Please make sure {nameof(IDomainMetadata)} has created.");
+
+            DomainMetadata = domainMetadata;
+        }
 
         public virtual void Register(IMiCakeModuleCollection miCakeModules, IServiceCollection services)
         {
-            var hasDomainObjectModules = DomainObjectAssembly == null ?
-                                                FindDomainObjectAsm(miCakeModules) :
-                                                DomainObjectAssembly;
-
-            if (hasDomainObjectModules.Length == 0)
+            if (DomainMetadata.Entities.Count == 0)
                 return;
 
             if (IsRegisterDefaultRepository)
-                RegisterDefaultRepository(hasDomainObjectModules, services);
+                RegisterDefaultRepository(DomainMetadata.AggregateRoots, services);
 
             if (IsRegisterFreeRepository)
-                RegisterFreeRepository(hasDomainObjectModules, services);
-        }
-
-        protected virtual Assembly[] FindDomainObjectAsm(IMiCakeModuleCollection miCakeModules)
-        {
-            var customerModules = miCakeModules.Where(modules => !modules.ModuleInstance.IsFrameworkLevel);
-            return customerModules.Where(module =>
-                    module.Assembly.GetTypes().AsEnumerable().Any(inModuleType =>
-                         typeof(IEntity).IsAssignableFrom(inModuleType))).Select(
-                                module => module.Assembly).ToArray();
-
+                RegisterFreeRepository(DomainMetadata.Entities, services);
         }
 
         #region aggragateRoot Repository
-        protected virtual void RegisterDefaultRepository(Assembly[] hasDomainObjectAsm, IServiceCollection services)
+        protected virtual void RegisterDefaultRepository(List<AggregateRootDescriptor> aggregateRootDescriptors, IServiceCollection services)
         {
-            var aggregateRoots = new List<Type>();
-            foreach (var assembly in hasDomainObjectAsm)
+            foreach (var descriptor in aggregateRootDescriptors)
             {
-                aggregateRoots.AddRange(assembly.GetTypes().AsEnumerable()
-                    .Where(type => TypeHelper.IsConcrete(type))
-                    .Where(type => EntityHelper.IsAggregateRoot(type)));
-            }
-
-            foreach (var aggregateRoot in aggregateRoots)
-            {
-                var impType = GetAggregateRepositoryImplementationType(aggregateRoot);
+                var impType = GetAggregateRepositoryImplementationType(descriptor);
                 if (impType != null)
-                    RegisterAggregateRepositoryToServices(aggregateRoot, impType, services);
+                    RegisterAggregateRepositoryToServices(descriptor.Type, impType, services);
             }
         }
 
-        protected abstract Type GetAggregateRepositoryImplementationType(Type entityTypet);
+        protected abstract Type GetAggregateRepositoryImplementationType(AggregateRootDescriptor descriptor);
 
         protected virtual void RegisterAggregateRepositoryToServices(
             Type entityType, Type ImpType,
@@ -95,25 +80,17 @@ namespace MiCake.DDD.Extensions.Register
 
         #region Free Repository
 
-        protected virtual void RegisterFreeRepository(Assembly[] hasDomainObjectAsm, IServiceCollection services)
+        protected virtual void RegisterFreeRepository(List<EntityDescriptor> entityDescriptors, IServiceCollection services)
         {
-            var entitys = new List<Type>();
-            foreach (var assembly in hasDomainObjectAsm)
+            foreach (var descriptor in entityDescriptors)
             {
-                entitys.AddRange(assembly.GetTypes().AsEnumerable()
-                    .Where(type => TypeHelper.IsConcrete(type))
-                    .Where(type => EntityHelper.IsEntity(type)));
-            }
-
-            foreach (var entity in entitys)
-            {
-                var impType = GetFreeRepositoryImplementationType(entity);
+                var impType = GetFreeRepositoryImplementationType(descriptor);
                 if (impType != null)
-                    RegisterFreeRepositoryToServices(entity, impType, services);
+                    RegisterFreeRepositoryToServices(descriptor.Type, impType, services);
             }
         }
 
-        protected abstract Type GetFreeRepositoryImplementationType(Type entityType);
+        protected abstract Type GetFreeRepositoryImplementationType(EntityDescriptor descriptor);
 
         protected virtual void RegisterFreeRepositoryToServices(
             Type entityType, Type ImpType,

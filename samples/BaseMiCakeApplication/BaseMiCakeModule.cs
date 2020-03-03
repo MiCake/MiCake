@@ -1,5 +1,5 @@
 ﻿using MiCake.AspNetCore.Modules;
-using MiCake.Core.Abstractions.Modularity;
+using MiCake.Core.Modularity;
 
 namespace BaseMiCakeApplication
 {

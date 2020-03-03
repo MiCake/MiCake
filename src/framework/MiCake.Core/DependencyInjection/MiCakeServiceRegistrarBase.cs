@@ -1,6 +1,5 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
-using MiCake.Core.Abstractions.Modularity;
-using MiCake.Core.Extensions;
+﻿using MiCake.Core.Extensions;
+using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
@@ -44,13 +43,11 @@ namespace MiCake.Core.DependencyInjection
 
             foreach (var serviceInfo in injectServices)
             {
-                var serviceDescriptor = serviceInfo.Lifetime switch
-                {
-                    MiCakeServiceLifeTime.Singleton => new ServiceDescriptor(serviceInfo.Type, serviceInfo.ImplementationType, ServiceLifetime.Singleton),
-                    MiCakeServiceLifeTime.Transient => new ServiceDescriptor(serviceInfo.Type, serviceInfo.ImplementationType, ServiceLifetime.Transient),
-                    MiCakeServiceLifeTime.Scoped => new ServiceDescriptor(serviceInfo.Type, serviceInfo.ImplementationType, ServiceLifetime.Scoped),
-                    _ => new ServiceDescriptor(serviceInfo.Type, serviceInfo.ImplementationType, ServiceLifetime.Transient)
-                };
+                var serviceLifetime = serviceInfo.Lifetime.HasValue ?
+                                            serviceInfo.Lifetime.Value.ConvertToMSLifetime() :
+                                            ServiceLifetime.Transient;
+
+                var serviceDescriptor = new ServiceDescriptor(serviceInfo.Type, serviceInfo.ImplementationType, serviceLifetime);
 
                 if (serviceInfo.ReplaceServices)
                 {
@@ -74,21 +71,21 @@ namespace MiCake.Core.DependencyInjection
             _serviceTypesFinder = findAutoServiceTypes;
         }
 
-        protected virtual MiCakeServiceLifeTime? GetServiceLifetime(Type type)
+        protected virtual MiCakeServiceLifetime? GetServiceLifetime(Type type)
         {
             if (typeof(ITransientService).IsAssignableFrom(type))
             {
-                return MiCakeServiceLifeTime.Transient;
+                return MiCakeServiceLifetime.Transient;
             }
 
             if (typeof(ISingletonService).IsAssignableFrom(type))
             {
-                return MiCakeServiceLifeTime.Singleton;
+                return MiCakeServiceLifetime.Singleton;
             }
 
             if (typeof(IScopedService).IsAssignableFrom(type))
             {
-                return MiCakeServiceLifeTime.Scoped;
+                return MiCakeServiceLifetime.Scoped;
             }
 
             return null;
@@ -101,7 +98,7 @@ namespace MiCake.Core.DependencyInjection
 
             public Type ImplementationType { get; set; }
 
-            public MiCakeServiceLifeTime? Lifetime { get; set; }
+            public MiCakeServiceLifetime? Lifetime { get; set; }
 
             public bool TryRegister { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
 
 namespace MiCake.Core.Tests.DependencyInjection
 {

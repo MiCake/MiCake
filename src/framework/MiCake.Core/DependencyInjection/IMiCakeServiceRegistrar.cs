@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
-using MiCake.Core.Abstractions.Modularity;
+﻿using MiCake.Core.Modularity;
 
 namespace MiCake.Core.DependencyInjection
 {

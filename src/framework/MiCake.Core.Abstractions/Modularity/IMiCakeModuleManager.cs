@@ -1,14 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MiCake.Core.Abstractions.Modularity
+namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Manages the modules of an Micake application.
     /// </summary>
     public interface IMiCakeModuleManager
     {
+        /// <summary>
+        /// Include MiCakeModules and FeatureModules.
+        /// </summary>
+        IMiCakeModuleCollection AllModules { get; }
+
         IMiCakeModuleCollection MiCakeModules { get; }
 
         IMiCakeModuleCollection FeatureModules { get; }
@@ -23,9 +26,6 @@ namespace MiCake.Core.Abstractions.Modularity
         /// <summary>
         /// Add third-party extension module for micake
         /// </summary>
-        void AddFeatureModule(IFeatureModule featureModule);
-
-        // [todo]: this method is only use to internal.
-        // void PopulateDefaultModule(Type startUp);
+        void AddFeatureModule(Type featureModule);
     }
 }

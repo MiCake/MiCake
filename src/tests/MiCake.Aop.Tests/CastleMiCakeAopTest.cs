@@ -2,8 +2,6 @@
 using MiCake.Aop.Castle;
 using MiCake.Aop.Tests.InterfaceProxies;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;

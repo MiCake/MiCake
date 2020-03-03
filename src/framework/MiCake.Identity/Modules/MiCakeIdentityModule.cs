@@ -1,8 +1,4 @@
-﻿using MiCake.Core.Abstractions.Modularity;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.Core.Modularity;
 
 namespace MiCake.Identity.Modules
 {

@@ -1,9 +1,6 @@
-﻿using MiCake.Core.Abstractions.ExceptionHandling;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.Core.ExceptionHandling;
 
-namespace MiCake.Core.Abstractions.Logging
+namespace MiCake.Core.Logging
 {
     public interface ILogErrorHandlerProvider : IErrorHandlerProvider
     {

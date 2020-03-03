@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using BaseMiCakeApplication.Domain.Aggregates;
-using MiCake.Core.DependencyInjection;
+﻿using BaseMiCakeApplication.Domain.Aggregates;
 using MiCake.DDD.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BaseMiCakeApplication.Controllers
 {

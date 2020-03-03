@@ -1,5 +1,5 @@
 ﻿using MiCake.Audit.Modules;
-using MiCake.Core.Abstractions.Modularity;
+using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore.Extensions.Audit;
 using MiCake.EntityFrameworkCore.Extensions.DDD;
 using MiCake.EntityFrameworkCore.LifeTime;

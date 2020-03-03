@@ -1,15 +1,16 @@
 ﻿using MiCake.DDD.Domain;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
     public class ItineraryNote : ValueObject
     {
-        public string Content { get;private set; }
+        public string Content { get; private set; }
         public DateTime NoteTime { get; private set; }
+
+        public ItineraryNote()
+        {
+        }
 
         public ItineraryNote(string content)
         {

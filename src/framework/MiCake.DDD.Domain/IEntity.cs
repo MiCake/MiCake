@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.DDD.Domain.Internel;
 
 namespace MiCake.DDD.Domain
 {
-    public interface IEntity
+    public interface IEntity : IDomianEventProvider
     {
-        /// <summary>
-        /// Collection of domain events
-        /// </summary>
-        List<IDomainEvent> DomainEvents { get; }
-
         void AddDomainEvent(IDomainEvent domainEvent);
 
         void RemoveDomainEvent(IDomainEvent domainEvent);

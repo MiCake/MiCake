@@ -1,9 +1,7 @@
-﻿using MiCake.Core.Abstractions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MiCake.Core.DependencyInjection;
+using System.Reflection;
 
-namespace MiCake.Core.Abstractions
+namespace MiCake.Core
 {
     /// <summary>
     /// The configuration of building the core program of micake
@@ -20,5 +18,11 @@ namespace MiCake.Core.Abstractions
         /// defalut: find class all interfaces.The service whose interface name contains the class name.
         /// </summary>
         public FindAutoServiceTypesDelegate FindAutoServiceTypes { get; set; }
+
+        /// <summary>
+        /// Assemblies of domain layer
+        ///Providing this parameter will facilitate micake to better scan related domain objects in the program.
+        /// </summary>
+        public Assembly[] DomianLayerAssemblies { get; set; }
     }
 }

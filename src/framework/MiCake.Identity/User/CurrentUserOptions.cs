@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using MiCake.Core.Util.Reflection;
+﻿using MiCake.Core.Util.Reflection;
+using System;
 
 namespace MiCake.Identity.User
 {

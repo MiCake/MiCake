@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.Core.Abstractions.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// mark a singleton service
     /// </summary>
-    public interface ISingletonService:IAutoInjectService
+    public interface ISingletonService : IAutoInjectService
     {
     }
 }
