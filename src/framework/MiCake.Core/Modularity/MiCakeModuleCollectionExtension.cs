@@ -1,7 +1,6 @@
-﻿using MiCake.Core.Modularity;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace MiCake.Core.Extensions
+namespace MiCake.Core.Modularity
 {
     public static class MiCakeModuleCollectionExtension
     {

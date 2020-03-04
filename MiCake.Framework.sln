@@ -53,6 +53,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow.Test", "src\tests\MiCake.Uow.Test\MiCake.Uow.Test.csproj", "{8C571B7C-68A5-42F4-890E-6D3B9978367B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Mapster", "src\framework\MiCake.Mapster\MiCake.Mapster.csproj", "{4C1FD5C5-DEBF-49E1-B6D0-6EFFF4F9CE4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -147,6 +149,10 @@ Global
 		{8C571B7C-68A5-42F4-890E-6D3B9978367B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C571B7C-68A5-42F4-890E-6D3B9978367B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C571B7C-68A5-42F4-890E-6D3B9978367B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C1FD5C5-DEBF-49E1-B6D0-6EFFF4F9CE4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C1FD5C5-DEBF-49E1-B6D0-6EFFF4F9CE4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C1FD5C5-DEBF-49E1-B6D0-6EFFF4F9CE4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C1FD5C5-DEBF-49E1-B6D0-6EFFF4F9CE4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -175,6 +181,7 @@ Global
 		{E3B6CE90-BB8A-4E5D-A5AE-223F681204DF} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
 		{82FE8335-6674-48FB-859D-27309E706DDD} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
 		{8C571B7C-68A5-42F4-890E-6D3B9978367B} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
+		{4C1FD5C5-DEBF-49E1-B6D0-6EFFF4F9CE4B} = {DD51C453-21A0-4639-9163-4EBF895F4546}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C31E5600-E4DC-4009-A5F6-E5250C8085F4}

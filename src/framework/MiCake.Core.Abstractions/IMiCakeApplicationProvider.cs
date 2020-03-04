@@ -1,11 +1,7 @@
-﻿using System;
-
-namespace MiCake.Core
+﻿namespace MiCake.Core
 {
-    public interface IMiCakeApplicationProvider
+    public interface IMiCakeBuilderProvider
     {
-        void Initialize(IServiceProvider serviceProvider);
-
-        IMiCakeApplication GetApplication();
+        IMiCakeBuilder GetMiCakeBuilder();
     }
 }

@@ -25,7 +25,7 @@ namespace MiCake.Autofac
              });
         }
 
-        public override void PreModuleInitialization(ModuleBearingContext context)
+        public override void PreInitialization(ModuleBearingContext context)
         {
             if (!(context.ServiceProvider is AutofacServiceProvider))
                 throw new ArgumentException("It is detected that you are trying to use aufofac in micake, but you are not registered in host.");

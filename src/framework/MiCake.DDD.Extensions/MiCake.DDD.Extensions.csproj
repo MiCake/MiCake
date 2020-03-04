@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MiCake.Mapster\MiCake.Mapster.csproj" />
+    <ProjectReference Include="..\MiCake.Mapster\MiCake.Mapster.csproj" />
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
     <ProjectReference Include="..\MiCake.DDD.Domain\MiCake.DDD.Domain.csproj" />
   </ItemGroup>

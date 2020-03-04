@@ -8,7 +8,7 @@ namespace MiCake.Core.Modularity
     public interface IMiCakeModuleManager
     {
         /// <summary>
-        /// Include all modules info <see cref="IMiCakeModuleContext"/>
+        /// Include all modules info.
         /// </summary>
         IMiCakeModuleContext ModuleContext { get; }
 
@@ -21,7 +21,14 @@ namespace MiCake.Core.Modularity
         /// Add <see cref="IMiCakeModule"/> to collection.
         /// It's will be populated when call <see cref="PopulateModules(Type)"/>
         /// </summary>
-        void AddMiCakeModule();
+        /// <param name="moduleType"><see cref="IMiCakeModule"/> to be added</param>
+        void AddMiCakeModule(Type moduleType);
+
+        /// <summary>
+        /// Add third-party extension module for micake
+        /// It's will be populated when call <see cref="PopulateModules(Type)"/>
+        /// </summary>
+        void AddFeatureModule(Type featureModule);
 
         /// <summary>
         /// Populate modules.
@@ -35,10 +42,5 @@ namespace MiCake.Core.Modularity
         /// <param name="moduleType">micake module type</param>
         /// <returns><see cref="MiCakeModuleDescriptor"/></returns>
         MiCakeModuleDescriptor GetMiCakeModule(Type moduleType);
-
-        /// <summary>
-        /// Add third-party extension module for micake
-        /// </summary>
-        void AddFeatureModule(Type featureModule);
     }
 }

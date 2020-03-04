@@ -2,14 +2,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.Core.Builder
+namespace MiCake.Core
 {
     public interface IMiCakeAppContext
     {
         /// <summary>
         /// <see cref="IMiCakeModuleManager"/>
         /// </summary>
-        public IMiCakeModuleManager Modules { get; }
+        public IMiCakeModuleManager ModuleManager { get; }
 
         /// <summary>
         /// <see cref="MiCakeApplicationOptions"/>

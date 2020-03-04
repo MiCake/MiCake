@@ -9,9 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Autofac\MiCake.Autofac.csproj" />
-    <ProjectReference Include="..\MiCake.EntityFrameworkCore.Extensions\MiCake.EntityFrameworkCore.Extensions.csproj" />
-    <ProjectReference Include="..\MiCake.Serilog\MiCake.Serilog.csproj" />
+    <ProjectReference Include="..\MiCake.DDD.Extensions\MiCake.DDD.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

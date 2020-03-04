@@ -12,9 +12,5 @@
         /// Auto register service to dependency injection framework.
         /// </summary>
         public bool IsAutoRegisterServices { get; }
-
-        void Initialization(ModuleBearingContext context);
-
-        void Shuntdown(ModuleBearingContext context);
     }
 }

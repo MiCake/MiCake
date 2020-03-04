@@ -2,12 +2,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.Core.Builder
+namespace MiCake.Core
 {
     /// <summary>
     /// a build for <see cref="IMiCakeApplication"/>
     /// </summary>
-    public class MiCakeAppBuilder : IMiCakeAppBuilder
+    public class MiCakeBuilder : IMiCakeBuilder
     {
         private MiCakeApplicationOptions _options;
         private Type _entryType;
@@ -16,7 +16,7 @@ namespace MiCake.Core.Builder
 
         private Action<IMiCakeApplication, IServiceCollection> _configureAction;
 
-        public MiCakeAppBuilder(
+        public MiCakeBuilder(
             [NotNull] IServiceCollection services,
             [NotNull] Type entryType,
             MiCakeApplicationOptions options,
@@ -28,11 +28,13 @@ namespace MiCake.Core.Builder
             _options = options ?? new MiCakeApplicationOptions();
 
             _needNewScopeed = needNewScope;
+
+            AddEnvironment();
         }
 
         public IMiCakeApplication Build()
         {
-            var app = new MiCakeApplication(_services, _options, null);
+            var app = new MiCakeApplication(_services, _options, _needNewScopeed);
 
             _configureAction?.Invoke(app, _services);
             app.SetEntry(_entryType);
@@ -41,15 +43,22 @@ namespace MiCake.Core.Builder
             return app;
         }
 
-        public IMiCakeAppBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp)
+        public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp)
         {
             return ConfigureApplication((app, s) => configureApp(app));
         }
 
-        public IMiCakeAppBuilder ConfigureApplication(Action<IMiCakeApplication, IServiceCollection> configureApp)
+        public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication, IServiceCollection> configureApp)
         {
             _configureAction += configureApp;
             return this;
+        }
+
+        private void AddEnvironment()
+        {
+            var environment = new MiCakeEnvironment { EntryType = _entryType };
+
+            _services.AddSingleton<IMiCakeEnvironment>(environment);
         }
     }
 }

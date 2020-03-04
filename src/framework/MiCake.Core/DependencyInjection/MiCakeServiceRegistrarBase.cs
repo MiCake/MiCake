@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Extensions;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;

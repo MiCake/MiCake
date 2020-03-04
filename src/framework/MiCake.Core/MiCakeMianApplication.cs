@@ -1,33 +1,29 @@
-﻿using MiCake.Core.Builder;
-using MiCake.Core.Util;
+﻿using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MiCake.Core
 {
-    public class DefaultMiCakeApplicationProvider : MiCakeApplication, IMiCakeApplicationProvider
+    public sealed class DefaultMiCakeBuilderProvider : IMiCakeBuilderProvider
     {
-        public DefaultMiCakeApplicationProvider(
-            Type startUp,
-            IServiceCollection services,
-            MiCakeApplicationOptions options,
-            Action<IMiCakeBuilder> builderConfigAction) : base(services, options, builderConfigAction)
+        private IServiceCollection _services;
+        private Type _entryModule;
+        private MiCakeApplicationOptions _options;
+        private bool _needScope;
+
+        public DefaultMiCakeBuilderProvider(
+            [NotNull]IServiceCollection services,
+            [NotNull]Type entryModule,
+            [NotNull]MiCakeApplicationOptions options,
+            bool needScope)
         {
-            services.AddSingleton<IMiCakeApplicationProvider>(this);
+            _services = services;
+            _entryModule = entryModule;
+            _options = options;
+            _needScope = needScope;
         }
 
-        public IMiCakeApplication GetApplication()
-        {
-            return this;
-        }
-
-        public void Initialize(IServiceProvider serviceProvider)
-        {
-            CheckValue.NotNull(serviceProvider, nameof(serviceProvider));
-
-            SetServiceProvider(serviceProvider);
-
-            Start();
-        }
+        public IMiCakeBuilder GetMiCakeBuilder()
+             => new MiCakeBuilder(_services, _entryModule, _options, _needScope);
     }
 }

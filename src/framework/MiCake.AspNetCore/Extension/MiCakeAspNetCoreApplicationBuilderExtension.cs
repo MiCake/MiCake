@@ -9,7 +9,7 @@ namespace MiCake
         public static IApplicationBuilder InitMiCake(this IApplicationBuilder app)
         {
             var provider = app.ApplicationServices;
-            provider.GetRequiredService<IMiCakeApplicationProvider>()
+            provider.GetRequiredService<IMiCakeBuilderProvider>()
                     ?.Initialize(provider);
 
             return app;
