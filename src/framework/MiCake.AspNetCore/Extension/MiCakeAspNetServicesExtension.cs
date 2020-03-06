@@ -1,4 +1,6 @@
 ﻿using MiCake.Core;
+using MiCake.Core.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
@@ -48,6 +50,29 @@ namespace MiCake
             bool needNewScope = false)
         {
             return AddMiCake(services, typeof(TStartupModule), configOptions, needNewScope);
+        }
+
+        public static void StartMiCake(this IApplicationBuilder applicationBuilder)
+        {
+            var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
+                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
+                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
+
+            if (micakeApp is INeedNecessaryParts<IServiceProvider> needServiceProvider)
+            {
+                needServiceProvider.SetNecessaryParts(applicationBuilder.ApplicationServices);
+            }
+
+            micakeApp.Start();
+        }
+
+        public static void ShutdownMiCake(this IApplicationBuilder applicationBuilder)
+        {
+            var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
+                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
+                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
+
+            micakeApp.ShutDown();
         }
     }
 }

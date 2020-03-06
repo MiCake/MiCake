@@ -1,8 +1,9 @@
-﻿using MiCake.Core.DependencyInjection;
+﻿using MiCake.Audit.Modules;
+using MiCake.Core.DependencyInjection;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.EntityFrameworkCore.Diagnostics;
+using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -12,8 +13,8 @@ namespace MiCake.EntityFrameworkCore.Modules
 {
     [DependOn(
         typeof(MiCakeUowModule),
-        typeof(MiCakeDDDExtensionsModule),
-        typeof(MiCakeDomainModule))]
+        typeof(MiCakeAuditModule),
+        typeof(MiCakeDDDExtensionsModule))]
     public class MiCakeEFCoreModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
@@ -35,6 +36,11 @@ namespace MiCake.EntityFrameworkCore.Modules
             efCoreRepositoryRegister.Register(context.MiCakeModules, services);
 
             services.AddScoped(typeof(SaveChangesInterceptor));
+
+            //add audit life time
+            services.AddScoped<IEfRepositoryPreSaveChanges, AuditEFRepositoryLifetime>();
+            //domain events dispatcher
+            services.AddScoped<IEfRepositoryPreSaveChanges, DomainEventsEFRepositoryLifetime>();
         }
 
         public override void Initialization(ModuleBearingContext context)

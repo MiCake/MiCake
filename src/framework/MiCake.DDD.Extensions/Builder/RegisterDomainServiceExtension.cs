@@ -1,5 +1,5 @@
-﻿using MiCake.Core;
-using MiCake.Core.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Modularity;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +9,7 @@ using System;
 // Default method,so namespace is the highest level
 namespace MiCake
 {
-    public static class RegisterDomainServiceForBuilderExtension
+    public static class RegisterDomainServiceExtension
     {
         /// <summary>
         /// Add customer <see cref="IDomainService"/>
@@ -18,7 +18,7 @@ namespace MiCake
         /// <param name="implementationType">ImplementationType type of domain service</param>
         /// <param name="miCakeServiceLifeTime"><see cref="MiCakeServiceLifetime"/></param>
         public static void RegisterDomainService(
-            this IMiCakeBuilder builder,
+            this ModuleConfigServiceContext context,
             Type serviceType,
             Type implementationType,
             MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
@@ -30,7 +30,7 @@ namespace MiCake
                 throw new ArgumentException($"{implementationType.FullName} is not a domain service,Please give a right type!");
 
             var serviceDescpritor = new ServiceDescriptor(serviceType, implementationType, miCakeServiceLifeTime.ConvertToMSLifetime());
-            builder.Services.TryAdd(serviceDescpritor);
+            context.Services.TryAdd(serviceDescpritor);
         }
 
         /// <summary>
@@ -40,11 +40,10 @@ namespace MiCake
         /// <typeparam name="TImpl">ImplementationType type of domain service</typeparam>
         /// <param name="miCakeServiceLifeTime"><see cref="MiCakeServiceLifetime"/></param>
         public static void RegisterDomainService<TService, TImpl>(
-            this IMiCakeBuilder builder,
+            this ModuleConfigServiceContext context,
             MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
         {
-            RegisterDomainService(builder, typeof(TService), typeof(TImpl), miCakeServiceLifeTime);
+            RegisterDomainService(context, typeof(TService), typeof(TImpl), miCakeServiceLifeTime);
         }
-
     }
 }

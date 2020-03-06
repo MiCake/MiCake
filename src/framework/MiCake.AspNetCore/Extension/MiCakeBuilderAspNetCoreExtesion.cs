@@ -1,8 +1,8 @@
-﻿using MiCake.Core.Builder;
+﻿using MiCake.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.AspNetCore.Extension
+namespace MiCake.AspNetCore
 {
     public static class MiCakeBuilderAspNetCoreExtesion
     {
@@ -19,7 +19,7 @@ namespace MiCake.AspNetCore.Extension
             MiCakeAspNetOptions defaultOptions = new MiCakeAspNetOptions();
             optionsBulder?.Invoke(defaultOptions);
 
-            builder.Services.AddOptions<MiCakeAspNetOptions>();
+            builder.ConfigureApplication((app, services) => services.AddOptions<MiCakeAspNetOptions>());
 
             return builder;
         }

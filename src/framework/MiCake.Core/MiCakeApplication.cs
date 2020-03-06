@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
 using MiCake.Core.ExceptionHandling;
 using MiCake.Core.Logging;
@@ -9,10 +10,10 @@ using System;
 
 namespace MiCake.Core
 {
-    public class MiCakeApplication : IMiCakeApplication
+    public class MiCakeApplication : IMiCakeApplication, INeedNecessaryParts<IServiceProvider>
     {
         public MiCakeApplicationOptions ApplicationOptions { get; private set; }
-        public IMiCakeModuleManager ModuleManager { get; private set; }
+        public IMiCakeModuleManager ModuleManager { get; private set; } = new MiCakeModuleManager();
 
         private readonly IServiceCollection _services;
         private IServiceScope _appServiceScope;
@@ -35,7 +36,7 @@ namespace MiCake.Core
             }
         }
 
-        private IMiCakeModuleContext ModuleContext => ModuleManager.ModuleContext;
+        private IMiCakeModuleContext ModuleContext => ModuleManager?.ModuleContext;
 
         private Type _entryType;
         private IMiCakeModuleBoot _miCakeModuleBoot;
@@ -95,9 +96,13 @@ namespace MiCake.Core
                 throw new InvalidOperationException($"MiCake has already build common services." +
                                         $"The {nameof(Initialize)} method only can called once!");
 
+            if (_entryType == null)
+                throw new NullReferenceException($"Cannot find entry module type,Please marke sure you has already call {nameof(SetEntry)} method.");
+
             AddMiCakeCoreSerivces(_services);
 
-            PopulateModules(out var moduleManager);
+            //Find all micake modules according to the entry module type
+            ModuleManager.PopulateModules(_entryType);
 
             var logger = _services.BuildServiceProvider().GetService<ILogger<MiCakeModuleBoot>>();
             _miCakeModuleBoot = new MiCakeModuleBoot(logger, ModuleContext.AllModules);
@@ -123,12 +128,10 @@ namespace MiCake.Core
         /// <summary>
         /// Set <see cref="IServiceProvider"/>.
         /// </summary>
-        protected virtual IMiCakeApplication SetServiceProvider(IServiceProvider serviceProvider)
+        void INeedNecessaryParts<IServiceProvider>.SetNecessaryParts([NotNull]IServiceProvider parts)
         {
-            _serviceProvider = serviceProvider ??
-                               throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");
-
-            return this;
+            _serviceProvider = parts ??
+                              throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");
         }
 
         private void AddMiCakeCoreSerivces(IServiceCollection services)
@@ -142,15 +145,6 @@ namespace MiCake.Core
             });
             services.AddSingleton<IMiCakeErrorHandler, DefaultMiCakeErrorHandler>();
             services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
-        }
-
-        //Find all micake modules according to the entry module type
-        private void PopulateModules(out IMiCakeModuleManager moduleManager)
-        {
-            var manager = new MiCakeModuleManager();
-            manager.PopulateModules(_entryType);
-
-            moduleManager = manager;
         }
 
         //Inject service into container according to matching rules

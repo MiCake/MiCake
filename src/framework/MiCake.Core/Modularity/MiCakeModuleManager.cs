@@ -58,6 +58,11 @@ namespace MiCake.Core.Modularity
         public void AddMiCakeModule(Type moduleType)
         {
             MiCakeModuleHelper.CheckModule(moduleType);
+
+            //add denpend on  modules
+            var externalDependedModules = MiCakeModuleHelper.FindDependedModuleTypes(moduleType);
+            _externalModulesType.AddIfNotContains(externalDependedModules);
+
             _externalModulesType.AddIfNotContains(moduleType);
         }
 

@@ -1,9 +1,4 @@
-﻿using MiCake.Identity.User;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-
-namespace MiCake.Identity.Extensions
+﻿namespace MiCake.Identity.Extensions
 {
     public static class MiCakeIdentityExtension
     {

@@ -1,6 +1,6 @@
 ﻿using MiCake.DDD.Extensions.LifeTime;
 
-namespace MiCake.EntityFrameworkCore.LifeTime
+namespace MiCake.EntityFrameworkCore
 {
     /// <summary>
     /// Provide a life cycle interface of repository operation process

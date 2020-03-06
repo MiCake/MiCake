@@ -14,7 +14,7 @@ namespace MiCake.DDD.Domain.Internel
         //see https://github.com/jbogard/MediatR.Extensions.Microsoft.DependencyInjection
         public static void ResigterDomainEventHandler(this IServiceCollection services, IMiCakeModuleCollection miCakeModules)
         {
-            var assemblies = miCakeModules.GetAssemblies().ToList();
+            var assemblies = miCakeModules.GetAssemblies(false).ToList();
 
             ConnectImplementationsToTypesClosing(typeof(IDomainEventHandler<>), services, assemblies, true);
         }

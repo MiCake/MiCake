@@ -25,7 +25,7 @@ namespace BaseMiCakeApplication.EFCore.Repositories
 
         public void UpdateLastWeekItineraryInfo(List<Itinerary> itineraries)
         {
-            
+
         }
     }
 }
