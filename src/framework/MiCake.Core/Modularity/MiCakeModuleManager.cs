@@ -29,13 +29,18 @@ namespace MiCake.Core.Modularity
 
             IMiCakeModuleCollection normalModules = ResolvingMiCakeModules(normalModulesType)
                                                             .ToMiCakeModuleCollection();
+            //Ensure that the position of the entry module is the last
+            if (normalModules[^1].Type != entryType)
+            {
+                normalModules.ExchangeOrder(s => s.Type == entryType, normalModules.Count - 1);
+            }
 
             IMiCakeModuleCollection featureModules = ResolvingMiCakeModules(_featureModulesType)
                                                             .ToMiCakeModuleCollection();
 
             IMiCakeModuleCollection allModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(normalModules, featureModules);
 
-            _moduleContext = new MiCakeModuleContext(normalModules, featureModules, allModules);
+            _moduleContext = new MiCakeModuleContext(allModules, normalModules, featureModules);
         }
 
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)

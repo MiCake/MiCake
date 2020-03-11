@@ -42,7 +42,7 @@ namespace MiCake.Core.Modularity
                 foreach (var miCakeModule in _modules)
                 {
                     _moduleLogger.LogModuleInfo(miCakeModule, $"MiCake {des}: ");
-                    configServicesLifetimes[index](miCakeModule.ModuleInstance, context);
+                    configServicesLifetimes[index](miCakeModule.Instance, context);
                 }
             }
             _configServiceActions?.Invoke(context);
@@ -60,7 +60,7 @@ namespace MiCake.Core.Modularity
                 foreach (var miCakeModule in _modules)
                 {
                     _moduleLogger.LogModuleInfo(miCakeModule, $"MiCake {des}: ");
-                    initializationLifetimes[index](miCakeModule.ModuleInstance, context);
+                    initializationLifetimes[index](miCakeModule.Instance, context);
                 }
             }
             _initializationActions?.Invoke(context);
@@ -78,7 +78,7 @@ namespace MiCake.Core.Modularity
                 foreach (var miCakeModule in _modules)
                 {
                     _moduleLogger.LogModuleInfo(miCakeModule, $"MiCake {des}: ");
-                    shutdownLifetimes[index](miCakeModule.ModuleInstance, context);
+                    shutdownLifetimes[index](miCakeModule.Instance, context);
                 }
             }
 

@@ -83,9 +83,9 @@ namespace MiCake.Core.Modularity
             foreach (var featureModule in featureModules)
             {
                 bool depencyIsAfter = featureModule.Dependencies.Any(module =>
-                                        ((IFeatureModule)module.ModuleInstance).Order == FeatureModuleLoadOrder.AfterCommonModule);
+                                        ((IFeatureModule)module.Instance).Order == FeatureModuleLoadOrder.AfterCommonModule);
 
-                var currentOrder = ((IFeatureModule)featureModule.ModuleInstance).Order;
+                var currentOrder = ((IFeatureModule)featureModule.Instance).Order;
                 if (!depencyIsAfter && currentOrder == FeatureModuleLoadOrder.BeforeCommonModule)
                 {
                     beforeFeatureModules.Add(featureModule);
@@ -99,10 +99,10 @@ namespace MiCake.Core.Modularity
             return (beforeFeatureModules, afterFeatureModules);
         }
 
-        internal static List<Type> FindAllModuleTypes(Type startupModuleType)
+        internal static List<Type> FindAllModuleTypes(Type entryModuleType)
         {
             var moduleTypes = new List<Type>();
-            AddModuleAndDependenciesResursively(moduleTypes, startupModuleType);
+            AddModuleAndDependenciesResursively(moduleTypes, entryModuleType);
             return moduleTypes;
         }
 

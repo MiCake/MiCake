@@ -59,7 +59,7 @@ namespace MiCake.Core.Modularity
             assemblies = _descriptors.Where(s =>
                                             includeFrameworkModule ?
                                             true :
-                                            s.ModuleInstance.IsFrameworkLevel == includeFrameworkModule)
+                                            s.Instance.IsFrameworkLevel == includeFrameworkModule)
                                         .Select(s => s.Assembly).Distinct().ToArray();
 
             return assemblies;
