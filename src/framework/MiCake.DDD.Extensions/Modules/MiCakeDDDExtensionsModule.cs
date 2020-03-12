@@ -12,22 +12,18 @@ namespace MiCake.DDD.Extensions.Modules
     {
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
-            IDomainMetadata domainMetadata;
-            var domianLayerAsm = context.MiCakeApplicationOptions.DomianLayerAssemblies;
+            var services = context.Services;
 
-            using (var domainMetadataCreator = new DomainMetadataCreator(context.MiCakeModules, domianLayerAsm))
+            services.AddTransient<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
+            services.AddSingleton<DomainObjectFactory>();
+            services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
+            services.AddSingleton<DomainMetadata>(factory =>
             {
-                domainMetadataCreator.AddDescriptorProvider(new EntityDescriptorProvider());
-                domainMetadataCreator.AddDescriptorProvider(new AggregateRootDescriptorProvider(context.MiCakeModules));
+                var provider = factory.GetService<IDomainMetadataProvider>();
+                return provider.GetDomainMetadata();
+            });
 
-                domainMetadata = domainMetadataCreator.Create();
-            }
-
-            //auto call storage model ConfigureMapping()
-            StorageModelActivator storageModelActivator = new StorageModelActivator(domainMetadata);
-            storageModelActivator.LoadConfigMapping();
-
-            context.Services.AddSingleton(domainMetadata);
+            services.AddSingleton<IStorageModelActivator, StorageModelActivator>();
         }
     }
 }

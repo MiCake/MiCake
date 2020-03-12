@@ -103,6 +103,7 @@ namespace MiCake.Core
 
             //Find all micake modules according to the entry module type
             ModuleManager.PopulateModules(_entryType);
+            _services.AddSingleton(ModuleContext);
 
             var logger = _services.BuildServiceProvider().GetService<ILogger<MiCakeModuleBoot>>();
             _miCakeModuleBoot = new MiCakeModuleBoot(logger, ModuleContext.AllModules);

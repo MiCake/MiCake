@@ -8,7 +8,7 @@ namespace MiCake.Core.Modularity
     /// <summary>
     /// Micake module boot.use to initialization module and shutdown module.
     /// </summary>
-    public class MiCakeModuleBoot : IMiCakeModuleBoot
+    internal class MiCakeModuleBoot : IMiCakeModuleBoot
     {
         private ILogger<MiCakeModuleBoot> _logger;
 

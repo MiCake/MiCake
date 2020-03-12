@@ -8,16 +8,16 @@ namespace MiCake.DDD.Extensions.Store
     /// <summary>
     /// This class is used to automatically call the mapping configuration method of storage model
     /// </summary>
-    internal class StorageModelActivator
+    internal class StorageModelActivator : IStorageModelActivator
     {
-        private IDomainMetadata _domainMetadata;
+        private DomainMetadata _domainMetadata;
 
-        public StorageModelActivator(IDomainMetadata domainMetadata)
+        public StorageModelActivator(DomainMetadata domainMetadata)
         {
             _domainMetadata = domainMetadata;
         }
 
-        public virtual void LoadConfigMapping()
+        public void ActivateMapping()
         {
             var storageModels = FilterStorageModelFormMetadata(_domainMetadata);
 
@@ -27,9 +27,9 @@ namespace MiCake.DDD.Extensions.Store
             }
         }
 
-        private List<Type> FilterStorageModelFormMetadata(IDomainMetadata domainMetadata)
+        private List<Type> FilterStorageModelFormMetadata(DomainMetadata domainMetadata)
         {
-            return domainMetadata.AggregateRoots.Where(s => s.HasStorageModel && s.StorageModel != null)
+            return domainMetadata.DomainObject.AggregateRoots.Where(s => s.HasStorageModel && s.StorageModel != null)
                                                 .Select(j => j.StorageModel).ToList();
         }
     }

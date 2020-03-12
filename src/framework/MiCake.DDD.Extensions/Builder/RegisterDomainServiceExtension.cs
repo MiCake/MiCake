@@ -23,10 +23,10 @@ namespace MiCake
             Type implementationType,
             MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
         {
-            if (!DomianTypeHelper.IsDomainService(serviceType))
+            if (!DomainTypeHelper.IsDomainService(serviceType))
                 throw new ArgumentException($"{serviceType.FullName} is not a domain service,Please give a right type!");
 
-            if (!DomianTypeHelper.IsRepository(implementationType))
+            if (!DomainTypeHelper.IsRepository(implementationType))
                 throw new ArgumentException($"{implementationType.FullName} is not a domain service,Please give a right type!");
 
             var serviceDescpritor = new ServiceDescriptor(serviceType, implementationType, miCakeServiceLifeTime.ConvertToMSLifetime());

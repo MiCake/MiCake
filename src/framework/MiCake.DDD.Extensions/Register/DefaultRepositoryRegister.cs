@@ -23,15 +23,15 @@ namespace MiCake.DDD.Extensions.Register
         protected virtual bool IsRegisterFreeRepository => true;
 
         /// <summary>
-        /// <see cref="IDomainMetadata"/>
+        /// <see cref="Metadata.DomainMetadata"/>
         /// </summary>
-        protected virtual IDomainMetadata DomainMetadata { get; private set; }
+        protected virtual DomainMetadata DomainMetadata { get; private set; }
 
         public DefaultRepositoryRegister([NotNull]IServiceCollection services)
         {
-            var domainMetadata = services.BuildServiceProvider().GetService<IDomainMetadata>();
+            var domainMetadata = services.BuildServiceProvider().GetService<DomainMetadata>();
             if (domainMetadata == null)
-                throw new NullReferenceException($"Please make sure {nameof(IDomainMetadata)} has created.");
+                throw new NullReferenceException($"Please make sure {nameof(Metadata.DomainMetadata)} has created.");
 
             DomainMetadata = domainMetadata;
         }

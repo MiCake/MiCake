@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using Xunit;
-using MiCake.Core.Util.Collections;
-using System.Linq;
+﻿using MiCake.Core.Util.Collections;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Xunit;
 
 namespace MiCake.Core.Tests.Util
 {

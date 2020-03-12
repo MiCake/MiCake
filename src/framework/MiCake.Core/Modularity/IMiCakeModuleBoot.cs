@@ -5,7 +5,7 @@ namespace MiCake.Core.Modularity
     /// <summary>
     /// Micake module boot.use to initialization module and shutdown module.
     /// </summary>
-    public interface IMiCakeModuleBoot
+    internal interface IMiCakeModuleBoot
     {
         void ConfigServices(ModuleConfigServiceContext context);
 

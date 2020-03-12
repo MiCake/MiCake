@@ -16,10 +16,10 @@ namespace MiCake
         /// <param name="implementationType">Implementation type of repository</param>
         public static void RegisterRepository(this ModuleConfigServiceContext context, Type serviceType, Type implementationType)
         {
-            if (!DomianTypeHelper.IsRepository(serviceType))
+            if (!DomainTypeHelper.IsRepository(serviceType))
                 throw new ArgumentException($"{serviceType.FullName} is not a {nameof(IRepository)},Please give a right type!");
 
-            if (!DomianTypeHelper.IsRepository(implementationType))
+            if (!DomainTypeHelper.IsRepository(implementationType))
                 throw new ArgumentException($"{implementationType.FullName} is not a {nameof(IRepository)},Please give a right type!");
 
             var services = context.Services;

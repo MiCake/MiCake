@@ -3,7 +3,7 @@
 namespace MiCake.Core.Modularity
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public class DependOnAttribute : Attribute, IDependedTypesProvider
+    public class DependOnAttribute : Attribute
     {
         public Type[] DependedTypes { get; }
 

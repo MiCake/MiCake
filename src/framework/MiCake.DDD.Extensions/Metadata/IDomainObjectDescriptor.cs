@@ -5,7 +5,7 @@ namespace MiCake.DDD.Extensions.Metadata
     /// <summary>
     /// Describes an domain object.
     /// </summary>
-    public interface IObjectDescriptor
+    public interface IDomainObjectDescriptor
     {
         /// <summary>
         /// Object Type
@@ -16,11 +16,11 @@ namespace MiCake.DDD.Extensions.Metadata
     /// <summary>
     /// Describes an domain object.
     /// </summary>
-    public abstract class ObjectDescriptor : IObjectDescriptor
+    public abstract class DomainObjectDescriptor : IDomainObjectDescriptor
     {
         public virtual Type Type { get; private set; }
 
-        public ObjectDescriptor(Type type)
+        public DomainObjectDescriptor(Type type)
         {
             Type = type;
         }

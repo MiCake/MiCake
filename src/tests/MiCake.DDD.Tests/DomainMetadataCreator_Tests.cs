@@ -24,7 +24,7 @@ namespace MiCake.DDD.Tests
         public void SpecifyAssembly_ShouldOnlyLoadTheseAsm()
         {
             Assembly[] specifyAsm = new Assembly[1] { typeof(DDDTestModule).Assembly };
-            IDomainMetadata result;
+            DomainMetadata result;
 
             using (var creator = new DomainMetadataCreator(MiCakeModules, specifyAsm))
             {
@@ -38,7 +38,7 @@ namespace MiCake.DDD.Tests
         [Fact]
         public void NotSpecifyAssembly_ShouldFindAsm()
         {
-            IDomainMetadata result;
+            DomainMetadata result;
 
             using (var creator = new DomainMetadataCreator(MiCakeModules))
             {
@@ -52,7 +52,7 @@ namespace MiCake.DDD.Tests
         public void HasAggregateRootProvider_ShouldFindAggregate()
         {
             Assembly[] specifyAsm = new Assembly[1] { typeof(DDDTestModule).Assembly };
-            IDomainMetadata result;
+            DomainMetadata result;
 
             using (var creator = new DomainMetadataCreator(MiCakeModules, specifyAsm))
             {
@@ -72,7 +72,7 @@ namespace MiCake.DDD.Tests
         [Fact]
         public void HasEntityProvider_ShouldFindEntity()
         {
-            IDomainMetadata result;
+            DomainMetadata result;
 
             using (var creator = new DomainMetadataCreator(MiCakeModules))
             {

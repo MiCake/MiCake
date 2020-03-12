@@ -1,4 +1,5 @@
-﻿using MiCake.Core;
+﻿using MiCake.AspNetCore.Modules;
+using MiCake.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -19,7 +20,11 @@ namespace MiCake.AspNetCore
             MiCakeAspNetOptions defaultOptions = new MiCakeAspNetOptions();
             optionsBulder?.Invoke(defaultOptions);
 
-            builder.ConfigureApplication((app, services) => services.AddOptions<MiCakeAspNetOptions>());
+            builder.ConfigureApplication((app, services) =>
+            {
+                app.ModuleManager.AddMiCakeModule(typeof(MiCakeAspNetCoreModule));
+                services.AddOptions<MiCakeAspNetOptions>();
+            });
 
             return builder;
         }

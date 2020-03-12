@@ -3,9 +3,9 @@
 namespace MiCake.DDD.Extensions.Metadata
 {
     /// <summary>
-    /// A metadata for micake domain layer.
+    ///  A context object for <see cref="IDomainObjectModelProvider"/>.
     /// </summary>
-    public class DomainMetadata
+    public class DomainObjectModelContext
     {
         /// <summary>
         /// Assembly containing domain objects
@@ -13,15 +13,13 @@ namespace MiCake.DDD.Extensions.Metadata
         public Assembly[] DomainLayerAssembly { get; }
 
         /// <summary>
-        /// Model for all domain object descriptor.
+        /// A result of <see cref="DomainObjectModel"/>
         /// </summary>
-        public DomainObjectModel DomainObject { get; }
+        public DomainObjectModel Result { get; } = new DomainObjectModel();
 
-        public DomainMetadata(Assembly[] assemblies, DomainObjectModel domainObjectModel)
+        public DomainObjectModelContext(Assembly[] assemblies)
         {
             DomainLayerAssembly = assemblies;
-
-            DomainObject = domainObjectModel;
         }
     }
 }
