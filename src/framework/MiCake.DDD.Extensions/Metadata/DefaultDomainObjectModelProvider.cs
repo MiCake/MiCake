@@ -24,7 +24,7 @@ namespace MiCake.DDD.Extensions.Metadata
 
         public int Order => -1000;
 
-        public void OnProvidersExecuted(DomainObjectModelContext context)
+        public void OnProvidersExecuting(DomainObjectModelContext context)
         {
             var allTypes = context.DomainLayerAssembly.SelectMany(s => s.GetTypes().Where(type => TypeHelper.IsConcrete(type)));
 
@@ -45,7 +45,7 @@ namespace MiCake.DDD.Extensions.Metadata
             }
         }
 
-        public void OnProvidersExecuting(DomainObjectModelContext context)
+        public void OnProvidersExecuted(DomainObjectModelContext context)
         {
         }
 

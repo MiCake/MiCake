@@ -1,5 +1,6 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.Domain.Repositories;
+using MiCake.DDD.Domain;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -12,11 +13,14 @@ namespace BaseMiCakeApplication.Controllers
     public class ItineraryController : ControllerBase
     {
         private readonly IItineraryRepository _repository;
+        private readonly IRepository<Itinerary, Guid> _test;
 
         public ItineraryController(
+            IRepository<Itinerary,Guid> test,
             IItineraryRepository repository)
         {
             _repository = repository;
+            _test = test;
         }
 
         [HttpGet]
