@@ -13,6 +13,10 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '3.x'
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:
@@ -25,7 +29,7 @@ steps:
   displayName: dotnet test
   inputs:
     command: 'test'
-    projects: 'src/tests/*.csproj'
+    projects: 'src/tests/**/*.csproj'
     arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
     nobuild: true
 
