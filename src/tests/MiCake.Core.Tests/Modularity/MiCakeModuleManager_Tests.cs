@@ -17,14 +17,15 @@ namespace MiCake.Core.Tests.Modularity
         {
             var moduleManager = new MiCakeModuleManager();
             moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+            var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleManager.AllModules;
+            var allmodules = moduleContext.AllModules;
             Assert.Equal(1, allmodules.Count);
 
-            var defaultModules = moduleManager.MiCakeModules;
+            var defaultModules = moduleContext.MiCakeModules;
             Assert.Equal(1, defaultModules.Count);
 
-            var featureModules = moduleManager.FeatureModules;
+            var featureModules = moduleContext.FeatureModules;
             Assert.Equal(0, featureModules.Count);
         }
 
@@ -33,22 +34,23 @@ namespace MiCake.Core.Tests.Modularity
         {
             var moduleManager = new MiCakeModuleManager();
             moduleManager.PopulateModules(typeof(StartUpModule));
+            var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleManager.AllModules;
+            var allmodules = moduleContext.AllModules;
             Assert.Equal(3, allmodules.Count);
 
-            var defaultModules = moduleManager.MiCakeModules;
+            var defaultModules = moduleContext.MiCakeModules;
             Assert.Equal(3, defaultModules.Count);
 
-            var featureModules = moduleManager.FeatureModules;
+            var featureModules = moduleContext.FeatureModules;
             Assert.Equal(0, featureModules.Count);
 
             //right order
-            var firstModule = moduleManager.MiCakeModules.FirstOrDefault();
+            var firstModule = moduleContext.MiCakeModules.FirstOrDefault();
             Assert.NotNull(firstModule);
             Assert.Equal(typeof(DepencyModuleA), firstModule.Type);
 
-            var lastModule = moduleManager.MiCakeModules.LastOrDefault();
+            var lastModule = moduleContext.MiCakeModules.LastOrDefault();
             Assert.NotNull(lastModule);
             Assert.Equal(typeof(StartUpModule), lastModule.Type);
         }
@@ -59,14 +61,15 @@ namespace MiCake.Core.Tests.Modularity
             var moduleManager = new MiCakeModuleManager();
             moduleManager.AddFeatureModule(typeof(FeatureModuleA));
             moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+            var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleManager.AllModules;
+            var allmodules = moduleContext.AllModules;
             Assert.Equal(2, allmodules.Count);
 
-            var defaultModules = moduleManager.MiCakeModules;
+            var defaultModules = moduleContext.MiCakeModules;
             Assert.Equal(1, defaultModules.Count);
 
-            var featureModules = moduleManager.FeatureModules;
+            var featureModules = moduleContext.FeatureModules;
             Assert.Equal(1, featureModules.Count);
         }
 
@@ -85,22 +88,23 @@ namespace MiCake.Core.Tests.Modularity
             moduleManager.AddFeatureModule(typeof(FeatureModuleBDepencyModuleA));
             moduleManager.AddFeatureModule(typeof(FeatureModuleCDencyModuleB));
             moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+            var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleManager.AllModules;
+            var allmodules = moduleContext.AllModules;
             Assert.Equal(4, allmodules.Count);
 
-            var defaultModules = moduleManager.MiCakeModules;
+            var defaultModules = moduleContext.MiCakeModules;
             Assert.Equal(1, defaultModules.Count);
 
-            var featureModules = moduleManager.FeatureModules;
+            var featureModules = moduleContext.FeatureModules;
             Assert.Equal(3, featureModules.Count);
 
             //order
-            var firstModule = moduleManager.FeatureModules.FirstOrDefault();
+            var firstModule = moduleContext.FeatureModules.FirstOrDefault();
             Assert.NotNull(firstModule);
             Assert.Equal(typeof(FeatureModuleA), firstModule.Type);
 
-            var lastModule = moduleManager.FeatureModules.LastOrDefault();
+            var lastModule = moduleContext.FeatureModules.LastOrDefault();
             Assert.NotNull(lastModule);
             Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.Type);
         }
@@ -113,22 +117,23 @@ namespace MiCake.Core.Tests.Modularity
             moduleManager.AddFeatureModule(typeof(FeatureModuleBDepencyModuleA));
             moduleManager.AddFeatureModule(typeof(FeatureModuleCDencyModuleB));
             moduleManager.PopulateModules(typeof(StartUpModule));
+            var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleManager.AllModules;
+            var allmodules = moduleContext.AllModules;
             Assert.Equal(6, allmodules.Count);
 
-            var defaultModules = moduleManager.MiCakeModules;
+            var defaultModules = moduleContext.MiCakeModules;
             Assert.Equal(3, defaultModules.Count);
 
-            var featureModules = moduleManager.FeatureModules;
+            var featureModules = moduleContext.FeatureModules;
             Assert.Equal(3, featureModules.Count);
 
             //order
-            var firstModule = moduleManager.AllModules.FirstOrDefault();
+            var firstModule = moduleContext.AllModules.FirstOrDefault();
             Assert.NotNull(firstModule);
             Assert.Equal(typeof(DepencyModuleA), firstModule.Type);
 
-            var lastModule = moduleManager.AllModules.LastOrDefault();
+            var lastModule = moduleContext.AllModules.LastOrDefault();
             Assert.NotNull(lastModule);
             Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.Type);
         }

@@ -11,7 +11,7 @@ namespace MiCake.Core.Modularity
     /// </summary>
     public class MiCakeModuleDescriptor
     {
-        public MiCakeModule ModuleInstance { get; }
+        public MiCakeModule Instance { get; }
 
         public Type Type { get; }
 
@@ -22,7 +22,7 @@ namespace MiCake.Core.Modularity
 
         public MiCakeModuleDescriptor(Type type, MiCakeModule instance)
         {
-            ModuleInstance = instance;
+            Instance = instance;
             Type = type;
             Assembly = type.Assembly;
             _dependencies = new List<MiCakeModuleDescriptor>();

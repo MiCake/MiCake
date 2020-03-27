@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\framework\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\framework\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\framework\MiCake.Serilog\MiCake.Serilog.csproj" />
   </ItemGroup>
 
 </Project>

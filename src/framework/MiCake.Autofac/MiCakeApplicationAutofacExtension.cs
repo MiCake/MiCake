@@ -1,12 +1,15 @@
-﻿using MiCake.Core.Builder;
+﻿using MiCake.Core;
 
 namespace MiCake.Autofac
 {
     public static class MiCakeApplicationAutofacExtension
     {
-        public static IMiCakeBuilder UseAutofac(this IMiCakeBuilder builder)
+        public static IMiCakeBuilder AddAutofac(this IMiCakeBuilder builder)
         {
-            builder.ModuleManager.AddFeatureModule(typeof(MiCakeAutofacModule));
+            builder.ConfigureApplication(app =>
+            {
+                app.ModuleManager.AddFeatureModule(typeof(MiCakeAutofacModule));
+            });
 
             return builder;
         }

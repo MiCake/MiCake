@@ -7,27 +7,16 @@ namespace MiCake.DDD.Extensions.Metadata
     /// <summary>
     /// Describes an <see cref="IEntity"/>
     /// </summary>
-    public class EntityDescriptor : ObjectDescriptor
+    public class EntityDescriptor : DomainObjectDescriptor
     {
-        private Type _keyType;
-
         /// <summary>
         /// The primary key of <see cref="IEntity"/>
         /// </summary>
-        public Type PrimaryKey
-        {
-            get
-            {
-                if (_keyType == null)
-                {
-                    _keyType = EntityHelper.FindPrimaryKeyType(Type);
-                }
-                return _keyType;
-            }
-        }
+        public Type PrimaryKey { get; }
 
         public EntityDescriptor(Type type) : base(type)
         {
+            PrimaryKey = EntityHelper.FindPrimaryKeyType(type);
         }
     }
 }

@@ -16,12 +16,7 @@ namespace MiCake.EntityFrameworkCore.Extensions.Modules
 
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
-            var services = context.Services;
-
-            //add audit life time
-            services.AddScoped<IEfRepositoryPreSaveChanges, AuditEFRepositoryLifetime>();
-            //domain events dispatcher
-            services.AddScoped<IEfRepositoryPreSaveChanges, DomainEventsEFRepositoryLifetime>();
+            
         }
     }
 }

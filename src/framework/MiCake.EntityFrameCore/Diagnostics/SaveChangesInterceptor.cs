@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Reactive;
 using MiCake.DDD.Extensions;
-using MiCake.EntityFrameworkCore.LifeTime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;

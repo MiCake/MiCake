@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Extensions;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
@@ -25,7 +24,7 @@ namespace MiCake.Core.DependencyInjection
             var injectServices = new List<InjectServiceInfo>();
 
             //filter need register modules
-            var needRegitsterModules = miCakeModules.Where(s => s.ModuleInstance.IsAutoRegisterServices)
+            var needRegitsterModules = miCakeModules.Where(s => s.Instance.IsAutoRegisterServices)
                                                     .ToMiCakeModuleCollection();
 
             var assemblies = needRegitsterModules.GetAssemblies();

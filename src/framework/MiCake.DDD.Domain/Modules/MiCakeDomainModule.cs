@@ -9,7 +9,7 @@ namespace MiCake.DDD.Domain.Modules
     {
         public override bool IsFrameworkLevel => false;
 
-        public override void ConfigServices(ModuleConfigServiceContext context)
+        public override void PreConfigServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
             var moudules = context.MiCakeModules;

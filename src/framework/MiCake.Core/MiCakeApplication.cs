@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Builder;
+﻿using JetBrains.Annotations;
+using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
 using MiCake.Core.ExceptionHandling;
 using MiCake.Core.Logging;
@@ -9,90 +10,135 @@ using System;
 
 namespace MiCake.Core
 {
-    public class MiCakeApplication : IMiCakeApplication
+    public class MiCakeApplication : IMiCakeApplication, INeedNecessaryParts<IServiceProvider>
     {
-        public Type StartUpType { get; }
-        public IMiCakeBuilder Builder { get; private set; }
         public MiCakeApplicationOptions ApplicationOptions { get; private set; }
+        public IMiCakeModuleManager ModuleManager { get; private set; } = new MiCakeModuleManager();
 
-        private IMiCakeModuleBoot _miCakeModuleBoot;
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceCollection _services;
         private IServiceScope _appServiceScope;
-        private Type _startUp;
 
-        public MiCakeApplication(
-            Type startUp,
-            IServiceCollection services,
-            MiCakeApplicationOptions options,
-            Action<IMiCakeBuilder> builderConfigAction)
+        private IServiceProvider _appServiceProvider;
+        public IServiceProvider AppServiceProvider
         {
-            _startUp = startUp ?? throw new ArgumentException("Please add startUp type when you use AddMiCake().");
-            ApplicationOptions = options;
+            get
+            {
+                if (_appServiceProvider == null)
+                {
+                    if (_needNewScope)
+                        _appServiceScope = _serviceProvider.CreateScope();
 
-            AddMiCakeCoreSerivces(services);
-            PopulateModules(out var moduleManager);
-
-            Builder = new MiCakeBuilder(services, moduleManager);
-            builderConfigAction?.Invoke(Builder);
-
-            _miCakeModuleBoot = new MiCakeModuleBoot(
-                services.BuildServiceProvider().GetService<ILogger<MiCakeModuleBoot>>(),
-                Builder);
-
-            var configServiceContext = new ModuleConfigServiceContext(services, moduleManager.AllModules, options);
-            _miCakeModuleBoot.ConfigServices(configServiceContext, AutoRegisterServices);
+                    _appServiceProvider = _appServiceScope == null ?
+                                                    _serviceProvider :
+                                                    _appServiceScope.ServiceProvider;
+                }
+                return _appServiceProvider;
+            }
         }
 
-        public virtual void Init()
+        private IMiCakeModuleContext ModuleContext => ModuleManager?.ModuleContext;
+
+        private Type _entryType;
+        private IMiCakeModuleBoot _miCakeModuleBoot;
+        private IServiceProvider _serviceProvider;
+        private bool _needNewScope;
+
+        private bool _isInitialized;
+        private bool _isStarted;
+        private bool _isShutdown;
+
+        public MiCakeApplication(
+            [NotNull]IServiceCollection services,
+            [NotNull]MiCakeApplicationOptions options,
+            bool needNewScope)
         {
-            if (_serviceProvider == null)
-                throw new ArgumentNullException(nameof(_serviceProvider));
+            ApplicationOptions = options;
+            _services = services;
+            _needNewScope = needNewScope;
+        }
 
-            _appServiceScope = _serviceProvider.CreateScope();
+        /// <summary>
+        /// Start micake application.
+        /// Must provider <see cref="IServiceProvider"/>
+        /// </summary>
+        public virtual void Start()
+        {
+            if (AppServiceProvider == null)
+                throw new ArgumentNullException(nameof(AppServiceProvider));
 
-            var scopedServiceProvider = _appServiceScope.ServiceProvider;
-            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.AllModules, ApplicationOptions);
+            if (_isStarted)
+                throw new InvalidOperationException($"MiCake has already started.");
+
+            var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
         }
 
-        public virtual void ShutDown(Action<ModuleBearingContext> shutdownAction = null)
+        /// <summary>
+        /// Shudown micake application
+        /// </summary>
+        public virtual void ShutDown()
         {
-            if (_serviceProvider == null)
-                throw new ArgumentNullException(nameof(ServiceProvider));
+            if (_isShutdown)
+                throw new InvalidOperationException($"MiCake has already shutdown.");
 
-            var scopedServiceProvider = _appServiceScope.ServiceProvider;
-
-            var context = new ModuleBearingContext(scopedServiceProvider, Builder.ModuleManager.MiCakeModules, ApplicationOptions);
-            shutdownAction?.Invoke(context);
+            var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.ShutDown(context);
 
-            _appServiceScope.Dispose();
+            _appServiceScope?.Dispose();
         }
 
-        public virtual void Dispose()
+        /// <summary>
+        /// Initialize micake services
+        /// </summary>
+        public void Initialize()
         {
-            Builder = null;
-            _miCakeModuleBoot = null;
-            _serviceProvider = null;
+            if (_isInitialized)
+                throw new InvalidOperationException($"MiCake has already build common services." +
+                                        $"The {nameof(Initialize)} method only can called once!");
+
+            if (_entryType == null)
+                throw new NullReferenceException($"Cannot find entry module type,Please marke sure you has already call {nameof(SetEntry)} method.");
+
+            AddMiCakeCoreSerivces(_services);
+
+            //Find all micake modules according to the entry module type
+            ModuleManager.PopulateModules(_entryType);
+            _services.AddSingleton(ModuleContext);
+
+            var logger = _services.BuildServiceProvider().GetService<ILogger<MiCakeModuleBoot>>();
+            _miCakeModuleBoot = new MiCakeModuleBoot(logger, ModuleContext.AllModules);
+            //auto register services to di.
+            _miCakeModuleBoot.AddConfigService(AutoRegisterServices);
+
+            var configServiceContext = new ModuleConfigServiceContext(
+                                                _services,
+                                                ModuleContext.MiCakeModules,
+                                                ApplicationOptions);
+
+            _miCakeModuleBoot.ConfigServices(configServiceContext);
         }
 
-        protected virtual IMiCakeApplication SetServiceProvider(IServiceProvider serviceProvider)
+        /// <summary>
+        /// Set entry module type.
+        /// </summary>
+        public void SetEntry(Type type)
         {
-            _serviceProvider = serviceProvider;
-            return this;
+            _entryType = type ?? throw new ArgumentException("Please add startUp type when you use AddMiCake().");
         }
 
-        private void AutoRegisterServices(ModuleConfigServiceContext context)
+        /// <summary>
+        /// Set <see cref="IServiceProvider"/>.
+        /// </summary>
+        void INeedNecessaryParts<IServiceProvider>.SetNecessaryParts([NotNull]IServiceProvider parts)
         {
-            var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
-            if (ApplicationOptions.FindAutoServiceTypes != null)
-                serviceRegistrar.SetServiceTypesFinder(ApplicationOptions.FindAutoServiceTypes);
-
-            serviceRegistrar.Register(context.MiCakeModules);
+            _serviceProvider = parts ??
+                              throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");
         }
 
         private void AddMiCakeCoreSerivces(IServiceCollection services)
         {
+            services.AddSingleton<IMiCakeApplication>(this);
+
             services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
             {
                 ServiceLocator.Instance.Locator = provider;
@@ -102,12 +148,22 @@ namespace MiCake.Core
             services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
         }
 
-        private void PopulateModules(out IMiCakeModuleManager moduleManager)
+        //Inject service into container according to matching rules
+        private void AutoRegisterServices(ModuleConfigServiceContext context)
         {
-            var manager = new MiCakeModuleManager();
-            manager.PopulateModules(_startUp);
+            var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
+            if (ApplicationOptions.FindAutoServiceTypes != null)
+                serviceRegistrar.SetServiceTypesFinder(ApplicationOptions.FindAutoServiceTypes);
 
-            moduleManager = manager;
+            serviceRegistrar.Register(context.MiCakeModules);
+        }
+
+        public virtual void Dispose()
+        {
+            if (!_isShutdown)
+                ShutDown();
+
+            ModuleManager = null;
         }
     }
 }

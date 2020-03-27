@@ -1,21 +1,27 @@
-﻿using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MiCake.DDD.Extensions.Metadata
 {
     /// <summary>
-    /// Object metadata in domain layer
+    /// A metadata for micake domain layer.
     /// </summary>
-    public class DomainMetadata : IDomainMetadata
+    public class DomainMetadata
     {
-        public DomainMetadata()
+        /// <summary>
+        /// Assembly containing domain objects
+        /// </summary>
+        public Assembly[] DomainLayerAssembly { get; }
+
+        /// <summary>
+        /// Model for all domain object descriptor.
+        /// </summary>
+        public DomainObjectModel DomainObject { get; }
+
+        public DomainMetadata(Assembly[] assemblies, DomainObjectModel domainObjectModel)
         {
+            DomainLayerAssembly = assemblies;
+
+            DomainObject = domainObjectModel;
         }
-
-        public List<EntityDescriptor> Entities { get; set; } = new List<EntityDescriptor>();
-
-        public List<AggregateRootDescriptor> AggregateRoots { get; set; } = new List<AggregateRootDescriptor>();
-
-        public Assembly[] DomainLayerAssembly { get; set; }
     }
 }

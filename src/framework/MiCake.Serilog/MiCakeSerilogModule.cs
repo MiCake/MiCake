@@ -31,7 +31,7 @@ namespace MiCake.Serilog
             micakeErrorHandler?.ConfigureHandlerService(serilogHandlerProvide.GetErrorHandler());
         }
 
-        public override void PostModuleInitialization(ModuleBearingContext context)
+        public override void PostInitialization(ModuleBearingContext context)
         {
         }
 
@@ -39,15 +39,15 @@ namespace MiCake.Serilog
         {
         }
 
-        public override void PreModuleInitialization(ModuleBearingContext context)
+        public override void PreInitialization(ModuleBearingContext context)
         {
         }
 
-        public override void PreModuleShutDown(ModuleBearingContext context)
+        public override void PreShutDown(ModuleBearingContext context)
         {
         }
 
-        public override void Shuntdown(ModuleBearingContext context)
+        public override void Shutdown(ModuleBearingContext context)
         {
         }
     }

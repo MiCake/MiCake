@@ -1,5 +1,6 @@
 ﻿using MiCake.Core;
-using MiCake.Core.Builder;
+using MiCake.Core.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
@@ -12,52 +13,66 @@ namespace MiCake
         /// This method can only be used when the program only has one project.
         /// Please use a more accurate startup method <see cref="AddMiCake{TStartupModule}(IServiceCollection)"/>
         /// </summary>
-        public static IMiCakeApplication AddMiCake()
+        public static IMiCakeBuilder AddMiCake()
         {
             var entryAsm = Assembly.GetEntryAssembly();
             return null;
         }
 
-        public static IMiCakeApplication AddMiCake(this IServiceCollection services, Type startModule)
-        {
-            return AddMiCake(services, startModule, null);
-        }
-
-        public static IMiCakeApplication AddMiCake(
+        public static IMiCakeBuilder AddMiCake(
             this IServiceCollection services,
-            Type startModule,
-            Action<IMiCakeBuilder> builderConfigAction)
+            Type entryModule)
         {
-            return AddMiCake(services, startModule, new MiCakeApplicationOptions(), builderConfigAction);
+            return AddMiCake(services, entryModule, null);
         }
 
-        public static IMiCakeApplication AddMiCake(
+        public static IMiCakeBuilder AddMiCake(
             this IServiceCollection services,
-            Type startModule,
-            MiCakeApplicationOptions options,
-            Action<IMiCakeBuilder> builderConfigAction)
+            Type entryModule,
+            Action<MiCakeApplicationOptions> configOptions,
+            bool needNewScope = false)
         {
-            return MiCakeApplictionFactory.Create(services, startModule, options, builderConfigAction);
+            MiCakeApplicationOptions options = new MiCakeApplicationOptions();
+
+            configOptions?.Invoke(options);
+
+            return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder();
         }
 
-        public static IMiCakeApplication AddMiCake<TStartupModule>(this IServiceCollection services)
+        public static IMiCakeBuilder AddMiCake<TStartupModule>(this IServiceCollection services)
         {
             return AddMiCake(services, typeof(TStartupModule));
         }
 
-        public static IMiCakeApplication AddMiCake<TStartupModule>(
+        public static IMiCakeBuilder AddMiCake<TStartupModule>(
             this IServiceCollection services,
-            Action<IMiCakeBuilder> builderConfigAction)
+            Action<MiCakeApplicationOptions> configOptions,
+            bool needNewScope = false)
         {
-            return AddMiCake(services, typeof(TStartupModule), builderConfigAction);
+            return AddMiCake(services, typeof(TStartupModule), configOptions, needNewScope);
         }
 
-        public static IMiCakeApplication AddMiCake<TStartupModule>(
-            this IServiceCollection services,
-            MiCakeApplicationOptions options,
-            Action<IMiCakeBuilder> builderConfigAction)
+        public static void StartMiCake(this IApplicationBuilder applicationBuilder)
         {
-            return AddMiCake(services, typeof(TStartupModule), options, builderConfigAction);
+            var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
+                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
+                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
+
+            if (micakeApp is INeedNecessaryParts<IServiceProvider> needServiceProvider)
+            {
+                needServiceProvider.SetNecessaryParts(applicationBuilder.ApplicationServices);
+            }
+
+            micakeApp.Start();
+        }
+
+        public static void ShutdownMiCake(this IApplicationBuilder applicationBuilder)
+        {
+            var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
+                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
+                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
+
+            micakeApp.ShutDown();
         }
     }
 }

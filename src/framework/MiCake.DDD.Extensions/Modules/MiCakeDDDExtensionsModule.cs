@@ -1,5 +1,8 @@
 ﻿using MiCake.Core.Modularity;
+using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.Freedom;
 using MiCake.DDD.Domain.Modules;
+using MiCake.DDD.Extensions.Internal;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Extensions.Store;
 using MiCake.Mapster.Modules;
@@ -12,22 +15,25 @@ namespace MiCake.DDD.Extensions.Modules
     {
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
-            IDomainMetadata domainMetadata;
-            var domianLayerAsm = context.MiCakeApplicationOptions.DomianLayerAssemblies;
+            var services = context.Services;
 
-            using (var domainMetadataCreator = new DomainMetadataCreator(context.MiCakeModules, domianLayerAsm))
+            services.AddTransient<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
+            services.AddSingleton<DomainObjectFactory>();
+            services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
+            services.AddSingleton<DomainMetadata>(factory =>
             {
-                domainMetadataCreator.AddDescriptorProvider(new EntityDescriptorProvider());
-                domainMetadataCreator.AddDescriptorProvider(new AggregateRootDescriptorProvider(context.MiCakeModules));
+                var provider = factory.GetService<IDomainMetadataProvider>();
+                return provider.GetDomainMetadata();
+            });
 
-                domainMetadata = domainMetadataCreator.Create();
-            }
+            services.AddSingleton<IStorageModelActivator, StorageModelActivator>();
 
-            //auto call storage model ConfigureMapping()
-            StorageModelActivator storageModelActivator = new StorageModelActivator(domainMetadata);
-            storageModelActivator.LoadConfigMapping();
-
-            context.Services.AddSingleton(domainMetadata);
+            services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
+            services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
+            services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
+            services.AddScoped(typeof(IFreeRepository<,>), typeof(ProxyFreeRepository<,>));
+            services.AddScoped(typeof(IReadOnlyFreeRepository<,>), typeof(ProxyReadOnlyFreeRepository<,>));
+            services.AddScoped(typeof(IFreeRepositoryFactory<,>), typeof(DefaultFreeRepositoryFactory<,>));
         }
     }
 }

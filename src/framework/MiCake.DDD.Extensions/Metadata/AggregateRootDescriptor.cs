@@ -11,7 +11,7 @@ namespace MiCake.DDD.Extensions.Metadata
     /// <summary>
     /// Describes an <see cref="IAggregateRoot"/>
     /// </summary>
-    public class AggregateRootDescriptor : ObjectDescriptor
+    public class AggregateRootDescriptor : DomainObjectDescriptor
     {
         /// <summary>
         /// Is the aggregate root declared as <see cref="IHasStorageModel"/>

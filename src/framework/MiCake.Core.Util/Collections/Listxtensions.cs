@@ -129,6 +129,51 @@ namespace MiCake.Core.Util.Collections
             }
         }
 
+        /// <summary>
+        /// Move an element in the collection to the specified location
+        /// </summary>
+        /// <param name="source">The collection</param>
+        /// <param name="item">Elements requiring exchange order</param>
+        /// <returns>The collection of new order.</returns>
+        public static IList<T> ExchangeOrder<T>(this IList<T> source, T item, int index)
+        {
+            CheckValue.NotNull(source, nameof(source));
+            CheckValue.NotNull(item, nameof(item));
+
+            if (index >= source.Count)
+                throw new ArgumentException($"index overflow");
+
+            source.Remove(item);
+            source.Insert(index, item);
+
+            return source;
+        }
+
+        /// <summary>
+        /// Move an element in the collection to the specified location
+        /// </summary>
+        /// <param name="source">The collection</param>
+        /// <param name="findPredicate">Find the predicate of an element from the original set</param>
+        /// <param name="index"></param>
+        /// <returns>The collection of new order.</returns>
+        public static IList<T> ExchangeOrder<T>(this IList<T> source, Func<T, bool> findPredicate, int index)
+        {
+            CheckValue.NotNull(source, nameof(source));
+
+            if (index >= source.Count)
+                throw new ArgumentException($"index overflow");
+
+            var findItem = source.FirstOrDefault(findPredicate);
+
+            if (findItem == null)
+                throw new ArgumentException($"this predicate cannot find any item in souce.");
+
+            source.Remove(findItem);
+            source.Insert(index, findItem);
+
+            return source;
+        }
+
         public static void ReplaceOne<T>(this IList<T> source, T item, T replaceWith)
         {
             for (int i = 0; i < source.Count; i++)

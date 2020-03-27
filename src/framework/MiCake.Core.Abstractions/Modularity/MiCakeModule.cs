@@ -32,7 +32,7 @@ namespace MiCake.Core.Modularity
         {
         }
 
-        public virtual void PostModuleInitialization(ModuleBearingContext context)
+        public virtual void PostInitialization(ModuleBearingContext context)
         {
         }
 
@@ -40,15 +40,15 @@ namespace MiCake.Core.Modularity
         {
         }
 
-        public virtual void PreModuleInitialization(ModuleBearingContext context)
+        public virtual void PreInitialization(ModuleBearingContext context)
         {
         }
 
-        public virtual void PreModuleShutDown(ModuleBearingContext context)
+        public virtual void PreShutDown(ModuleBearingContext context)
         {
         }
 
-        public virtual void Shuntdown(ModuleBearingContext context)
+        public virtual void Shutdown(ModuleBearingContext context)
         {
         }
 

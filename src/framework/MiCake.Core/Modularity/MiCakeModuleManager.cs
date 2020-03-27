@@ -7,76 +7,84 @@ namespace MiCake.Core.Modularity
 {
     public class MiCakeModuleManager : IMiCakeModuleManager
     {
-        public IMiCakeModuleCollection MiCakeModules { get; private set; } = new MiCakeModuleCollection();
-        public IMiCakeModuleCollection FeatureModules { get; private set; } = new MiCakeModuleCollection();
-        public IMiCakeModuleCollection AllModules { get; private set; } = new MiCakeModuleCollection();
+        public Func<Type, object> ServiceCtor { get; private set; } = Activator.CreateInstance;
+
+        private MiCakeModuleContext _moduleContext;
+        public IMiCakeModuleContext ModuleContext => _moduleContext;
 
         private bool _isPopulate;
-        private List<Type> _featureModules = new List<Type>();
+        public bool IsPopulated => _isPopulate;
 
-        internal void PopulateModules(Type entryType)
+        private List<Type> _featureModulesType = new List<Type>();
+        private List<Type> _externalModulesType = new List<Type>();
+
+        public void PopulateModules(Type entryType)
         {
             if (_isPopulate)
                 throw new InvalidOperationException("PopulateDefaultModule can only be called once.");
 
             _isPopulate = true;
 
-            //normal module
-            foreach (var module in ResolvingMiCakeModules(entryType))
+            var normalModulesType = GetNormalModuleTypes(entryType);
+
+            IMiCakeModuleCollection normalModules = ResolvingMiCakeModules(normalModulesType)
+                                                            .ToMiCakeModuleCollection();
+            //Ensure that the position of the entry module is the last
+            if (normalModules[^1].Type != entryType)
             {
-                MiCakeModules.AddIfNotContains(module);
+                normalModules.ExchangeOrder(s => s.Type == entryType, normalModules.Count - 1);
             }
 
-            //feature module
-            foreach (var featureModule in ResolvingFeatureModules(_featureModules))
-            {
-                FeatureModules.AddIfNotContains(featureModule);
-            }
+            IMiCakeModuleCollection featureModules = ResolvingMiCakeModules(_featureModulesType)
+                                                            .ToMiCakeModuleCollection();
 
-            AllModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(MiCakeModules, FeatureModules);
+            IMiCakeModuleCollection allModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(normalModules, featureModules);
+
+            _moduleContext = new MiCakeModuleContext(allModules, normalModules, featureModules);
         }
 
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
         {
-            return MiCakeModules.FirstOrDefault(s => s.Type == moduleType);
+            return _moduleContext.AllModules.FirstOrDefault(s => s.Type == moduleType);
+        }
+
+        private List<Type> GetNormalModuleTypes(Type entryType)
+        {
+            var internalTypes = MiCakeModuleHelper.FindAllModuleTypes(entryType);
+            return internalTypes.Union(_externalModulesType).ToList();
         }
 
         public void AddFeatureModule(Type featureModule)
         {
             MiCakeModuleHelper.CheckFeatureModule(featureModule);
-
-            _featureModules.AddIfNotContains(featureModule);
+            _featureModulesType.AddIfNotContains(featureModule);
         }
 
-        private IEnumerable<MiCakeModuleDescriptor> ResolvingMiCakeModules(Type startUp)
+        public void AddMiCakeModule(Type moduleType)
+        {
+            MiCakeModuleHelper.CheckModule(moduleType);
+
+            //add denpend on  modules
+            var externalDependedModules = MiCakeModuleHelper.FindDependedModuleTypes(moduleType);
+            _externalModulesType.AddIfNotContains(externalDependedModules);
+
+            _externalModulesType.AddIfNotContains(moduleType);
+        }
+
+        // Get the description information (including dependency and order) of the module according to its type
+        private IEnumerable<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
         {
             List<MiCakeModuleDescriptor> miCakeModuleDescriptors = new List<MiCakeModuleDescriptor>();
 
-            var moduleTypes = MiCakeModuleHelper.FindAllModuleTypes(startUp);
             foreach (var moduleTye in moduleTypes)
             {
-                MiCakeModule instance = (MiCakeModule)Activator.CreateInstance(moduleTye);
+                MiCakeModule instance = (MiCakeModule)ServiceCtor(moduleTye);
                 miCakeModuleDescriptors.Add(new MiCakeModuleDescriptor(moduleTye, instance));
             }
 
             return SortModulesDepencyies(miCakeModuleDescriptors);
         }
 
-        private IEnumerable<MiCakeModuleDescriptor> ResolvingFeatureModules(List<Type> addedFeatureModules)
-        {
-            List<MiCakeModuleDescriptor> featureModuleDescriptors = new List<MiCakeModuleDescriptor>();
-
-            foreach (var featureModule in addedFeatureModules)
-            {
-                MiCakeModuleHelper.CheckFeatureModule(featureModule);
-
-                MiCakeModule instance = (MiCakeModule)Activator.CreateInstance(featureModule);
-                featureModuleDescriptors.AddIfNotContains(new MiCakeModuleDescriptor(featureModule, instance));
-            }
-            return SortModulesDepencyies(featureModuleDescriptors);
-        }
-
-        //Get module dependencies
         private List<MiCakeModuleDescriptor> SortModulesDepencyies(List<MiCakeModuleDescriptor> miCakeModuleDescriptors)
         {
             foreach (var miCakeModuleDescriptor in miCakeModuleDescriptors)
@@ -94,6 +102,7 @@ namespace MiCake.Core.Modularity
             return miCakeModuleDescriptors;
         }
 
+        //Get module dependencies
         private List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDepencyies(
             List<MiCakeModuleDescriptor> modules,
             MiCakeModuleDescriptor moduleDescriptor)
