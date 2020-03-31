@@ -1,8 +1,5 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Freedom;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiCake.DDD.Extensions
 {

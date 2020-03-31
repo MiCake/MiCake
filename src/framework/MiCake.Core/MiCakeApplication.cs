@@ -6,6 +6,7 @@ using MiCake.Core.Logging;
 using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 
 namespace MiCake.Core
@@ -43,9 +44,9 @@ namespace MiCake.Core
         private IServiceProvider _serviceProvider;
         private bool _needNewScope;
 
-        private bool _isInitialized;
-        private bool _isStarted;
-        private bool _isShutdown;
+        private bool _isInitialized = false;
+        private bool _isStarted = false;
+        private bool _isShutdown = false;
 
         public MiCakeApplication(
             [NotNull]IServiceCollection services,
@@ -105,8 +106,10 @@ namespace MiCake.Core
             ModuleManager.PopulateModules(_entryType);
             _services.AddSingleton(ModuleContext);
 
-            var logger = _services.BuildServiceProvider().GetService<ILogger<MiCakeModuleBoot>>();
-            _miCakeModuleBoot = new MiCakeModuleBoot(logger, ModuleContext.AllModules);
+            var loggerFactory = _services.BuildServiceProvider().GetRequiredService<ILoggerFactory>()
+                                ?? NullLoggerFactory.Instance;
+
+            _miCakeModuleBoot = new MiCakeModuleBoot(loggerFactory, ModuleContext.AllModules);
             //auto register services to di.
             _miCakeModuleBoot.AddConfigService(AutoRegisterServices);
 
@@ -138,6 +141,7 @@ namespace MiCake.Core
         private void AddMiCakeCoreSerivces(IServiceCollection services)
         {
             services.AddSingleton<IMiCakeApplication>(this);
+            services.Configure<MiCakeApplicationOptions>(op => op = ApplicationOptions);
 
             services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
             {

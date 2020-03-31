@@ -19,11 +19,11 @@ namespace MiCake.Serilog
             // provide.AddSerilogInMiCake(serilogOptionAction ??= defaultOption);
             return builder;
 
-            void defaultOption(SerilogConfigureOption option)
-            {
-                option.AutoLogError = true;
-                option.FilterLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
-            };
+            //void defaultOption(SerilogConfigureOption option)
+            //{
+            //    option.AutoLogError = true;
+            //    option.FilterLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
+            //};
         }
     }
 }

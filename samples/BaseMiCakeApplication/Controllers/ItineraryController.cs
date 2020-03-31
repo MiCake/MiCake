@@ -16,7 +16,7 @@ namespace BaseMiCakeApplication.Controllers
         private readonly IRepository<Itinerary, Guid> _test;
 
         public ItineraryController(
-            IRepository<Itinerary,Guid> test,
+            IRepository<Itinerary, Guid> test,
             IItineraryRepository repository)
         {
             _repository = repository;

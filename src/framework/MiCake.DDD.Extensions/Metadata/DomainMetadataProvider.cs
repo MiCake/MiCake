@@ -14,7 +14,7 @@ namespace MiCake.DDD.Extensions.Metadata
 
         public DomainMetadataProvider(
             IMiCakeModuleContext moduleContext,
-            IOptions<MiCakeApplicationOptions> appOption,
+            IOptions<MiCakeApplicationOptions> appOptions,
             DomainObjectFactory domainObjectFactory
             )
         {
@@ -24,7 +24,7 @@ namespace MiCake.DDD.Extensions.Metadata
                                              .Where(s => !s.Instance.IsFrameworkLevel)
                                              .ToMiCakeModuleCollection();
 
-            _domainLayerAsm = appOption.Value.DomianLayerAssemblies ?? GetDomianLayer(exceptModules);
+            _domainLayerAsm = appOptions.Value.DomianLayerAssemblies ?? GetDomianLayer(exceptModules);
         }
 
         public DomainMetadata GetDomainMetadata()

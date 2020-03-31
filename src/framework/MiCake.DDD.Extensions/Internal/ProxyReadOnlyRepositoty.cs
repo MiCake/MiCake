@@ -1,8 +1,8 @@
 ﻿using MiCake.DDD.Domain;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Extensions.Internal
 {

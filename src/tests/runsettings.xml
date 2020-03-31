@@ -5,9 +5,9 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Exclude>[System.*]*,[*]Coverlet.Core*,[xunit.*]*,[MiCake.*.Tests?]*</Exclude>
+          <Exclude>[System.*]*,[*]Coverlet.Core*,[xunit.*]*,[MiCake.*.Tests?]*,[MiCake.*.Modules]*</Exclude>
           <!-- [Assembly-Filter]Type-Filter -->
-          <!-- <Include>[MiCake.DDD.*]*</Include> -->
+          <!-- <Include></Include> -->
           <!-- [Assembly-Filter]Type-Filter -->
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
           <!--<ExcludeByFile>../dir1/class1.cs,../dir2/*.cs,../dir3/**/*.cs,</ExcludeByFile>-->

@@ -10,7 +10,7 @@ namespace MiCake.Core.Modularity
     /// </summary>
     internal class MiCakeModuleBoot : IMiCakeModuleBoot
     {
-        private ILogger<MiCakeModuleBoot> _logger;
+        private ILogger _logger;
 
         private IMiCakeModuleCollection _modules;
         private MiCakeModuleLogger _moduleLogger;
@@ -19,10 +19,10 @@ namespace MiCake.Core.Modularity
         private Action<ModuleBearingContext> _initializationActions;
 
         public MiCakeModuleBoot(
-            [NotNull]ILogger<MiCakeModuleBoot> logger,
+            [NotNull]ILoggerFactory loggerFactory,
             [NotNull]IMiCakeModuleCollection modules)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger("MiCake.Core.Modularity.MiCakeModuleBoot");
             _moduleLogger = new MiCakeModuleLogger(_logger);
             _modules = modules;
         }

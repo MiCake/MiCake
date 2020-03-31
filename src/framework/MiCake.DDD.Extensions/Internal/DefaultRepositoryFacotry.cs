@@ -41,9 +41,6 @@ namespace MiCake.DDD.Extensions.Internal
         {
             var aggregateDescriptor = _aggregateRootDescriptors.FirstOrDefault(s => s.Type == aggregateType) ??
                                         throw new NullReferenceException($"Cannot find {aggregateType.Name} metadata.Therefore, the IRepository cannot be created.");
-
-            if (!aggregateDescriptor.PrimaryKey.Equals(keyType))
-                throw new ArgumentException($"{aggregateType.Name} primary type is {aggregateDescriptor.PrimaryKey.Name},bug given type is {keyType.Name}.");
         }
     }
 }

@@ -10,51 +10,51 @@ using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository.Freedom
 {
-    public class EFFreeRepository<TDbContext, TAggregateRoot, TKey> : IFreeRepository<TAggregateRoot, TKey>
-        where TAggregateRoot : class, IAggregateRoot<TKey>
+    public class EFFreeRepository<TDbContext, TEntity, TKey> : IFreeRepository<TEntity, TKey>
+        where TEntity : class, IAggregateRoot<TKey>
         where TDbContext : DbContext
     {
-        public void Add(TAggregateRoot entity)
+        public void Add(TEntity entity)
         {
             throw new NotImplementedException();
         }
 
-        public TAggregateRoot AddAndReturn(TAggregateRoot entity)
+        public TEntity AddAndReturn(TEntity entity)
         {
             throw new NotImplementedException();
         }
 
-        public TAggregateRoot AddAndReturnAsync(TAggregateRoot entity, CancellationToken cancellationToken = default)
+        public Task<TEntity> AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task AddAsync(TAggregateRoot entity, CancellationToken cancellationToken = default)
+        public Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public void Delete(TAggregateRoot entity)
+        public void Delete(TEntity entity)
         {
             throw new NotImplementedException();
         }
 
-        public void DeleteAsync(TAggregateRoot entity, CancellationToken cancellationToken = default)
+        public Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public TAggregateRoot Find(TKey ID)
+        public TEntity Find(TKey ID)
         {
             throw new NotImplementedException();
         }
 
-        public Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
+        public Task<TEntity> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public IQueryable<TAggregateRoot> FindMatch(params Expression<Func<TAggregateRoot, object>>[] propertySelectors)
+        public IQueryable<TEntity> FindMatch(params Expression<Func<TEntity, object>>[] propertySelectors)
         {
             throw new NotImplementedException();
         }
@@ -69,22 +69,22 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
             throw new NotImplementedException();
         }
 
-        public List<TAggregateRoot> GetList()
+        public List<TEntity> GetList()
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<TAggregateRoot>> GetListAsync(CancellationToken cancellationToken = default)
+        public Task<List<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public void Update(TAggregateRoot entity)
+        public void Update(TEntity entity)
         {
             throw new NotImplementedException();
         }
 
-        public Task UpdateAsync(TAggregateRoot entity, CancellationToken cancellationToken = default)
+        public Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

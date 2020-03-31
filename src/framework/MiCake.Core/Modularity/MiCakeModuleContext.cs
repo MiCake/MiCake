@@ -1,12 +1,19 @@
 ﻿namespace MiCake.Core.Modularity
 {
-    public struct MiCakeModuleContext : IMiCakeModuleContext
+    public class MiCakeModuleContext : IMiCakeModuleContext
     {
         public IMiCakeModuleCollection AllModules { get; private set; }
 
         public IMiCakeModuleCollection MiCakeModules { get; private set; }
 
         public IMiCakeModuleCollection FeatureModules { get; private set; }
+
+        public MiCakeModuleContext()
+        {
+            AllModules = new MiCakeModuleCollection();
+            MiCakeModules = new MiCakeModuleCollection();
+            FeatureModules = new MiCakeModuleCollection();
+        }
 
         public MiCakeModuleContext(
             IMiCakeModuleCollection allModules,
