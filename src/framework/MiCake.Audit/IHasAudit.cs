@@ -1,17 +1,9 @@
 ﻿namespace MiCake.Audit
 {
     /// <summary>
-    /// Mark a class with creation info and modify info.
+    /// Mark a class with creation time and modify time.
     /// </summary>
-    public interface IHasAudit : ICreationAudit, IModificationAudit
-    {
-    }
-
-    /// <summary>
-    /// Mark a class with creation info and modify info.
-    /// </summary>
-    /// <typeparam name="TUserKeyType">a primary type for your user class</typeparam>
-    public interface IHasAudit<TUserKeyType> : ICreationAudit<TUserKeyType>, IModificationAudit<TUserKeyType>
+    public interface IHasAudit : IHasCreationTime, IHasModificationTime
     {
     }
 }

@@ -3,7 +3,6 @@ using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.EntityFrameworkCore.Diagnostics;
-using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
@@ -30,11 +29,6 @@ namespace MiCake.EntityFrameworkCore.Modules
 
             //add ef repository provider
             services.AddScoped(typeof(IRepositoryProvider<,>), typeof(EFRepositoryProvider<,>));
-
-            //add audit life time
-            services.AddScoped<IEfRepositoryPreSaveChanges, AuditEFRepositoryLifetime>();
-            //domain events dispatcher
-            services.AddScoped<IEfRepositoryPreSaveChanges, DomainEventsEFRepositoryLifetime>();
         }
 
         public override void Initialization(ModuleBearingContext context)

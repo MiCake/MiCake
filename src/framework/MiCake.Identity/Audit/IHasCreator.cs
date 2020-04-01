@@ -1,4 +1,4 @@
-﻿namespace MiCake.Audit
+﻿namespace MiCake.Identity.Audit
 {
     public interface IHasCreator : IHasAuditUser
     {

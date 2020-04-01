@@ -1,4 +1,4 @@
-﻿namespace MiCake.Audit
+﻿namespace MiCake.Identity.Audit
 {
     /// <summary>
     /// Mark a class has delete user

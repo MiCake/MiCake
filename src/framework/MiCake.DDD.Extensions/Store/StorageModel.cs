@@ -54,7 +54,5 @@ namespace MiCake.DDD.Extensions.Store
         /// Configure relationship mapping between <see cref="IEntity"/> and storage model.
         /// </summary>
         public abstract void ConfigureMapping();
-
-
     }
 }

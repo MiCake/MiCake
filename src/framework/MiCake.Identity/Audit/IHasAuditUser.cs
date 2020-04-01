@@ -1,4 +1,4 @@
-﻿namespace MiCake.Audit
+﻿namespace MiCake.Identity.Audit
 {
     /// <summary>
     /// [You don't need to use this interface]

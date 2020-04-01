@@ -1,15 +1,14 @@
 ﻿using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internel;
-using MiCake.DDD.Extensions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.EntityFrameworkCore.Internal
+namespace MiCake.DDD.Extensions.LifeTime
 {
-    internal class DomainEventsEFRepositoryLifetime : IEfRepositoryPreSaveChanges
+    internal class DomainEventsRepositoryLifetime : IRepositoryPreSaveChanges
     {
         private IEventDispatcher _eventDispatcher;
-        public DomainEventsEFRepositoryLifetime(IEventDispatcher eventDispatcher)
+        public DomainEventsRepositoryLifetime(IEventDispatcher eventDispatcher)
         {
             _eventDispatcher = eventDispatcher;
         }

@@ -1,6 +1,6 @@
 <p align="center">
   <a href="http://www.micake.net">
-    <img width="180px" src="https://images.cnblogs.com/cnblogs_com/uoyo/1613992/o_200331050214logo.png">
+    <img width="180px" src="assets/logo.svg">
   </a>
 </p>
 
@@ -16,10 +16,7 @@
 
 ## ✨ 特性
 
-- 提炼自企业级中后台产品的交互语言和视觉风格。
-- 开箱即用的高质量 Razor 组件，可在多种托管方式共享。
-- 支持基于 WebAssembly 的客户端和基于 SignalR 的服务端UI事件交互。
-- 支持渐进式 Web 应用（PWA）
-- 使用 C# 构建，多范式静态语言带来高效的开发体验。
-- 基于 .NET Standard 2.1，可直接引用丰富的 .NET 类库。
-- 可与已有的 ASP.NET Core MVC、Razor Pages 项目无缝集成。
+- 快速将您的项目转换为DDD风格。
+- 实现了DDD战术模式提出的所有部件。
+- 提供项目常用的基础功能（全局错误捕获，对象映射等）。
+- 通过模块进行解耦，您可以根据自身需求使用特定的MiCake模块。
