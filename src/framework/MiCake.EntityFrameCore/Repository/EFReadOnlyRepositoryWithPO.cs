@@ -14,22 +14,29 @@ using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
-    public class EFStorageModelReadOnlyRepository<TDbContext, TAggregateRoot, TStorageModel, TKey> :
+    /// <summary>
+    /// Use efcore as ORM and readonly repository with persistent objects.
+    /// </summary>
+    /// <typeparam name="TDbContext">Type Of DBContext</typeparam>
+    /// <typeparam name="TAggregateRoot">Type of <see cref="IAggregateRoot"/></typeparam>
+    /// <typeparam name="TPersistentObject">Type of <see cref="PersistentObject{TEntity}"/></typeparam>
+    /// <typeparam name="TKey">Primary key type of <see cref="IAggregateRoot"/></typeparam>
+    public class EFReadOnlyRepositoryWithPO<TDbContext, TAggregateRoot, TPersistentObject, TKey> :
         IReadOnlyRepository<TAggregateRoot, TKey>, IDisposable
-        where TAggregateRoot : class, IAggregateRoot<TKey>, IHasStorageModel
-        where TStorageModel : class, IStorageModel
+        where TAggregateRoot : class, IAggregateRoot<TKey>, IHasPersistentObject
+        where TPersistentObject : class, IPersistentObject
         where TDbContext : DbContext
     {
         protected virtual TDbContext DbContext => _dbContextFactory.CreateDbContext();
-        protected virtual DbSet<TStorageModel> DbSet => DbContext.Set<TStorageModel>();
+        protected virtual DbSet<TPersistentObject> DbSet => DbContext.Set<TPersistentObject>();
 
-        //the relationship between entity instance and storage model instancae.
+        //the relationship between entity instance and persistent object instancae.
         private ConcurrentDictionary<object, object> _entityRelationship = new ConcurrentDictionary<object, object>();
 
         private readonly IUnitOfWorkManager _uowManager;
         private IUowDbContextFactory<TDbContext> _dbContextFactory;
 
-        public EFStorageModelReadOnlyRepository(IUnitOfWorkManager uowManager)
+        public EFReadOnlyRepositoryWithPO(IUnitOfWorkManager uowManager)
         {
             _uowManager = uowManager;
 
@@ -38,13 +45,13 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public TAggregateRoot Find(TKey ID)
         {
-            var snapshotModel = DbContext.Find<TStorageModel>(ID);
+            var snapshotModel = DbContext.Find<TPersistentObject>(ID);
             return ToEntity(snapshotModel);
         }
 
         public async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
-            var snapshotModel = await DbContext.FindAsync<TStorageModel>(ID);
+            var snapshotModel = await DbContext.FindAsync<TPersistentObject>(ID);
             return ToEntity(snapshotModel);
         }
 
@@ -53,7 +60,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             return DbSet.CountAsync().Result;
         }
 
-        protected virtual TAggregateRoot ToEntity(TStorageModel snapshot)
+        protected virtual TAggregateRoot ToEntity(TPersistentObject snapshot)
         {
             TAggregateRoot result;
 
@@ -71,7 +78,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             return result;
         }
 
-        protected virtual List<TAggregateRoot> ToEntity(List<TStorageModel> snapshot)
+        protected virtual List<TAggregateRoot> ToEntity(List<TPersistentObject> snapshot)
         {
             List<TAggregateRoot> result;
 
@@ -89,39 +96,39 @@ namespace MiCake.EntityFrameworkCore.Repository
             return result;
         }
 
-        protected virtual TStorageModel ToStorageModel(TAggregateRoot aggregateRoot)
+        protected virtual TPersistentObject ToPersistentObject(TAggregateRoot aggregateRoot)
         {
-            TStorageModel storageModel;
+            TPersistentObject persistentObject;
 
             if (_entityRelationship.TryGetValue(aggregateRoot, out var model))
             {
-                TStorageModel convertModel = (TStorageModel)model;
-                storageModel = aggregateRoot.Adapt(convertModel);
+                TPersistentObject convertModel = (TPersistentObject)model;
+                persistentObject = aggregateRoot.Adapt(convertModel);
             }
             else
             {
-                storageModel = aggregateRoot.Adapt<TStorageModel>();
-                _entityRelationship.TryAdd(aggregateRoot, storageModel);
+                persistentObject = aggregateRoot.Adapt<TPersistentObject>();
+                _entityRelationship.TryAdd(aggregateRoot, persistentObject);
             }
 
-            return storageModel;
+            return persistentObject;
         }
 
-        protected virtual List<TStorageModel> ToStorageModel(List<TAggregateRoot> aggregateRoot)
+        protected virtual List<TPersistentObject> ToPersistentObject(List<TAggregateRoot> aggregateRoot)
         {
-            List<TStorageModel> storageModel;
+            List<TPersistentObject> persistentObjects;
 
             if (_entityRelationship.TryGetValue(aggregateRoot, out var model))
             {
-                storageModel = aggregateRoot.Adapt((List<TStorageModel>)model);
+                persistentObjects = aggregateRoot.Adapt((List<TPersistentObject>)model);
             }
             else
             {
-                storageModel = aggregateRoot.Adapt<List<TStorageModel>>();
-                _entityRelationship.TryAdd(aggregateRoot, storageModel);
+                persistentObjects = aggregateRoot.Adapt<List<TPersistentObject>>();
+                _entityRelationship.TryAdd(aggregateRoot, persistentObjects);
             }
 
-            return storageModel;
+            return persistentObjects;
         }
 
         public void Dispose()

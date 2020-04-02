@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Extensions;
+﻿using MiCake.Audit.Core;
+using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.LifeTime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,29 +8,25 @@ namespace MiCake.Audit.LifeTime
 {
     internal class AuditRepositoryLifetime : IRepositoryPreSaveChanges
     {
-        //public void PreSaveChanges(RepositoryEntityState entityState, object entity)
-        //{
-        //    if (entityState == RepositoryEntityState.Unchanged)
-        //        return;
+        private IAuditExecutor _auditExecutor;
 
-        //    if (entityState == RepositoryEntityState.Added)
-        //        _auditContext.ObjectSetter.SetCreationInfo(entity);
-
-        //    if (entityState == RepositoryEntityState.Modified)
-        //        _auditContext.ObjectSetter.SetModificationInfo(entity);
-
-        //    if (entityState == RepositoryEntityState.Deleted)
-        //        _auditContext.ObjectSetter.SetDeletionInfo(entity);
-        //}
+        public AuditRepositoryLifetime(IAuditExecutor auditExecutor)
+        {
+            _auditExecutor = auditExecutor;
+        }
 
         public void PreSaveChanges(RepositoryEntityState entityState, object entity)
         {
-            throw new System.NotImplementedException();
+            _auditExecutor.Execute(entity, entityState);
         }
 
-        public Task PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public Task PreSaveChangesAsync(RepositoryEntityState entityState,
+                                        object entity,
+                                        CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            _auditExecutor.Execute(entity, entityState);
+
+            return Task.CompletedTask;
         }
     }
 }

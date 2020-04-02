@@ -27,7 +27,7 @@ namespace MiCake.DDD.Extensions.Modules
                 return provider.GetDomainMetadata();
             });
 
-            services.AddSingleton<IStorageModelActivator, StorageModelActivator>();
+            services.AddSingleton<IPersistentObjectActivator, PersistentObjectActivator>();
 
             services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
             services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));

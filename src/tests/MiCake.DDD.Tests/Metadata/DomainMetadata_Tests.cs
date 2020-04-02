@@ -2,7 +2,7 @@
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Tests.Fakes.Aggregates;
 using MiCake.DDD.Tests.Fakes.Entities;
-using MiCake.DDD.Tests.Fakes.StorageModels;
+using MiCake.DDD.Tests.Fakes.PersistentObjects;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
@@ -72,20 +72,20 @@ namespace MiCake.DDD.Tests.Metadata
         [Fact]
         public void AggregateRootDescriptor_ShouldSetRightPOModel()
         {
-            var aggregateRootDescriptor = new AggregateRootDescriptor(typeof(HasStorageModelAggregateRoot));
+            var aggregateRootDescriptor = new AggregateRootDescriptor(typeof(HasPOAggregateRoot));
 
             Assert.Throws<ArgumentException>(() =>
             {
-                aggregateRootDescriptor.SetStorageModel(typeof(EntityA));
+                aggregateRootDescriptor.SetPersistentObject(typeof(EntityA));
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                aggregateRootDescriptor.SetStorageModel(typeof(WrongPOModel));
+                aggregateRootDescriptor.SetPersistentObject(typeof(WrongPOModel));
             });
 
-            aggregateRootDescriptor.SetStorageModel(typeof(DemoStorageModel));
-            Assert.Equal(typeof(DemoStorageModel), aggregateRootDescriptor.StorageModel);
+            aggregateRootDescriptor.SetPersistentObject(typeof(DemoPOModel));
+            Assert.Equal(typeof(DemoPOModel), aggregateRootDescriptor.PersistentObject);
         }
 
         [Fact]
@@ -112,9 +112,9 @@ namespace MiCake.DDD.Tests.Metadata
             Assert.NotNull(inheritEntityDesc);
             Assert.Equal(typeof(Guid), inheritEntityDesc.PrimaryKey);
 
-            var hasPOAggregate = metadata.DomainObject.AggregateRoots.FirstOrDefault(s => s.Type.Equals(typeof(HasStorageModelAggregateRoot)));
+            var hasPOAggregate = metadata.DomainObject.AggregateRoots.FirstOrDefault(s => s.Type.Equals(typeof(HasPOAggregateRoot)));
             Assert.NotNull(hasPOAggregate);
-            Assert.Equal(typeof(DemoStorageModel), hasPOAggregate.StorageModel);
+            Assert.Equal(typeof(DemoPOModel), hasPOAggregate.PersistentObject);
             Assert.Equal(typeof(Guid), hasPOAggregate.PrimaryKey);
         }
     }

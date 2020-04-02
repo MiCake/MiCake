@@ -4,7 +4,7 @@ using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
-    public class Itinerary : StorageModelAggregateRoot<Guid>
+    public class Itinerary : AggregateRootHasPersistentObject<Guid>
     {
         public ItineraryNote Note { get; private set; }
 

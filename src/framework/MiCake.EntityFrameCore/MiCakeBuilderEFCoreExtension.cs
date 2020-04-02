@@ -6,7 +6,7 @@ using System;
 
 namespace MiCake.EntityFrameworkCore
 {
-    public static class MiCakeBuilderEFCoreExtesion
+    public static class MiCakeBuilderEFCoreExtension
     {
         public static IMiCakeBuilder UseEFCore<TDbContext>(this IMiCakeBuilder builder)
         {

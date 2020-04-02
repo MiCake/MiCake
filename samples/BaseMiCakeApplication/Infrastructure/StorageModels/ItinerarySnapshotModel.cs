@@ -6,7 +6,7 @@ using System;
 
 namespace BaseMiCakeApplication.Infrastructure.StroageModels
 {
-    public class ItinerarySnapshotModel : StorageModel<Itinerary>, IHasCreationTime
+    public class ItinerarySnapshotModel : PersistentObject<Itinerary>, IHasCreationTime
     {
         public Guid ID { get; set; }
         public string Content { get; set; }

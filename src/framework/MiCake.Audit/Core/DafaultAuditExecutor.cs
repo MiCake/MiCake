@@ -20,7 +20,7 @@ namespace MiCake.Audit.Core
         {
             //Only deal with micake domain object.
             var entityType = needAuditEntity.GetType();
-            if (!typeof(IStorageModel).IsAssignableFrom(entityType) && !DomainTypeHelper.IsDomainObject(entityType))
+            if (!typeof(IPersistentObject).IsAssignableFrom(entityType) && !DomainTypeHelper.IsDomainObject(entityType))
                 return;
 
             var model = new AuditObjectModel(needAuditEntity, entityState);
