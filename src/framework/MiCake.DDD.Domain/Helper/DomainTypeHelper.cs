@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,25 +17,25 @@ namespace MiCake.DDD.Domain.Helper
             typeof(IDomainService),
         };
 
-        public static bool IsDomainObject([NotNull]Type type)
+        public static bool IsDomainObject(Type type)
             => DomainTypes.Any(s => s.IsAssignableFrom(type));
 
-        public static bool IsRepository([NotNull]Type type)
+        public static bool IsRepository(Type type)
             => typeof(IRepository).IsAssignableFrom(type);
 
-        public static bool IsEntity([NotNull] Type type)
+        public static bool IsEntity(Type type)
             => typeof(IEntity).IsAssignableFrom(type);
 
-        public static bool IsValueObject([NotNull] Type type)
+        public static bool IsValueObject(Type type)
             => typeof(IValueObject).IsAssignableFrom(type);
 
-        public static bool IsAggregateRoot([NotNull] Type type)
+        public static bool IsAggregateRoot(Type type)
             => typeof(IAggregateRoot).IsAssignableFrom(type);
 
-        public static bool IsDomainEvent([NotNull] Type type)
+        public static bool IsDomainEvent(Type type)
             => typeof(IDomainEvent).IsAssignableFrom(type);
 
-        public static bool IsDomainService([NotNull] Type type)
+        public static bool IsDomainService(Type type)
             => typeof(IDomainService).IsAssignableFrom(type);
     }
 }

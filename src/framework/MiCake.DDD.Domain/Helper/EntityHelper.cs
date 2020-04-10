@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using MiCake.DDD.Domain.Store;
 using System;
 using System.Collections.Generic;
@@ -8,22 +8,22 @@ namespace MiCake.DDD.Domain.Helper
 {
     public static class EntityHelper
     {
-        public static bool IsEntity([NotNull] Type type)
+        public static bool IsEntity(Type type)
         {
             return typeof(IEntity).IsAssignableFrom(type);
         }
 
-        public static bool IsAggregateRoot([NotNull] Type type)
+        public static bool IsAggregateRoot(Type type)
         {
             return typeof(IAggregateRoot).IsAssignableFrom(type);
         }
 
-        public static bool HasPersistentObject([NotNull] Type type)
+        public static bool HasPersistentObject(Type type)
         {
             return typeof(IHasPersistentObject).IsAssignableFrom(type);
         }
 
-        public static bool HasDefaultId<TKey>([NotNull] IEntity<TKey> entity)
+        public static bool HasDefaultId<TKey>(IEntity<TKey> entity)
         {
             if (EqualityComparer<TKey>.Default.Equals(entity.Id, default))
             {
@@ -60,7 +60,7 @@ namespace MiCake.DDD.Domain.Helper
             return FindPrimaryKeyType(typeof(TEntity));
         }
 
-        public static Type FindPrimaryKeyType([NotNull] Type entityType)
+        public static Type FindPrimaryKeyType(Type entityType)
         {
             if (!typeof(IEntity).IsAssignableFrom(entityType))
             {

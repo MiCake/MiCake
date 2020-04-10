@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -14,7 +14,7 @@ namespace MiCake.DDD.Extensions.Metadata
             _modelProviders = modelProviders.OrderBy(p => p.Order).ToArray();
         }
 
-        public DomainObjectModel CreateDomainObjectModel([NotNull]Assembly[] domainLayerAsm)
+        public DomainObjectModel CreateDomainObjectModel(Assembly[] domainLayerAsm)
         {
             var context = new DomainObjectModelContext(domainLayerAsm);
 

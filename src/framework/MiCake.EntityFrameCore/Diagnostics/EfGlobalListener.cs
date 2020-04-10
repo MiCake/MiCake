@@ -11,6 +11,9 @@ namespace MiCake.EntityFrameworkCore.Diagnostics
     /// Therefore, the method of subscribing diagnostic events is adopted
     /// https://github.com/dotnet/efcore/issues/12024
     /// </summary>
+
+    //[Cancel:See Azure Board #ISSUE 12]
+    [Obsolete]
     internal class EfGlobalListener : IObserver<DiagnosticListener>
     {
         //need ServiceProvider to reslove services

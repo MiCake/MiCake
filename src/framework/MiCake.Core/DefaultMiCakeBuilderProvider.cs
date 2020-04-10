@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -12,9 +12,9 @@ namespace MiCake.Core
         private bool _needScope;
 
         public DefaultMiCakeBuilderProvider(
-            [NotNull]IServiceCollection services,
-            [NotNull]Type entryModule,
-            [NotNull]MiCakeApplicationOptions options,
+            IServiceCollection services,
+            Type entryModule,
+            MiCakeApplicationOptions options,
             bool needScope)
         {
             _services = services;

@@ -13,7 +13,9 @@ namespace MiCake.DDD.Extensions.LifeTime
             _eventDispatcher = eventDispatcher;
         }
 
-        public void PreSaveChanges(RepositoryEntityState entityState, object entity)
+        public int Order { get; set; } = -1000;
+
+        public RepositoryEntityState PreSaveChanges(RepositoryEntityState entityState, object entity)
         {
             if (entity is IDomianEventProvider domianEventProvider)
             {
@@ -35,9 +37,11 @@ namespace MiCake.DDD.Extensions.LifeTime
                     //count is not equal. prove the existence of failed events
                 }
             }
+
+            return entityState;
         }
 
-        public async Task PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public async ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
             if (entity is IDomianEventProvider domianEventProvider)
             {
@@ -59,6 +63,7 @@ namespace MiCake.DDD.Extensions.LifeTime
                     //count is not equal. prove the existence of failed events
                 }
             }
+            return entityState;
         }
     }
 }

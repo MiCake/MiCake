@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using MiCake.Uow.Options;
 using Microsoft.Extensions.Options;
 using System;
@@ -37,8 +37,8 @@ namespace MiCake.Uow
         }
 
         public virtual ITransactionFeature GetOrAddTransactionFeature(
-            [NotNull]string key,
-            [NotNull] ITransactionFeature transcationFeature)
+            string key,
+             ITransactionFeature transcationFeature)
         {
             if (_transactionFeatures.ContainsKey(key))
                 return _transactionFeatures.GetValueOrDefault(key);
@@ -47,19 +47,19 @@ namespace MiCake.Uow
             return transcationFeature;
         }
 
-        public virtual ITransactionFeature GetTransactionFeature([NotNull]string key)
+        public virtual ITransactionFeature GetTransactionFeature(string key)
         {
             return _transactionFeatures.GetValueOrDefault(key);
         }
 
-        public virtual void RemoveTransaction([NotNull]string key)
+        public virtual void RemoveTransaction(string key)
         {
             _transactionFeatures.Remove(key);
         }
 
         public virtual void RegisteTransactionFeature(
-            [NotNull]string key,
-            [NotNull]ITransactionFeature transcationFeature)
+            string key,
+            ITransactionFeature transcationFeature)
         {
             if (_transactionFeatures.ContainsKey(key))
                 return;

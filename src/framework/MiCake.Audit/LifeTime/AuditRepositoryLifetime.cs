@@ -15,18 +15,21 @@ namespace MiCake.Audit.LifeTime
             _auditExecutor = auditExecutor;
         }
 
-        public void PreSaveChanges(RepositoryEntityState entityState, object entity)
+        public int Order { get; set; } = -1000;
+
+        public RepositoryEntityState PreSaveChanges(RepositoryEntityState entityState, object entity)
         {
             _auditExecutor.Execute(entity, entityState);
+            return entityState;
         }
 
-        public Task PreSaveChangesAsync(RepositoryEntityState entityState,
+        public ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState,
                                         object entity,
                                         CancellationToken cancellationToken = default)
         {
             _auditExecutor.Execute(entity, entityState);
 
-            return Task.CompletedTask;
+            return new ValueTask<RepositoryEntityState>(entityState);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
 using MiCake.Core.ExceptionHandling;
@@ -49,8 +49,8 @@ namespace MiCake.Core
         private bool _isShutdown = false;
 
         public MiCakeApplication(
-            [NotNull]IServiceCollection services,
-            [NotNull]MiCakeApplicationOptions options,
+            IServiceCollection services,
+            MiCakeApplicationOptions options,
             bool needNewScope)
         {
             ApplicationOptions = options;
@@ -132,7 +132,7 @@ namespace MiCake.Core
         /// <summary>
         /// Set <see cref="IServiceProvider"/>.
         /// </summary>
-        void INeedNecessaryParts<IServiceProvider>.SetNecessaryParts([NotNull]IServiceProvider parts)
+        void INeedNecessaryParts<IServiceProvider>.SetNecessaryParts(IServiceProvider parts)
         {
             _serviceProvider = parts ??
                               throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");

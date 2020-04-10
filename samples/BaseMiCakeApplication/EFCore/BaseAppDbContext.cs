@@ -1,12 +1,12 @@
 ﻿using BaseMiCakeApplication.Infrastructure.StroageModels;
-using JetBrains.Annotations;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace BaseMiCakeApplication.EFCore
 {
     public class BaseAppDbContext : DbContext
     {
-        public BaseAppDbContext([NotNull] DbContextOptions options) : base(options)
+        public BaseAppDbContext(DbContextOptions options) : base(options)
         {
         }
 
@@ -19,6 +19,7 @@ namespace BaseMiCakeApplication.EFCore
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ItinerarySnapshotModel>().Property(s => s.Content).HasMaxLength(100);
             base.OnModelCreating(modelBuilder);
         }
     }

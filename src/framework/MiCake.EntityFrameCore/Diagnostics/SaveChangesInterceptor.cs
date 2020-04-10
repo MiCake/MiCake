@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Diagnostics
 {
+    //[Cancel:See Azure Board #ISSUE 12]
+    [Obsolete]
     internal class SaveChangesInterceptor : IObserverAsync<KeyValuePair<string, object>>
     {
         private IServiceProvider _serviceProvider;
