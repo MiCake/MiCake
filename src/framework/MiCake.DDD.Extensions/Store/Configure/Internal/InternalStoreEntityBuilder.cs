@@ -29,9 +29,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
 
         public IConventionStoreEntityBuilder SetDirectDeletion(bool directDeletion)
         {
-            CheckValue.NotNull(directDeletion, nameof(directDeletion));
             Metadata.SetDirectDeletion(directDeletion);
-
             return this;
         }
 
@@ -73,14 +71,15 @@ namespace MiCake.DDD.Extensions.Store.Configure
             return Metadata.AddProperty(propertyName, memberInfo).Builder;
         }
 
-        public IConventionStoreEntityBuilder AddQueryFile(LambdaExpression expression)
+        public IConventionStoreEntityBuilder AddQueryFilter(LambdaExpression expression)
         {
-            throw new NotImplementedException();
+            CheckValue.NotNull(expression, nameof(expression));
+            Metadata.AddQueryFilter(expression);
+
+            return this;
         }
 
-        IConventionStorePropertyBuilder IConventionStoreEntityBuilder.AddProperty(string propertyName, Type propertyType, MemberInfo memberInfo)
-        {
-            throw new NotImplementedException();
-        }
+        IConventionStorePropertyBuilder IConventionStoreEntityBuilder.AddProperty(string propertyName, MemberInfo memberInfo)
+            => AddProperty(propertyName, memberInfo);
     }
 }

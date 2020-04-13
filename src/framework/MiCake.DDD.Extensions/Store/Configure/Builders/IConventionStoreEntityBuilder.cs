@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 
 namespace MiCake.DDD.Extensions.Store.Configure
@@ -15,7 +14,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
         /// <summary>
         /// Add the property information required for the persistence object
         /// </summary>
-        IConventionStorePropertyBuilder AddProperty(string propertyName, Type propertyType, MemberInfo memberInfo);
+        IConventionStorePropertyBuilder AddProperty(string propertyName, MemberInfo memberInfo);
 
         /// <summary>
         /// Mark whether the persistent object needs to be removed directly from the database
@@ -31,6 +30,6 @@ namespace MiCake.DDD.Extensions.Store.Configure
         /// <summary>
         /// Add the filter of the persistent object at query time
         /// </summary>
-        IConventionStoreEntityBuilder AddQueryFile(LambdaExpression expression);
+        IConventionStoreEntityBuilder AddQueryFilter(LambdaExpression expression);
     }
 }

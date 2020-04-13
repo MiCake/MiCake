@@ -31,8 +31,6 @@ namespace MiCake.DDD.Extensions.Store.Configure
         public virtual InternalStoreEntityBuilder Builder { get; }
         public virtual string Name { get; }
 
-        bool IConventionStoreEntity.DirectDeletion => throw new NotImplementedException();
-
         public StoreEntityType(Type clrType)
         {
             CheckValue.NotNull(clrType, nameof(clrType));
@@ -81,7 +79,12 @@ namespace MiCake.DDD.Extensions.Store.Configure
             }
 
             var propertyType = memberInfo.GetMemberType();
-            var property = new StoreProperty(name, propertyType, memberInfo as PropertyInfo, memberInfo, this);
+            var property = new StoreProperty(name,
+                                             propertyType,
+                                             memberInfo as PropertyInfo,
+                                             memberInfo as FieldInfo,
+                                             memberInfo,
+                                             this);
             _properties.Add(name, property);
 
             return property;
@@ -156,7 +159,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
         void IConventionStoreEntity.AddQueryFilter(LambdaExpression expression)
             => AddQueryFilter(expression);
 
-        IEnumerable<LambdaExpression> IConventionStoreEntity.GetQueryFilters(LambdaExpression expression)
+        IEnumerable<LambdaExpression> IConventionStoreEntity.GetQueryFilters()
             => GetQueryFilters();
     }
 }

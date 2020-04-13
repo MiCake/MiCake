@@ -1,5 +1,4 @@
 ﻿using BaseMiCakeApplication.Infrastructure.StroageModels;
-
 using Microsoft.EntityFrameworkCore;
 
 namespace BaseMiCakeApplication.EFCore
@@ -15,11 +14,11 @@ namespace BaseMiCakeApplication.EFCore
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
+            optionsBuilder.UseMySql("Server=localhost;Database=MiCakeDemo;User=sa;Password={your password};");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ItinerarySnapshotModel>().Property(s => s.Content).HasMaxLength(100);
             base.OnModelCreating(modelBuilder);
         }
     }

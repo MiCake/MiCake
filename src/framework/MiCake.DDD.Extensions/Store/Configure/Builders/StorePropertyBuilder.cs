@@ -1,12 +1,11 @@
 ﻿using MiCake.Core.Data;
 using MiCake.Core.Util;
-using System;
 
 namespace MiCake.DDD.Extensions.Store.Configure
 {
     public class StorePropertyBuilder : IHasAccessor<InternalStorePropertyBuilder>
     {
-        InternalStorePropertyBuilder IHasAccessor<InternalStorePropertyBuilder>.Instance => throw new NotImplementedException();
+        InternalStorePropertyBuilder IHasAccessor<InternalStorePropertyBuilder>.Instance => _builer;
 
         private InternalStorePropertyBuilder _builer;
 

@@ -1,6 +1,7 @@
 ﻿using MiCake.Core.Data;
 using MiCake.Core.Util;
-using System;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace MiCake.DDD.Extensions.Store.Configure
 {
@@ -20,12 +21,22 @@ namespace MiCake.DDD.Extensions.Store.Configure
         /// <summary>
         /// Add the property information required for the persistence object
         /// </summary>
-        public virtual StorePropertyBuilder Property(string propertyName, Type propertyType)
+        public virtual StorePropertyBuilder Property(string propertyName)
         {
             CheckValue.NotNull(propertyName, nameof(propertyName));
-            CheckValue.NotNull(propertyType, nameof(propertyType));
 
-            return new StorePropertyBuilder(_builer.AddProperty(propertyName, propertyType).Metadata);
+            return new StorePropertyBuilder(_builer.AddProperty(propertyName).Metadata);
+        }
+
+        /// <summary>
+        /// Add the property information required for the persistence object
+        /// </summary>
+        public virtual StorePropertyBuilder Property(string propertyName, MemberInfo clrMemberInfo)
+        {
+            CheckValue.NotNull(propertyName, nameof(propertyName));
+            CheckValue.NotNull(clrMemberInfo, nameof(clrMemberInfo));
+
+            return new StorePropertyBuilder(_builer.AddProperty(propertyName, clrMemberInfo).Metadata);
         }
 
         /// <summary>
@@ -44,6 +55,15 @@ namespace MiCake.DDD.Extensions.Store.Configure
         public virtual StoreEntityBuilder Ignored(string propertyName)
         {
             _builer.AddIgnoredMember(propertyName);
+            return this;
+        }
+
+        /// <summary>
+        /// Add the filter of the persistent object at query time
+        /// </summary>
+        public virtual StoreEntityBuilder HasQueryFilter(LambdaExpression lambdaExpression)
+        {
+            _builer.AddQueryFilter(lambdaExpression);
             return this;
         }
     }

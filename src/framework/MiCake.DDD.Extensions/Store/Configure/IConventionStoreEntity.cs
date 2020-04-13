@@ -56,6 +56,6 @@ namespace MiCake.DDD.Extensions.Store.Configure
         /// <summary>
         /// Add the filter of the persistent object at query time
         /// </summary>
-        public IEnumerable<LambdaExpression> GetQueryFilters(LambdaExpression expression);
+        public IEnumerable<LambdaExpression> GetQueryFilters();
     }
 }

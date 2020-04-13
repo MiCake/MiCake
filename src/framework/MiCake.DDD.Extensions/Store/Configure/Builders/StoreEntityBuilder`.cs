@@ -37,5 +37,14 @@ namespace MiCake.DDD.Extensions.Store.Configure
             base.Ignored(propertyName);
             return this;
         }
+
+        /// <summary>
+        /// Add the filter of the persistent object at query time
+        /// </summary>
+        public virtual StoreEntityBuilder HasQueryFilter(Expression<Func<TEntity, bool>> expression)
+        {
+            _builer.AddQueryFilter(expression);
+            return this;
+        }
     }
 }

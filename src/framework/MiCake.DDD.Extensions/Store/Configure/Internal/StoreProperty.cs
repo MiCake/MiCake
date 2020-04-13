@@ -15,6 +15,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
         private Type _clrPropertyType;
         private PropertyInfo _clrPropertyInfo;
         private MemberInfo _clrMemberInfo;
+        private FieldInfo _clrFieldInfo;
         private IStoreEntityType _originalEntity;
 
         private bool? _isConcurrency;
@@ -56,11 +57,12 @@ namespace MiCake.DDD.Extensions.Store.Configure
 
         public InternalStorePropertyBuilder Builder { get; private set; }
 
-        public FieldInfo ClrFieldInfo => throw new NotImplementedException();
+        public FieldInfo ClrFieldInfo => _clrFieldInfo;
 
         public StoreProperty(string name,
                              Type propertyType,
                              PropertyInfo propertyInfo,
+                             FieldInfo fieldInfo,
                              MemberInfo memberInfo,
                              StoreEntityType storeEntityType)
         {
@@ -71,6 +73,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
             Name = name;
             _clrPropertyType = propertyType;
             _clrPropertyInfo = propertyInfo;
+            _clrFieldInfo = fieldInfo;
             _clrMemberInfo = memberInfo;
             _originalEntity = storeEntityType;
 

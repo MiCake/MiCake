@@ -61,12 +61,12 @@ namespace BaseMiCakeApplication
 
             app.UseAuthorization();
 
+            app.StartMiCake();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
-
-            app.StartMiCake();
 
             app.UseOpenApi();
             app.UseSwaggerUi3();
