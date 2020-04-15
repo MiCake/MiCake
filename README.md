@@ -104,9 +104,9 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 
 如果您喜欢关于 `.NET ` 方面的内容，或者对领域驱动很感兴趣，欢迎您关注我的博客：[句幽的博客](https://www.cnblogs.com/uoyo/)。您可以通过博客园内的站内**短消息**来与我沟通有关编程方面的问题。
 
-<a href="tencent://AddContact/?fromId=45&fromSubId=1&subcmd=all&uin=344481481">![QQ:344481481](https://img.shields.io/badge/QQ-Online-green)</a>
+![QQ:344481481](https://img.shields.io/badge/QQ:344481481-Online-green)
 
-如果您愿意与我沟通一些其它方面（*非编程方向*）的事情，欢迎点击上面的 QQ 徽章添加好友。🌻🌻
+如果您愿意与我沟通一些其它方面（*非编程方向*）的事情，欢迎添加QQ好友。🌻🌻
 
 ## 🍄 最后
 
