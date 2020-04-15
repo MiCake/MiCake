@@ -1,7 +1,6 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,43 +17,36 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
         public void Add(TAggregateRoot aggregateRoot)
-        {
-            throw new NotImplementedException();
-        }
+            => DbContext.Add(aggregateRoot);
 
         public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
+            => DbContext.Add(aggregateRoot).Entity;
+
+        public async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var entityInfo = await DbContext.AddAsync(aggregateRoot, cancellationToken);
+            return entityInfo.Entity;
         }
 
-        public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        public async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+            => await DbContext.AddAsync(aggregateRoot, cancellationToken);
 
         public void Delete(TAggregateRoot aggregateRoot)
-        {
-            throw new NotImplementedException();
-        }
+            => DbContext.Remove(aggregateRoot);
 
         public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DbContext.Remove(aggregateRoot);
+            return Task.CompletedTask;
         }
 
         public void Update(TAggregateRoot aggregateRoot)
-        {
-            throw new NotImplementedException();
-        }
+            => DbContext.Update(aggregateRoot);
 
         public Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DbContext.Update(aggregateRoot);
+            return Task.CompletedTask;
         }
     }
 }
