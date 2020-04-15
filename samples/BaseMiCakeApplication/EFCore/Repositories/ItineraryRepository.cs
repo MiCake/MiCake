@@ -10,7 +10,7 @@ using System.Linq;
 namespace BaseMiCakeApplication.EFCore.Repositories
 {
     public class ItineraryRepository :
-        EFStorageModelRepository<BaseAppDbContext, Itinerary, ItinerarySnapshotModel, Guid>,
+        EFRepositoryWithPO<BaseAppDbContext, Itinerary, ItinerarySnapshotModel, Guid>,
         IItineraryRepository
     {
         public ItineraryRepository(IUnitOfWorkManager uowManager) : base(uowManager)
@@ -19,8 +19,8 @@ namespace BaseMiCakeApplication.EFCore.Repositories
 
         public List<Itinerary> GetLastWeekItineraryInfo()
         {
-            var storageModels = DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
-            return ToEntity(storageModels);
+            var persistentObjects = DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
+            return ToEntity(persistentObjects);
         }
 
         public void UpdateLastWeekItineraryInfo(List<Itinerary> itineraries)

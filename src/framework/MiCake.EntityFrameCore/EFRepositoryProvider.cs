@@ -3,8 +3,8 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.EntityFrameworkCore.Repository;
-using Microsoft.Extensions.DependencyInjection;
 using MiCake.Uow;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,11 +37,11 @@ namespace MiCake.EntityFrameworkCore
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
             var uowManager = _serviceProvider.GetService<IUnitOfWorkManager>();
 
-            if (aggregateDescriptor.HasStorageModel && aggregateDescriptor.StorageModel != null)
+            if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
             {
-                var type = typeof(EFStorageModelReadOnlyRepository<,,,>).MakeGenericType(_options.DbContextType,
+                var type = typeof(EFReadOnlyRepositoryWithPO<,,,>).MakeGenericType(_options.DbContextType,
                                                                                  typeof(TAggregateRoot),
-                                                                                 aggregateDescriptor.StorageModel,
+                                                                                 aggregateDescriptor.PersistentObject,
                                                                                  typeof(TKey));
 
                 result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, uowManager);
@@ -67,11 +67,11 @@ namespace MiCake.EntityFrameworkCore
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
             var uowManager = _serviceProvider.GetService<IUnitOfWorkManager>();
 
-            if (aggregateDescriptor.HasStorageModel && aggregateDescriptor.StorageModel != null)
+            if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
             {
-                var type = typeof(EFStorageModelRepository<,,,>).MakeGenericType(_options.DbContextType,
+                var type = typeof(EFRepositoryWithPO<,,,>).MakeGenericType(_options.DbContextType,
                                                                                  typeof(TAggregateRoot),
-                                                                                 aggregateDescriptor.StorageModel,
+                                                                                 aggregateDescriptor.PersistentObject,
                                                                                  typeof(TKey));
 
                 result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, uowManager);

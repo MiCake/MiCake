@@ -5,5 +5,11 @@
     /// </summary>
     public interface IRepositoryLifetime
     {
+        /// <summary>
+        /// Order of <see cref="IRepositoryLifetime"/>
+        /// 
+        /// All IRepositoryLifetime services will be executed according to the order from small to large.
+        /// </summary>
+        int Order { get; set; }
     }
 }

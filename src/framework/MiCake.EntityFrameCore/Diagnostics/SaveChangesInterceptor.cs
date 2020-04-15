@@ -1,5 +1,6 @@
 ﻿using MiCake.Core.Reactive;
 using MiCake.DDD.Extensions;
+using MiCake.DDD.Extensions.LifeTime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -12,6 +13,8 @@ using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Diagnostics
 {
+    //[Cancel:See Azure Board #ISSUE 12]
+    [Obsolete]
     internal class SaveChangesInterceptor : IObserverAsync<KeyValuePair<string, object>>
     {
         private IServiceProvider _serviceProvider;
@@ -27,7 +30,7 @@ namespace MiCake.EntityFrameworkCore.Diagnostics
             {
                 if (value.Key == CoreEventId.SaveChangesStarting.Name)
                 {
-                    var preLifeTimes = _serviceProvider.GetServices<IEfRepositoryPreSaveChanges>().ToList();
+                    var preLifeTimes = _serviceProvider.GetServices<IRepositoryPreSaveChanges>().ToList();
 
                     if (preLifeTimes.Count != 0)
                     {
@@ -40,7 +43,7 @@ namespace MiCake.EntityFrameworkCore.Diagnostics
 
                 if (value.Key == CoreEventId.SaveChangesCompleted.Name)
                 {
-                    var postLifeTimes = _serviceProvider.GetServices<IEfRepositoryPostSaveChanges>().ToList();
+                    var postLifeTimes = _serviceProvider.GetServices<IRepositoryPostSaveChanges>().ToList();
 
                     if (postLifeTimes.Count != 0)
                     {
@@ -55,7 +58,7 @@ namespace MiCake.EntityFrameworkCore.Diagnostics
         }
 
         private async Task ApplyRepositoryPreLifetimeAsync(
-            List<IEfRepositoryPreSaveChanges> preLifetimeInstance,
+            List<IRepositoryPreSaveChanges> preLifetimeInstance,
             List<EntityEntry> trackerEntities,
             CancellationToken cancellationToken = default)
         {
@@ -75,7 +78,7 @@ namespace MiCake.EntityFrameworkCore.Diagnostics
         }
 
         private async Task ApplyRepositoryPostLifetimeAsync(
-            List<IEfRepositoryPostSaveChanges> postLifetimeInstance,
+            List<IRepositoryPostSaveChanges> postLifetimeInstance,
             List<EntityEntry> trackerEntities,
             CancellationToken cancellationToken = default)
         {

@@ -1,18 +1,13 @@
-﻿using MiCake.Audit.Modules;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Modules;
-using MiCake.EntityFrameworkCore.Diagnostics;
-using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {
     [DependOn(
         typeof(MiCakeUowModule),
-        typeof(MiCakeAuditModule),
         typeof(MiCakeDDDExtensionsModule))]
     public class MiCakeEFCoreModule : MiCakeModule
     {
@@ -25,21 +20,17 @@ namespace MiCake.EntityFrameworkCore.Modules
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
-            //add ef core interceptor
-            services.AddScoped(typeof(SaveChangesInterceptor));
-
             //add ef repository provider
             services.AddScoped(typeof(IRepositoryProvider<,>), typeof(EFRepositoryProvider<,>));
 
-            //add audit life time
-            services.AddScoped<IEfRepositoryPreSaveChanges, AuditEFRepositoryLifetime>();
-            //domain events dispatcher
-            services.AddScoped<IEfRepositoryPreSaveChanges, DomainEventsEFRepositoryLifetime>();
+            //[Cancel:See Azure Board #ISSUE 12] add ef core interceptor
+            //services.AddScoped(typeof(SaveChangesInterceptor));
         }
 
         public override void Initialization(ModuleBearingContext context)
         {
-            DiagnosticListener.AllListeners.Subscribe(new EfGlobalListener(context.ServiceProvider));
+            // [Cancel:See Azure Board #ISSUE 12]
+            // DiagnosticListener.AllListeners.Subscribe(new EfGlobalListener(context.ServiceProvider));
         }
     }
 }

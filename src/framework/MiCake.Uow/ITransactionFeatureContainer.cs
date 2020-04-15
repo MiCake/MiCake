@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 
 namespace MiCake.Uow
 {
@@ -7,12 +7,12 @@ namespace MiCake.Uow
     /// </summary>
     public interface ITransactionFeatureContainer
     {
-        void RegisteTransactionFeature([NotNull]string key, [NotNull]ITransactionFeature transactionFeature);
+        void RegisteTransactionFeature(string key, ITransactionFeature transactionFeature);
 
-        ITransactionFeature GetOrAddTransactionFeature([NotNull]string key, [NotNull]ITransactionFeature transactionFeature);
+        ITransactionFeature GetOrAddTransactionFeature(string key, ITransactionFeature transactionFeature);
 
-        ITransactionFeature GetTransactionFeature([NotNull]string key);
+        ITransactionFeature GetTransactionFeature(string key);
 
-        void RemoveTransaction([NotNull]string key);
+        void RemoveTransaction(string key);
     }
 }

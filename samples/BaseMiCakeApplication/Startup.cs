@@ -1,6 +1,7 @@
 using BaseMiCakeApplication.EFCore;
 using MiCake;
 using MiCake.AspNetCore;
+using MiCake.Audit;
 using MiCake.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -40,6 +41,7 @@ namespace BaseMiCakeApplication
 
             services.AddMiCake<BaseMiCakeModule>()
                     .UseAspNetCore()
+                    .UseAudit()
                     .UseEFCore<BaseAppDbContext>()
                     .Build();
 
@@ -61,12 +63,12 @@ namespace BaseMiCakeApplication
 
             app.UseAuthorization();
 
+            app.StartMiCake();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
-
-            app.StartMiCake();
 
             app.UseOpenApi();
             app.UseSwaggerUi3();

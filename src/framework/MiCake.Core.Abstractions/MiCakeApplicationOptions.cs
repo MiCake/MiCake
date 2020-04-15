@@ -6,7 +6,7 @@ namespace MiCake.Core
     /// <summary>
     /// The configuration of building the core program of micake
     /// </summary>
-    public class MiCakeApplicationOptions
+    public partial class MiCakeApplicationOptions
     {
         /// <summary>
         /// Configuration items for auto injection service

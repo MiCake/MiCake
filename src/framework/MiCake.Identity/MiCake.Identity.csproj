@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
+    <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
   </ItemGroup>
 
 </Project>

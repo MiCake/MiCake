@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
     <ProjectReference Include="..\MiCake.DDD.Domain\MiCake.DDD.Domain.csproj" />
     <ProjectReference Include="..\MiCake.Mapster\MiCake.Mapster.csproj" />
   </ItemGroup>

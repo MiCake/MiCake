@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +18,7 @@ namespace MiCake.Uow
         private bool _isSaveChanged;
         private bool _isRollbacked;
 
-        public ChildUnitOfWork([NotNull]IUnitOfWork parentUow)
+        public ChildUnitOfWork(IUnitOfWork parentUow)
         {
             _parentUow = parentUow;
             ID = Guid.NewGuid();
@@ -37,25 +37,25 @@ namespace MiCake.Uow
         }
 
         public ITransactionFeature GetOrAddTransactionFeature(
-            [NotNull] string key,
-            [NotNull] ITransactionFeature transactionFeature)
+             string key,
+             ITransactionFeature transactionFeature)
         {
             return _parentUow.GetOrAddTransactionFeature(key, transactionFeature);
         }
 
-        public ITransactionFeature GetTransactionFeature([NotNull] string key)
+        public ITransactionFeature GetTransactionFeature(string key)
         {
             return _parentUow.GetTransactionFeature(key);
         }
 
         public void RegisteTransactionFeature(
-            [NotNull] string key,
-            [NotNull] ITransactionFeature transactionFeature)
+             string key,
+             ITransactionFeature transactionFeature)
         {
             _parentUow.RegisteTransactionFeature(key, transactionFeature);
         }
 
-        public void RemoveTransaction([NotNull] string key)
+        public void RemoveTransaction(string key)
         {
             _parentUow.RemoveTransaction(key);
         }

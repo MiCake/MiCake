@@ -16,7 +16,7 @@ namespace BaseMiCakeApplication.Controllers
         private readonly IRepository<Itinerary, Guid> _test;
 
         public ItineraryController(
-            IRepository<Itinerary,Guid> test,
+            IRepository<Itinerary, Guid> test,
             IItineraryRepository repository)
         {
             _repository = repository;
@@ -49,6 +49,13 @@ namespace BaseMiCakeApplication.Controllers
             entity.ChangeNote(content);
 
             await _repository.UpdateAsync(entity);
+        }
+
+        [HttpPost]
+        public async Task DeleteItineraryAsync(Guid id)
+        {
+            var entity = await _repository.FindAsync(id);
+            await _repository.DeleteAsync(entity);
         }
     }
 }

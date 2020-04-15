@@ -29,9 +29,9 @@ namespace MiCake.DDD.Domain.Freedom
         TEntity AddAndReturn(TEntity entity);
 
         /// <summary>
-        /// Add a new aggregateRoot.and return this aggregate.you can get it Primary key
+        /// Add a new aggregateRoot.And return this aggregate.you can get it Primary key
         /// </summary>
-        TEntity AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default);
+        Task<TEntity> AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.
@@ -51,7 +51,6 @@ namespace MiCake.DDD.Domain.Freedom
         /// <summary>
         /// Delete aggregateRoot from repository
         /// </summary>
-        void DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
-
+        Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
     }
 }

@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -17,8 +17,8 @@ namespace MiCake.Core
         private Action<IMiCakeApplication, IServiceCollection> _configureAction;
 
         public MiCakeBuilder(
-            [NotNull] IServiceCollection services,
-            [NotNull] Type entryType,
+             IServiceCollection services,
+             Type entryType,
             MiCakeApplicationOptions options,
             bool needNewScope = false
             )

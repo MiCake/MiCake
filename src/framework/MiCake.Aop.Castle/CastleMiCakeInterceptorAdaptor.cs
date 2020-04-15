@@ -1,5 +1,5 @@
 ﻿using Castle.DynamicProxy;
-using JetBrains.Annotations;
+
 using System;
 using System.Collections.Concurrent;
 using System.Reflection;
@@ -22,7 +22,7 @@ namespace MiCake.Aop.Castle
 
         private IMiCakeInterceptor _miCakeInterceptor;
 
-        public CastleMiCakeInterceptorAdaptor([NotNull]IMiCakeInterceptor miCakeInterceptor)
+        public CastleMiCakeInterceptorAdaptor(IMiCakeInterceptor miCakeInterceptor)
         {
             _miCakeInterceptor = miCakeInterceptor;
         }

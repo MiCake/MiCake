@@ -3,6 +3,7 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Freedom;
 using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Internal;
+using MiCake.DDD.Extensions.LifeTime;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Extensions.Store;
 using MiCake.Mapster.Modules;
@@ -26,7 +27,7 @@ namespace MiCake.DDD.Extensions.Modules
                 return provider.GetDomainMetadata();
             });
 
-            services.AddSingleton<IStorageModelActivator, StorageModelActivator>();
+            services.AddSingleton<IPersistentObjectActivator, PersistentObjectActivator>();
 
             services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
             services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
@@ -34,6 +35,9 @@ namespace MiCake.DDD.Extensions.Modules
             services.AddScoped(typeof(IFreeRepository<,>), typeof(ProxyFreeRepository<,>));
             services.AddScoped(typeof(IReadOnlyFreeRepository<,>), typeof(ProxyReadOnlyFreeRepository<,>));
             services.AddScoped(typeof(IFreeRepositoryFactory<,>), typeof(DefaultFreeRepositoryFactory<,>));
+
+            //LifeTime
+            services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
         }
     }
 }

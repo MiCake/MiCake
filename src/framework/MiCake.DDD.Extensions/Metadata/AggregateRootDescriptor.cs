@@ -14,14 +14,14 @@ namespace MiCake.DDD.Extensions.Metadata
     public class AggregateRootDescriptor : DomainObjectDescriptor
     {
         /// <summary>
-        /// Is the aggregate root declared as <see cref="IHasStorageModel"/>
+        /// Is the aggregate root declared as <see cref="IHasPersistentObject"/>
         /// </summary>
-        public bool HasStorageModel { get; private set; }
+        public bool HasPersistentObject { get; private set; }
 
         /// <summary>
-        /// The storage model corresponding to the aggregate root
+        /// The persistent object corresponding to the aggregate root
         /// </summary>
-        public Type StorageModel { get; private set; }
+        public Type PersistentObject { get; private set; }
 
         private Type _keyType;
         /// <summary>
@@ -41,19 +41,19 @@ namespace MiCake.DDD.Extensions.Metadata
 
         public AggregateRootDescriptor(Type type) : base(type)
         {
-            HasStorageModel = EntityHelper.HasStorageModel(type);
+            HasPersistentObject = EntityHelper.HasPersistentObject(type);
         }
 
-        internal void SetStorageModel(Type storageType)
+        internal void SetPersistentObject(Type persistentType)
         {
-            if (!ReflectionHelper.IsAssignableToGenericType(storageType, typeof(StorageModel<>)))
-                throw new ArgumentException($"The type {storageType.Name} is not implements/inherits {nameof(StorageModel)}.");
+            if (!ReflectionHelper.IsAssignableToGenericType(persistentType, typeof(PersistentObject<>)))
+                throw new ArgumentException($"The type {persistentType.Name} is not implements/inherits {nameof(PersistentObject)}.");
 
-            var entityType = TypeHelper.GetGenericArguments(storageType, typeof(IStorageModel<>)).FirstOrDefault();
+            var entityType = TypeHelper.GetGenericArguments(persistentType, typeof(IPersistentObject<>)).FirstOrDefault();
             if (!Type.Equals(entityType))
-                throw new ArgumentException($"The type {storageType.Name} generic parameter must be {Type.Name}.But now is {entityType?.Name}");
+                throw new ArgumentException($"The type {persistentType.Name} generic parameter must be {Type.Name}.But now is {entityType?.Name}");
 
-            StorageModel = storageType;
+            PersistentObject = persistentType;
         }
     }
 }

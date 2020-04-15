@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ namespace MiCake.Core.Modularity
     /// </summary>
     internal class MiCakeModuleBoot : IMiCakeModuleBoot
     {
-        private ILogger<MiCakeModuleBoot> _logger;
+        private ILogger _logger;
 
         private IMiCakeModuleCollection _modules;
         private MiCakeModuleLogger _moduleLogger;
@@ -19,10 +19,10 @@ namespace MiCake.Core.Modularity
         private Action<ModuleBearingContext> _initializationActions;
 
         public MiCakeModuleBoot(
-            [NotNull]ILogger<MiCakeModuleBoot> logger,
-            [NotNull]IMiCakeModuleCollection modules)
+            ILoggerFactory loggerFactory,
+            IMiCakeModuleCollection modules)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger("MiCake.Core.Modularity.MiCakeModuleBoot");
             _moduleLogger = new MiCakeModuleLogger(_logger);
             _modules = modules;
         }
@@ -85,12 +85,12 @@ namespace MiCake.Core.Modularity
             _logger.LogInformation("ShutDown MiCake Application Completed.");
         }
 
-        public void AddConfigService([NotNull]Action<ModuleConfigServiceContext> configServiceAction)
+        public void AddConfigService(Action<ModuleConfigServiceContext> configServiceAction)
         {
             _configServiceActions += configServiceAction;
         }
 
-        public void AddInitalzation([NotNull]Action<ModuleBearingContext> initalzationAction)
+        public void AddInitalzation(Action<ModuleBearingContext> initalzationAction)
         {
             _initializationActions += initalzationAction;
         }

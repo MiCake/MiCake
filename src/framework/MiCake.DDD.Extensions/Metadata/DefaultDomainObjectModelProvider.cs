@@ -28,7 +28,7 @@ namespace MiCake.DDD.Extensions.Metadata
         {
             var allTypes = context.DomainLayerAssembly.SelectMany(s => s.GetTypes().Where(type => TypeHelper.IsConcrete(type)));
 
-            var storageModels = FindStorageModels();
+            var persistentTypes = FindPersistentTypes();
 
             foreach (var findType in allTypes)
             {
@@ -36,7 +36,7 @@ namespace MiCake.DDD.Extensions.Metadata
                     continue;
 
                 var entityDes = GetEntityDescriptor(findType);
-                var aggregateRootDes = GetAggregateRootDescriptor(findType, storageModels);
+                var aggregateRootDes = GetAggregateRootDescriptor(findType, persistentTypes);
                 var valueObjectDes = GetValueObjectDescriptor(findType);
 
                 if (entityDes != null) context.Result.Entities.Add(entityDes);
@@ -49,11 +49,11 @@ namespace MiCake.DDD.Extensions.Metadata
         {
         }
 
-        private List<Type> FindStorageModels()
+        private List<Type> FindPersistentTypes()
         {
             return _exceptedModules.GetAssemblies(false).SelectMany(s =>
                                 s.GetTypes().Where(type =>
-                                     TypeHelper.IsConcrete(type) && typeof(IStorageModel).IsAssignableFrom(type))).ToList();
+                                     TypeHelper.IsConcrete(type) && typeof(IPersistentObject).IsAssignableFrom(type))).ToList();
         }
 
         private EntityDescriptor GetEntityDescriptor(Type type)
@@ -64,19 +64,19 @@ namespace MiCake.DDD.Extensions.Metadata
             return new EntityDescriptor(type);
         }
 
-        private AggregateRootDescriptor GetAggregateRootDescriptor(Type type, List<Type> storageModels)
+        private AggregateRootDescriptor GetAggregateRootDescriptor(Type type, List<Type> persistentTypes)
         {
             if (!DomainTypeHelper.IsAggregateRoot(type))
                 return null;
 
             var result = new AggregateRootDescriptor(type);
 
-            //get storage Model
-            var findStorageModel = storageModels.FirstOrDefault(s =>
-                                        TypeHelper.GetGenericArguments(s, typeof(IStorageModel<>)).FirstOrDefault() == type);
+            //get persistent object.
+            var currentPersistentType = persistentTypes.FirstOrDefault(s =>
+                                        TypeHelper.GetGenericArguments(s, typeof(IPersistentObject<>)).FirstOrDefault() == type);
 
-            if (findStorageModel != null)
-                result.SetStorageModel(findStorageModel);
+            if (currentPersistentType != null)
+                result.SetPersistentObject(currentPersistentType);
 
             return result;
         }

@@ -6,13 +6,13 @@ namespace Mapster
     public static class MapDomainEventExtension
     {
         /// <summary>
-        /// Store aggregate domain Events to storage model 
+        /// Store aggregate domain Events to persistent object. 
         /// </summary>
         /// <typeparam name="TAggregateRoot"><see cref="IAggregateRoot"/></typeparam>
-        /// <typeparam name="TStorageModel"><see cref="IStorageModel"/></typeparam>
-        public static TypeAdapterSetter<TAggregateRoot, TStorageModel> MapDomainEvent<TAggregateRoot, TStorageModel>(this TypeAdapterSetter<TAggregateRoot, TStorageModel> setter)
+        /// <typeparam name="TPersistentObject"><see cref="IPersistentObject"/></typeparam>
+        public static TypeAdapterSetter<TAggregateRoot, TPersistentObject> MapDomainEvent<TAggregateRoot, TPersistentObject>(this TypeAdapterSetter<TAggregateRoot, TPersistentObject> setter)
             where TAggregateRoot : IAggregateRoot
-            where TStorageModel : IStorageModel
+            where TPersistentObject : IPersistentObject
         {
             return setter.AfterMapping((s, d) => d.AddDomainEvents(s.GetDomainEvents()));
         }

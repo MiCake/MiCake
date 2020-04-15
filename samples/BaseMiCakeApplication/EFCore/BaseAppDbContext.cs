@@ -1,20 +1,21 @@
-﻿using BaseMiCakeApplication.Infrastructure.StroageModels;
-using JetBrains.Annotations;
+﻿using BaseMiCakeApplication.Domain.Aggregates;
+using BaseMiCakeApplication.Infrastructure.StroageModels;
+using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BaseMiCakeApplication.EFCore
 {
-    public class BaseAppDbContext : DbContext
+    public class BaseAppDbContext : MiCakeDbContext
     {
-        public BaseAppDbContext([NotNull] DbContextOptions options) : base(options)
+        public BaseAppDbContext(DbContextOptions options) : base(options)
         {
         }
 
         public DbSet<ItinerarySnapshotModel> Itinerary { get; set; }
+        public DbSet<Book> Books { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

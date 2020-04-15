@@ -1,12 +1,12 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Freedom;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Extensions.Internal
 {
@@ -29,7 +29,7 @@ namespace MiCake.DDD.Extensions.Internal
         public TEntity AddAndReturn(TEntity entity)
             => _inner.AddAndReturn(entity);
 
-        public TEntity AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public Task<TEntity> AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default)
             => _inner.AddAndReturnAsync(entity, cancellationToken);
 
         public Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
@@ -38,7 +38,7 @@ namespace MiCake.DDD.Extensions.Internal
         public void Delete(TEntity entity)
             => _inner.Delete(entity);
 
-        public void DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
             => _inner.DeleteAsync(entity, cancellationToken);
 
         public TEntity Find(TKey ID)

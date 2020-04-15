@@ -7,6 +7,42 @@ namespace MiCake.Core.Util
 {
     public static class CheckValue
     {
+        public static IReadOnlyList<T> NotEmpty<T>(IReadOnlyList<T> value, string parameterName)
+        {
+            NotNull(value, parameterName);
+
+            if (value.Count == 0)
+            {
+                NotEmpty(parameterName, nameof(parameterName));
+
+                throw new ArgumentException($"The collection argument '{parameterName}' must contain at least one element.");
+            }
+
+            return value;
+        }
+
+        public static string NotEmpty(string value, string parameterName)
+        {
+            Exception e = null;
+            if (value is null)
+            {
+                e = new ArgumentNullException(parameterName);
+            }
+            else if (value.Trim().Length == 0)
+            {
+                e = new ArgumentException($"The string argument '{parameterName}' cannot be empty.");
+            }
+
+            if (e != null)
+            {
+                NotEmpty(parameterName, nameof(parameterName));
+
+                throw e;
+            }
+
+            return value;
+        }
+
         public static T NotNull<T>(T value, string parameterName)
         {
             if (value == null)
