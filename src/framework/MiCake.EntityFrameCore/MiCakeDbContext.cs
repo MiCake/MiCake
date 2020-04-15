@@ -1,5 +1,7 @@
 ﻿using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Extensions.LifeTime;
+using MiCake.DDD.Extensions.Store.Configure;
+using MiCake.EntityFrameworkCore.Interprets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,13 +17,23 @@ namespace MiCake.EntityFrameworkCore
     /// </summary>
     public class MiCakeDbContext : DbContext
     {
+        public MiCakeDbContext(DbContextOptions options) : base(options)
+        {
+        }
+
+        protected MiCakeDbContext()
+        {
+        }
+
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
         /// <param name="modelBuilder"><see cref="ModelBuilder"/></param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            //EFCore will cached model info.This method only called once
+            var storeModelExpression = new EFModelExpressionProvider().GetExpression();
+            storeModelExpression.Interpret(StoreConfig.Instance.GetStoreModel(), modelBuilder);
         }
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -65,7 +77,7 @@ namespace MiCake.EntityFrameworkCore
                         var originalEFState = entity.State;
 
                         var state = entity.State.ToRepositoryState();
-                        state = preSaveChange.PreSaveChanges(state, entity);
+                        state = preSaveChange.PreSaveChanges(state, entity.Entity);
 
                         if (state.ToEFState() != originalEFState) entity.State = state.ToEFState();
                     }
@@ -89,7 +101,7 @@ namespace MiCake.EntityFrameworkCore
                     foreach (var entity in entityEntries)
                     {
                         var state = entity.State.ToRepositoryState();
-                        postSaveChange.PostSaveChanges(state, entity);
+                        postSaveChange.PostSaveChanges(state, entity.Entity);
                     }
                 }
             }
@@ -115,7 +127,7 @@ namespace MiCake.EntityFrameworkCore
                         var originalEFState = entity.State;
 
                         var state = entity.State.ToRepositoryState();
-                        state = await preSaveChange.PreSaveChangesAsync(state, entity, cancellationToken);
+                        state = await preSaveChange.PreSaveChangesAsync(state, entity.Entity, cancellationToken);
 
                         if (state.ToEFState() != originalEFState) entity.State = state.ToEFState();
                     }
@@ -141,7 +153,7 @@ namespace MiCake.EntityFrameworkCore
                     foreach (var entity in entityEntries)
                     {
                         var state = entity.State.ToRepositoryState();
-                        await postSaveChange.PostSaveChangesAsync(state, entity, cancellationToken);
+                        await postSaveChange.PostSaveChangesAsync(state, entity.Entity, cancellationToken);
                     }
                 }
             }

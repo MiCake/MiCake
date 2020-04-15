@@ -50,5 +50,12 @@ namespace BaseMiCakeApplication.Controllers
 
             await _repository.UpdateAsync(entity);
         }
+
+        [HttpPost]
+        public async Task DeleteItineraryAsync(Guid id)
+        {
+            var entity = await _repository.FindAsync(id);
+            await _repository.DeleteAsync(entity);
+        }
     }
 }

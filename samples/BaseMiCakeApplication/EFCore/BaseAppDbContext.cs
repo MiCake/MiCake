@@ -1,9 +1,10 @@
 ﻿using BaseMiCakeApplication.Infrastructure.StroageModels;
+using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BaseMiCakeApplication.EFCore
 {
-    public class BaseAppDbContext : DbContext
+    public class BaseAppDbContext : MiCakeDbContext
     {
         public BaseAppDbContext(DbContextOptions options) : base(options)
         {
@@ -13,8 +14,6 @@ namespace BaseMiCakeApplication.EFCore
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseMySql("Server=localhost;Database=MiCakeDemo;User=sa;Password={your password};");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

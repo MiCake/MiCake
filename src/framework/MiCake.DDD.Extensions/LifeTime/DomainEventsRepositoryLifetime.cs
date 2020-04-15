@@ -22,6 +22,9 @@ namespace MiCake.DDD.Extensions.LifeTime
                 var entityEvents = domianEventProvider.GetDomainEvents();
                 var completedEventCount = 0;
 
+                if (entityEvents == null || entityEvents.Count == 0)
+                    return entityState;
+
                 foreach (var @event in entityEvents)
                 {
                     try
@@ -47,6 +50,9 @@ namespace MiCake.DDD.Extensions.LifeTime
             {
                 var entityEvents = domianEventProvider.GetDomainEvents();
                 var completedEventCount = 0;
+
+                if (entityEvents == null || entityEvents.Count == 0)
+                    return entityState;
 
                 foreach (var @event in entityEvents)
                 {

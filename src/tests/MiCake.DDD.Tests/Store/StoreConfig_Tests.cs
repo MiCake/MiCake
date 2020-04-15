@@ -1,8 +1,5 @@
 ﻿using MiCake.DDD.Extensions.Store.Configure;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace MiCake.DDD.Tests.Store

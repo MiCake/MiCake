@@ -1,7 +1,7 @@
 ﻿using MiCake.Core.Data;
-using Xunit;
 using System;
 using System.Linq.Expressions;
+using Xunit;
 
 namespace MiCake.DDD.Tests.Store
 {

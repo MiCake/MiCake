@@ -8,6 +8,7 @@ namespace MiCake.Audit.Store
         {
             // use soft deletion.
             modelBuilder.Entity<ISoftDeletion>().DirectDeletion(false);
+            modelBuilder.Entity<ISoftDeletion>().HasQueryFilter(s => !s.IsDeleted);
         }
     }
 }
