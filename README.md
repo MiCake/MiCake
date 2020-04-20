@@ -10,7 +10,7 @@
 
 一款基于.Net Core平台的 **“超轻柔”** 领域驱动（DDD）组件
 
-[![Nuget Version](https://img.shields.io/nuget/v/MiCake.Core?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake.Core?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Build Status](https://dev.azure.com/MiCakeOrg/MiCake/_apis/build/status/uoyoCsharp.MiCake?branchName=master)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Azure DevOps tests](https://img.shields.io/azure-devops/tests/MiCakeOrg/MiCake/3?color=ff69b4&label=Azure%20Tests&logo=Microsoft-Azure&logoColor=white)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/MiCakeOrg/MiCake/3?label=Azure%20Coverage&logo=Azure-DevOps)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Board Status](https://dev.azure.com/MiCakeOrg/e359a201-ca49-495f-92ba-11493e88e94e/9a202286-9c70-40fa-8892-9bd476191d74/_apis/work/boardbadge/e5dd9abe-6df7-4f1c-95d0-762074a5f1e2)](https://dev.azure.com/MiCakeOrg/e359a201-ca49-495f-92ba-11493e88e94e/_boards/board/t/9a202286-9c70-40fa-8892-9bd476191d74/Microsoft.RequirementCategory/)
+[![Nuget Version](https://img.shields.io/nuget/v/MiCake.Core?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake.Core?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Maintainability](https://api.codeclimate.com/v1/badges/a9d8163cb3023fdef30a/maintainability)](https://codeclimate.com/github/uoyoCsharp/MiCake/maintainability) [![Build Status](https://dev.azure.com/MiCakeOrg/MiCake/_apis/build/status/uoyoCsharp.MiCake?branchName=master)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Azure DevOps tests](https://img.shields.io/azure-devops/tests/MiCakeOrg/MiCake/3?color=ff69b4&label=Azure%20Tests&logo=Microsoft-Azure&logoColor=white)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/MiCakeOrg/MiCake/3?label=Azure%20Coverage&logo=Azure-DevOps)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Board Status](https://dev.azure.com/MiCakeOrg/e359a201-ca49-495f-92ba-11493e88e94e/9a202286-9c70-40fa-8892-9bd476191d74/_apis/work/boardbadge/e5dd9abe-6df7-4f1c-95d0-762074a5f1e2)](https://dev.azure.com/MiCakeOrg/e359a201-ca49-495f-92ba-11493e88e94e/_boards/board/t/9a202286-9c70-40fa-8892-9bd476191d74/Microsoft.RequirementCategory/) 
 
 </div>
 
@@ -18,7 +18,7 @@
 
 - “快捷” —— 快速将您的项目转换为DDD风格，让您更专注于您的领域代码。
 - “规范” —— 实现了DDD战术模式提出的几乎所有部件，便于使用领域驱动思想来规范项目。
-- “方便” —— 提供项目常用的基础功能（全局错误捕获，返回数据包裹等），便于快速构建项目。
+- “方便” —— 提供项目常用的基础功能（全局异常处理，数据格式化等），便于快速构建项目。
 - “灵活” —— 通过模块进行解耦，您可以根据自身需求使用特定的MiCake模块。
 - “轻柔” —— 无感的融入现有的项目，甚至感觉不到它的存在。
 
@@ -28,7 +28,7 @@
 
 您只需要通过 `NuGet` 包安装它，并且编写非常少量的代码就能快速使您的项目转变为**DDD**风格。
 
-它提供了DDD战术模式中的大部分部件，比如**聚合根、实体、值对象、领域服务**等等，通过这些部件建立您的“领域对象”，将开发重心放在领域层中，其它大部分的交互逻辑都将有`MiCake`来帮您完成。
+它提供了DDD战术模式中的大部分部件，比如**聚合根、实体、值对象、领域服务**等等，通过这些部件建立您的“领域对象”，将开发重心放在领域层中，其它大部分的交互逻辑都将由`MiCake`来帮您完成。
 
 **“轻柔”**的**“组件”**？ `MiCake`在设计之初就被定位为“很薄的一层”，它包裹 `.NET` 项目但并不干扰，您仍然可以使用原有的编程习惯进行开发。
 
