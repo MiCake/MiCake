@@ -1,7 +1,4 @@
-﻿using MiCake.Core.Logging;
-using MiCake.Serilog.ExceptionHanding;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
@@ -42,10 +39,6 @@ namespace MiCake.Serilog
                 else
                     Log.Logger = GetDefaultSerilog();
             }
-
-            //replace errorHandler
-            var errorHandlerInstance = serilogOption.logErrorHandlerProvider ?? new SerilogErrorHandlerProvider(serilogOption);
-            _services.Replace(new ServiceDescriptor(typeof(ILogErrorHandlerProvider), errorHandlerInstance));
         }
 
         public Logger GetDefaultSerilog()

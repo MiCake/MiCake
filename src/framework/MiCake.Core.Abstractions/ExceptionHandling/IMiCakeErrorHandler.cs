@@ -1,23 +1,14 @@
-﻿using System;
-
-namespace MiCake.Core.ExceptionHandling
+﻿namespace MiCake.Core.ExceptionHandling
 {
     /// <summary>
-    /// Error handler generated in MiCake framework.
-    /// Capture error and distribute errors to other recipients.
+    ///  Intercepting errors(<see cref="MiCakeException"/>).
     /// </summary>
     public interface IMiCakeErrorHandler
     {
         /// <summary>
-        /// Add a handler service. It will be called at handle time.
+        /// Handle micake exception
         /// </summary>
-        /// <param name="errorInfo"><see cref="MiCakeErrorInfo"/></param>
-        IMiCakeErrorHandler ConfigureHandlerService(Action<MiCakeErrorInfo> errorInfo);
-
-        /// <summary>
-        /// hand micake exception
-        /// </summary>
-        /// <param name="micakeException"></param>
+        /// <param name="micakeException"><see cref="MiCakeException"/></param>
         void Handle(MiCakeException micakeException);
     }
 }

@@ -1,8 +1,5 @@
-﻿
-using MiCake.Core.Data;
+﻿using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
-using MiCake.Core.ExceptionHandling;
-using MiCake.Core.Logging;
 using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -148,8 +145,6 @@ namespace MiCake.Core
                 ServiceLocator.Instance.Locator = provider;
                 return ServiceLocator.Instance;
             });
-            services.AddSingleton<IMiCakeErrorHandler, DefaultMiCakeErrorHandler>();
-            services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
         }
 
         //Inject service into container according to matching rules

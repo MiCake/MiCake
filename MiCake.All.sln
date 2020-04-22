@@ -57,7 +57,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow.Test", "src\test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Mapster", "src\framework\MiCake.Mapster\MiCake.Mapster.csproj", "{02EDE124-EDC7-4A1E-9100-559ECD9D8D99}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.Core.Util.Tests", "src\tests\MiCake.Core.Util.Tests\MiCake.Core.Util.Tests.csproj", "{F20669C0-7C4E-4B9C-A993-5C696E97E617}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Core.Util.Tests", "src\tests\MiCake.Core.Util.Tests\MiCake.Core.Util.Tests.csproj", "{F20669C0-7C4E-4B9C-A993-5C696E97E617}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6C2561F5-8BCF-41B9-9923-533B51711753}"
 	ProjectSection(SolutionItems) = preProject

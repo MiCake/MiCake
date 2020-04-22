@@ -65,12 +65,12 @@ namespace MiCake.Core.Util.Reflection.Emit
             var ilOfGet = getMethod.GetILGenerator();
             ilOfGet.LdArg(0); //arguement : this 
             ilOfGet.Emit(OpCodes.Ldfld, fieldInfo);
-            ilOfGet.Emit(OpCodes.Ret);
+            ilOfGet.Return();
 
             var ilOfSet = setMethod.GetILGenerator();
             ilOfSet.PushParameters(true, 2); //arguements : 1:this 2:value
             ilOfSet.Emit(OpCodes.Stfld, fieldInfo);
-            ilOfSet.Emit(OpCodes.Ret);
+            ilOfSet.Return();
 
             //property
             var propertyBuilde = typeBuilder.DefineProperty(propertyName, PropertyAttributes.None, propertyType, null);

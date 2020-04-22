@@ -1,6 +1,4 @@
-﻿using MiCake.Core.ExceptionHandling;
-using MiCake.Core.Logging;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 
 namespace MiCake.Serilog
 {
@@ -25,10 +23,6 @@ namespace MiCake.Serilog
 
         public override void PostConfigServices(ModuleConfigServiceContext context)
         {
-            var micakeErrorHandler = GetServiceFromCollection<IMiCakeErrorHandler>(context.Services);
-            var serilogHandlerProvide = GetServiceFromCollection<ILogErrorHandlerProvider>(context.Services);
-
-            micakeErrorHandler?.ConfigureHandlerService(serilogHandlerProvide.GetErrorHandler());
         }
 
         public override void PostInitialization(ModuleBearingContext context)

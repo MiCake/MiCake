@@ -1,6 +1,6 @@
-﻿using Xunit;
-using MiCake.Core.Util.Reflection.Emit;
+﻿using MiCake.Core.Util.Reflection.Emit;
 using System;
+using Xunit;
 
 namespace MiCake.Core.Util.Tests
 {

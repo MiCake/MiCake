@@ -1,4 +1,6 @@
-﻿using System.Reflection.Emit;
+﻿using System;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace MiCake.Core.Util.Reflection.Emit
 {
@@ -39,6 +41,8 @@ namespace MiCake.Core.Util.Reflection.Emit
             else if (i < 255) g.Emit(OpCodes.Ldarg_S, (byte)i);
             else g.Emit(OpCodes.Ldarg, (short)i);
         }
+
+
 
         /// <summary>
         /// Emits the IL to push (<see cref="OpCodes.Ldloc"/>) the given local on top of the stack.
@@ -103,6 +107,64 @@ namespace MiCake.Core.Util.Reflection.Emit
         {
             if (i < 255) g.Emit(OpCodes.Starg_S, (byte)i);
             else g.Emit(OpCodes.Starg, (short)i);
+        }
+
+        /// <summary>
+        /// Emits the IL to pop the top of the stack into the actual argument at the given instance.
+        /// </summary>
+        /// <param name="g">This <see cref="ILGenerator"/> object.</param>
+        /// <param name="argsIndex">Parameter index (0 being the 'this' for instance method).</param>
+        /// <param name="type">Instance type</param>
+        public static void PushInstance(this ILGenerator g, int argsIndex, Type type)
+        {
+            g.Emit(OpCodes.Ldarg, argsIndex);
+            if (type.IsValueType)
+            {
+                g.Emit(OpCodes.Unbox, type);
+            }
+            else
+            {
+                g.Emit(OpCodes.Castclass, type);
+            }
+        }
+
+        /// <summary>
+        ///  Emits the IL to pop (<see cref="OpCodes.Ldelem_Ref"/>) the top of the stack into the actual argument at the given array instance.
+        /// </summary>
+        /// <param name="g">This <see cref="ILGenerator"/> object.</param>
+        /// <param name="argsIndex">Parameter index (0 being the 'this' for instance method).</param>
+        /// <param name="arrayIndex">Array index</param>
+        public static void PushArrayInstance(this ILGenerator g, int argsIndex, int arrayIndex)
+        {
+            g.Emit(OpCodes.Ldarg, argsIndex);
+            g.Emit(OpCodes.Ldc_I4, arrayIndex);
+            g.Emit(OpCodes.Ldelem_Ref);
+        }
+
+        /// <summary>
+        /// Call the method(<see cref="OpCodes.Call"/> or <see cref="OpCodes.Callvirt"/>)
+        /// </summary>
+        /// <param name="g">This <see cref="ILGenerator"/> object.</param>
+        /// <param name="methodInfo"></param>
+        public static void CallMethod(this ILGenerator g, MethodInfo methodInfo)
+        {
+            if (methodInfo.IsFinal || !methodInfo.IsVirtual)
+            {
+                g.Emit(OpCodes.Call, methodInfo);
+            }
+            else
+            {
+                g.Emit(OpCodes.Callvirt, methodInfo);
+            }
+        }
+
+        /// <summary>
+        /// Return current method(<see cref="OpCodes.Ret"/>)
+        /// </summary>
+        /// <param name="g">This <see cref="ILGenerator"/> object.</param>
+        public static void Return(this ILGenerator g)
+        {
+            g.Emit(OpCodes.Ret);
         }
     }
 }

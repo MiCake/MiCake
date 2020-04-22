@@ -26,4 +26,8 @@
     <ProjectReference Include="..\MiCake.Core.Abstractions\MiCake.Core.Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ExceptionHandling\" />
+  </ItemGroup>
+
 </Project>

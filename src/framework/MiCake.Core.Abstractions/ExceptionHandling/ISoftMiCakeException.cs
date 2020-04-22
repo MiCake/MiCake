@@ -1,7 +1,7 @@
 ﻿namespace MiCake.Core.ExceptionHandling
 {
     /// <summary>
-    /// Low level errors, do not cause program interruption
+    /// Indicates a non critical error message
     /// </summary>
     public interface ISoftMiCakeException
     {

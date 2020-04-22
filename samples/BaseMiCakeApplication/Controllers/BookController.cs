@@ -31,7 +31,7 @@ namespace BaseMiCakeApplication.Controllers
         }
 
         [HttpPost]
-        public async Task ChangeBookNameAsync(Guid bookId,string bookName)
+        public async Task ChangeBookNameAsync(Guid bookId, string bookName)
         {
             var currentBook = await _bookRepository.FindAsync(bookId);
             currentBook.ChangeName(bookName);
