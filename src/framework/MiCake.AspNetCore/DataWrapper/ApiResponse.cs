@@ -15,6 +15,11 @@ namespace MiCake.AspNetCore.DataWrapper
         public bool IsError { get; set; }
 
         /// <summary>
+        /// Indication code of business operation error
+        /// </summary>
+        public string ErrorCode { get; set; }
+
+        /// <summary>
         /// Response message.
         /// </summary>
         public string Message { get; set; }
@@ -39,6 +44,18 @@ namespace MiCake.AspNetCore.DataWrapper
             StatusCode = statusCode;
             Result = result;
             IsError = false;
+        }
+
+        public ApiResponse(string message,
+                           string errorCode,
+                           object result = null,
+                           int statusCode = 200)
+        {
+            Message = message;
+            ErrorCode = errorCode;
+            Result = result;
+            StatusCode = statusCode;
+            IsError = true;
         }
 
         public ApiResponse(int statusCode)

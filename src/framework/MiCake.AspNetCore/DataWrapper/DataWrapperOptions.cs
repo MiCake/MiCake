@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
 
 namespace MiCake.AspNetCore.DataWrapper
 {
@@ -11,6 +12,20 @@ namespace MiCake.AspNetCore.DataWrapper
         /// Shows the stack trace information in the responseException details.
         /// </summary>
         public bool IsDebug { get; set; } = false;
+
+        /// <summary>
+        /// When the http status code in this list, the result is not wrapped.
+        /// Defatult:204(No Content),301(Redirect),302(Redirect),304(NotModified)
+        /// 
+        /// <see cref="StatusCodes"/>
+        /// </summary>
+        public List<int> NoWrapStatusCode { get; set; } = new List<int>() { 204, 301, 302, 304 };
+
+        /// <summary>
+        /// Use custom return data model or not.
+        /// If this property is true,you must config <see cref="CustomerProperty"/>.Otherwise,the response data is original.
+        /// </summary>
+        public bool UseCustomModel { get; set; } = false;
 
         /// <summary>
         /// Custom returned property item
