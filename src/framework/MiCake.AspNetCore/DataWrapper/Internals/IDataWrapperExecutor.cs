@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
@@ -20,8 +20,9 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// Wrap the data returned by the error
         /// </summary>
         /// <param name="originalData">Original data.For Aspnet Core,it's always <see cref="ObjectResult"/></param>
+        /// <param name="exception">exception info</param>
         /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
         /// <returns>wrapped data</returns>
-        object WrapFailedResult(object originalData, DataWrapperContext wrapperContext);
+        object WrapFailedResult(object originalData, Exception exception, DataWrapperContext wrapperContext);
     }
 }

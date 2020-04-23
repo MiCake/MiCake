@@ -1,6 +1,9 @@
-﻿using MiCake.Core.Util;
+﻿using MiCake.Core;
+using MiCake.Core.ExceptionHandling;
+using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
 using MiCake.Core.Util.Reflection.Emit;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -21,9 +24,26 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public object WrapFailedResult(object originalData, DataWrapperContext wrapperContext)
+        public object WrapFailedResult(object originalData, Exception exception, DataWrapperContext wrapperContext)
         {
-            throw new NotImplementedException();
+            var httpContext = wrapperContext.HttpContext;
+            var options = wrapperContext.WrapperOptions;
+
+            if (exception is ISoftMiCakeException)
+            {
+                //Given Ok Code for this exception.
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+
+                return WrapSuccesfullysResult(originalData ?? exception.Message, wrapperContext);
+            }
+
+            var micakeException = exception as MiCakeException;
+            ApiError result = new ApiError(exception.Message,
+                                           originalData,
+                                           micakeException?.Code,
+                                           options.IsDebug ? exception.StackTrace : null);
+
+            return result;
         }
 
         /// <summary>

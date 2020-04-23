@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.AspNetCore.DataWrapper.Internals
+﻿namespace MiCake.AspNetCore.DataWrapper.Internals
 {
     /// <summary>
     /// This is an internal API  not subject to the same compatibility standards as public APIs.

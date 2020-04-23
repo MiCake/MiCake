@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.AspNetCore.DataWrapper
+﻿namespace MiCake.AspNetCore.DataWrapper
 {
     /// <summary>
     /// A data warpper exception information
@@ -15,12 +13,12 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// The message of this exception.
         /// </summary>
-        public object ExceptionMessage { get; set; }
+        public string ExceptionMessage { get; set; }
 
         /// <summary>
         /// The details of this exception.
         /// </summary>
-        public string Details { get; set; }
+        public object Details { get; set; }
 
         /// <summary>
         /// Indication code of business operation error
@@ -32,8 +30,17 @@ namespace MiCake.AspNetCore.DataWrapper
         /// </summary>
         public string StackTrace { get; set; }
 
-        public ApiError()
+        public ApiError(string message,
+                        object details = null,
+                        string errorCode = null,
+                        string stackTrace = null,
+                        bool isError = true)
         {
+            ExceptionMessage = message;
+            Details = details;
+            ErrorCode = errorCode;
+            StackTrace = stackTrace;
+            IsError = isError;
         }
     }
 }

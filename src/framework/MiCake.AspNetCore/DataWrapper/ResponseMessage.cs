@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiCake.AspNetCore.DataWrapper
+﻿namespace MiCake.AspNetCore.DataWrapper
 {
     internal class ResponseMessage
     {
