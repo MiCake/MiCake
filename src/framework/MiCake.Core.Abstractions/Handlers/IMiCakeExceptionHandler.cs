@@ -1,9 +1,9 @@
-﻿namespace MiCake.Core.ExceptionHandling
+﻿namespace MiCake.Core.Handlers
 {
     /// <summary>
     ///  Intercepting errors(<see cref="MiCakeException"/>).
     /// </summary>
-    public interface IMiCakeErrorHandler
+    public interface IMiCakeExceptionHandler
     {
         /// <summary>
         /// Handle micake exception

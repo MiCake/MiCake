@@ -18,16 +18,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ExceptionHandling\**" />
+    <EmbeddedResource Remove="ExceptionHandling\**" />
+    <None Remove="ExceptionHandling\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
     <PackageReference Include="System.Reactive" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MiCake.Core.Abstractions\MiCake.Core.Abstractions.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="ExceptionHandling\" />
   </ItemGroup>
 
 </Project>

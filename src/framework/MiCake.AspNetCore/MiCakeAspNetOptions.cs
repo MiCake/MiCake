@@ -1,15 +1,28 @@
-﻿using MiCake.Uow;
+﻿using MiCake.AspNetCore.DataWrapper;
+using MiCake.Uow;
 using System.Collections.Generic;
 
 namespace MiCake.AspNetCore
 {
+    /// <summary>
+    /// The options for micake asp net core.
+    /// </summary>
     public class MiCakeAspNetOptions
     {
+        /// <summary>
+        /// The unit of work config for micake in asp net core.
+        /// </summary>
         public MiCakeAspNetUowOption UnitOfWork { get; set; }
+
+        /// <summary>
+        /// The data wrap config for micake in asp net core.
+        /// </summary>
+        public DataWrapperOptions DataWrapperOptions { get; set; }
 
         public MiCakeAspNetOptions()
         {
             UnitOfWork = new MiCakeAspNetUowOption();
+            DataWrapperOptions = new DataWrapperOptions();
         }
     }
 
