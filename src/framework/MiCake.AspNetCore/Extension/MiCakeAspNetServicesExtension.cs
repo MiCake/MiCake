@@ -1,4 +1,5 @@
-﻿using MiCake.Core;
+﻿using MiCake.AspNetCore.ExceptionHandling;
+using MiCake.Core;
 using MiCake.Core.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,6 +63,8 @@ namespace MiCake
             {
                 needServiceProvider.SetNecessaryParts(applicationBuilder.ApplicationServices);
             }
+            //Add middlerware
+            applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
 
             micakeApp.Start();
         }

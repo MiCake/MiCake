@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace MiCake.AspNetCore.DataWrapper
 {
     /// <summary>
-    /// The options of wrapper reponse data.
+    /// The options of wrap reponse data.
     /// </summary>
     public class DataWrapperOptions
     {

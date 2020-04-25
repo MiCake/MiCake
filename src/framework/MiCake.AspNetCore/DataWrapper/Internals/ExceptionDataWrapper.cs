@@ -1,6 +1,6 @@
-﻿using MiCake.Core.Modularity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
@@ -9,11 +9,13 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     {
         private readonly IDataWrapperExecutor _wrapperExecutor;
         private readonly DataWrapperOptions _options;
-        private readonly MiCakeModuleCollection _miCakeModules;
 
-        public ExceptionDataWrapper()
+        public ExceptionDataWrapper(
+            IOptions<MiCakeAspNetOptions> options,
+            IDataWrapperExecutor wrapperExecutor)
         {
-            _wrapperExecutor = new DefaultWrapperExecutor();
+            _wrapperExecutor = wrapperExecutor;
+            _options = options.Value?.DataWrapperOptions;
         }
 
         public Task OnExceptionAsync(ExceptionContext context)
@@ -25,7 +27,6 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             var wrappContext = new DataWrapperContext(context.Result,
                                                       context.HttpContext,
                                                       _options,
-                                                      _miCakeModules,
                                                       context.ActionDescriptor);
 
             var wrappedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrappContext);

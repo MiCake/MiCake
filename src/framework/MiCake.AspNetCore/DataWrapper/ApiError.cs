@@ -1,8 +1,11 @@
-﻿namespace MiCake.AspNetCore.DataWrapper
+﻿using System;
+
+namespace MiCake.AspNetCore.DataWrapper
 {
     /// <summary>
     /// A data warpper exception information
     /// </summary>
+    [Serializable]
     public class ApiError : IResultDataWrapper
     {
         /// <summary>

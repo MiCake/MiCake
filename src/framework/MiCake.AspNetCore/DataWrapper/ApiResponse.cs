@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System;
 
 namespace MiCake.AspNetCore.DataWrapper
 {
+    [Serializable]
     public class ApiResponse : IResultDataWrapper
     {
         /// <summary>

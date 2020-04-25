@@ -1,4 +1,4 @@
-﻿using MiCake.Core.DependencyInjection;
+﻿using MiCake.AspNetCore.DataWrapper.Internals;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.Uow.Modules;
@@ -21,12 +21,8 @@ namespace MiCake.AspNetCore.Modules
         {
             var services = context.Services;
 
+            services.AddSingleton<IDataWrapperExecutor, DefaultWrapperExecutor>();
             services.AddSingleton<IConfigureOptions<MvcOptions>, MvcOptionsConfigure>();
-        }
-
-        public override void PostInitialization(ModuleBearingContext context)
-        {
-            context.ServiceProvider.GetService(typeof(IServiceLocator));
         }
     }
 }

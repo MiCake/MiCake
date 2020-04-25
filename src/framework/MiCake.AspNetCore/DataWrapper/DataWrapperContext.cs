@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Modularity;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -33,23 +32,16 @@ namespace MiCake.AspNetCore.DataWrapper
         /// </summary>
         public DataWrapperOptions WrapperOptions { get; }
 
-        /// <summary>
-        /// <see cref="MiCakeModuleCollection"/>
-        /// </summary>
-        public MiCakeModuleCollection MiCakeModules { get; }
-
 
         public DataWrapperContext(object resultData,
                                   HttpContext httpContext,
                                   DataWrapperOptions options,
-                                  MiCakeModuleCollection miCakeModules = null,
                                   ActionDescriptor actionDescriptor = null,
                                   ModelStateDictionary modelstate = null)
         {
             ResultData = resultData;
             WrapperOptions = options;
             HttpContext = httpContext;
-            MiCakeModules = miCakeModules;
             ActionDescriptor = actionDescriptor;
             ModelState = modelstate;
         }

@@ -67,6 +67,9 @@ namespace MiCake.Core
             if (_isStarted)
                 throw new InvalidOperationException($"MiCake has already started.");
 
+            //Pre activation ServiceLocator
+            AppServiceProvider.GetService(typeof(IServiceLocator));
+
             var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
         }
