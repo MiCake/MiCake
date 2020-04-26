@@ -8,6 +8,8 @@ namespace MiCake.AspNetCore.DataWrapper
     {
         /// <summary>
         ///  Gets <see cref="ActionDescriptor"/> for the selected action.
+        ///  
+        ///  It's maybe null
         /// </summary>
         public ActionDescriptor ActionDescriptor { get; }
 
@@ -24,6 +26,8 @@ namespace MiCake.AspNetCore.DataWrapper
 
         /// <summary>
         /// <see cref="ModelStateDictionary"/>
+        /// 
+        /// It's maybe null
         /// </summary>
         public ModelStateDictionary ModelState { get; }
 

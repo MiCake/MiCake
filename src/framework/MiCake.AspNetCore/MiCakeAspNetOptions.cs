@@ -15,6 +15,12 @@ namespace MiCake.AspNetCore
         public MiCakeAspNetUowOption UnitOfWork { get; set; }
 
         /// <summary>
+        /// Whether it is need to format the returned data.
+        /// When you choose true, you can also customize the configuration by <see cref="DataWrapperOptions"/>
+        /// </summary>
+        public bool UseDataWrapper { get; set; } = true;
+
+        /// <summary>
         /// The data wrap config for micake in asp net core.
         /// </summary>
         public DataWrapperOptions DataWrapperOptions { get; set; }

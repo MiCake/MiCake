@@ -10,12 +10,23 @@ namespace MiCake.AspNetCore
     /// </summary>
     internal class MvcOptionsConfigure : IConfigureOptions<MvcOptions>
     {
+        private MiCakeAspNetOptions _micakeAspNetOptions;
+
+        public MvcOptionsConfigure(IOptions<MiCakeAspNetOptions> micakeAspNetOptions)
+        {
+            _micakeAspNetOptions = micakeAspNetOptions.Value;
+        }
+
         public void Configure(MvcOptions options)
         {
             options.Filters.Add(typeof(UnitOfWorkFilter));
+
             //Add Data wrapper filters
-            options.Filters.Add(typeof(DataWrapperFilter));
-            options.Filters.Add(typeof(ExceptionDataWrapper));
+            if (_micakeAspNetOptions.UseDataWrapper)
+            {
+                options.Filters.Add(typeof(DataWrapperFilter));
+                options.Filters.Add(typeof(ExceptionDataWrapper));
+            }
         }
     }
 }

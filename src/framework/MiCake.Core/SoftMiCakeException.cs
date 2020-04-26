@@ -18,7 +18,7 @@ namespace MiCake.Core
 
         public SoftMiCakeException(
             string message,
-            Exception innerException = null,
+            Exception innerException,
             string details = null,
             string code = null) : base(message, innerException, code, details)
         {

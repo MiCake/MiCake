@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
@@ -23,17 +24,19 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             if (context.ExceptionHandled)
                 return Task.CompletedTask;
 
+            if (!_options.NoWrapStatusCode.Any(s => s == context.HttpContext.Response.StatusCode))
+            {
+                var wrapContext = new DataWrapperContext(context.Result,
+                                                          context.HttpContext,
+                                                          _options,
+                                                          context.ActionDescriptor);
 
-            var wrappContext = new DataWrapperContext(context.Result,
-                                                      context.HttpContext,
-                                                      _options,
-                                                      context.ActionDescriptor);
+                var wrapedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrapContext);
+                if (!(wrapedData is ApiError))
+                    context.ExceptionHandled = true;
 
-            var wrappedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrappContext);
-            if (!(wrappedData is ApiError))
-                context.ExceptionHandled = true;
-
-            context.Result = new ObjectResult(wrappedData);
+                context.Result = new ObjectResult(wrapedData);
+            }
 
             return Task.CompletedTask;
         }

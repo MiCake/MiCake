@@ -29,6 +29,9 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             var httpContext = wrapperContext.HttpContext;
             var options = wrapperContext.WrapperOptions;
 
+            CheckValue.NotNull(httpContext, nameof(HttpContext));
+            CheckValue.NotNull(options, nameof(DataWrapperOptions));
+
             if (exception is ISoftMiCakeException)
             {
                 //Given Ok Code for this exception.
@@ -57,6 +60,9 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             var httpContext = wrapperContext.HttpContext;
             var options = wrapperContext.WrapperOptions;
 
+            CheckValue.NotNull(httpContext, nameof(HttpContext));
+            CheckValue.NotNull(options, nameof(DataWrapperOptions));
+
             if (!options.UseCustomModel)
             {
                 return new ApiResponse(message: $"[{httpContext.Request.Method}] {ResponseMessage.Success}",
@@ -72,7 +78,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                 foreach (var customerProperty in options.CustomerProperty)
                 {
                     var propertyValue = customerProperty.Value(wrapperContext);
-                    customerType.GetProperty(customerProperty.Key).SetValue(modelInstance, propertyValue);
+                    customerType.GetProperty(customerProperty.Key)?.SetValue(modelInstance, propertyValue);
                 }
                 return modelInstance;
             }

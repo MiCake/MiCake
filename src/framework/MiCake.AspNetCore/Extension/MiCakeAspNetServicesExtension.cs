@@ -1,8 +1,10 @@
-﻿using MiCake.AspNetCore.ExceptionHandling;
+﻿using MiCake.AspNetCore;
+using MiCake.AspNetCore.ExceptionHandling;
 using MiCake.Core;
 using MiCake.Core.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System;
 using System.Reflection;
 
@@ -63,8 +65,12 @@ namespace MiCake
             {
                 needServiceProvider.SetNecessaryParts(applicationBuilder.ApplicationServices);
             }
+
+            var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;
+
             //Add middlerware
-            applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
+            if (micakeAspnetOption.UseDataWrapper)
+                applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
 
             micakeApp.Start();
         }
