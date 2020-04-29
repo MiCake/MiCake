@@ -7,5 +7,6 @@ namespace MiCake.Mapster.Modules
     /// </summary>
     public class MiCakeMapsterModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
     }
 }

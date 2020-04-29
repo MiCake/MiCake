@@ -2,26 +2,16 @@
 using MiCake.AspNetCore.ExceptionHandling;
 using MiCake.Core;
 using MiCake.Core.Data;
+using MiCake.Core.Modularity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
-using System.Reflection;
 
 namespace MiCake
 {
     public static class MiCakeAspNetServicesExtension
     {
-        /// <summary>
-        /// This method can only be used when the program only has one project.
-        /// Please use a more accurate startup method <see cref="AddMiCake{TStartupModule}(IServiceCollection)"/>
-        /// </summary>
-        public static IMiCakeBuilder AddMiCake()
-        {
-            var entryAsm = Assembly.GetEntryAssembly();
-            return null;
-        }
-
         public static IMiCakeBuilder AddMiCake(
             this IServiceCollection services,
             Type entryModule)
@@ -43,6 +33,7 @@ namespace MiCake
         }
 
         public static IMiCakeBuilder AddMiCake<TStartupModule>(this IServiceCollection services)
+            where TStartupModule : MiCakeModule
         {
             return AddMiCake(services, typeof(TStartupModule));
         }
@@ -51,6 +42,7 @@ namespace MiCake
             this IServiceCollection services,
             Action<MiCakeApplicationOptions> configOptions,
             bool needNewScope = false)
+             where TStartupModule : MiCakeModule
         {
             return AddMiCake(services, typeof(TStartupModule), configOptions, needNewScope);
         }

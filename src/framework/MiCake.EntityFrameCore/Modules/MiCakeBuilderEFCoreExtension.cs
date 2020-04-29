@@ -9,6 +9,7 @@ namespace MiCake.EntityFrameworkCore
     public static class MiCakeBuilderEFCoreExtension
     {
         public static IMiCakeBuilder UseEFCore<TDbContext>(this IMiCakeBuilder builder)
+            where TDbContext : MiCakeDbContext
         {
             UseEFCore<TDbContext>(builder, null);
             return builder;
@@ -16,9 +17,18 @@ namespace MiCake.EntityFrameworkCore
 
         public static IMiCakeBuilder UseEFCore<TDbContext>(
             this IMiCakeBuilder builder,
+            Action<MiCakeEFCoreOptions> optionsBuilder)
+            where TDbContext : MiCakeDbContext
+        {
+            return UseEFCore(builder, typeof(TDbContext), optionsBuilder);
+        }
+
+        public static IMiCakeBuilder UseEFCore(
+            this IMiCakeBuilder builder,
+            Type miCakeDbContextType,
             Action<MiCakeEFCoreOptions> optionsBulder)
         {
-            MiCakeEFCoreOptions options = new MiCakeEFCoreOptions(typeof(TDbContext));
+            MiCakeEFCoreOptions options = new MiCakeEFCoreOptions(miCakeDbContextType);
             optionsBulder?.Invoke(options);
 
             builder.ConfigureApplication((app, services) =>

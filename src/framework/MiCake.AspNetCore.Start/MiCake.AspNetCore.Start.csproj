@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsAspNetCore>true</IsAspNetCore>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
+    <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>

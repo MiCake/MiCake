@@ -14,6 +14,8 @@ namespace MiCake.DDD.Extensions.Modules
     [DependOn(typeof(MiCakeMapsterModule), typeof(MiCakeDomainModule))]
     public class MiCakeDDDExtensionsModule : MiCakeModule
     {
+        public override bool IsFrameworkLevel => true;
+
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
