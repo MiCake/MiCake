@@ -12,6 +12,12 @@ namespace MiCake
 {
     public static class MiCakeAspNetServicesExtension
     {
+        /// <summary>
+        /// Add MiCake Core Service
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        /// <param name="entryModule">Entry point module</param>
+        /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder AddMiCake(
             this IServiceCollection services,
             Type entryModule)
@@ -19,6 +25,14 @@ namespace MiCake
             return AddMiCake(services, entryModule, null);
         }
 
+        /// <summary>
+        /// Add MiCake Core Service
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        /// <param name="entryModule">Entry point module</param>
+        /// <param name="configOptions">The config for MiCake application</param>
+        /// <param name="needNewScope">New use new service scope to resolve micake core service</param>
+        /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder AddMiCake(
             this IServiceCollection services,
             Type entryModule,
@@ -32,21 +46,39 @@ namespace MiCake
             return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder();
         }
 
-        public static IMiCakeBuilder AddMiCake<TStartupModule>(this IServiceCollection services)
-            where TStartupModule : MiCakeModule
+        /// <summary>
+        /// Add MiCake Core Service
+        /// </summary>
+        /// <typeparam name="TEntryModule">Entry point module</typeparam>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        /// <returns><see cref="IMiCakeBuilder"/></returns>
+        public static IMiCakeBuilder AddMiCake<TEntryModule>(this IServiceCollection services)
+            where TEntryModule : MiCakeModule
         {
-            return AddMiCake(services, typeof(TStartupModule));
+            return AddMiCake(services, typeof(TEntryModule));
         }
 
-        public static IMiCakeBuilder AddMiCake<TStartupModule>(
+        /// <summary>
+        /// Add MiCake Core Service
+        /// </summary>
+        /// <typeparam name="TEntryModule">Entry point module</typeparam>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        /// <param name="configOptions">The config for MiCake application</param>
+        /// <param name="needNewScope">New use new service scope to resolve micake core service</param>
+        /// <returns><see cref="IMiCakeBuilder"/></returns>
+        public static IMiCakeBuilder AddMiCake<TEntryModule>(
             this IServiceCollection services,
             Action<MiCakeApplicationOptions> configOptions,
             bool needNewScope = false)
-             where TStartupModule : MiCakeModule
+             where TEntryModule : MiCakeModule
         {
-            return AddMiCake(services, typeof(TStartupModule), configOptions, needNewScope);
+            return AddMiCake(services, typeof(TEntryModule), configOptions, needNewScope);
         }
 
+        /// <summary>
+        /// Start MiCake application.
+        /// </summary>
+        /// <param name="applicationBuilder"><see cref="IApplicationBuilder"/></param>
         public static void StartMiCake(this IApplicationBuilder applicationBuilder)
         {
             var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
@@ -67,6 +99,10 @@ namespace MiCake
             micakeApp.Start();
         }
 
+        /// <summary>
+        /// Shut down MiCake application.
+        /// </summary>
+        /// <param name="applicationBuilder"><see cref="IApplicationBuilder"/></param>
         public static void ShutdownMiCake(this IApplicationBuilder applicationBuilder)
         {
             var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
