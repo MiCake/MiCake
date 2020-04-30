@@ -2,7 +2,7 @@
 
 namespace MiCake.Core.Tests.Modularity.Fakes
 {
-    [DependOn(typeof(FeatureModuleBDepencyModuleA))]
+    [RelyOn(typeof(FeatureModuleBDepencyModuleA))]
     public class FeatureModuleCDencyModuleB : MiCakeModule, IFeatureModule
     {
         public FeatureModuleLoadOrder Order => FeatureModuleLoadOrder.AfterCommonModule;

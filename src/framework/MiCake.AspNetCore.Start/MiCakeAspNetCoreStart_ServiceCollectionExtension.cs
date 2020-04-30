@@ -1,29 +1,24 @@
 ﻿using MiCake.AspNetCore;
-using MiCake.AspNetCore.Start;
 using MiCake.Audit;
 using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Reflection;
 
 namespace MiCake
 {
     public static class MiCakeAspNetCoreStart_ServiceCollectionExtension
     {
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(this IServiceCollection services)
-            where TDbContext : MiCakeDbContext
-        {
-            var dynamicEntryModule = DynamicMiCakeEntryModuleHelper.CreateDynamicEntryModule();
-            return AddMiCakeWithDefault(services, dynamicEntryModule, typeof(TDbContext), null);
-        }
-
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext, TEntryModule>(this IServiceCollection services)
+        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext, TEntryModule>(
+                this IServiceCollection services,
+                Action<MiCakeApplicationOptions> miCakeConfig = null,
+                Action<MiCakeEFCoreOptions> miCakeEFConfig = null,
+                Action<MiCakeAspNetOptions> miCakeAspNetConfig = null)
             where TDbContext : MiCakeDbContext
             where TEntryModule : MiCakeModule
         {
-            return AddMiCakeWithDefault(services, typeof(TEntryModule), typeof(TDbContext), null);
+            return AddMiCakeWithDefault(services, typeof(TEntryModule), typeof(TDbContext), miCakeConfig, miCakeEFConfig, miCakeAspNetConfig);
         }
 
         public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(

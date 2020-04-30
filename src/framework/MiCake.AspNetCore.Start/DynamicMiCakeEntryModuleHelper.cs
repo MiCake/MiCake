@@ -21,7 +21,7 @@ namespace MiCake.AspNetCore.Start
                                       typeof(MiCakeModule));
 
             Type[] ctorParams = new Type[] { typeof(Type[]) };
-            ConstructorInfo classConstructor = typeof(DependOnAttribute).GetConstructor(ctorParams);
+            ConstructorInfo classConstructor = typeof(RelyOnAttribute).GetConstructor(ctorParams);
             CustomAttributeBuilder aspNetCoreModuleAttribute = new CustomAttributeBuilder(
                         classConstructor,
                         new object[] { new Type[] { typeof(MiCakeAspNetCoreModule) } });

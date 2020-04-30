@@ -25,7 +25,7 @@ namespace MiCake.Core.Modularity
 
         private string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
         {
-            var moduleType = moduleDesciptor.Type;
+            var moduleType = moduleDesciptor.ModuleType;
 
             var featerTag = (typeof(IFeatureModule).IsAssignableFrom(moduleType)) ? "[Feature] - " : string.Empty;
             return featerTag + moduleType.Name;

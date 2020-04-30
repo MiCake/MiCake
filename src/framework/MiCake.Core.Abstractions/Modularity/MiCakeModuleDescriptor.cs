@@ -3,34 +3,48 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Description of the Mike module <see cref=" MiCakeModule "/>, including details of the module
     /// </summary>
+    [DebuggerDisplay("{ModuleType.Name}.Rely On {RelyOnModules.Count}")]
     public class MiCakeModuleDescriptor
     {
+        /// <summary>
+        /// A instance for this <see cref="MiCakeModule"/>.
+        /// </summary>
         public MiCakeModule Instance { get; }
 
-        public Type Type { get; }
+        /// <summary>
+        /// The type of this module.
+        /// </summary>
+        public Type ModuleType { get; }
 
+        /// <summary>
+        /// The Assembly of this module.
+        /// </summary>
         public Assembly Assembly { get; }
 
-        public IReadOnlyList<MiCakeModuleDescriptor> Dependencies => _dependencies.ToImmutableList();
-        private readonly List<MiCakeModuleDescriptor> _dependencies;
+        /// <summary>
+        /// Other modules that this module depends on
+        /// </summary>
+        public IReadOnlyList<MiCakeModuleDescriptor> RelyOnModules => _relyOnModules.ToImmutableList();
+        private readonly List<MiCakeModuleDescriptor> _relyOnModules;
 
         public MiCakeModuleDescriptor(Type type, MiCakeModule instance)
         {
             Instance = instance;
-            Type = type;
+            ModuleType = type;
             Assembly = type.Assembly;
-            _dependencies = new List<MiCakeModuleDescriptor>();
+            _relyOnModules = new List<MiCakeModuleDescriptor>();
         }
 
         public void AddDependency(MiCakeModuleDescriptor descriptor)
         {
-            _dependencies.AddIfNotContains(descriptor);
+            _relyOnModules.AddIfNotContains(descriptor);
         }
     }
 }

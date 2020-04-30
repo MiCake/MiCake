@@ -37,7 +37,7 @@ namespace BaseMiCakeApplication
             });
 
             services.AddTransient<IItineraryRepository, ItineraryRepository>();
-            services.AddMiCakeWithDefault<BaseAppDbContext>()
+            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>()
                     .Build();
 
             //Add Swagger

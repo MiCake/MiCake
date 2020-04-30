@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace MiCake.AspNetCore.Modules
 {
-    [DependOn(typeof(MiCakeDDDExtensionsModule), typeof(MiCakeUowModule))]
+    [RelyOn(typeof(MiCakeDDDExtensionsModule), typeof(MiCakeUowModule))]
     public class MiCakeAspNetCoreModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;

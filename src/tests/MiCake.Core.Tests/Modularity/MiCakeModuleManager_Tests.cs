@@ -48,11 +48,11 @@ namespace MiCake.Core.Tests.Modularity
             //right order
             var firstModule = moduleContext.MiCakeModules.FirstOrDefault();
             Assert.NotNull(firstModule);
-            Assert.Equal(typeof(DepencyModuleA), firstModule.Type);
+            Assert.Equal(typeof(DepencyModuleA), firstModule.ModuleType);
 
             var lastModule = moduleContext.MiCakeModules.LastOrDefault();
             Assert.NotNull(lastModule);
-            Assert.Equal(typeof(StartUpModule), lastModule.Type);
+            Assert.Equal(typeof(StartUpModule), lastModule.ModuleType);
         }
 
         [Fact]
@@ -102,11 +102,11 @@ namespace MiCake.Core.Tests.Modularity
             //order
             var firstModule = moduleContext.FeatureModules.FirstOrDefault();
             Assert.NotNull(firstModule);
-            Assert.Equal(typeof(FeatureModuleA), firstModule.Type);
+            Assert.Equal(typeof(FeatureModuleA), firstModule.ModuleType);
 
             var lastModule = moduleContext.FeatureModules.LastOrDefault();
             Assert.NotNull(lastModule);
-            Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.Type);
+            Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.ModuleType);
         }
 
         [Fact]
@@ -131,11 +131,11 @@ namespace MiCake.Core.Tests.Modularity
             //order
             var firstModule = moduleContext.AllModules.FirstOrDefault();
             Assert.NotNull(firstModule);
-            Assert.Equal(typeof(DepencyModuleA), firstModule.Type);
+            Assert.Equal(typeof(DepencyModuleA), firstModule.ModuleType);
 
             var lastModule = moduleContext.AllModules.LastOrDefault();
             Assert.NotNull(lastModule);
-            Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.Type);
+            Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.ModuleType);
         }
     }
 }

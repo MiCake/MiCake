@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Extensions.Modules
 {
-    [DependOn(typeof(MiCakeMapsterModule), typeof(MiCakeDomainModule))]
+    [RelyOn(typeof(MiCakeMapsterModule), typeof(MiCakeDomainModule))]
     public class MiCakeDDDExtensionsModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
@@ -23,7 +23,7 @@ namespace MiCake.DDD.Extensions.Modules
             services.AddTransient<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
             services.AddSingleton<DomainObjectFactory>();
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
-            services.AddSingleton<DomainMetadata>(factory =>
+            services.AddSingleton(factory =>
             {
                 var provider = factory.GetService<IDomainMetadataProvider>();
                 return provider.GetDomainMetadata();
