@@ -15,8 +15,8 @@ namespace MiCake.Core.Modularity
         private bool _isPopulate;
         public bool IsPopulated => _isPopulate;
 
-        private List<Type> _featureModulesType = new List<Type>();
-        private List<Type> _externalModulesType = new List<Type>();
+        private List<Type> _featureModulesTypes = new List<Type>();
+        private List<Type> _normalModulesTypes = new List<Type>();
 
         public void PopulateModules(Type entryType)
         {
@@ -25,17 +25,16 @@ namespace MiCake.Core.Modularity
 
             _isPopulate = true;
 
-            var normalModulesType = GetNormalModuleTypes(entryType);
-
-            IMiCakeModuleCollection normalModules = ResolvingMiCakeModules(normalModulesType)
+            MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, entryType);
+            IMiCakeModuleCollection normalModules = ResolvingMiCakeModules(_normalModulesTypes)
                                                             .ToMiCakeModuleCollection();
             //Ensure that the position of the entry module is the last
-            if (normalModules[^1].Type != entryType)
+            if (normalModules[^1].ModuleType != entryType)
             {
-                normalModules.ExchangeOrder(s => s.Type == entryType, normalModules.Count - 1);
+                normalModules.ExchangeOrder(s => s.ModuleType == entryType, normalModules.Count - 1);
             }
 
-            IMiCakeModuleCollection featureModules = ResolvingMiCakeModules(_featureModulesType)
+            IMiCakeModuleCollection featureModules = ResolvingMiCakeModules(_featureModulesTypes)
                                                             .ToMiCakeModuleCollection();
 
             IMiCakeModuleCollection allModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(normalModules, featureModules);
@@ -45,19 +44,13 @@ namespace MiCake.Core.Modularity
 
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
         {
-            return _moduleContext.AllModules.FirstOrDefault(s => s.Type == moduleType);
-        }
-
-        private List<Type> GetNormalModuleTypes(Type entryType)
-        {
-            var internalTypes = MiCakeModuleHelper.FindAllModuleTypes(entryType);
-            return internalTypes.Union(_externalModulesType).ToList();
+            return _moduleContext.AllModules.FirstOrDefault(s => s.ModuleType == moduleType);
         }
 
         public void AddFeatureModule(Type featureModule)
         {
             MiCakeModuleHelper.CheckFeatureModule(featureModule);
-            _featureModulesType.AddIfNotContains(featureModule);
+            _featureModulesTypes.AddIfNotContains(featureModule);
         }
 
         public void AddMiCakeModule(Type moduleType)
@@ -65,10 +58,7 @@ namespace MiCake.Core.Modularity
             MiCakeModuleHelper.CheckModule(moduleType);
 
             //add denpend on  modules
-            var externalDependedModules = MiCakeModuleHelper.FindDependedModuleTypes(moduleType);
-            _externalModulesType.AddIfNotContains(externalDependedModules);
-
-            _externalModulesType.AddIfNotContains(moduleType);
+            MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, moduleType);
         }
 
         // Get the description information (including dependency and order) of the module according to its type
@@ -97,7 +87,7 @@ namespace MiCake.Core.Modularity
                 }
             }
             // sort by modules dependencies
-            miCakeModuleDescriptors = miCakeModuleDescriptors.SortByDependencies(s => s.Dependencies);
+            miCakeModuleDescriptors = miCakeModuleDescriptors.SortByDependencies(s => s.RelyOnModules);
 
             return miCakeModuleDescriptors;
         }
@@ -109,11 +99,11 @@ namespace MiCake.Core.Modularity
         {
             List<MiCakeModuleDescriptor> descriptors = new List<MiCakeModuleDescriptor>();
 
-            var depencyTypes = MiCakeModuleHelper.FindDependedModuleTypes(moduleDescriptor.Type);
+            var depencyTypes = MiCakeModuleHelper.FindDependedModuleTypes(moduleDescriptor.ModuleType);
 
             foreach (var depencyType in depencyTypes)
             {
-                var existDescriptor = modules.FirstOrDefault(s => s.Type == depencyType);
+                var existDescriptor = modules.FirstOrDefault(s => s.ModuleType == depencyType);
                 if (existDescriptor != null) moduleDescriptor.AddDependency(existDescriptor);
             }
 

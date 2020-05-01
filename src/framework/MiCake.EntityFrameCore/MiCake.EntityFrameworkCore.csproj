@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <Description>EFCore extension for MiCake</Description>
   </PropertyGroup>
 
   <ItemGroup>

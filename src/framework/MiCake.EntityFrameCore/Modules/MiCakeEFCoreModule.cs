@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {
-    [DependOn(
+    [RelyOn(
         typeof(MiCakeUowModule),
         typeof(MiCakeDDDExtensionsModule))]
     public class MiCakeEFCoreModule : MiCakeModule

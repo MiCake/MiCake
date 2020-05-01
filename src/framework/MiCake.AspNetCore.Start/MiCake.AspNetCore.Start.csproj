@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsAspNetCore>true</IsAspNetCore>
+    <Description>MiCake's quick start package for novice.Contains EFCore extension,AspNetCore extension,Audit,and more.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
+    <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>

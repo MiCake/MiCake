@@ -1,8 +1,5 @@
-﻿
-using MiCake.Core.Data;
+﻿using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
-using MiCake.Core.ExceptionHandling;
-using MiCake.Core.Logging;
 using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -69,6 +66,9 @@ namespace MiCake.Core
 
             if (_isStarted)
                 throw new InvalidOperationException($"MiCake has already started.");
+
+            //Pre activation ServiceLocator
+            AppServiceProvider.GetService(typeof(IServiceLocator));
 
             var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
@@ -148,8 +148,6 @@ namespace MiCake.Core
                 ServiceLocator.Instance.Locator = provider;
                 return ServiceLocator.Instance;
             });
-            services.AddSingleton<IMiCakeErrorHandler, DefaultMiCakeErrorHandler>();
-            services.AddSingleton<ILogErrorHandlerProvider, DefaultLogErrorHandlerProvider>();
         }
 
         //Inject service into container according to matching rules

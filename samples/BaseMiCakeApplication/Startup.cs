@@ -1,8 +1,7 @@
+using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.EFCore;
+using BaseMiCakeApplication.EFCore.Repositories;
 using MiCake;
-using MiCake.AspNetCore;
-using MiCake.Audit;
-using MiCake.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -31,18 +30,14 @@ namespace BaseMiCakeApplication
             {
             });
 
-            services.AddHealthChecks();
-
             services.AddDbContext<BaseAppDbContext>(options =>
             {
                 options.UseMySql("Server=localhost;Database=micakeexample;User=root;Password=a12345;", mySqlOptions => mySqlOptions
                     .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
             });
 
-            services.AddMiCake<BaseMiCakeModule>()
-                    .UseAspNetCore()
-                    .UseAudit()
-                    .UseEFCore<BaseAppDbContext>()
+            services.AddTransient<IItineraryRepository, ItineraryRepository>();
+            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>()
                     .Build();
 
             //Add Swagger

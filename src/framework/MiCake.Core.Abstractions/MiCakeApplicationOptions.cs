@@ -1,4 +1,5 @@
 ﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Handlers;
 using System.Reflection;
 
 namespace MiCake.Core
@@ -21,8 +22,13 @@ namespace MiCake.Core
 
         /// <summary>
         /// Assemblies of domain layer
-        ///Providing this parameter will facilitate micake to better scan related domain objects in the program.
+        /// Providing this parameter will facilitate micake to better scan related domain objects in the program.
         /// </summary>
         public Assembly[] DomianLayerAssemblies { get; set; }
+
+        /// <summary>
+        /// The collection for <see cref="IMiCakeHandler"/>.
+        /// </summary>
+        public MiCakeHandlerCollection Handlers { get; set; }
     }
 }

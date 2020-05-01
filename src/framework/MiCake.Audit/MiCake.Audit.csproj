@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <Description>MiCake audit components.Contains soft deletion,create information,and more.</Description>
   </PropertyGroup>
 
   <ItemGroup>

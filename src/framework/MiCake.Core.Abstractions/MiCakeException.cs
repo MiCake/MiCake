@@ -1,7 +1,4 @@
-﻿using MiCake.Core.Logging;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Runtime.Serialization;
+﻿using System;
 
 namespace MiCake.Core
 {
@@ -9,35 +6,39 @@ namespace MiCake.Core
     /// Base exception type for Micake farmework.
     /// </summary>
     [Serializable]
-    public class MiCakeException : Exception, IMarkLogLevel
+    public class MiCakeException : Exception
     {
+        /// <summary>
+        /// Indicates a code to represent the exception.
+        /// </summary>
         public virtual string Code { get; set; }
 
-        public virtual string Details { get; set; }
+        /// <summary>
+        /// Some details about the error
+        /// </summary>
+        public virtual object Details { get; set; }
 
-        public virtual LogLevel Level { get; set; }
-
-        public MiCakeException()
+        protected MiCakeException()
         {
         }
 
-        public MiCakeException(string message) : base(message)
-        {
-        }
-
-        public MiCakeException(string message,
-            string code = null,
+        public MiCakeException(
+            string message,
             string details = null,
-            Exception innerException = null,
-            LogLevel logLevel = LogLevel.Error) : base(message, innerException)
+            string code = null) : base(message)
         {
             Code = code;
             Details = details;
-            Level = logLevel;
         }
 
-        protected MiCakeException(SerializationInfo info, StreamingContext context) : base(info, context)
+        public MiCakeException(
+            string message,
+            Exception innerException,
+            string details = null,
+            string code = null) : base(message, innerException)
         {
+            Code = code;
+            Details = details;
         }
     }
 }

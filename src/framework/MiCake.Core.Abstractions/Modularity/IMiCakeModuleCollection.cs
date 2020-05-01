@@ -8,10 +8,11 @@ namespace MiCake.Core.Modularity
     /// </summary>
     public interface IMiCakeModuleCollection : IList<MiCakeModuleDescriptor>
     {
-        //Get the assemblies of all micake modules
-        Assembly[] GetAssemblies();
-
-        //Get the assemblies of all micake modules
-        Assembly[] GetAssemblies(bool includeFrameworkModule);
+        /// <summary>
+        /// Get the assemblies of all micake modules
+        /// </summary>
+        /// <param name="includeFrameworkModule">is include framework module</param>
+        /// <returns>All assemblies containing <see cref="MiCakeModule"/></returns>
+        Assembly[] GetAssemblies(bool includeFrameworkModule = false);
     }
 }

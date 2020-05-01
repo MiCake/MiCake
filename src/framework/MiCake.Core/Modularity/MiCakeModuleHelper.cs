@@ -82,7 +82,7 @@ namespace MiCake.Core.Modularity
 
             foreach (var featureModule in featureModules)
             {
-                bool depencyIsAfter = featureModule.Dependencies.Any(module =>
+                bool depencyIsAfter = featureModule.RelyOnModules.Any(module =>
                                         ((IFeatureModule)module.Instance).Order == FeatureModuleLoadOrder.AfterCommonModule);
 
                 var currentOrder = ((IFeatureModule)featureModule.Instance).Order;
@@ -99,13 +99,11 @@ namespace MiCake.Core.Modularity
             return (beforeFeatureModules, afterFeatureModules);
         }
 
-        internal static List<Type> FindAllModuleTypes(Type entryModuleType)
-        {
-            var moduleTypes = new List<Type>();
-            AddModuleAndDependenciesResursively(moduleTypes, entryModuleType);
-            return moduleTypes;
-        }
-
+        /// <summary>
+        /// Find all dependent modules according to <see cref="RelyOnAttribute"/>
+        /// </summary>
+        /// <param name="moduleType"></param>
+        /// <returns></returns>
         internal static List<Type> FindDependedModuleTypes(Type moduleType)
         {
             CheckModule(moduleType);
@@ -114,11 +112,11 @@ namespace MiCake.Core.Modularity
 
             var dependencyDescriptors = moduleType
                 .GetCustomAttributes()
-                .OfType<DependOnAttribute>();
+                .OfType<RelyOnAttribute>();
 
             foreach (var descriptor in dependencyDescriptors)
             {
-                foreach (var dependedModuleType in descriptor.GetDependedTypes())
+                foreach (var dependedModuleType in descriptor.GetRelyOnTypes())
                 {
                     dependencies.AddIfNotContains(dependedModuleType);
                 }
@@ -127,20 +125,25 @@ namespace MiCake.Core.Modularity
             return dependencies;
         }
 
-        internal static void AddModuleAndDependenciesResursively(List<Type> moduleTypes, Type moduleType)
+        /// <summary>
+        /// Find all dependent modules entering from the entry point
+        /// </summary>
+        /// <param name="moduleTypes">A collection of modules</param>
+        /// <param name="entryModule">Module as search entry point</param>
+        internal static void FindAllModulesFromEntry(ICollection<Type> moduleTypes, Type entryModule)
         {
-            CheckModule(moduleType);
+            CheckModule(entryModule);
 
-            if (moduleTypes.Contains(moduleType))
+            if (moduleTypes.Contains(entryModule))
             {
                 return;
             }
 
-            moduleTypes.Add(moduleType);
+            moduleTypes.Add(entryModule);
 
-            foreach (var dependedModuleType in FindDependedModuleTypes(moduleType))
+            foreach (var dependedModuleType in FindDependedModuleTypes(entryModule))
             {
-                AddModuleAndDependenciesResursively(moduleTypes, dependedModuleType);
+                FindAllModulesFromEntry(moduleTypes, dependedModuleType);
             }
         }
     }

@@ -37,10 +37,10 @@ namespace MiCake.Core.Tests.Modularity
             var modules = MiCakeModuleHelper.CombineNormalAndFeatureModules(normalModules, featureModules);
 
             var first = modules[0];
-            Assert.Equal(typeof(DepencyModuleA), first.Type);
+            Assert.Equal(typeof(DepencyModuleA), first.ModuleType);
 
             var last = modules[^1];
-            Assert.Equal(typeof(FeatureModuleBDepencyModuleA), last.Type);
+            Assert.Equal(typeof(FeatureModuleBDepencyModuleA), last.ModuleType);
         }
     }
 }

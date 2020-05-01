@@ -45,15 +45,7 @@ namespace MiCake.Core.Modularity
             _descriptors.CopyTo(array, arrayIndex);
         }
 
-        public Assembly[] GetAssemblies()
-        {
-            Assembly[] assemblies = { };
-            assemblies = _descriptors.Select(s => s.Assembly).Distinct().ToArray();
-
-            return assemblies;
-        }
-
-        public Assembly[] GetAssemblies(bool includeFrameworkModule)
+        public Assembly[] GetAssemblies(bool includeFrameworkModule = true)
         {
             Assembly[] assemblies = { };
             assemblies = _descriptors.Where(s =>

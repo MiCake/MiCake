@@ -2,7 +2,7 @@
 
 namespace MiCake.Core.Tests.Modularity.Fakes
 {
-    [DependOn(typeof(DepencyModuleA))]
+    [RelyOn(typeof(DepencyModuleA))]
     public class DepencyModuleB : MiCakeModule
     {
     }

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <Description>Extensions used by MiCake to implement the DDD.Contains dynamic repository,repository lifetime,domian metadata,and more.</Description>
   </PropertyGroup>
 
   <ItemGroup>
