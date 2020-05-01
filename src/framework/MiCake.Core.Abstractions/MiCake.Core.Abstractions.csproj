@@ -2,17 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Company>MiCake</Company>
-    <Authors>uoyoCsharp</Authors>
-    <Product>MiCake</Product>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
-    <Version>0.1.0</Version>
-    <PackageReleaseNotes>预览版本，该版本仅供测试调试使用，暂不能用于实际项目</PackageReleaseNotes>
-    <Description>米蛋糕核心文件</Description>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>MiCake Core abstractions and interfaces for modularity,exception handling,micake app builder,and more.</Description>
   </PropertyGroup>
 
   <ItemGroup>

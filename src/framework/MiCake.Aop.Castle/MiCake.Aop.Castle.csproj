@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <Description>Castle extension for MiCake aop</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,20 @@
+﻿<Project>
+  <PropertyGroup>
+    <Product>MiCake</Product>
+    <Authors>uoyoCsharp</Authors>
+    <owners>uoyoCsharp</owners>
+    <Version>0.2.0</Version>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/frameworkk</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/frameworkk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>AspNetCore;DDD;MiCake</PackageTags>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)src\nuget</PackageOutputPath>
+    <PackageIcon>nuget_logo.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" PackagePath="\"/>
+</ItemGroup>
+</Project>
