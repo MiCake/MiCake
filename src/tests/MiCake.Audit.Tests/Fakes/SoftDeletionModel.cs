@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Domain;
 
 namespace MiCake.Audit.Tests.Fakes
 {

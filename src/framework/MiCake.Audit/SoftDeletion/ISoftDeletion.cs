@@ -1,4 +1,4 @@
-﻿namespace MiCake.Audit
+﻿namespace MiCake.Audit.SoftDeletion
 {
     public interface ISoftDeletion
     {

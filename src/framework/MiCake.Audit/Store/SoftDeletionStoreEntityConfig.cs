@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Extensions.Store.Configure;
+﻿using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Extensions.Store.Configure;
 
 namespace MiCake.Audit.Store
 {

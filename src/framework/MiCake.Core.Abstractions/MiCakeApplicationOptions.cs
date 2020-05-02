@@ -1,4 +1,5 @@
-﻿using MiCake.Core.DependencyInjection;
+﻿using MiCake.Core.Data;
+using MiCake.Core.DependencyInjection;
 using MiCake.Core.Handlers;
 using System.Reflection;
 
@@ -7,7 +8,7 @@ namespace MiCake.Core
     /// <summary>
     /// The configuration of building the core program of micake
     /// </summary>
-    public partial class MiCakeApplicationOptions
+    public class MiCakeApplicationOptions
     {
         /// <summary>
         /// Configuration items for auto injection service
@@ -30,5 +31,11 @@ namespace MiCake.Core
         /// The collection for <see cref="IMiCakeHandler"/>.
         /// </summary>
         public MiCakeHandlerCollection Handlers { get; set; }
+
+        /// <summary>
+        /// Some additional information.
+        /// Be careful:These data will be released after the app is started
+        /// </summary>
+        public DataDepositPool AdditionalInfo { get; set; } = new DataDepositPool();
     }
 }

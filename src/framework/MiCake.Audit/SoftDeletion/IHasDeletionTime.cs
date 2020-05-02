@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MiCake.Audit
+namespace MiCake.Audit.SoftDeletion
 {
     /// <summary>
     /// Define a class has deletion time.

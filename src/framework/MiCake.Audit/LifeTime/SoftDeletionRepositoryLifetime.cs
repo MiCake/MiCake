@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Extensions;
+﻿using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.LifeTime;
 using System.Threading;
 using System.Threading.Tasks;

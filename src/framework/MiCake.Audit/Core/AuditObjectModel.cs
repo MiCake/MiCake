@@ -6,7 +6,7 @@ namespace MiCake.Audit.Core
     public class AuditObjectModel
     {
         /// <summary>
-        /// The entity who need audit.
+        /// The entity who need audited.
         /// </summary>
         public object AuditEntity { get; set; }
 

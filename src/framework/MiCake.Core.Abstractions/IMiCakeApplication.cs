@@ -9,6 +9,11 @@ namespace MiCake.Core
     public interface IMiCakeApplication : IDisposable
     {
         /// <summary>
+        /// <see cref="MiCakeApplicationOptions"/>
+        /// </summary>
+        public MiCakeApplicationOptions ApplicationOptions { get; }
+
+        /// <summary>
         /// <see cref="IMiCakeModuleManager"/>
         /// </summary>
         IMiCakeModuleManager ModuleManager { get; }

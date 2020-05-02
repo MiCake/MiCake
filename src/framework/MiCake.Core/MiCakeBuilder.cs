@@ -1,11 +1,10 @@
-﻿
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MiCake.Core
 {
     /// <summary>
-    /// a build for <see cref="IMiCakeApplication"/>
+    /// A build for <see cref="IMiCakeApplication"/>
     /// </summary>
     public class MiCakeBuilder : IMiCakeBuilder
     {
@@ -16,12 +15,10 @@ namespace MiCake.Core
 
         private Action<IMiCakeApplication, IServiceCollection> _configureAction;
 
-        public MiCakeBuilder(
-             IServiceCollection services,
-             Type entryType,
-            MiCakeApplicationOptions options,
-            bool needNewScope = false
-            )
+        public MiCakeBuilder(IServiceCollection services,
+                             Type entryType,
+                             MiCakeApplicationOptions options,
+                             bool needNewScope = false)
         {
             _services = services;
             _entryType = entryType;

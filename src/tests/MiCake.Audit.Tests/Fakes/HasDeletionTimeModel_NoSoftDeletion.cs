@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiCake.Audit.SoftDeletion;
+using System;
 
 namespace MiCake.Audit.Tests.Fakes
 {

@@ -20,18 +20,26 @@ namespace MiCake.Audit.Modules
 
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
+            var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.AdditionalInfo.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
             var services = context.Services;
 
-            //Audit Executor
-            services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
-            //Audit CreationTime and ModifationTime
-            services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
-            //Audit Deletion Time
-            services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
+            if (auditOptions?.UseAudit != false)
+            {
+                //Audit Executor
+                services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
+                //Audit CreationTime and ModifationTime
+                services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
+                //RepositoryLifeTime
+                services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 
-            //RepositoryLifeTime
-            services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
-            services.AddTransient<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
+                if (auditOptions?.UseSoftDeletion != false)
+                {
+                    //Audit Deletion Time
+                    services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
+                    //RepositoryLifeTime
+                    services.AddTransient<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
+                }
+            }
         }
     }
 }

@@ -10,7 +10,14 @@ namespace MiCake.Core
 {
     public class MiCakeApplication : IMiCakeApplication, INeedNecessaryParts<IServiceProvider>
     {
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public MiCakeApplicationOptions ApplicationOptions { get; private set; }
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
         public IMiCakeModuleManager ModuleManager { get; private set; } = new MiCakeModuleManager();
 
         private readonly IServiceCollection _services;
@@ -72,6 +79,9 @@ namespace MiCake.Core
 
             var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
+
+            //Release options additional infomation.
+            ApplicationOptions.AdditionalInfo.Release();
         }
 
         /// <summary>
