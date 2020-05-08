@@ -8,7 +8,7 @@
 
 <div align="center">
 
-一款基于.Net Core平台的 **“超轻柔”** 领域驱动（DDD）组件
+一款基于.Net Core平台的 **“超轻柔”** 领域驱动设计（DDD）组件
 
 [![Nuget Version](https://img.shields.io/nuget/v/MiCake.Core?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake.Core?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Maintainability](https://api.codeclimate.com/v1/badges/a9d8163cb3023fdef30a/maintainability)](https://codeclimate.com/github/uoyoCsharp/MiCake/maintainability) [![Build Status](https://dev.azure.com/MiCakeOrg/MiCake/_apis/build/status/uoyoCsharp.MiCake?branchName=master)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Azure DevOps tests](https://img.shields.io/azure-devops/tests/MiCakeOrg/MiCake/3?color=ff69b4&label=Azure%20Tests&logo=Microsoft-Azure&logoColor=white)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/MiCakeOrg/MiCake/3?label=Azure%20Coverage&logo=Azure-DevOps)](https://dev.azure.com/MiCakeOrg/MiCake/_build/latest?definitionId=3&branchName=master) [![Board Status](https://dev.azure.com/MiCakeOrg/e359a201-ca49-495f-92ba-11493e88e94e/9a202286-9c70-40fa-8892-9bd476191d74/_apis/work/boardbadge/e5dd9abe-6df7-4f1c-95d0-762074a5f1e2)](https://dev.azure.com/MiCakeOrg/e359a201-ca49-495f-92ba-11493e88e94e/_boards/board/t/9a202286-9c70-40fa-8892-9bd476191d74/Microsoft.RequirementCategory/) 
 
@@ -41,11 +41,42 @@
 ### 所需环境版本
 
 + .NET Core 3.0及以上版本
++ Visual Studio 2019
 
-在您的`Asp Net Core`项目中通过`NuGet`安装`MiCake.AspNetCore`：
+在您的`Asp Net Core`项目中通过`NuGet`安装`MiCake.AspNetCore.Start`：
 
 ```powershell
-Install-Package MiCake.AspNetCore
+Install-Package MiCake.AspNetCore.Start
+```
+
+新增一个叫做`MyEntryModule.cs`的文件，该类的作用是告诉`MiCake`该从哪个程序集启动：
+
+```csharp
+public class MyEntryModule : MiCakeModule
+{
+}
+```
+
+将您的DbContext继承自`MiCakeDbContext`:
+
+```csharp
+public class MyDbContext : MiCakeDbContext
+{
+    public MyDbContext(DbContextOptions options) : base(options)
+    {
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        //不要删除该行代码
+        base.OnModelCreating(modelBuilder);
+    }
+}
 ```
 
 在`Startup.cs`中添加`MiCake`服务：
@@ -56,7 +87,8 @@ public void ConfigureServices(IServiceCollection services)
     ………………
 
    //添加该代码 用于配置MiCake
-    services.AddMiCakeWithDefault<YourDbContext>();
+   services.AddMiCakeWithDefault<MyDbContext, MyEntryModule>()
+           .Build();
 }
 
 public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -84,13 +116,20 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 + **预约星** (<font color="red">Coming Soon</font>)
 + **旅人帐** (<font color="red">Coming Soon</font>)
 
+`MiCake.Samples`仓库中放置了一些`MiCake`所公开的示例项目和实验性项目，您可以跳转至[该仓库](https://github.com/uoyoCsharp/MiCake.Samples)进行查阅.
+
 ## 🍍 当前版本
 
-| Nuget Package     | 版本信息                                                                                          | 描述                           |
-| ----------------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
-| MiCake.Core       | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core?label=MiCake.Core&logo=nuget)             | MiCake 核心程序集              |
-| MiCake.DDD.Domain | ![Nuget](https://img.shields.io/nuget/v/MiCake.DDD.Domain?label=MiCake.DDD.Domain&logo=nuget) | MiCake 对DDD领域层的实现程序集 |
-| MiCake.Core.Util  | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core.Util?label=MiCake.Core.Util&logo=nuget)   | MiCake 提供的工具类程序集      |
+| Nuget Package              | 版本信息                                                                                                        | 描述                            |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| MiCake.Core                | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core?label=MiCake.Core&logo=nuget)                               | MiCake 核心程序集               |
+| MiCake.DDD.Domain          | ![Nuget](https://img.shields.io/nuget/v/MiCake.DDD.Domain?label=MiCake.DDD.Domain&logo=nuget)                   | MiCake 对DDD领域层的实现程序集  |
+| MiCake.Core.Util           | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core.Util?label=MiCake.Core.Util&logo=nuget)                     | MiCake 提供的工具类程序集       |
+| MiCake.EntityFrameworkCore | ![Nuget](https://img.shields.io/nuget/v/MiCake.EntityFrameworkCore?label=MiCake.EntityFrameworkCore&logo=nuget) | MiCake 对EFCore的支持程序集     |
+| MiCake.AspNetCore          | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore?label=MiCake.AspNetCore&logo=nuget)                   | MiCake 对AspNetCore的支持程序集 |
+| MiCake.AspNetCore.Start    | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore.Start?label=MiCake.AspNetCore.Start&logo=nuget)       | MiCake 搭建起步程序所用的程序集 |
+
+更多：请跳转至[NuGet官网](https://www.nuget.org/packages?q=micake),进行查阅。
 
 ## 🍠 贡献与帮助
 
