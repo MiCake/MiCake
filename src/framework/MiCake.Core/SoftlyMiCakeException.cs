@@ -7,16 +7,16 @@ namespace MiCake.Core
     /// Indicates a non critical error message
     /// </summary>
     [Serializable]
-    public class SoftMiCakeException : MiCakeException, ISoftMiCakeException
+    public class SoftlyMiCakeException : MiCakeException, ISoftlyMiCakeException
     {
-        public SoftMiCakeException(
+        public SoftlyMiCakeException(
             string message,
             string details = null,
             string code = null) : base(message, details, code)
         {
         }
 
-        public SoftMiCakeException(
+        public SoftlyMiCakeException(
             string message,
             Exception innerException,
             string details = null,

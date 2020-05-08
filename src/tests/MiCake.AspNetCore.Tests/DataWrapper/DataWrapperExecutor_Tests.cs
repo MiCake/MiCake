@@ -32,24 +32,134 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WrapperSuccess_CustomerModel()
+        public void WrapperSuccess_OneCustomerModel_InRange()
         {
             var originalData = "dududu";
-            var customerProperties = new Dictionary<string, ConfigWrapperPropertyDelegate>();
-            customerProperties.Add("Name", s => "Name");
-            customerProperties.Add("Person", s => "Person");
-            customerProperties.Add("Old", s => "1");
+
+            CustomWrapperModel customWrapperModel = new CustomWrapperModel();
+            customWrapperModel.AddProperty("Name", s => "Name");
+            customWrapperModel.AddProperty("Person", s => "Person");
+            customWrapperModel.AddProperty("Old", s => "1");
+
+            var costomConfigs = new Dictionary<Range, CustomWrapperModel>();
+            costomConfigs.Add(200..300, customWrapperModel);
 
             DataWrapperOptions options = new DataWrapperOptions()
             {
                 UseCustomModel = true,
-                CustomerProperty = customerProperties
+                CustomModelConfig = costomConfigs
             };
             DataWrapperContext context = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options);
             var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
 
             Assert.NotNull(result);
             Assert.IsAssignableFrom<IResultDataWrapper>(result);
+        }
+
+        [Fact]
+        public void WrapperSuccess_OneCustomerModel_NotInRange()
+        {
+            var originalData = "dududu";
+
+            CustomWrapperModel customWrapperModel = new CustomWrapperModel();
+            customWrapperModel.AddProperty("Name", s => "Name");
+            customWrapperModel.AddProperty("Person", s => "Person");
+            customWrapperModel.AddProperty("Old", s => "1");
+
+            var costomConfigs = new Dictionary<Range, CustomWrapperModel>();
+            costomConfigs.Add(300..300, customWrapperModel);
+
+            DataWrapperOptions options = new DataWrapperOptions()
+            {
+                UseCustomModel = true,
+                CustomModelConfig = costomConfigs
+            };
+            DataWrapperContext context = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options);
+            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+
+            Assert.Same(originalData, result);
+        }
+
+        [Fact]
+        public void WrapperSuccess_MoreCustomerModel()
+        {
+            var originalData = "dududu";
+
+            CustomWrapperModel customWrapperModel = new CustomWrapperModel();
+            customWrapperModel.AddProperty("Name", s => "Name");
+            customWrapperModel.AddProperty("Person", s => "Person");
+            customWrapperModel.AddProperty("Old", s => "1");
+
+            CustomWrapperModel customWrapperModel2 = new CustomWrapperModel();
+            customWrapperModel2.AddProperty("DiDiDi", s => "DiDiDi");
+
+            var costomConfigs = new Dictionary<Range, CustomWrapperModel>();
+            costomConfigs.Add(200..201, customWrapperModel);
+            costomConfigs.Add(300..401, customWrapperModel2);
+
+            DataWrapperOptions options = new DataWrapperOptions()
+            {
+                UseCustomModel = true,
+                CustomModelConfig = costomConfigs
+            };
+            DataWrapperContext context = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options);
+            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+
+            Assert.NotNull(result.GetType().GetProperty("Name").Name);
+
+            DataWrapperContext context2 = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 300), options);
+            var result2 = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context2);
+
+            Assert.NotNull(result2.GetType().GetProperty("DiDiDi").Name);
+        }
+
+        [Fact]
+        public void WrapperSuccess_MoreCustomerModel_OverlappingStatuCodes()
+        {
+            var originalData = "dududu";
+
+            CustomWrapperModel customWrapperModel = new CustomWrapperModel();
+            customWrapperModel.AddProperty("Name", s => "Name");
+            customWrapperModel.AddProperty("Person", s => "Person");
+            customWrapperModel.AddProperty("Old", s => "1");
+
+            CustomWrapperModel customWrapperModel2 = new CustomWrapperModel();
+            customWrapperModel2.AddProperty("DiDiDi", s => "DiDiDi");
+
+            var costomConfigs = new Dictionary<Range, CustomWrapperModel>();
+            costomConfigs.Add(200..301, customWrapperModel);
+            costomConfigs.Add(200..401, customWrapperModel2);
+
+            DataWrapperOptions options = new DataWrapperOptions()
+            {
+                UseCustomModel = true,
+                CustomModelConfig = costomConfigs
+            };
+            DataWrapperContext context = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options);
+            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+
+            Assert.NotNull(result.GetType().GetProperty("Name").Name);
+
+            DataWrapperContext context2 = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 300), options);
+            var result2 = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context2);
+
+            Assert.NotNull(result2.GetType().GetProperty("Name").Name);
+        }
+
+        [Fact]
+        public void WrapperSuccess_CustomerModel_NullConfig()
+        {
+            var originalData = "dududu";
+
+            DataWrapperOptions options = new DataWrapperOptions()
+            {
+                UseCustomModel = true,
+                CustomModelConfig = null
+            };
+            DataWrapperContext context = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options);
+            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+
+            Assert.Same(originalData, result);
         }
 
         [Fact]
@@ -63,46 +173,6 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
             Assert.NotNull(result);
             Assert.Same(originalData, result);
-        }
-
-        [Fact]
-        public void WrapperExecutor_CacheUserModel()
-        {
-            var originalData = new ObjectResult(123);
-            var dataWrapperExecutor = new DefaultWrapperExecutor();
-            var customerProperties = new Dictionary<string, ConfigWrapperPropertyDelegate>();
-            customerProperties.Add("Name", s => "Name");
-            customerProperties.Add("Person", s => "Person");
-            customerProperties.Add("Old", s => "1");
-
-            DataWrapperOptions options = new DataWrapperOptions()
-            {
-                UseCustomModel = true,
-                CustomerProperty = customerProperties
-            };
-            DataWrapperContext context = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options);
-
-            dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
-
-            //Other model. this config will not be exceute. beacuse WrapperExecutor already has a cache type.
-            var customerProperties2 = new Dictionary<string, ConfigWrapperPropertyDelegate>();
-            customerProperties.Add("Name2", s => "Name");
-            customerProperties.Add("Person2", s => "Person");
-            customerProperties.Add("Old2", s => "1");
-
-            DataWrapperOptions options2 = new DataWrapperOptions()
-            {
-                UseCustomModel = true,
-                CustomerProperty = customerProperties2
-            };
-            DataWrapperContext context2 = new DataWrapperContext(originalData, CreateFakeHttpContext("Get", 200), options2);
-            var resultInfo = dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
-
-            var nameProp = resultInfo.GetType().GetProperty("Name");
-            var name2Prop = resultInfo.GetType().GetProperty("Name2");
-
-            Assert.NotNull(nameProp);
-            Assert.Null(name2Prop);
         }
 
         [Fact]

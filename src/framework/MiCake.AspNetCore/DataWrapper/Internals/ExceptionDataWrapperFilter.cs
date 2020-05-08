@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
-    internal class ExceptionDataWrapper : IAsyncExceptionFilter
+    internal class ExceptionDataWrapperFilter : IAsyncExceptionFilter
     {
         private readonly IDataWrapperExecutor _wrapperExecutor;
         private readonly DataWrapperOptions _options;
 
-        public ExceptionDataWrapper(
+        public ExceptionDataWrapperFilter(
             IOptions<MiCakeAspNetOptions> options,
             IDataWrapperExecutor wrapperExecutor)
         {
@@ -31,11 +31,11 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                                                           _options,
                                                           context.ActionDescriptor);
 
-                var wrapedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrapContext);
-                if (!(wrapedData is ApiError))
+                var wrappedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrapContext);
+                if (!(wrappedData is ApiError))
                     context.ExceptionHandled = true;
 
-                context.Result = new ObjectResult(wrapedData);
+                context.Result = new ObjectResult(wrappedData);
             }
 
             return Task.CompletedTask;

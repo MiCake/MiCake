@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace MiCake.AspNetCore.ExceptionHandling
 {
     /// <summary>
-    /// Although <see cref="ExceptionDataWrapper"/>[<see cref="IAsyncExceptionFilter"/>] has been provided for action execution process, 
+    /// Although <see cref="ExceptionDataWrapperFilter"/>[<see cref="IAsyncExceptionFilter"/>] has been provided for action execution process, 
     /// Error information in other middleware scope needs to be intercepted
     /// </summary>
     internal class ExceptionHandlerMiddleware
@@ -32,9 +32,9 @@ namespace MiCake.AspNetCore.ExceptionHandling
                 // Call the next delegate/middleware in the pipeline
                 await _next(context);
             }
-            catch (Exception ex) when (ex is SoftMiCakeException)
+            catch (Exception ex) when (ex is SoftlyMiCakeException)
             {
-                await WriteSoftExceptionResponse(context, ex as SoftMiCakeException);
+                await WriteSoftExceptionResponse(context, ex as SoftlyMiCakeException);
             }
             catch (Exception ex)
             {
@@ -42,7 +42,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             }
         }
 
-        private async Task WriteSoftExceptionResponse(HttpContext context, SoftMiCakeException softMiCakeException)
+        private async Task WriteSoftExceptionResponse(HttpContext context, SoftlyMiCakeException softMiCakeException)
         {
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status200OK;

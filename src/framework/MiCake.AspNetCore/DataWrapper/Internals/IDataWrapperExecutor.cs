@@ -12,9 +12,10 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// Wrap successfully returned data
         /// </summary>
         /// <param name="orignalData">Original data.For Aspnet Core,it's always <see cref="ObjectResult"/></param>
+        /// <param name="isSoftException">orignal data is soft exception</param>
         /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
         /// <returns>wrapped data</returns>
-        object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext);
+        object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext, bool isSoftException = false);
 
         /// <summary>
         /// Wrap the data returned by the error

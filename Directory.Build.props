@@ -15,6 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" PackagePath="\"/>
+    <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" Visible="false" PackagePath="\"/>
 </ItemGroup>
 </Project>

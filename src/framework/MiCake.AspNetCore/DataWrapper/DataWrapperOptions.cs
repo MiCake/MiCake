@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 
 namespace MiCake.AspNetCore.DataWrapper
@@ -23,17 +25,20 @@ namespace MiCake.AspNetCore.DataWrapper
 
         /// <summary>
         /// Use custom return data model or not.
-        /// If this property is true,you must config <see cref="CustomerProperty"/>.Otherwise,the response data is original.
+        /// If this property is true,you must config <see cref="CustomModelConfig"/>.Otherwise,the response data is original.
         /// </summary>
         public bool UseCustomModel { get; set; } = false;
 
         /// <summary>
-        /// Custom returned property item
-        /// Use <see cref="ConfigWrapperPropertyDelegate"/> to get data.
+        /// Return custom wrapper model according to HTTP status code.
         /// <para>
-        ///     example:CompanyName = s => "MiCake";
+        ///     For example:Key: 200..400 Value:MyCustomerModel.
+        ///     This means that when the HTTP status code is between 200 and 400, MyCustomerModel will be used as the return wrapper type.
+        /// </para>
+        /// <para>
+        ///     The precondition for executing the wrapper is: 1: the result source type is <see cref="ObjectResult"/> 2: no exception occurred.
         /// </para>
         /// </summary>
-        public Dictionary<string, ConfigWrapperPropertyDelegate> CustomerProperty { get; set; }
+        public Dictionary<Range, CustomWrapperModel> CustomModelConfig { get; set; }
     }
 }

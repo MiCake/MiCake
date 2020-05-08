@@ -1,10 +1,12 @@
 ﻿using MiCake.Core;
 using MiCake.Core.ExceptionHandling;
 using MiCake.Core.Util;
+using MiCake.Core.Util.CommonTypes;
 using MiCake.Core.Util.Reflection;
 using MiCake.Core.Util.Reflection.Emit;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("MiCake.AspNetCore.Tests")]
@@ -15,16 +17,18 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     /// </summary>
     internal class DefaultWrapperExecutor : IDataWrapperExecutor
     {
-        private Type _cacheCustomerType;
+        // the cache of custom model.
+        private ConcurrentDictionary<int, CustomModelWithType> _cacheCustomerType;
 
         public DefaultWrapperExecutor()
         {
+            _cacheCustomerType = new ConcurrentDictionary<int, CustomModelWithType>();
         }
 
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public object WrapFailedResult(object originalData, Exception exception, DataWrapperContext wrapperContext)
+        public virtual object WrapFailedResult(object originalData, Exception exception, DataWrapperContext wrapperContext)
         {
             var httpContext = wrapperContext.HttpContext;
             var options = wrapperContext.WrapperOptions;
@@ -32,12 +36,14 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             CheckValue.NotNull(httpContext, nameof(HttpContext));
             CheckValue.NotNull(options, nameof(DataWrapperOptions));
 
-            if (exception is ISoftMiCakeException)
+            if (exception is ISoftlyMiCakeException)
             {
                 //Given Ok Code for this exception.
                 httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                //Given this exception to context.
+                wrapperContext.SoftlyException = exception as SoftlyMiCakeException;
 
-                return WrapSuccesfullysResult(originalData ?? exception.Message, wrapperContext);
+                return WrapSuccesfullysResult(originalData ?? exception.Message, wrapperContext, true);
             }
 
             var micakeException = exception as MiCakeException;
@@ -52,7 +58,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext)
+        public virtual object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext, bool isSoftException = false)
         {
             if (orignalData is IResultDataWrapper)
                 return orignalData;
@@ -65,43 +71,114 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
             if (!options.UseCustomModel)
             {
-                return new ApiResponse(message: $"[{httpContext.Request.Method}] {ResponseMessage.Success}",
-                                      result: orignalData,
-                                      statusCode: wrapperContext.HttpContext.Response.StatusCode);
+                if (isSoftException)
+                {
+                    var softlyException = wrapperContext.SoftlyException;
+
+                    return new ApiResponse(softlyException.Message,
+                                           softlyException.Code,
+                                           softlyException.Details);
+                }
+
+                return new ApiResponse(message: ResponseMessage.Success,
+                                       result: orignalData,
+                                       statusCode: wrapperContext.HttpContext.Response.StatusCode);
             }
             else
             {
-                //create customer model.
-                var customerType = CreateCustomerModel(wrapperContext);
-                var modelInstance = Activator.CreateInstance(customerType);
+                if (options.CustomModelConfig == null)
+                    return orignalData;
 
-                foreach (var customerProperty in options.CustomerProperty)
-                {
-                    var propertyValue = customerProperty.Value(wrapperContext);
-                    customerType.GetProperty(customerProperty.Key)?.SetValue(modelInstance, propertyValue);
-                }
-                return modelInstance;
+                //create customer model.
+                var customerModel = CreateCustomModel(wrapperContext);
+                if (customerModel == null)
+                    return orignalData;
+
+                return customerModel;
             }
         }
 
-        protected virtual Type CreateCustomerModel(DataWrapperContext wrapperContext)
+        /// <summary>
+        /// Create customModel instance,and given value by config.
+        /// </summary>
+        /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
+        /// <returns>customModel instance.</returns>
+        protected virtual object CreateCustomModel(DataWrapperContext wrapperContext)
         {
-            if (_cacheCustomerType != null)
-                return _cacheCustomerType;
+            var currentHttpCode = wrapperContext.HttpContext.Response.StatusCode;
 
-            var dyClass = EmitHelper.CreateClass("MiCakeWrapperResponse",
+            if (_cacheCustomerType.TryGetValue(currentHttpCode, out var resultConfigInfo))
+            {
+                return AssignValueToCustomType(resultConfigInfo, wrapperContext);
+            }
+
+            var customModels = wrapperContext.WrapperOptions.CustomModelConfig;
+
+            CustomWrapperModel optimizationCustomModel = null;
+            foreach (var customModel in customModels)
+            {
+                if (customModel.Key.IsInRange(currentHttpCode))
+                {
+                    optimizationCustomModel = customModel.Value;
+                    break;
+                }
+            }
+
+            if (optimizationCustomModel == null)
+            {
+                //If it is not empty, it means that there is no configuration,
+                //then when the status code is encountered in the future, the source data will be returned
+                _cacheCustomerType.TryAdd(currentHttpCode, null);
+                return null;
+            }
+
+            var emitType = CreateCustomEmitType(optimizationCustomModel);
+            var customModelInfo = new CustomModelWithType(optimizationCustomModel, emitType);
+            _cacheCustomerType.TryAdd(currentHttpCode, customModelInfo);
+
+            return AssignValueToCustomType(customModelInfo, wrapperContext);
+        }
+
+        private object AssignValueToCustomType(CustomModelWithType customModelInfo, DataWrapperContext wrapperContext)
+        {
+            if (customModelInfo == null)
+                return null;
+
+            var modelInstance = Activator.CreateInstance(customModelInfo.EmitType);
+            foreach (var customerProperty in customModelInfo.ModelConfig.GetAllConfigProperties())
+            {
+                var propertyValue = customerProperty.Value(wrapperContext);
+                customModelInfo.EmitType.GetProperty(customerProperty.Key)?.SetValue(modelInstance, propertyValue);
+            }
+            return modelInstance;
+        }
+
+        private Type CreateCustomEmitType(CustomWrapperModel customWrapperModel)
+        {
+            var dyClass = EmitHelper.CreateClass(customWrapperModel.ModelName,
                                      MiCakeReflectionPredefined.DynamicAssembly,
                                      MiCakeReflectionPredefined.DynamicModule,
                                      baseType: typeof(BaseResultDataWrapper));
 
-            foreach (var customerProperty in wrapperContext.WrapperOptions.CustomerProperty)
+            foreach (var customerProperty in customWrapperModel.GetAllConfigProperties())
             {
                 CheckValue.NotNullOrEmpty(customerProperty.Key, nameof(customerProperty.Key));
-
                 EmitHelper.CreateProperty(dyClass, customerProperty.Key, typeof(string));
             }
 
-            return _cacheCustomerType = dyClass.CreateType();
+            return dyClass.CreateType();
+        }
+
+        class CustomModelWithType
+        {
+            public CustomWrapperModel ModelConfig { get; set; }
+            public Type EmitType { get; set; }
+
+            public CustomModelWithType(CustomWrapperModel customModel, Type emitType)
+            {
+                ModelConfig = customModel;
+                EmitType = emitType;
+            }
         }
     }
 }
