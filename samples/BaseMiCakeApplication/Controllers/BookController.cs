@@ -1,4 +1,6 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
+using BaseMiCakeApplication.Dto;
+using MiCake.Core;
 using MiCake.DDD.Domain;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -12,31 +14,31 @@ namespace BaseMiCakeApplication.Controllers
     {
         private readonly IRepository<Book, Guid> _bookRepository;
 
-        public BookController(IRepository<Book, Guid> bookRepository)
+        public BookController(IRepository<Book, Guid> repository)
         {
-            _bookRepository = bookRepository;
+            _bookRepository = repository;
+        }
+
+        [HttpGet]
+        public async Task<Book> GetBook(Guid bookId)
+        {
+            return await _bookRepository.FindAsync(bookId);
         }
 
         [HttpPost]
-        public async Task AddBookAsync(string name, string author)
-        {
-            await _bookRepository.AddAsync(new Book(name, author));
-        }
+        public async Task AddBook([FromBody]AddBookDto bookDto)
+            => await _bookRepository.AddAsync(new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName));
 
         [HttpPost]
-        public async Task DeleteBookAsync(Guid bookId)
+        public async Task<bool> ChangeAuthor([FromBody]ChangeBookAuthorDto bookDto)
         {
-            var currentBook = await _bookRepository.FindAsync(bookId);
-            await _bookRepository.DeleteAsync(currentBook);
-        }
+            var _bookInfo = await _bookRepository.FindAsync(bookDto.BookID)
+                                ?? throw new SoftlyMiCakeException("未找到对应书籍信息");
 
-        [HttpPost]
-        public async Task ChangeBookNameAsync(Guid bookId, string bookName)
-        {
-            var currentBook = await _bookRepository.FindAsync(bookId);
-            currentBook.ChangeName(bookName);
+            _bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
+            await _bookRepository.UpdateAsync(_bookInfo);
 
-            await _bookRepository.UpdateAsync(currentBook);
+            return true;
         }
     }
 }

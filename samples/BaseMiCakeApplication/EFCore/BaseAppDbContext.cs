@@ -21,6 +21,9 @@ namespace BaseMiCakeApplication.EFCore
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Book>()
+                .OwnsOne(s => s.Author);
         }
     }
 }

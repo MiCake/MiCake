@@ -1,5 +1,4 @@
-﻿
-using MiCake.Uow.Options;
+﻿using MiCake.Uow.Options;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;

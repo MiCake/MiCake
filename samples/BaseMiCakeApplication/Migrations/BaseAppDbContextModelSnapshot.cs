@@ -23,10 +23,7 @@ namespace BaseMiCakeApplication.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("Author")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
-
-                    b.Property<string>("Name")
+                    b.Property<string>("BookName")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.HasKey("Id");
@@ -61,6 +58,28 @@ namespace BaseMiCakeApplication.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("Itinerary");
+                });
+
+            modelBuilder.Entity("BaseMiCakeApplication.Domain.Aggregates.Book", b =>
+                {
+                    b.OwnsOne("BaseMiCakeApplication.Domain.Aggregates.BookAuthor", "Author", b1 =>
+                        {
+                            b1.Property<Guid>("BookId")
+                                .HasColumnType("char(36)");
+
+                            b1.Property<string>("FirstName")
+                                .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                            b1.Property<string>("LastName")
+                                .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                            b1.HasKey("BookId");
+
+                            b1.ToTable("Books");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookId");
+                        });
                 });
 #pragma warning restore 612, 618
         }

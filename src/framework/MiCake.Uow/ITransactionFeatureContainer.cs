@@ -1,6 +1,4 @@
-﻿
-
-namespace MiCake.Uow
+﻿namespace MiCake.Uow
 {
     /// <summary>
     /// a <see cref="ITransactionFeature"/> container.

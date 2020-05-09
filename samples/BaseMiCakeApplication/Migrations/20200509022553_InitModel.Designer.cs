@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BaseMiCakeApplication.Migrations
 {
     [DbContext(typeof(BaseAppDbContext))]
-    [Migration("20200414073734_AddSoftDeletion")]
-    partial class AddSoftDeletion
+    [Migration("20200509022553_InitModel")]
+    partial class InitModel
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -18,6 +18,20 @@ namespace BaseMiCakeApplication.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            modelBuilder.Entity("BaseMiCakeApplication.Domain.Aggregates.Book", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("BookName")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Books");
+                });
 
             modelBuilder.Entity("BaseMiCakeApplication.Infrastructure.StroageModels.ItinerarySnapshotModel", b =>
                 {
@@ -46,6 +60,28 @@ namespace BaseMiCakeApplication.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("Itinerary");
+                });
+
+            modelBuilder.Entity("BaseMiCakeApplication.Domain.Aggregates.Book", b =>
+                {
+                    b.OwnsOne("BaseMiCakeApplication.Domain.Aggregates.BookAuthor", "Author", b1 =>
+                        {
+                            b1.Property<Guid>("BookId")
+                                .HasColumnType("char(36)");
+
+                            b1.Property<string>("FirstName")
+                                .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                            b1.Property<string>("LastName")
+                                .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                            b1.HasKey("BookId");
+
+                            b1.ToTable("Books");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookId");
+                        });
                 });
 #pragma warning restore 612, 618
         }

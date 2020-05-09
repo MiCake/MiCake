@@ -20,4 +20,8 @@
     <ProjectReference Include="..\..\src\framework\MiCake.AspNetCore.Start\MiCake.AspNetCore.Start.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
 </Project>

@@ -51,7 +51,7 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
-            var snapshotModel = await DbContext.FindAsync<TPersistentObject>(ID);
+            var snapshotModel = await DbContext.FindAsync<TPersistentObject>(new object[] { ID }, cancellationToken);
             return ToEntity(snapshotModel);
         }
 

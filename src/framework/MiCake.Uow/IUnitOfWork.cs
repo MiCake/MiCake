@@ -13,9 +13,8 @@ namespace MiCake.Uow
         UnitOfWorkOptions UnitOfWorkOptions { get; }
 
         /// <summary>
-        /// a unit of work scoped serviceprovider.
-        /// can get db instance or transaction instance in this scope.
-        /// for example:in ef core.can get a dbcontext with uow scope.
+        /// A unit of work scoped serviceprovider.
+        /// Can get db instance or transaction instance in this scope.
         /// </summary>
         public IServiceProvider ServiceProvider { get; }
 
