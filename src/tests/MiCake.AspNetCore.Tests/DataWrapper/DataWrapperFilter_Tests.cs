@@ -15,7 +15,6 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
     {
         public DataWrapperFilter_Tests()
         {
-
         }
 
         [Fact]
@@ -87,6 +86,46 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var resultInfo = resultExecutingContext.Result as ObjectResult;
             Assert.NotNull(resultInfo);
             Assert.False(resultInfo.Value is IResultDataWrapper);
+        }
+
+        [Fact]
+        public async Task DataWrapperFilter_ObjectResultStatusCodeIsNull()
+        {
+            // Arrange
+            var httpContext = CreateFakeHttpContext("Get", 200);
+            var objResult = new ObjectResult("1234") { StatusCode = null };
+            var options = Options.Create(new MiCakeAspNetOptions());
+            var resultExecutingContext = GetResourceExecutingContext(httpContext, objResult);
+            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
+
+            //action
+            await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
+                                                       () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
+
+            //assert
+            var resultInfo = resultExecutingContext.Result as ObjectResult;
+            Assert.NotNull(resultInfo);
+            Assert.Equal(200, (resultInfo.Value as ApiResponse).StatusCode);
+        }
+
+        [Fact]
+        public async Task DataWrapperFilter_ObjectResultStatusCodeNotNull()
+        {
+            // Arrange
+            var httpContext = CreateFakeHttpContext("Get", 200);
+            var objResult = new OkObjectResult("1234") { StatusCode = 203 };
+            var options = Options.Create(new MiCakeAspNetOptions());
+            var resultExecutingContext = GetResourceExecutingContext(httpContext, objResult);
+            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
+
+            //action
+            await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
+                                                       () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
+
+            //assert
+            var resultInfo = resultExecutingContext.Result as ObjectResult;
+            Assert.NotNull(resultInfo);
+            Assert.Equal(203, (resultInfo.Value as ApiResponse).StatusCode);
         }
 
         private ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult result)

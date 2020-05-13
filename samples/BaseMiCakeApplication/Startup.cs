@@ -37,8 +37,10 @@ namespace BaseMiCakeApplication
             });
 
             services.AddTransient<IItineraryRepository, ItineraryRepository>();
-            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>()
-                    .Build();
+            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(miCakeAspNetConfig: options =>
+            {
+                options.DataWrapperOptions.IsDebug = true;
+            }).Build();
 
             //Add Swagger
             services.AddSwaggerDocument(document => document.DocumentName = "MiCake Demo Application");

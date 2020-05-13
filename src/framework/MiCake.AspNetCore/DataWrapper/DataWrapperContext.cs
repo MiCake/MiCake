@@ -1,5 +1,6 @@
 ﻿using MiCake.Core;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -16,9 +17,9 @@ namespace MiCake.AspNetCore.DataWrapper
 
         /// <summary>
         /// The data returned after the action is executed.
-        /// The data has not been wrapped
+        /// <see cref="IActionResult"/>
         /// </summary>
-        public object ResultData { get; set; }
+        public IActionResult ResultData { get; set; }
 
         /// <summary>
         /// <see cref="HttpContext"/>
@@ -43,7 +44,7 @@ namespace MiCake.AspNetCore.DataWrapper
         /// </summary>
         public SoftlyMiCakeException SoftlyException { get; set; }
 
-        public DataWrapperContext(object resultData,
+        public DataWrapperContext(IActionResult resultData,
                                   HttpContext httpContext,
                                   DataWrapperOptions options,
                                   ActionDescriptor actionDescriptor = null,

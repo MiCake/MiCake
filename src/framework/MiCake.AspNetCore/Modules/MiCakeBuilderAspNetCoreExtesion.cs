@@ -28,13 +28,13 @@ namespace MiCake.AspNetCore
             this IMiCakeBuilder builder,
             Action<MiCakeAspNetOptions> optionsBulder)
         {
-            MiCakeAspNetOptions defaultOptions = new MiCakeAspNetOptions();
-            optionsBulder?.Invoke(defaultOptions);
-
             builder.ConfigureApplication((app, services) =>
             {
                 app.ModuleManager.AddMiCakeModule(typeof(MiCakeAspNetCoreModule));
-                services.AddOptions<MiCakeAspNetOptions>();
+                services.Configure<MiCakeAspNetOptions>(options =>
+                {
+                    optionsBulder?.Invoke(options);
+                });
             });
 
             return builder;

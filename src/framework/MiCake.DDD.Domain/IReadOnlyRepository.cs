@@ -19,7 +19,7 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Find your AggrageteRoot with primary key
         /// </summary>
-        /// <param name="ID">>Primary key of the aggrageteRoot to get</param>
+        /// <param name="ID">Primary key of the aggrageteRoot to get</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
         Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default);

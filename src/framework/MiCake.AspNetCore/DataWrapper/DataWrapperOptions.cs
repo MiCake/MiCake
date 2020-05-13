@@ -17,11 +17,20 @@ namespace MiCake.AspNetCore.DataWrapper
 
         /// <summary>
         /// When the http status code in this list, the result is not wrapped.
-        /// Defatult:204(No Content),301(Redirect),302(Redirect),304(NotModified)
+        /// Defatult:201,202,404
         /// 
         /// <see cref="StatusCodes"/>
         /// </summary>
-        public List<int> NoWrapStatusCode { get; set; } = new List<int>() { 204, 301, 302, 304 };
+        public List<int> NoWrapStatusCode { get; set; } = new List<int>() { 201, 202, 404 };
+
+        /// <summary>
+        /// <see cref="ProblemDetails"/> has a separate format in asp net core.
+        /// If this values is true,ProblemDetails will be wrapped.So you will lost some error info.
+        /// <para>
+        ///     Default :false.
+        /// </para>
+        /// </summary>
+        public bool WrapProblemDetails { get; set; } = false;
 
         /// <summary>
         /// Use custom return data model or not.

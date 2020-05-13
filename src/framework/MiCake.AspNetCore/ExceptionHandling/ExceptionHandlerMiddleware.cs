@@ -47,10 +47,11 @@ namespace MiCake.AspNetCore.ExceptionHandling
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status200OK;
 
-            var wrapDataResult = new ApiResponse(message: softMiCakeException.Message,
-                                                 errorCode: softMiCakeException.Code,
-                                                 result: softMiCakeException.Details,
-                                                 statusCode: 200);
+            var wrapDataResult = new ApiResponse(message: softMiCakeException.Message, result: softMiCakeException.Details)
+            {
+                ErrorCode = softMiCakeException.Code,
+                IsError = true
+            };
 
             var options = new JsonSerializerOptions
             {
@@ -68,7 +69,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             httpResponse.StatusCode = StatusCodes.Status500InternalServerError;
 
             var micakeException = exception as MiCakeException;
-            var stackTraceInfo = _wrapOptions.IsDebug ? exception.StackTrace : string.Empty;
+            var stackTraceInfo = _wrapOptions.IsDebug ? exception.StackTrace : null;
 
             var wrapDataResult = new ApiError(exception.Message, micakeException?.Details, micakeException?.Code, stackTraceInfo);
 

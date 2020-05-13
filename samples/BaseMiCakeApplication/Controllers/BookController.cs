@@ -25,6 +25,21 @@ namespace BaseMiCakeApplication.Controllers
             return await _bookRepository.FindAsync(bookId);
         }
 
+        [HttpGet]
+        public IActionResult GetNoFound() => NotFound("No Found Action");
+
+        [HttpGet]
+        public IActionResult GetMiCakeException() => throw new MiCakeException("This is MiCake exception. http code is 500.");
+
+        [HttpGet]
+        public IActionResult GetSoftlyMiCakeException() => throw new SoftlyMiCakeException("This is MiCake softly exception. http code is 200.");
+
+        [HttpGet]
+        public IActionResult GetUnauthorized()
+        {
+            return Unauthorized();
+        }
+
         [HttpPost]
         public async Task AddBook([FromBody]AddBookDto bookDto)
             => await _bookRepository.AddAsync(new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName));

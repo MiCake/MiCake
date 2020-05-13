@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
@@ -11,7 +10,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// Wrap successfully returned data
         /// </summary>
-        /// <param name="orignalData">Original data.For Aspnet Core,it's always <see cref="ObjectResult"/></param>
+        /// <param name="orignalData">Original data.</param>
         /// <param name="isSoftException">orignal data is soft exception</param>
         /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
         /// <returns>wrapped data</returns>
@@ -20,7 +19,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// Wrap the data returned by the error
         /// </summary>
-        /// <param name="originalData">Original data.For Aspnet Core,it's always <see cref="ObjectResult"/></param>
+        /// <param name="originalData">Original data.</param>
         /// <param name="exception">exception info</param>
         /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
         /// <returns>wrapped data</returns>

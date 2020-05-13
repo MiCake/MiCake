@@ -63,31 +63,6 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             //assert
             var result = exceptionContext.Result as ObjectResult;
             Assert.False(exceptionContext.ExceptionHandled);
-            Assert.NotNull(result);
-            Assert.IsAssignableFrom<ApiError>(result.Value);
-        }
-
-        [Fact]
-        public async Task ExceptionDataWrapper_NotWrapStatueCode()
-        {
-            // Arrange
-            var httpContext = CreateFakeHttpContext("Get", 500);
-            var options = Options.Create(new MiCakeAspNetOptions()
-            {
-                DataWrapperOptions = new DataWrapperOptions()
-                {
-                    NoWrapStatusCode = new List<int>() { 500 }
-                }
-            });
-            var exceptionContext = GetExceptionContext(httpContext, new SoftlyMiCakeException("MiCake"));
-            var wrapperFilter = new ExceptionDataWrapperFilter(options, new DefaultWrapperExecutor());
-
-            //action
-            await wrapperFilter.OnExceptionAsync(exceptionContext);
-
-            //assert
-            var result = exceptionContext.Result as ObjectResult;
-            Assert.False(exceptionContext.ExceptionHandled);
             Assert.Null(result);
         }
 

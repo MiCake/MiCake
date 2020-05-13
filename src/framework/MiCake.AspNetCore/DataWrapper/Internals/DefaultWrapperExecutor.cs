@@ -5,6 +5,7 @@ using MiCake.Core.Util.CommonTypes;
 using MiCake.Core.Util.Reflection;
 using MiCake.Core.Util.Reflection.Emit;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
@@ -60,14 +61,15 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// </summary>
         public virtual object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext, bool isSoftException = false)
         {
+            CheckValue.NotNull(wrapperContext, nameof(wrapperContext));
+            CheckValue.NotNull(wrapperContext.HttpContext, nameof(wrapperContext.HttpContext));
+            CheckValue.NotNull(wrapperContext.WrapperOptions, nameof(wrapperContext.WrapperOptions));
+
             if (orignalData is IResultDataWrapper)
                 return orignalData;
 
-            var httpContext = wrapperContext.HttpContext;
             var options = wrapperContext.WrapperOptions;
-
-            CheckValue.NotNull(httpContext, nameof(HttpContext));
-            CheckValue.NotNull(options, nameof(DataWrapperOptions));
+            var statuCode = (wrapperContext.ResultData as ObjectResult)?.StatusCode ?? wrapperContext.HttpContext.Response.StatusCode;
 
             if (!options.UseCustomModel)
             {
@@ -75,14 +77,26 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                 {
                     var softlyException = wrapperContext.SoftlyException;
 
-                    return new ApiResponse(softlyException.Message,
-                                           softlyException.Code,
-                                           softlyException.Details);
+                    return new ApiResponse(softlyException.Message)
+                    {
+                        Result = softlyException.Details,
+                        ErrorCode = softlyException.Code,
+                        IsError = true,
+                    };
                 }
 
-                return new ApiResponse(message: ResponseMessage.Success,
-                                       result: orignalData,
-                                       statusCode: wrapperContext.HttpContext.Response.StatusCode);
+                if (orignalData is ProblemDetails problemDetails)
+                {
+                    return options.WrapProblemDetails ? new ApiResponse(problemDetails.Title)
+                    {
+                        Result = problemDetails.Detail,
+                        StatusCode = statuCode,
+                        IsError = true,
+                    }
+                    : orignalData;
+                }
+
+                return new ApiResponse(ResponseMessage.Success, orignalData) { StatusCode = statuCode };
             }
             else
             {

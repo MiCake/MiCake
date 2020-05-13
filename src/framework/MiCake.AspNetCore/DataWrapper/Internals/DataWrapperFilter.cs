@@ -25,17 +25,20 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
-            var statusCode = context.HttpContext.Response.StatusCode;
-
-            if (context.Result is ObjectResult objectResult && !_options.NoWrapStatusCode.Any(s => s == statusCode))
+            if (context.Result is ObjectResult objectResult)
             {
-                var wrappContext = new DataWrapperContext(context.Result,
-                                                          context.HttpContext,
-                                                          _options,
-                                                          context.ActionDescriptor);
+                var statusCode = objectResult.StatusCode ?? context.HttpContext.Response.StatusCode;
 
-                var wrappedData = _wrapperExecutor.WrapSuccesfullysResult(objectResult.Value, wrappContext);
-                objectResult.Value = wrappedData;
+                if (!_options.NoWrapStatusCode.Any(s => s == statusCode))
+                {
+                    var wrappContext = new DataWrapperContext(context.Result,
+                                                              context.HttpContext,
+                                                              _options,
+                                                              context.ActionDescriptor);
+
+                    var wrappedData = _wrapperExecutor.WrapSuccesfullysResult(objectResult.Value, wrappContext);
+                    objectResult.Value = wrappedData;
+                }
             }
 
             await next();
