@@ -4,6 +4,7 @@ using MiCake.Core;
 using MiCake.DDD.Domain;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Controllers
@@ -30,6 +31,12 @@ namespace BaseMiCakeApplication.Controllers
 
         [HttpGet]
         public IActionResult GetMiCakeException() => throw new MiCakeException("This is MiCake exception. http code is 500.");
+
+        [HttpGet]
+        public string GetStringResult() => "MiCake";
+
+        [HttpGet]
+        public List<int> GetListResult() => new List<int>() { 1, 3, 4 };
 
         [HttpGet]
         public IActionResult GetSoftlyMiCakeException() => throw new SoftlyMiCakeException("This is MiCake softly exception. http code is 200.");
