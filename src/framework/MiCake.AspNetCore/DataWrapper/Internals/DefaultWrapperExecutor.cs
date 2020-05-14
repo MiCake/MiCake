@@ -100,7 +100,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             }
             else
             {
-                if (options.CustomModelConfig == null)
+                if (options.CustomModelConfig == null || options.CustomModelConfig.Count == 0)
                     return orignalData;
 
                 //create customer model.
@@ -177,7 +177,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             foreach (var customerProperty in customWrapperModel.GetAllConfigProperties())
             {
                 CheckValue.NotNullOrEmpty(customerProperty.Key, nameof(customerProperty.Key));
-                EmitHelper.CreateProperty(dyClass, customerProperty.Key, typeof(string));
+                EmitHelper.CreateProperty(dyClass, customerProperty.Key, typeof(object));
             }
 
             return dyClass.CreateType();

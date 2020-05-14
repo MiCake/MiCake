@@ -38,6 +38,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
                     var wrappedData = _wrapperExecutor.WrapSuccesfullysResult(objectResult.Value, wrappContext);
                     objectResult.Value = wrappedData;
+                    objectResult.DeclaredType = wrappedData.GetType();
                 }
             }
 
