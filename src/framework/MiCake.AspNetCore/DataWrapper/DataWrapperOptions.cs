@@ -48,6 +48,6 @@ namespace MiCake.AspNetCore.DataWrapper
         ///     The precondition for executing the wrapper is: 1: the result source type is <see cref="ObjectResult"/> 2: no exception occurred.
         /// </para>
         /// </summary>
-        public Dictionary<Range, CustomWrapperModel> CustomModelConfig { get; set; }
+        public Dictionary<Range, CustomWrapperModel> CustomModelConfig { get; set; } = new Dictionary<Range, CustomWrapperModel>();
     }
 }

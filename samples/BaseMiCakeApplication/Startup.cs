@@ -1,6 +1,7 @@
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.EFCore.Repositories;
+using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -39,6 +40,7 @@ namespace BaseMiCakeApplication
             services.AddTransient<IItineraryRepository, ItineraryRepository>();
             services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(miCakeAspNetConfig: options =>
             {
+                options.UseCustomModel();
                 options.DataWrapperOptions.IsDebug = true;
             }).Build();
 
