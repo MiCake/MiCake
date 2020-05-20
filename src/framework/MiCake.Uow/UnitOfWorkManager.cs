@@ -1,5 +1,4 @@
-﻿using MiCake.Uow.Options;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
 
@@ -9,11 +8,11 @@ namespace MiCake.Uow
     {
         private IServiceProvider _serviceProvider;
         private UnitOfWorkCallContext _callcontext;
-        private UnitOfWorkDefaultOptions _defaultOptions;
+        private UnitOfWorkOptions _defaultOptions;
 
         public UnitOfWorkManager(
             IServiceProvider serviceProvider,
-            IOptions<UnitOfWorkDefaultOptions> defaultOptions)
+            IOptions<UnitOfWorkOptions> defaultOptions)
         {
             _serviceProvider = serviceProvider;
             _defaultOptions = defaultOptions.Value;
@@ -21,12 +20,12 @@ namespace MiCake.Uow
             _callcontext = new UnitOfWorkCallContext();
         }
 
-        public IUnitOfWork Create()
+        public virtual IUnitOfWork Create()
         {
-            return Create(_defaultOptions.ConvertToUnitOfWorkOptions());
+            return Create(_defaultOptions);
         }
 
-        public IUnitOfWork Create(UnitOfWorkOptions options)
+        public virtual IUnitOfWork Create(UnitOfWorkOptions options)
         {
             IUnitOfWork resultUow;
 
@@ -47,12 +46,12 @@ namespace MiCake.Uow
             return resultUow;
         }
 
-        public IUnitOfWork GetCurrentUnitOfWork()
+        public virtual IUnitOfWork GetCurrentUnitOfWork()
         {
             return _callcontext.GetCurrentUow();
         }
 
-        public IUnitOfWork GetUnitOfWork(Guid Id)
+        public virtual IUnitOfWork GetUnitOfWork(Guid Id)
         {
             return _callcontext.GetUowByID(Id);
         }

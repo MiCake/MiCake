@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace MiCake.Uow
 {
+    /// <summary>
+    /// Define a unit of work.
+    /// </summary>
     public interface IUnitOfWork : IDisposable, ITransactionFeatureContainer
     {
         Guid ID { get; }

@@ -1,6 +1,4 @@
-﻿using MiCake.Uow.Options;
-using Microsoft.Extensions.Options;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,15 +19,9 @@ namespace MiCake.Uow
         private bool _isSaveChanged;
         private bool _isRollbacked;
 
-        public UnitOfWork(
-            IOptions<UnitOfWorkDefaultOptions> defaultOptions,
-            IServiceProvider serviceProvider)
+        public UnitOfWork(IServiceProvider serviceProvider)
         {
-            if (defaultOptions.Value == null)
-                throw new ArgumentNullException($"can not get default UnitOfWorkDefaultOptions!");
-
             ID = Guid.NewGuid();
-            UnitOfWorkOptions = defaultOptions.Value.ConvertToUnitOfWorkOptions();
             ServiceProvider = serviceProvider;
 
             _transactionFeatures = new Dictionary<string, ITransactionFeature>();

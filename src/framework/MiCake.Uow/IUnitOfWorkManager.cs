@@ -1,5 +1,9 @@
 ﻿namespace MiCake.Uow
 {
+    /// <summary>
+    /// A <see cref="UnitOfWork"/> manager.
+    /// Responsible for creating and managing work <see cref="UnitOfWork"/>
+    /// </summary>
     public interface IUnitOfWorkManager : IUnitOfWorkProvider
     {
         /// <summary>
@@ -10,8 +14,7 @@
         /// <summary>
         ///  Create a <see cref="IUnitOfWork"/> with a custom options
         /// </summary>
-        /// <param name="options"></param>
-        /// <returns></returns>
+        /// <param name="options"><see cref="UnitOfWorkOptions"/></param>
         IUnitOfWork Create(UnitOfWorkOptions options);
     }
 }
