@@ -1,4 +1,4 @@
-﻿using MiCake.Uow;
+using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Diagnostics;
@@ -70,7 +70,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             }
 
             bool InternalOpenRuleCheck(EFTransactionFeature efFeature, IUnitOfWork uow)
-              => uow.UnitOfWorkOptions.Limit != UnitOfWorkLimit.Suppress && !efFeature.IsOpenTransaction;
+              => uow.UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress && !efFeature.IsOpenTransaction;
         }
     }
 }

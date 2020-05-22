@@ -85,9 +85,9 @@ namespace MiCake
                                     throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
                                     $"Please Check your has already AddMiCake() in ConfigureServices method");
 
-            if (micakeApp is INeedNecessaryParts<IServiceProvider> needServiceProvider)
+            if (micakeApp is INeedParts<IServiceProvider> needServiceProvider)
             {
-                needServiceProvider.SetNecessaryParts(applicationBuilder.ApplicationServices);
+                needServiceProvider.SetParts(applicationBuilder.ApplicationServices);
             }
 
             var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;

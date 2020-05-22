@@ -3,8 +3,8 @@
     /// <summary>
     /// define a class need an necessary parts
     /// </summary>
-    public interface INeedNecessaryParts<in TParts>
+    public interface INeedParts<in TParts>
     {
-        void SetNecessaryParts(TParts parts);
+        void SetParts(TParts parts);
     }
 }

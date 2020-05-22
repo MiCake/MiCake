@@ -1,6 +1,6 @@
 ﻿namespace MiCake.Uow
 {
-    public enum UnitOfWorkLimit
+    public enum UnitOfWorkScope
     {
         /// <summary>
         /// Create a new unit of work

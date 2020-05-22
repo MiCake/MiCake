@@ -3,7 +3,7 @@
 namespace MiCake.Uow
 {
     /// <summary>
-    /// This class holds the chain structure of all work units created by the UnitOfWorkManager.
+    /// This class holds the stack structure of all work units created by the UnitOfWorkManager.
     /// </summary>
     internal class UnitOfWorkCallContext
     {
@@ -13,6 +13,9 @@ namespace MiCake.Uow
         {
         }
 
+        /// <summary>
+        /// Get current unit of work
+        /// </summary>
         public IUnitOfWork GetCurrentUow()
         {
             if (_currentContext == null)
@@ -21,6 +24,11 @@ namespace MiCake.Uow
             return _currentContext.Current;
         }
 
+        /// <summary>
+        /// Get unit of work by <see cref="IUnitOfWork.ID"/>
+        /// </summary>
+        /// <param name="id">The id of unit of work.</param>
+        /// <returns>Find result.if no result,will return null.</returns>
         public IUnitOfWork GetUowByID(Guid id)
         {
             if (_currentContext == null)
@@ -43,7 +51,8 @@ namespace MiCake.Uow
         }
 
         /// <summary>
-        /// get a previous unit of work.
+        /// Pop the latest unit of work.Return to the previous unit of work(now is lasted).
+        /// If no result ,reutrn null.
         /// </summary>
         public IUnitOfWork PopUnitOfWork()
         {
@@ -59,6 +68,9 @@ namespace MiCake.Uow
             return _currentContext.Current;
         }
 
+        /// <summary>
+        /// Push unit of work to stack.
+        /// </summary>
         public void PushUnitOfWork(IUnitOfWork unitOfWork)
         {
             var newContext = new UowContextStruct()

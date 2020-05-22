@@ -1,21 +1,23 @@
-﻿using System;
+﻿using MiCake.Core.Data;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.Uow
 {
-    internal class ChildUnitOfWork : IChildUnitOfWork, IUnitOfWorkHook
+    internal class ChildUnitOfWork : IChildUnitOfWork, INeedParts<UnitOfWorkNeedParts>
     {
         public Guid ID { get; private set; }
         public bool IsDisposed { get; private set; }
-        public UnitOfWorkOptions UnitOfWorkOptions => _parentUow.UnitOfWorkOptions;
-        public IServiceProvider ServiceProvider => _parentUow.ServiceProvider;
+        public UnitOfWorkOptions UnitOfWorkOptions { get; private set; }
+        public IServiceScope ServiceScope => _parentUow.ServiceScope;
 
-        public event EventHandler<IUnitOfWork> DisposeHandler;
-
+        private UnitOfWorkEvents Events;
         private IUnitOfWork _parentUow;
         private bool _isSaveChanged;
         private bool _isRollbacked;
+
 
         public ChildUnitOfWork(IUnitOfWork parentUow)
         {
@@ -29,34 +31,6 @@ namespace MiCake.Uow
                 throw new InvalidOperationException("this unit of work is already dispose");
 
             IsDisposed = true;
-
-            DisposeHandler?.Invoke(this, this);
-
-            _parentUow = null;
-        }
-
-        public ITransactionFeature GetOrAddTransactionFeature(
-             string key,
-             ITransactionFeature transactionFeature)
-        {
-            return _parentUow.GetOrAddTransactionFeature(key, transactionFeature);
-        }
-
-        public ITransactionFeature GetTransactionFeature(string key)
-        {
-            return _parentUow.GetTransactionFeature(key);
-        }
-
-        public void RegisteTransactionFeature(
-             string key,
-             ITransactionFeature transactionFeature)
-        {
-            _parentUow.RegisteTransactionFeature(key, transactionFeature);
-        }
-
-        public void RemoveTransaction(string key)
-        {
-            _parentUow.RemoveTransaction(key);
         }
 
         #region these mothod will be performed by the parent unit of work
@@ -98,27 +72,13 @@ namespace MiCake.Uow
         #endregion
 
         public IUnitOfWork GetParentUnitOfWork()
-        {
-            return _parentUow;
-        }
+            => _parentUow;
 
-        public void OnSaveChanged(Action action)
+        public void SetParts(UnitOfWorkNeedParts parts)
         {
-            (_parentUow as IUnitOfWorkHook)?.OnSaveChanged(action);
-        }
-
-        public void OnRollBacked(Action action)
-        {
-            (_parentUow as IUnitOfWorkHook)?.OnRollBacked(action);
-        }
-
-        /// <summary>
-        /// Child unit of work invalid settings.because it's use parent options
-        /// </summary>
-        /// <param name="options"></param>
-        public void SetOptions(UnitOfWorkOptions options)
-        {
-            //_parentUow.SetOptions(options);
+            //Although the options is set, the options of the parent unit of work is still used.
+            //Just to get Events.
+            UnitOfWorkOptions = parts.Options;
         }
     }
 }

@@ -9,6 +9,10 @@ namespace MiCake.Core
     [Serializable]
     public class SoftlyMiCakeException : MiCakeException, ISoftlyMiCakeException
     {
+        public SoftlyMiCakeException() : base()
+        {
+        }
+
         public SoftlyMiCakeException(
             string message,
             string details = null,

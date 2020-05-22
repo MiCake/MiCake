@@ -1,6 +1,7 @@
-using MiCake.Uow.Options;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace MiCake.Uow.Test
@@ -12,8 +13,8 @@ namespace MiCake.Uow.Test
 
         public MiCake_UowManager_Test()
         {
-            requiredNewOptions = new UnitOfWorkOptions(null, null, UnitOfWorkLimit.RequiresNew);
-            suppressOptions = new UnitOfWorkOptions(null, null, UnitOfWorkLimit.Suppress);
+            requiredNewOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.RequiresNew);
+            suppressOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.Suppress);
         }
 
         [Fact]
@@ -115,6 +116,38 @@ namespace MiCake.Uow.Test
         }
 
         [Fact]
+        public void Create_AddTransactionFeature()
+        {
+            var uowMangager = GetUnitOfWorkManager();
+
+            using (var uowOne = uowMangager.Create())
+            {
+                Task.Run(() =>
+                {
+                    Thread.Sleep(500);
+                    //当前是uowTwo
+                    uowMangager.GetCurrentUnitOfWork();
+                    Thread.Sleep(1000);
+                    //当前是uowOne.
+                    uowMangager.GetCurrentUnitOfWork();
+
+
+                    //在多线程中GetCurrentUnitOfWork会带来不准确性
+                });
+
+                Task.Run(() =>
+                {
+                    using (var uowTwo = uowMangager.Create())
+                    {
+                        Thread.Sleep(1000);
+                    }
+                });
+
+                Thread.Sleep(1000);
+            }
+        }
+
+        [Fact]
         public void Find_UowInstance_Test()
         {
             var uowMangager = GetUnitOfWorkManager();
@@ -176,12 +209,42 @@ namespace MiCake.Uow.Test
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
-            var defaultUowOptions = new UnitOfWorkDefaultOptions() { Limit = UnitOfWorkLimit.Required };
+            var defaultUowOptions = new UnitOfWorkDefaultOptions() { Limit = UnitOfWorkScope.Required };
             services.AddSingleton(Microsoft.Extensions.Options.Options.Create(defaultUowOptions));
 
             var provider = services.BuildServiceProvider();
 
             return provider.GetService<IUnitOfWorkManager>();
+        }
+
+        class DemoFeature : ITransactionFeature
+        {
+            public bool IsCommit => false;
+
+            public bool IsRollback => false;
+
+            public void Commit()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task CommitAsync(CancellationToken cancellationToken = default)
+            {
+                return Task.CompletedTask;
+            }
+
+            public void Dispose()
+            {
+            }
+
+            public void Rollback()
+            {
+            }
+
+            public Task RollbackAsync(CancellationToken cancellationToken = default)
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }
