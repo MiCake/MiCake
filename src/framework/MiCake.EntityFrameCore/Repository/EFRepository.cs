@@ -1,4 +1,5 @@
 ﻿using MiCake.DDD.Domain;
+using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using System.Threading;
@@ -12,7 +13,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         where TAggregateRoot : class, IAggregateRoot<TKey>
         where TDbContext : DbContext
     {
-        public EFRepository(IUnitOfWorkManager uowManager) : base(uowManager)
+        public EFRepository(IDbContextProvider<TDbContext> dbContextProvider) : base(dbContextProvider)
         {
         }
 
