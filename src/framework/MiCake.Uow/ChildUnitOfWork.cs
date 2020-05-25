@@ -80,5 +80,11 @@ namespace MiCake.Uow
             //Just to get Events.
             UnitOfWorkOptions = parts.Options;
         }
+
+        public bool TryAddDbExecutor(IDbExecutor dbExecutor)
+            => _parentUow.TryAddDbExecutor(dbExecutor);
+
+        public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
+            => await _parentUow.TryAddDbExecutorAsync(dbExecutor, cancellationToken);
     }
 }

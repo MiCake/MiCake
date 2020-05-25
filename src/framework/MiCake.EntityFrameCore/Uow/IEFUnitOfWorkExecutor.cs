@@ -5,9 +5,9 @@ using System.Collections.Generic;
 namespace MiCake.EntityFrameworkCore.Uow
 {
     /// <summary>
-    /// The <see cref="IUnitOfWorkExecutor"/> for EFCore.
+    /// The <see cref="IDbExecutor"/> for EFCore.
     /// </summary>
-    public interface IEFUnitOfWorkExecutor : IUnitOfWorkExecutor
+    public interface IEFUnitOfWorkExecutor : IDbExecutor
     {
         /// <summary>
         /// The collection of DbContext.

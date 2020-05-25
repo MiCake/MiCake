@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Uow.Internal
+﻿namespace MiCake.Uow.Internal
 {
     internal class CurrentUnitOfWork : ICurrentUnitOfWork
     {

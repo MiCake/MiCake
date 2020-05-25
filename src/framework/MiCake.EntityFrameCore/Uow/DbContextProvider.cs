@@ -26,9 +26,16 @@ namespace MiCake.EntityFrameworkCore.Uow
             if (dbContext == null)
                 throw new ArgumentNullException($"Can not resolve a {typeof(TDbContext).FullName} form this serve scoped,please check has added dbcontext in DI!");
 
-            //询问uow的transactionprovider是否需要开启一个事务，如果是则把该事务给予DbContext
+            //Add this dbContext to current uow.
+            uow.TryAddDbExecutor(CreateDbContextExecutor(dbContext));
 
             return dbContext;
+        }
+
+        IDbExecutor CreateDbContextExecutor(TDbContext dbContext)
+        {
+            var dbExecutorType = typeof(DbContextExecutor<>).MakeGenericType(typeof(TDbContext));
+            return (IDbExecutor)Activator.CreateInstance(dbExecutorType, dbContext);
         }
 
         DbContext IDbContextProvider.GetDbContext()

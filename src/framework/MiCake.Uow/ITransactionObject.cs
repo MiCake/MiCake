@@ -10,9 +10,14 @@ namespace MiCake.Uow
     public interface ITransactionObject : IDisposable
     {
         /// <summary>
-        /// Whether transaction is opened.
+        /// The ID of <see cref="ITransactionObject"/>.
         /// </summary>
-        public bool IsOpened { get; }
+        public Guid ID { get; }
+
+        /// <summary>
+        /// Indicates whether the current transaction has been committed
+        /// </summary>
+        public bool IsCommit { get; }
 
         /// <summary>
         /// The type of transaction object.
@@ -23,11 +28,6 @@ namespace MiCake.Uow
         /// Current transaction instance.
         /// </summary>
         public object TransactionInstance { get; }
-
-        /// <summary>
-        /// Open current transaction.
-        /// </summary>
-        ITransactionObject Open();
 
         /// <summary>
         /// Commits all changes made to the database in the current transaction.

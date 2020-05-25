@@ -1,4 +1,6 @@
 using MiCake.Core.Data;
+using MiCake.Core.Util;
+using MiCake.Core.Util.Collections;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -15,29 +17,19 @@ namespace MiCake.Uow.Internal
         public UnitOfWorkOptions UnitOfWorkOptions { get; private set; }
         public IServiceScope ServiceScope { get; private set; }
 
-        private UnitOfWorkEvents Events;
         private readonly IEnumerable<ITransactionProvider> _transactions;
-        private readonly IEnumerable<IUnitOfWorkExecutor> _executors;
+
+        protected UnitOfWorkEvents Events { get; private set; }
+        protected List<ITransactionObject> ErrorTransactions { get; private set; } = new List<ITransactionObject>();
+        protected List<ITransactionObject> CreatedTransactions { get; private set; } = new List<ITransactionObject>();
+        protected List<IDbExecutor> AddedExecutors { get; private set; } = new List<IDbExecutor>();
 
         private bool _isSaved = false;
         private bool _isRollback = false;
-        private List<ITransactionObject> _errorTransactions = new List<ITransactionObject>();
-        private List<ITransactionObject> _createdTransactions = new List<ITransactionObject>();
 
-        /// <summary>
-        /// Collections that <see cref="IUnitOfWorkExecutor"/> have not yet been executed in this unit of work.
-        /// </summary>
-        protected IEnumerable<IUnitOfWorkExecutor> NeedExecutionTasks
-        {
-            get => _executors.Count() == 0 ? _executors : _executors.Where(s => !s.HasExecuted);
-        }
-
-        public UnitOfWork(
-            IEnumerable<ITransactionProvider> transactions,
-            IEnumerable<IUnitOfWorkExecutor> executors)
+        public UnitOfWork(IEnumerable<ITransactionProvider> transactions)
         {
             _transactions = transactions.OrderBy(s => s.Order);
-            _executors = executors;
 
             ID = Guid.NewGuid();
         }
@@ -50,191 +42,231 @@ namespace MiCake.Uow.Internal
             IsDisposed = true;
 
             //release db executor.
-            foreach (var dbExecutor in _executors)
+            foreach (var dbExecutor in AddedExecutors)
             {
                 dbExecutor.Dispose();
             }
 
             //release transaction.
-            foreach (var transaction in _createdTransactions)
+            foreach (var transaction in CreatedTransactions)
             {
                 transaction.Dispose();
             }
         }
 
-        public void Rollback()
+        public bool TryAddDbExecutor(IDbExecutor dbExecutor)
+        {
+            CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
+
+            //added executor.Guarantee that it will eventually be released
+            AddedExecutors.AddIfNotContains(dbExecutor);
+
+            if (dbExecutor.HasTransaction)
+                return true;
+
+            bool result = false;
+            var transactionObj = OpenTransactionAndGiveExecutor(_transactions, dbExecutor);
+
+            if (transactionObj != null)
+            {
+                //reused or new?
+                if (!CreatedTransactions.Any(s => s.ID == transactionObj.ID))
+                    CreatedTransactions.Add(transactionObj);
+
+                result = true;
+            }
+
+            return result;
+        }
+
+        protected virtual ITransactionObject OpenTransactionAndGiveExecutor(IEnumerable<ITransactionProvider> transactionProviders, IDbExecutor dbExecutor)
+        {
+            //if not any provider,reutrn false.
+            if (transactionProviders.Count() == 0)
+                return null;
+
+            ITransactionObject exceptedTransaction = null;
+
+            foreach (var transactionProvider in transactionProviders)
+            {
+                if (!transactionProvider.CanCreate(dbExecutor))
+                    continue;
+
+                //already has transaction,can reused?
+                if (CreatedTransactions.Count > 0)
+                {
+                    var reusedTransaction = transactionProvider.Reused(CreatedTransactions, dbExecutor);
+
+                    if (reusedTransaction != null)
+                    {
+                        //reused this transaction,and back.
+                        dbExecutor.UseTransaction(reusedTransaction);
+                        return reusedTransaction;
+                    }
+                }
+
+                //create new transaction.
+                exceptedTransaction = transactionProvider.GetTransactionObject(new CreateTransactionContext(this, dbExecutor));
+                if (exceptedTransaction != null)
+                {
+                    dbExecutor.UseTransaction(exceptedTransaction);
+                    break;
+                }
+                //if exceptedTransaction is null,let the next provider create.
+            }
+
+            return exceptedTransaction;
+        }
+
+        public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
+        {
+            CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
+
+            //added executor.Guarantee that it will eventually be released
+            AddedExecutors.AddIfNotContains(dbExecutor);
+
+            if (dbExecutor.HasTransaction)
+                return true;
+
+            bool result = false;
+            var transactionObj = await OpenTransactionAndGiveExecutorAsync(_transactions, dbExecutor, cancellationToken);
+
+            if (transactionObj != null)
+            {
+                //reused or new?
+                if (!CreatedTransactions.Any(s => s.ID == transactionObj.ID))
+                    CreatedTransactions.Add(transactionObj);
+
+                result = true;
+            }
+
+            return result;
+        }
+
+        protected virtual async Task<ITransactionObject> OpenTransactionAndGiveExecutorAsync(
+            IEnumerable<ITransactionProvider> transactionProviders,
+            IDbExecutor dbExecutor,
+            CancellationToken cancellationToken)
+        {
+            //if not any provider,reutrn false.
+            if (transactionProviders.Count() == 0)
+                return null;
+
+            ITransactionObject exceptedTransaction = null;
+
+            foreach (var transactionProvider in transactionProviders)
+            {
+                if (!transactionProvider.CanCreate(dbExecutor))
+                    continue;
+
+                //already has transaction,can reused?
+                if (CreatedTransactions.Count > 0)
+                {
+                    var reusedTransaction = transactionProvider.Reused(CreatedTransactions, dbExecutor);
+
+                    if (reusedTransaction != null)
+                    {
+                        //reused this transaction,and back.
+                        dbExecutor.UseTransaction(reusedTransaction);
+                        return reusedTransaction;
+                    }
+                }
+
+                //create new transaction.
+                exceptedTransaction = await transactionProvider.GetTransactionObjectAsync(new CreateTransactionContext(this, dbExecutor), cancellationToken);
+                if (exceptedTransaction != null)
+                {
+                    dbExecutor.UseTransaction(exceptedTransaction);
+                    break;
+                }
+                //if exceptedTransaction is null,let the next provider create.
+            }
+
+            return exceptedTransaction;
+        }
+
+        public virtual void SaveChanges()
+        {
+            CheckSaved();
+
+            List<Exception> exceptions = new List<Exception>();
+
+            foreach (var @transaction in CreatedTransactions)
+            {
+                try
+                {
+                    @transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    ErrorTransactions.Add(@transaction);
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions.Count > 0)
+                ReThrow(exceptions);
+        }
+
+        public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            CheckSaved();
+
+            List<Exception> exceptions = new List<Exception>();
+
+            foreach (var @transaction in CreatedTransactions)
+            {
+                try
+                {
+                    await @transaction.CommitAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    ErrorTransactions.Add(@transaction);
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions.Count > 0)
+                ReThrow(exceptions);
+        }
+
+        public virtual void Rollback()
         {
             CheckRollback();
 
             //error transaction have priority.
-            foreach (var errorTransaction in _errorTransactions)
+            foreach (var errorTransaction in ErrorTransactions)
             {
                 errorTransaction.Rollback();
             }
 
-            foreach (var createTransaction in _createdTransactions)
+            foreach (var createTransaction in CreatedTransactions)
             {
-                if (createTransaction.IsOpened)
+                if (!createTransaction.IsCommit)
                     createTransaction.Rollback();
             }
 
             //if rollback has error, throw exception to developer.
         }
 
-        public async Task RollbackAsync(CancellationToken cancellationToken = default)
+        public virtual async Task RollbackAsync(CancellationToken cancellationToken = default)
         {
             CheckRollback();
 
             //error transaction have priority.
-            foreach (var errorTransaction in _errorTransactions)
+            foreach (var errorTransaction in ErrorTransactions)
             {
                 await errorTransaction.RollbackAsync(cancellationToken);
             }
 
-            foreach (var createTransaction in _createdTransactions)
+            foreach (var createTransaction in CreatedTransactions)
             {
-                if (createTransaction.IsOpened)
+                if (!createTransaction.IsCommit)
                     await createTransaction.RollbackAsync(cancellationToken);
             }
 
             //if rollback has error, throw exception to developer.
-        }
-
-        public void SaveChanges()
-        {
-            CheckSaved();
-
-            if (NeedExecutionTasks.Count() == 0)
-                return;
-
-            var exceptions = new List<Exception>();
-
-            if (_transactions.Count() == 0)
-            {
-                //no transaction.direct execution.
-                //because there is no transaction management, there is no way to roll back even if there is an error
-                ExecuteTaskWithNoTransaction(exceptions);
-            }
-            else
-            {
-                bool hasError = false;
-
-                foreach (var transactionProvider in _transactions)
-                {
-                    var transactionObj = transactionProvider.GetTransaction();
-                    var executionContext = new UnitOfWorkExecutionContext(this, transactionObj);
-
-                    var belongTransactionExecutor = NeedExecutionTasks.Where(s => s.CanExecute(executionContext)).ToList();
-
-                    if (belongTransactionExecutor.Count == 0)
-                        continue;
-
-                    //open transaction
-                    using (var @transaction = transactionObj.Open())
-                    {
-                        _createdTransactions.Add(@transaction);
-
-                        foreach (var executionTask in belongTransactionExecutor)
-                        {
-                            if (ExecuteDb(executionTask, exceptions).Result == UnitOfWorkResultType.Failed)
-                            {
-                                hasError = true;
-                                break;
-                            }
-                        }
-
-                        if (!hasError)
-                        {
-                            @transaction.Commit();
-                        }
-                        else
-                        {
-                            //if has error,add error transation to _errorTrasacations.
-                            //this transaction is delayed until the unit of work call Dispose.
-                            _errorTransactions.Add(@transaction);
-                            break;
-                        }
-                    }
-                }
-
-                if (!hasError)
-                {
-                    //execute remain task with no transaction.
-                    ExecuteTaskWithNoTransaction(exceptions);
-                }
-            }
-
-            if (exceptions.Count > 0)
-                ReThrow(exceptions);
-        }
-
-        public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            CheckSaved();
-
-            if (NeedExecutionTasks.Count() == 0)
-                return;
-
-            var exceptions = new List<Exception>();
-
-            if (_transactions.Count() == 0)
-            {
-                //no transaction.direct execution.
-                //because there is no transaction management, there is no way to roll back even if there is an error
-                await ExecuteTaskWithNoTransactionAsync(exceptions, cancellationToken);
-            }
-            else
-            {
-                bool hasError = false;
-
-                foreach (var transactionProvider in _transactions)
-                {
-                    var transactionObj = transactionProvider.GetTransaction();
-                    var executionContext = new UnitOfWorkExecutionContext(this, transactionObj);
-
-                    var belongTransactionExecutor = NeedExecutionTasks.Where(s => s.CanExecute(executionContext)).ToList();
-
-                    if (belongTransactionExecutor.Count == 0)
-                        continue;
-
-                    //open transaction
-                    using (var @transaction = transactionObj.Open())
-                    {
-                        _createdTransactions.Add(@transaction);
-
-                        foreach (var executionTask in belongTransactionExecutor)
-                        {
-                            var execiteResult = await ExecuteDbAsync(executionTask, exceptions, cancellationToken);
-                            if (execiteResult.Result == UnitOfWorkResultType.Failed)
-                            {
-                                hasError = true;
-                                break;
-                            }
-                        }
-
-                        if (!hasError)
-                        {
-                            await @transaction.CommitAsync(cancellationToken);
-                        }
-                        else
-                        {
-                            //if has error,add error transation to _errorTrasacations.
-                            //this transaction is delayed until the unit of work call Dispose.
-                            _errorTransactions.Add(@transaction);
-                            break;
-                        }
-                    }
-                }
-
-                if (!hasError)
-                {
-                    //execute remain task with no transaction.
-                    await ExecuteTaskWithNoTransactionAsync(exceptions, cancellationToken);
-                }
-            }
-
-            if (exceptions.Count > 0)
-                ReThrow(exceptions);
         }
 
         #region Private Method
@@ -250,48 +282,6 @@ namespace MiCake.Uow.Internal
                 throw new InvalidOperationException($"This unit of work has been rollback!");
         }
 
-        /// <summary>
-        /// Execute all need execution <see cref="IUnitOfWorkExecutor"/> with no transaction.
-        /// </summary>
-        private void ExecuteTaskWithNoTransaction(List<Exception> exceptions)
-        {
-            foreach (var remainTask in NeedExecutionTasks)
-            {
-                ExecuteDb(remainTask, exceptions);
-            }
-        }
-
-        /// <summary>
-        /// Execute all need execution <see cref="IUnitOfWorkExecutor"/> with no transaction.
-        /// </summary>
-        private async Task ExecuteTaskWithNoTransactionAsync(List<Exception> exceptions, CancellationToken cancellationToken)
-        {
-            foreach (var remainTask in NeedExecutionTasks)
-            {
-                await ExecuteDbAsync(remainTask, exceptions, cancellationToken);
-            }
-        }
-
-        private UnitOfWorkExecutionResult ExecuteDb(IUnitOfWorkExecutor executor, List<Exception> exceptions)
-        {
-            var result = executor.Execute();
-
-            if (result.Result == UnitOfWorkResultType.Failed)
-                exceptions.Add(result.Failure);
-
-            return result;
-        }
-
-        private async Task<UnitOfWorkExecutionResult> ExecuteDbAsync(IUnitOfWorkExecutor executor, List<Exception> exceptions, CancellationToken cancellationToken)
-        {
-            var result = await executor.ExecuteAsync(cancellationToken);
-
-            if (result.Result == UnitOfWorkResultType.Failed)
-                exceptions.Add(result.Failure);
-
-            return result;
-        }
-
         private void ReThrow(IEnumerable<Exception> exceptions)
         {
             if (exceptions.Count() > 0)
@@ -304,5 +294,6 @@ namespace MiCake.Uow.Internal
             UnitOfWorkOptions = parts.Options;
             ServiceScope = parts.ServiceScope;
         }
+
     }
 }
