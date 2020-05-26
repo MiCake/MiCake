@@ -26,7 +26,7 @@ namespace MiCake.Uow
         /// Specifies events which the <see cref="IUnitOfWork"/> invokes to enable developer control unit of work process.
         /// <see cref="UnitOfWorkEvents"/>
         /// </summary>
-        public UnitOfWorkEvents Events { get; set; }
+        public UnitOfWorkEvents Events { get; set; } = new UnitOfWorkEvents();
 
         public UnitOfWorkOptions() : this(default)
         {

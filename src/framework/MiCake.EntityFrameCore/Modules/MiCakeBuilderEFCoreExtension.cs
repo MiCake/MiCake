@@ -1,6 +1,7 @@
 ﻿using MiCake.Core;
 using MiCake.Core.DependencyInjection;
 using MiCake.EntityFrameworkCore.Modules;
+using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -57,6 +58,9 @@ namespace MiCake.EntityFrameworkCore
                 app.ModuleManager.AddMiCakeModule(typeof(MiCakeEFCoreModule));
 
                 services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
+
+                //add efcore uow services.
+                services.AddUowCoreServices(miCakeDbContextType);
             });
 
             return builder;

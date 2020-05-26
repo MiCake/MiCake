@@ -1,3 +1,4 @@
+using MiCake.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading;
@@ -209,42 +210,9 @@ namespace MiCake.Uow.Test
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
-            var defaultUowOptions = new UnitOfWorkDefaultOptions() { Limit = UnitOfWorkScope.Required };
-            services.AddSingleton(Microsoft.Extensions.Options.Options.Create(defaultUowOptions));
-
             var provider = services.BuildServiceProvider();
 
             return provider.GetService<IUnitOfWorkManager>();
-        }
-
-        class DemoFeature : ITransactionFeature
-        {
-            public bool IsCommit => false;
-
-            public bool IsRollback => false;
-
-            public void Commit()
-            {
-                throw new NotImplementedException();
-            }
-
-            public Task CommitAsync(CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
-
-            public void Dispose()
-            {
-            }
-
-            public void Rollback()
-            {
-            }
-
-            public Task RollbackAsync(CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
         }
     }
 }

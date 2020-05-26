@@ -19,7 +19,7 @@ namespace MiCake.Uow.Internal
 
         private readonly IEnumerable<ITransactionProvider> _transactions;
 
-        protected UnitOfWorkEvents Events { get; private set; }
+        protected UnitOfWorkEvents Events => UnitOfWorkOptions?.Events;
         protected List<ITransactionObject> ErrorTransactions { get; private set; } = new List<ITransactionObject>();
         protected List<ITransactionObject> CreatedTransactions { get; private set; } = new List<ITransactionObject>();
         protected List<IDbExecutor> AddedExecutors { get; private set; } = new List<IDbExecutor>();
@@ -37,7 +37,7 @@ namespace MiCake.Uow.Internal
         public void Dispose()
         {
             if (IsDisposed)
-                throw new InvalidOperationException($"This {nameof(UnitOfWork)} has been disposed!");
+                return;
 
             IsDisposed = true;
 
@@ -52,6 +52,8 @@ namespace MiCake.Uow.Internal
             {
                 transaction.Dispose();
             }
+
+            Events?.Dispose(this);
         }
 
         public bool TryAddDbExecutor(IDbExecutor dbExecutor)
@@ -167,7 +169,7 @@ namespace MiCake.Uow.Internal
                     if (reusedTransaction != null)
                     {
                         //reused this transaction,and back.
-                        dbExecutor.UseTransaction(reusedTransaction);
+                        await dbExecutor.UseTransactionAsync(reusedTransaction, cancellationToken);
                         return reusedTransaction;
                     }
                 }
@@ -176,7 +178,7 @@ namespace MiCake.Uow.Internal
                 exceptedTransaction = await transactionProvider.GetTransactionObjectAsync(new CreateTransactionContext(this, dbExecutor), cancellationToken);
                 if (exceptedTransaction != null)
                 {
-                    dbExecutor.UseTransaction(exceptedTransaction);
+                    await dbExecutor.UseTransactionAsync(exceptedTransaction, cancellationToken);
                     break;
                 }
                 //if exceptedTransaction is null,let the next provider create.
@@ -206,6 +208,8 @@ namespace MiCake.Uow.Internal
 
             if (exceptions.Count > 0)
                 ReThrow(exceptions);
+
+            Events?.Completed(this);
         }
 
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -229,6 +233,8 @@ namespace MiCake.Uow.Internal
 
             if (exceptions.Count > 0)
                 ReThrow(exceptions);
+
+            Events?.Completed(this);
         }
 
         public virtual void Rollback()
@@ -248,6 +254,8 @@ namespace MiCake.Uow.Internal
             }
 
             //if rollback has error, throw exception to developer.
+
+            Events?.Rollbacked(this);
         }
 
         public virtual async Task RollbackAsync(CancellationToken cancellationToken = default)
@@ -267,6 +275,8 @@ namespace MiCake.Uow.Internal
             }
 
             //if rollback has error, throw exception to developer.
+
+            Events?.Rollbacked(this);
         }
 
         #region Private Method

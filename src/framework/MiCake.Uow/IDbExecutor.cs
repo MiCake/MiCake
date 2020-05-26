@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiCake.Uow
 {
@@ -18,5 +20,11 @@ namespace MiCake.Uow
         /// </summary>
         /// <param name="transactionObject"><see cref="ITransactionObject"/></param>
         void UseTransaction(ITransactionObject transactionObject);
+
+        /// <summary>
+        /// Set transaction for current executor.
+        /// </summary>
+        /// <param name="transactionObject"><see cref="ITransactionObject"/></param>
+        Task UseTransactionAsync(ITransactionObject transactionObject, CancellationToken cancellationToken = default);
     }
 }
