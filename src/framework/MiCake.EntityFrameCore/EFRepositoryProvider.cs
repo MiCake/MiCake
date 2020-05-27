@@ -4,8 +4,6 @@ using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Uow;
-using MiCake.Uow;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;

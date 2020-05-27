@@ -4,24 +4,26 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Uow
+namespace MiCake.Uow.Internal
 {
     internal class ChildUnitOfWork : IChildUnitOfWork, INeedParts<UnitOfWorkNeedParts>
     {
         public Guid ID { get; private set; }
         public bool IsDisposed { get; private set; }
         public UnitOfWorkOptions UnitOfWorkOptions { get; private set; }
-        public IServiceScope ServiceScope => _parentUow.ServiceScope;
+        public IServiceScope ServiceScope => ParentUow.ServiceScope;
 
-        private UnitOfWorkEvents Events;
-        private IUnitOfWork _parentUow;
+        protected IUnitOfWork ParentUow { get; private set; }
+        protected UnitOfWorkEvents Events => UnitOfWorkOptions?.Events;
+        protected Action<IUnitOfWork> DisposeHandler { get; private set; }
+
         private bool _isSaveChanged;
         private bool _isRollbacked;
 
 
         public ChildUnitOfWork(IUnitOfWork parentUow)
         {
-            _parentUow = parentUow;
+            ParentUow = parentUow;
             ID = Guid.NewGuid();
         }
 
@@ -31,6 +33,10 @@ namespace MiCake.Uow
                 throw new InvalidOperationException("this unit of work is already dispose");
 
             IsDisposed = true;
+
+            Events?.Dispose(this);
+            //pop this unit of work to stack.
+            DisposeHandler?.Invoke(this);
         }
 
         #region these mothod will be performed by the parent unit of work
@@ -41,6 +47,7 @@ namespace MiCake.Uow
 
             _isRollbacked = true;
 
+            Events?.Rollbacked(this);
             //Do nothing.
             //This operation will be performed by the parent unit of work
         }
@@ -48,6 +55,8 @@ namespace MiCake.Uow
         public Task RollbackAsync(CancellationToken cancellationToken = default)
         {
             Rollback();
+
+            Events?.Rollbacked(this);
 
             return Task.FromResult(0);
         }
@@ -59,6 +68,8 @@ namespace MiCake.Uow
 
             _isSaveChanged = true;
 
+            Events?.Completed(this);
+
             //Do nothing.
             //This operation will be performed by the parent unit of work
         }
@@ -67,24 +78,27 @@ namespace MiCake.Uow
         {
             SaveChanges();
 
+            Events?.Completed(this);
+
             return Task.FromResult(0);
         }
         #endregion
 
         public IUnitOfWork GetParentUnitOfWork()
-            => _parentUow;
+            => ParentUow;
 
         public void SetParts(UnitOfWorkNeedParts parts)
         {
             //Although the options is set, the options of the parent unit of work is still used.
-            //Just to get Events.
+            //Just to get Events and disposeHandler.
             UnitOfWorkOptions = parts.Options;
+            DisposeHandler = parts.DisposeHandler;
         }
 
         public bool TryAddDbExecutor(IDbExecutor dbExecutor)
-            => _parentUow.TryAddDbExecutor(dbExecutor);
+            => ParentUow.TryAddDbExecutor(dbExecutor);
 
         public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
-            => await _parentUow.TryAddDbExecutorAsync(dbExecutor, cancellationToken);
+            => await ParentUow.TryAddDbExecutorAsync(dbExecutor, cancellationToken);
     }
 }

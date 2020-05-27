@@ -23,6 +23,7 @@ namespace MiCake.Uow.Internal
         protected List<ITransactionObject> ErrorTransactions { get; private set; } = new List<ITransactionObject>();
         protected List<ITransactionObject> CreatedTransactions { get; private set; } = new List<ITransactionObject>();
         protected List<IDbExecutor> AddedExecutors { get; private set; } = new List<IDbExecutor>();
+        protected Action<IUnitOfWork> DisposeHandler { get; private set; }
 
         private bool _isSaved = false;
         private bool _isRollback = false;
@@ -54,11 +55,17 @@ namespace MiCake.Uow.Internal
             }
 
             Events?.Dispose(this);
+
+            //pop this unit of work to stack.
+            DisposeHandler?.Invoke(this);
         }
 
         public bool TryAddDbExecutor(IDbExecutor dbExecutor)
         {
             CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
+
+            if (!EnsureToOpenTransaction())
+                return true;
 
             //added executor.Guarantee that it will eventually be released
             AddedExecutors.AddIfNotContains(dbExecutor);
@@ -123,6 +130,9 @@ namespace MiCake.Uow.Internal
         public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
         {
             CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
+
+            if (!EnsureToOpenTransaction())
+                return true;
 
             //added executor.Guarantee that it will eventually be released
             AddedExecutors.AddIfNotContains(dbExecutor);
@@ -297,12 +307,17 @@ namespace MiCake.Uow.Internal
             if (exceptions.Count() > 0)
                 throw new AggregateException(exceptions);
         }
+
+        //If config scope is Suppress,Transaction will not be opened
+        private bool EnsureToOpenTransaction()
+            => this.UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress;
         #endregion
 
         public void SetParts(UnitOfWorkNeedParts parts)
         {
             UnitOfWorkOptions = parts.Options;
             ServiceScope = parts.ServiceScope;
+            DisposeHandler = parts.DisposeHandler;
         }
 
     }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace MiCake.Uow
 {
@@ -11,6 +12,11 @@ namespace MiCake.Uow
         public UnitOfWorkOptions Options { get; set; }
 
         public IServiceScope ServiceScope { get; set; }
+
+        /// <summary>
+        /// Use to dispose current unit of work and ensure the order in the stack is accurate
+        /// </summary>
+        public Action<IUnitOfWork> DisposeHandler { get; set; }
 
         public UnitOfWorkNeedParts()
         {

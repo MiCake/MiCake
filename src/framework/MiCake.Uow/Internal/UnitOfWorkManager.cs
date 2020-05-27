@@ -2,7 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("MiCake.Uow.Test")]
 namespace MiCake.Uow.Internal
 {
     /// <summary>
@@ -27,6 +29,9 @@ namespace MiCake.Uow.Internal
 
         private bool _isDisposed = false;
 
+        //Only for test.
+        internal UnitOfWorkCallContext CallContext => _callContext;
+
         public UnitOfWorkManager(IServiceProvider serviceProvider, IOptions<UnitOfWorkOptions> defaultOptions)
         {
             _serviceProvider = serviceProvider;
@@ -38,7 +43,7 @@ namespace MiCake.Uow.Internal
             return Create(_defaultOptions.Clone());
         }
 
-        public IUnitOfWork Create(UnitOfWorkScope unitOfWorkScope)
+        public virtual IUnitOfWork Create(UnitOfWorkScope unitOfWorkScope)
         {
             var options = _defaultOptions.Clone();
             options.Scope = unitOfWorkScope;
@@ -59,12 +64,12 @@ namespace MiCake.Uow.Internal
                 //create child unit of work ,it will use the configuration of the previous unit of work
                 resultUow = new ChildUnitOfWork(_callContext.GetCurrentUow());
 
-                options.Events.OnDispose += context =>
+                Action<IUnitOfWork> handler = context =>
                 {
                     _callContext.PopUnitOfWork();
                 };
 
-                UnitOfWorkNeedParts uowNeedParts = new UnitOfWorkNeedParts() { Options = options };
+                UnitOfWorkNeedParts uowNeedParts = new UnitOfWorkNeedParts() { Options = options, DisposeHandler = handler };
                 (resultUow as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
             }
             _callContext.PushUnitOfWork(resultUow);
@@ -82,7 +87,7 @@ namespace MiCake.Uow.Internal
             return _callContext.GetUowByID(Id);
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_isDisposed)
                 return;
@@ -120,7 +125,7 @@ namespace MiCake.Uow.Internal
             try
             {
                 //Release resources and update _callContext status through Ondispose event.
-                options.Events.OnDispose += context =>
+                Action<IUnitOfWork> handler = context =>
                 {
                     uowScope.Dispose();
                     _callContext.PopUnitOfWork();
@@ -131,7 +136,8 @@ namespace MiCake.Uow.Internal
                 UnitOfWorkNeedParts uowNeedParts = new UnitOfWorkNeedParts()
                 {
                     Options = options,
-                    ServiceScope = uowScope
+                    ServiceScope = uowScope,
+                    DisposeHandler = handler
                 };
                 (result as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
             }

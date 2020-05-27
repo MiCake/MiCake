@@ -59,7 +59,7 @@ namespace MiCake.Uow
                 Events = Events,
                 IsolationLevel = IsolationLevel,
                 Scope = Scope,
-                Timeout = Timeout
+                Timeout = Timeout,
             };
         }
     }
