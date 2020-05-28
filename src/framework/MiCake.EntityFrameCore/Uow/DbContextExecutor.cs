@@ -10,12 +10,8 @@ namespace MiCake.EntityFrameworkCore.Uow
     internal class DbContextExecutor<TDbContext> : DbExecutor<TDbContext>, IEFCoreDbExecutor
           where TDbContext : DbContext
     {
-        public DbContextExecutor(TDbContext dbContext)
+        public DbContextExecutor(TDbContext dbContext) : base(dbContext)
         {
-            CheckValue.NotNull(dbContext, nameof(dbContext));
-
-            DbOjectInstance = dbContext;
-
             if (dbContext.Database.CurrentTransaction != null)
             {
                 //If there is a transaction to prove that the user is already using the dbcontext, the dbcontext is not hosted by the unit of work

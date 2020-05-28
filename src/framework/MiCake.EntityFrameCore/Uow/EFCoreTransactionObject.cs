@@ -28,8 +28,9 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         public void Commit()
         {
+            //Only called once.
             if (IsCommit)
-                throw new InvalidOperationException($"The current transaction has been committed!");
+                return;
 
             IsCommit = true;
             _efCoreTransaction.Commit();
@@ -37,8 +38,9 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
+            //Only called once.
             if (IsCommit)
-                throw new InvalidOperationException($"The current transaction has been committed!");
+                return;
 
             IsCommit = true;
             await _efCoreTransaction.CommitAsync(cancellationToken);

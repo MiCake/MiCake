@@ -41,6 +41,17 @@ namespace MiCake.Uow
             }
         }
 
+        public DbExecutor()
+        {
+        }
+
+        public DbExecutor(TDbOject instance)
+        {
+            CheckValue.NotNull(instance, nameof(instance));
+
+            DbOjectInstance = instance;
+        }
+
         public void UseTransaction(ITransactionObject transactionObject)
         {
             if (HasTransaction)

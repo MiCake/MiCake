@@ -5,7 +5,7 @@ using Xunit;
 
 namespace MiCake.Uow.Test
 {
-    public class MiCake_UowManager_Test
+    public class MiCake_UowManager_Test : UnitOfWorkTestBase
     {
         private UnitOfWorkOptions RequiredNewOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.RequiresNew);
         private UnitOfWorkOptions SuppressOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.Suppress);
@@ -178,14 +178,16 @@ namespace MiCake.Uow.Test
             Assert.Null(manager.GetCurrentUnitOfWork());
         }
 
-        private IServiceProvider GetServiceProvider()
+        [Fact]
+        public void ChildUow_UseItSelfEvents()
         {
-            IServiceCollection services = new ServiceCollection();
-            services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            services.AddTransient<IUnitOfWork, UnitOfWork>();
-            services.AddOptions<UnitOfWorkOptions>();
 
-            return services.BuildServiceProvider();
+        }
+
+        [Fact]
+        public void ChildUow_UseParentOption()
+        {
+
         }
 
         #region 多线程下无法控制

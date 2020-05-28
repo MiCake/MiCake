@@ -1,6 +1,7 @@
 ﻿using MiCake.Core.Util;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -44,9 +45,29 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             ITransactionObject optimalTransaction = null;
 
+            IEFCoreDbExecutor eFCoreDbExecutor = dbExecutor as IEFCoreDbExecutor;
+            if (eFCoreDbExecutor == null)
+                return null;
+
             //DbContext only can receive DbTransaction.
             //Todo:If there has more DbTransaction,How to compare?
-            optimalTransaction = existedTrasactions.Where(s => !s.IsCommit && s.TransactionInstance is DbTransaction).FirstOrDefault();
+            optimalTransaction = existedTrasactions.FirstOrDefault(s =>
+            {
+                if (!s.IsCommit && s.TransactionInstance is DbTransaction dbTransaction)
+                {
+                    var dbContext = eFCoreDbExecutor.EFCoreDbContext;
+                    //Get EF Core DbConnection.
+                    //Only detail relational transaction.
+                    var relationDatabase = (dbContext.Database as IDatabaseFacadeDependenciesAccessor)?.Dependencies as IRelationalDatabaseFacadeDependencies;
+
+                    if (relationDatabase == null)
+                        return false;
+
+                    //It's mean they use same database.
+                    return relationDatabase.RelationalConnection.DbConnection.ConnectionString.Equals(dbTransaction.Connection.ConnectionString);
+                }
+                return false;
+            });
 
             return optimalTransaction;
         }
