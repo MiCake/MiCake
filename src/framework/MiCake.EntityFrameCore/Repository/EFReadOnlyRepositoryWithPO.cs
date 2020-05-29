@@ -4,7 +4,6 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Store;
 using MiCake.DDD.Extensions.Store;
 using MiCake.EntityFrameworkCore.Uow;
-using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Concurrent;
@@ -22,25 +21,19 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// <typeparam name="TPersistentObject">Type of <see cref="PersistentObject{TEntity}"/></typeparam>
     /// <typeparam name="TKey">Primary key type of <see cref="IAggregateRoot"/></typeparam>
     public class EFReadOnlyRepositoryWithPO<TDbContext, TAggregateRoot, TPersistentObject, TKey> :
+        EFRepositoryBase<TDbContext, TAggregateRoot, TKey>,
         IReadOnlyRepository<TAggregateRoot, TKey>, IDisposable
         where TAggregateRoot : class, IAggregateRoot<TKey>, IHasPersistentObject
         where TPersistentObject : class, IPersistentObject
         where TDbContext : DbContext
     {
-        protected virtual TDbContext DbContext => _dbContextFactory.CreateDbContext();
-        protected virtual DbSet<TPersistentObject> DbSet => DbContext.Set<TPersistentObject>();
+        protected new DbSet<TPersistentObject> DbSet => DbContext.Set<TPersistentObject>();
 
         //the relationship between entity instance and persistent object instancae.
         private ConcurrentDictionary<object, object> _entityRelationship = new ConcurrentDictionary<object, object>();
 
-        private readonly IUnitOfWorkManager _uowManager;
-        private IUowDbContextFactory<TDbContext> _dbContextFactory;
-
-        public EFReadOnlyRepositoryWithPO(IUnitOfWorkManager uowManager)
+        public EFReadOnlyRepositoryWithPO(IDbContextProvider<TDbContext> dbContextProvider) : base(dbContextProvider)
         {
-            _uowManager = uowManager;
-
-            _dbContextFactory = new UowDbContextFactory<TDbContext>(_uowManager);
         }
 
         public TAggregateRoot Find(TKey ID)

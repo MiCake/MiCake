@@ -8,7 +8,7 @@ using System;
 
 namespace MiCake.Core
 {
-    public class MiCakeApplication : IMiCakeApplication, INeedNecessaryParts<IServiceProvider>
+    public class MiCakeApplication : IMiCakeApplication, INeedParts<IServiceProvider>
     {
         /// <summary>
         /// <inheritdoc/>
@@ -142,7 +142,7 @@ namespace MiCake.Core
         /// <summary>
         /// Set <see cref="IServiceProvider"/>.
         /// </summary>
-        void INeedNecessaryParts<IServiceProvider>.SetNecessaryParts(IServiceProvider parts)
+        void INeedParts<IServiceProvider>.SetParts(IServiceProvider parts)
         {
             _serviceProvider = parts ??
                               throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");
@@ -151,7 +151,7 @@ namespace MiCake.Core
         private void AddMiCakeCoreSerivces(IServiceCollection services)
         {
             services.AddSingleton<IMiCakeApplication>(this);
-            services.Configure<MiCakeApplicationOptions>(op => op = ApplicationOptions);
+            services.Configure<MiCakeApplicationOptions>(op => op.Apply(ApplicationOptions));
 
             services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
             {

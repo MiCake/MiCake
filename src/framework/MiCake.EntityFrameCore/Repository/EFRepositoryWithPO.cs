@@ -1,7 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Store;
 using MiCake.DDD.Extensions.Store;
-using MiCake.Uow;
+using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +22,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         where TPersistentObject : class, IPersistentObject
         where TDbContext : DbContext
     {
-        public EFRepositoryWithPO(IUnitOfWorkManager uowManager) : base(uowManager)
+        public EFRepositoryWithPO(IDbContextProvider<TDbContext> dbContextProvider) : base(dbContextProvider)
         {
         }
 

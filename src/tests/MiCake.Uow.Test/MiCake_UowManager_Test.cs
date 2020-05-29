@@ -1,187 +1,282 @@
-using MiCake.Uow.Options;
+using MiCake.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace MiCake.Uow.Test
 {
-    public class MiCake_UowManager_Test
+    public class MiCake_UowManager_Test : UnitOfWorkTestBase
     {
-        private UnitOfWorkOptions requiredNewOptions;
-        private UnitOfWorkOptions suppressOptions;
+        private UnitOfWorkOptions RequiredNewOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.RequiresNew);
+        private UnitOfWorkOptions SuppressOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.Suppress);
+
+        private IServiceProvider ServiceProvider { get; }
 
         public MiCake_UowManager_Test()
         {
-            requiredNewOptions = new UnitOfWorkOptions(null, null, UnitOfWorkLimit.RequiresNew);
-            suppressOptions = new UnitOfWorkOptions(null, null, UnitOfWorkLimit.Suppress);
+            ServiceProvider = GetServiceProvider();
         }
 
         [Fact]
-        public void Create_ChildUowType_Test()
+        public void UowManager_CreateUow()
         {
-            var uowMangager = GetUnitOfWorkManager();
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>();
+            var uow = manager.Create();
 
-            using (var uowOne = uowMangager.Create())
+            Assert.NotNull(uow);
+        }
+
+        [Fact]
+        public void UowManager_CreateUowWithOptions()
+        {
+            UnitOfWorkOptions options = new UnitOfWorkOptions(System.Data.IsolationLevel.ReadCommitted);
+
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+            var uow = manager.Create(options);
+
+            Assert.Same(options, uow.UnitOfWorkOptions);
+        }
+
+        [Fact]
+        public void UowManager_CreateMoreUow()
+        {
+            UnitOfWorkOptions options = new UnitOfWorkOptions(System.Data.IsolationLevel.ReadCommitted);
+
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+
+            using (var uow1 = manager.Create())
             {
-                Assert.IsType<UnitOfWork>(uowOne);
-                using (var uowTwo = uowMangager.Create())
+                using (var uow2 = manager.Create())
                 {
-                    Assert.IsNotType<UnitOfWork>(uowTwo);
-
-                    using (var twoChild = uowMangager.Create())
-                    {
-                        Assert.IsNotType<UnitOfWork>(twoChild);
-                    }
+                    Assert.Same(uow2, manager.CallContext.GetCurrentUow());
                 }
-                using (var uowThree = uowMangager.Create())
+
+                Assert.Same(uow1, manager.CallContext.GetCurrentUow());
+            }
+
+            Assert.Null(manager.GetCurrentUnitOfWork());
+        }
+
+        [Fact]
+        public void UowManager_CreateChildUnitOfWork()
+        {
+            UnitOfWorkOptions options = new UnitOfWorkOptions(System.Data.IsolationLevel.ReadCommitted);
+
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+
+            using (var uow1 = manager.Create())
+            {
+                using (var uow2 = manager.Create())
                 {
-                    Assert.IsNotType<UnitOfWork>(uowThree);
+                    //由于没有指定配置，使用默认Required，则会使用外环境的工作单元配置
+                    Assert.IsAssignableFrom<IChildUnitOfWork>(uow2);
+                }
+            }
+
+            Assert.Null(manager.GetCurrentUnitOfWork());
+        }
+
+        [Fact]
+        public void UowManager_NestedUnitOfWork_UseRequiresNewScope()
+        {
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+
+            using (var uow1 = manager.Create())
+            {
+                using (var uow2 = manager.Create(UnitOfWorkScope.RequiresNew))
+                {
+                    //RequiresNew,则重新创建一个独立的工作单元
+                    Assert.Null(uow2 as IChildUnitOfWork);
                 }
             }
         }
 
         [Fact]
-        public void Create_MultipleNestingUow_Test()
+        public void UowManager_NestedUnitOfWork_UseSurpress()
         {
-            var uowMangager = GetUnitOfWorkManager();
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
 
-            using (var uowOne = uowMangager.Create())
+            using (var uow1 = manager.Create())
             {
-                Assert.Equal(uowOne.ID, uowMangager.GetCurrentUnitOfWork().ID);
-
-                using (var uowTwo = uowMangager.Create())
+                using (var uow2 = manager.Create(UnitOfWorkScope.RequiresNew))
                 {
-                    Assert.Equal(uowTwo.ID, uowMangager.GetCurrentUnitOfWork().ID);
+                    //Suppress,则重新创建一个独立的工作单元
+                    Assert.Null(uow2 as IChildUnitOfWork);
+                    Assert.Equal(UnitOfWorkScope.RequiresNew, uow2.UnitOfWorkOptions.Scope);
+                }
+                Assert.Equal(UnitOfWorkScope.Required, uow1.UnitOfWorkOptions.Scope);
+            }
+        }
 
-                    using (var uowTwo_One = uowMangager.Create())
+        [Fact]
+        public void UowManager_NestedMoreUnitOfWork()
+        {
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+
+            using (var uow1 = manager.Create())
+            {
+                using (var uow2 = manager.Create(UnitOfWorkScope.RequiresNew))
+                {
+                    Assert.Null(uow2 as IChildUnitOfWork);
+                    Assert.Equal(uow2, manager.GetCurrentUnitOfWork());
+
+                    using (var uow3 = manager.Create(UnitOfWorkScope.Suppress))
                     {
-                        Assert.Equal(uowTwo_One.ID, uowMangager.GetCurrentUnitOfWork().ID);
+                        Assert.Null(uow3 as IChildUnitOfWork);
+                        Assert.Equal(uow3, manager.GetCurrentUnitOfWork());
 
-                        using (var uowTwo_One_One = uowMangager.Create())
+                        using (var uow4 = manager.Create())
                         {
-                            Assert.Equal(uowTwo_One_One.ID, uowMangager.GetCurrentUnitOfWork().ID);
+                            Assert.IsAssignableFrom<IChildUnitOfWork>(uow4);
+                            Assert.Equal(uow4, manager.GetCurrentUnitOfWork());
                         }
                     }
                 }
-                using (var uowThree = uowMangager.Create())
-                {
-                    Assert.Equal(uowThree.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                }
             }
 
-            using (var uowOne = uowMangager.Create())
-            {
-                Assert.Equal(uowOne.ID, uowMangager.GetCurrentUnitOfWork().ID);
-
-                using (var uowTwo = uowMangager.Create())
-                {
-                    Assert.Equal(uowTwo.ID, uowMangager.GetCurrentUnitOfWork().ID);
-
-                    using (var uowTwo_One = uowMangager.Create())
-                    {
-                        Assert.Equal(uowTwo_One.ID, uowMangager.GetCurrentUnitOfWork().ID);
-
-                        using (var uowTwo_One_One = uowMangager.Create())
-                        {
-                            Assert.Equal(uowTwo_One_One.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                        }
-                    }
-                }
-                using (var uowThree = uowMangager.Create())
-                {
-                    Assert.Equal(uowThree.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                }
-            }
+            //最后所有的工作单元都将被释放
+            Assert.Null(manager.GetCurrentUnitOfWork());
         }
 
         [Fact]
-        public void Create_TwoParallelUow_Test()
+        public void UowManager_ParallelUnitOfWork()
         {
-            var uowMangager = GetUnitOfWorkManager();
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
 
-            using (var uowOne = uowMangager.Create())
+            using (var uow1 = manager.Create())
             {
-                Assert.Equal(uowOne.ID, uowMangager.GetCurrentUnitOfWork().ID);
-
-                using (var uowTwo = uowMangager.Create())
-                {
-                    Assert.Equal(uowTwo.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                }
-                using (var uowThree = uowMangager.Create())
-                {
-                    Assert.Equal(uowThree.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                }
+                Assert.Equal(uow1, manager.GetCurrentUnitOfWork());
             }
+
+            using (var uow2 = manager.Create())
+            {
+                Assert.Equal(uow2, manager.GetCurrentUnitOfWork());
+            }
+
+            //最后所有的工作单元都将被释放
+            Assert.Null(manager.GetCurrentUnitOfWork());
         }
 
         [Fact]
-        public void Find_UowInstance_Test()
+        public void UowManager_DifferenScope()
         {
-            var uowMangager = GetUnitOfWorkManager();
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
 
-            using (var uowOne = uowMangager.Create())
+            using (var uow1 = manager.Create())
             {
-                var findInstanceOne = uowMangager.GetUnitOfWork(uowOne.ID);
-                Assert.Equal(uowOne.ID, findInstanceOne.ID);
+                Assert.Equal(uow1, manager.GetCurrentUnitOfWork());
 
-                // find no have instance
-                var nohaveInstance = uowMangager.GetUnitOfWork(Guid.NewGuid());
-                Assert.Null(nohaveInstance);
-
-                using (var uowTwo = uowMangager.Create())
+                var manager2 = ServiceProvider.CreateScope().ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+                using (var uow2 = manager2.Create())
                 {
-                    var findInstanceTwo = uowMangager.GetUnitOfWork(uowTwo.ID);
-                    Assert.Equal(uowTwo.ID, findInstanceTwo.ID);
+                    Assert.Null(uow2 as IChildUnitOfWork);
+                }
 
-                    // find no have instance
-                    var noTwohaveInstance = uowMangager.GetUnitOfWork(Guid.NewGuid());
-                    Assert.Null(noTwohaveInstance);
-                }
-                using (var uowThree = uowMangager.Create())
-                {
-                    var findInstanceThree = uowMangager.GetUnitOfWork(uowThree.ID);
-                    Assert.Equal(uowThree.ID, uowThree.ID);
-                }
+                Assert.Null(manager2.GetCurrentUnitOfWork());
             }
 
-            var nowUow = uowMangager.GetCurrentUnitOfWork();
-            Assert.Null(nowUow);
+            Assert.Null(manager.GetCurrentUnitOfWork());
         }
 
         [Fact]
-        public void DiffentOptions_UowType_Test()
+        public void ChildUow_UseItSelfEvents()
         {
-            var uowMangager = GetUnitOfWorkManager();
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+            string saveInfo = "";
+            string rollbackInfo = "";
+            string disposeInfo = "";
 
-            using (var uowOne = uowMangager.Create())
+            string saveInfo2 = "";
+            string rollbackInfo2 = "";
+            string disposeInfo2 = "";
+
+            var options1 = new UnitOfWorkOptions();
+            options1.Events.OnCompleted += s =>
             {
-                Assert.IsType<UnitOfWork>(uowOne);
+                saveInfo = "1";
+                return Task.CompletedTask;
+            };
+            options1.Events.OnRollbacked += s =>
+            {
+                rollbackInfo = "1";
+                return Task.CompletedTask;
+            };
+            options1.Events.OnDispose += s =>
+            {
+                disposeInfo = "1";
+                return Task.CompletedTask;
+            };
 
-                using (var uowTwo = uowMangager.Create(suppressOptions))
+            var options2 = new UnitOfWorkOptions();
+            options2.Events.OnCompleted += s =>
+            {
+                saveInfo2 = "2";
+                return Task.CompletedTask;
+            };
+            options2.Events.OnRollbacked += s =>
+            {
+                rollbackInfo2 = "2";
+                return Task.CompletedTask;
+            };
+            options2.Events.OnDispose += s =>
+            {
+                disposeInfo2 = "2";
+                return Task.CompletedTask;
+            };
+
+            using (var uow1 = manager.Create(options1))
+            {
+                using (var uow2 = manager.Create(options2))
                 {
-                    Assert.Equal(uowTwo.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                    Assert.IsType<UnitOfWork>(uowTwo);
+                    uow2.SaveChanges();
+                    uow2.Rollback();
                 }
-                using (var uowThree = uowMangager.Create(requiredNewOptions))
-                {
-                    Assert.Equal(uowThree.ID, uowMangager.GetCurrentUnitOfWork().ID);
-                    Assert.IsType<UnitOfWork>(uowThree);
-                }
+                uow1.SaveChanges();
+                uow1.Rollback();
             }
+
+            Assert.Equal("1", saveInfo);
+            Assert.Equal("1", rollbackInfo);
+            Assert.Equal("1", disposeInfo);
+
+            Assert.Equal("2", saveInfo2);
+            Assert.Equal("2", rollbackInfo2);
+            Assert.Equal("2", disposeInfo2);
         }
 
-        private IUnitOfWorkManager GetUnitOfWorkManager()
-        {
-            IServiceCollection services = new ServiceCollection();
-            services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            services.AddTransient<IUnitOfWork, UnitOfWork>();
 
-            var defaultUowOptions = new UnitOfWorkDefaultOptions() { Limit = UnitOfWorkLimit.Required };
-            services.AddSingleton(Microsoft.Extensions.Options.Options.Create(defaultUowOptions));
+        #region 多线程下无法控制
+        //[Fact(DisplayName = "多线程条件下获取工作单元")]
+        //public void Concurrent_GetUnitOfWork()
+        //{
+        //    var uowMangager = GetUnitOfWorkManager();
 
-            var provider = services.BuildServiceProvider();
+        //    using (var uowOne = uowMangager.Create())
+        //    {
+        //        Task.Run(() =>
+        //        {
+        //            Thread.Sleep(500);
+        //            //当前是uowTwo
+        //            uowMangager.GetCurrentUnitOfWork();
+        //            Thread.Sleep(1000);
+        //            //当前是uowOne.
+        //            uowMangager.GetCurrentUnitOfWork();
 
-            return provider.GetService<IUnitOfWorkManager>();
-        }
+        //            //在多线程中GetCurrentUnitOfWork会带来不准确性
+        //        });
+
+        //        Task.Run(() =>
+        //        {
+        //            using (var uowTwo = uowMangager.Create())
+        //            {
+        //                Thread.Sleep(1000);
+        //            }
+        //        });
+
+        //        Thread.Sleep(1000);
+        //    }
+        //}
+        #endregion
     }
 }

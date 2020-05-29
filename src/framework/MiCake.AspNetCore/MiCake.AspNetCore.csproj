@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Description>AspNetCore extension for MiCake</Description>
   </PropertyGroup>
 
   <ItemGroup>

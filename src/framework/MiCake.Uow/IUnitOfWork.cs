@@ -1,31 +1,71 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.Uow
 {
-    public interface IUnitOfWork : IDisposable, ITransactionFeatureContainer
+    /// <summary>
+    /// Define a unit of work.
+    /// </summary>
+    public interface IUnitOfWork : IDisposable
     {
+        /// <summary>
+        /// The ID of this unit of work.
+        /// </summary>
         Guid ID { get; }
 
+        /// <summary>
+        /// Indicate unit of work is disposed.
+        /// </summary>
         bool IsDisposed { get; }
 
+        /// <summary>
+        /// The option of unit of work.<see cref="UnitOfWorkOptions"/>
+        /// </summary>
         UnitOfWorkOptions UnitOfWorkOptions { get; }
 
         /// <summary>
-        /// A unit of work scoped serviceprovider.
-        /// Can get db instance or transaction instance in this scope.
+        /// The <see cref="IServiceScope"/> the unit of work depends on.
+        /// The services created through this ServicScope are released together with the unit of work.
         /// </summary>
-        public IServiceProvider ServiceProvider { get; }
+        IServiceScope ServiceScope { get; }
 
-        void SetOptions(UnitOfWorkOptions options);
+        /// <summary>
+        /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/>.
+        /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
+        /// </summary>
+        /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
+        /// <returns>Result.</returns>
+        bool TryAddDbExecutor(IDbExecutor dbExecutor);
 
+        /// <summary>
+        /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/> asynchronously. 
+        /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
+        /// </summary>
+        /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
+        Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Commits all changes made to the database in the current unit of work.
+        /// </summary>
         void SaveChanges();
 
+        /// <summary>
+        /// Commits all changes made to the database in the current unit of work asynchronously.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
+        /// <summary>
+        ///  Discards all changes made to the database in the current unit of work.
+        /// </summary>
         void Rollback();
 
+        /// <summary>
+        /// Discards all changes made to the database in the current unit of work asynchronously.
+        /// </summary>
         Task RollbackAsync(CancellationToken cancellationToken = default);
     }
 }

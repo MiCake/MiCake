@@ -3,8 +3,7 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.EntityFrameworkCore.Repository;
-using MiCake.Uow;
-using Microsoft.Extensions.DependencyInjection;
+using MiCake.EntityFrameworkCore.Uow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,9 @@ namespace MiCake.EntityFrameworkCore
             IReadOnlyRepository<TAggregateRoot, TKey> result;
 
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
-            var uowManager = _serviceProvider.GetService<IUnitOfWorkManager>();
+            //Get dbContext provider.
+            var dbContextProviderType = typeof(IDbContextProvider<>).MakeGenericType(_options.DbContextType);
+            var dbContextProvider = _serviceProvider.GetService(dbContextProviderType);
 
             if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
             {
@@ -44,7 +45,7 @@ namespace MiCake.EntityFrameworkCore
                                                                                  aggregateDescriptor.PersistentObject,
                                                                                  typeof(TKey));
 
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, uowManager);
+                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, dbContextProvider);
             }
             else
             {
@@ -52,7 +53,7 @@ namespace MiCake.EntityFrameworkCore
                                                                     typeof(TAggregateRoot),
                                                                     typeof(TKey));
 
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, uowManager);
+                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, dbContextProvider);
             }
 
             return result;
@@ -65,7 +66,9 @@ namespace MiCake.EntityFrameworkCore
             IRepository<TAggregateRoot, TKey> result;
 
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
-            var uowManager = _serviceProvider.GetService<IUnitOfWorkManager>();
+            //Get dbContext provider.
+            var dbContextProviderType = typeof(IDbContextProvider<>).MakeGenericType(_options.DbContextType);
+            var dbContextProvider = _serviceProvider.GetService(dbContextProviderType);
 
             if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
             {
@@ -74,7 +77,7 @@ namespace MiCake.EntityFrameworkCore
                                                                                  aggregateDescriptor.PersistentObject,
                                                                                  typeof(TKey));
 
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, uowManager);
+                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, dbContextProvider);
             }
             else
             {
@@ -82,7 +85,7 @@ namespace MiCake.EntityFrameworkCore
                                                                     typeof(TAggregateRoot),
                                                                     typeof(TKey));
 
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, uowManager);
+                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, dbContextProvider);
             }
 
             return result;

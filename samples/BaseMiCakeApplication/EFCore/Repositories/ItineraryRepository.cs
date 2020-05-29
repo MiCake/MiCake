@@ -2,7 +2,7 @@
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Infrastructure.StroageModels;
 using MiCake.EntityFrameworkCore.Repository;
-using MiCake.Uow;
+using MiCake.EntityFrameworkCore.Uow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +13,7 @@ namespace BaseMiCakeApplication.EFCore.Repositories
         EFRepositoryWithPO<BaseAppDbContext, Itinerary, ItinerarySnapshotModel, Guid>,
         IItineraryRepository
     {
-        public ItineraryRepository(IUnitOfWorkManager uowManager) : base(uowManager)
+        public ItineraryRepository(IDbContextProvider<BaseAppDbContext> dbContextProvider) : base(dbContextProvider)
         {
         }
 

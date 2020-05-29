@@ -10,6 +10,8 @@ namespace MiCake.Core.Handlers
         /// <summary>
         /// Gets a value that indicates if the result of <see cref="CreateInstance(IServiceProvider)"/>
         /// can be reused across requests.
+        /// 
+        /// [Not used yet]
         /// </summary>
         bool IsReusable { get; }
 

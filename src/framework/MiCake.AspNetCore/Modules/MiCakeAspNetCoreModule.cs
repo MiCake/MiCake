@@ -1,4 +1,5 @@
 ﻿using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Internal;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.Uow.Modules;
@@ -23,6 +24,9 @@ namespace MiCake.AspNetCore.Modules
 
             services.AddSingleton<IDataWrapperExecutor, DefaultWrapperExecutor>();
             services.AddSingleton<IConfigureOptions<MvcOptions>, MvcOptionsConfigure>();
+
+            //This services is only use in asp net core middleware.
+            services.AddScoped<IMiCakeCurrentRequestContext, MiCakeCurrentRequestContext>();
         }
     }
 }

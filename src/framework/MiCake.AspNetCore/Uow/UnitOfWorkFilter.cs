@@ -32,7 +32,7 @@ namespace MiCake.AspNetCore.Uow
             var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
             UnitOfWorkOptions options = _miCakeAspNetUowOption.RootUowOptions ?? new UnitOfWorkOptions();
 
-            if (options.Limit != UnitOfWorkLimit.Suppress)
+            if (options.Scope != UnitOfWorkScope.Suppress)
             {
                 //has disableTransactionAttribute
                 var actionMehtod = ActionDescriptorHelper.GetActionMethodInfo(context.ActionDescriptor);
@@ -44,7 +44,7 @@ namespace MiCake.AspNetCore.Uow
                 controllerActionDes.ActionName.ToUpper().StartsWith(keyWord.ToUpper()));
 
                 bool needCloseTransaction = hasDisableAttribute || hasMatchKeyWord;
-                options.Limit = needCloseTransaction ? UnitOfWorkLimit.Suppress : UnitOfWorkLimit.Required;
+                options.Scope = needCloseTransaction ? UnitOfWorkScope.Suppress : UnitOfWorkScope.Required;
             }
 
             using (var unitOfWork = _unitOfWorkManager.Create(options))

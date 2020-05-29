@@ -85,16 +85,14 @@ namespace MiCake
                                     throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
                                     $"Please Check your has already AddMiCake() in ConfigureServices method");
 
-            if (micakeApp is INeedNecessaryParts<IServiceProvider> needServiceProvider)
+            if (micakeApp is INeedParts<IServiceProvider> needServiceProvider)
             {
-                needServiceProvider.SetNecessaryParts(applicationBuilder.ApplicationServices);
+                needServiceProvider.SetParts(applicationBuilder.ApplicationServices);
             }
 
             var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;
 
-            //Add middlerware
-            if (micakeAspnetOption.UseDataWrapper)
-                applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
+            AddMiCakeCoreMiddleware(applicationBuilder);
 
             micakeApp.Start();
         }
@@ -110,6 +108,16 @@ namespace MiCake
                                     $"Please Check your has already AddMiCake() in ConfigureServices method");
 
             micakeApp.ShutDown();
+        }
+
+        /// <summary>
+        /// Add Core Middleware.
+        /// </summary>
+        public static IApplicationBuilder AddMiCakeCoreMiddleware(IApplicationBuilder applicationBuilder)
+        {
+            applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
+
+            return applicationBuilder;
         }
     }
 }

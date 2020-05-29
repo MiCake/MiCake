@@ -1,10 +1,14 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
 using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Internal;
 using MiCake.Core;
+using MiCake.Core.Handlers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -18,11 +22,16 @@ namespace MiCake.AspNetCore.ExceptionHandling
     {
         private readonly RequestDelegate _next;
         private DataWrapperOptions _wrapOptions;
+        private bool _useWrapper = false;
 
-        public ExceptionHandlerMiddleware(RequestDelegate next, IOptions<MiCakeAspNetOptions> options)
+        public ExceptionHandlerMiddleware(
+            RequestDelegate next,
+            IOptions<MiCakeAspNetOptions> options)
         {
             _next = next;
             _wrapOptions = options.Value?.DataWrapperOptions;
+
+            _useWrapper = options.Value?.UseDataWrapper ?? false;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -32,13 +41,44 @@ namespace MiCake.AspNetCore.ExceptionHandling
                 // Call the next delegate/middleware in the pipeline
                 await _next(context);
             }
-            catch (Exception ex) when (ex is SoftlyMiCakeException)
-            {
-                await WriteSoftExceptionResponse(context, ex as SoftlyMiCakeException);
-            }
             catch (Exception ex)
             {
-                await WriteExceptionResponse(context, ex);
+                //If has exception hander.
+                await HandleException(context, ex);
+
+                //If use data wrapper.
+                await WrapperException(context, ex);
+            }
+        }
+
+        private async Task HandleException(HttpContext context, Exception exception)
+        {
+            var currentRequestProvider = context.RequestServices;
+            var miCakeCurrentRequest = currentRequestProvider.GetService<IMiCakeCurrentRequestContext>();
+
+            if (miCakeCurrentRequest?.Handlers == null || miCakeCurrentRequest.Handlers.Count == 0)
+                return;
+
+            var _exceptionsHandlers = miCakeCurrentRequest.Handlers.Where(s => s.Handler is IMiCakeExceptionHandler).ToList();
+
+            foreach (var handler in _exceptionsHandlers)
+            {
+                await (handler.Handler as IMiCakeExceptionHandler)?.Handle(new MiCakeExceptionContext(exception), context.RequestAborted);
+            }
+        }
+
+        private async Task WrapperException(HttpContext context, Exception exception)
+        {
+            if (!_useWrapper)
+                return;
+
+            if (exception is SoftlyMiCakeException)
+            {
+                await WriteSoftExceptionResponse(context, exception as SoftlyMiCakeException);
+            }
+            else
+            {
+                await WriteExceptionResponse(context, exception);
             }
         }
 
