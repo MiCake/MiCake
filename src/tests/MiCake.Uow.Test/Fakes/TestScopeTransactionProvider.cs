@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,13 +23,13 @@ namespace MiCake.Uow.Test.Fakes
 
         public Task<ITransactionObject> GetTransactionObjectAsync(CreateTransactionContext context, CancellationToken cancellationToken = default)
         {
-            ITransactionObject result = new TestScopeTransactionObject(new System.Transactions.TransactionScope(),"TestScope");
+            ITransactionObject result = new TestScopeTransactionObject(new System.Transactions.TransactionScope(), "TestScope");
             return Task.FromResult(result);
         }
 
         public ITransactionObject Reused(IEnumerable<ITransactionObject> existedTrasactions, IDbExecutor dbExecutor)
         {
-            var hasScopeTransaction = existedTrasactions.Where(s =>!s.IsCommit && s is TestScopeTransactionObject).FirstOrDefault();
+            var hasScopeTransaction = existedTrasactions.Where(s => !s.IsCommit && s is TestScopeTransactionObject).FirstOrDefault();
 
             return hasScopeTransaction;
         }

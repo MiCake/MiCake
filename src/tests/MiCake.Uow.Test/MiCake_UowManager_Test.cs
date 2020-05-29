@@ -1,6 +1,7 @@
 using MiCake.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace MiCake.Uow.Test
@@ -181,14 +182,69 @@ namespace MiCake.Uow.Test
         [Fact]
         public void ChildUow_UseItSelfEvents()
         {
+            var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
+            string saveInfo = "";
+            string rollbackInfo = "";
+            string disposeInfo = "";
 
+            string saveInfo2 = "";
+            string rollbackInfo2 = "";
+            string disposeInfo2 = "";
+
+            var options1 = new UnitOfWorkOptions();
+            options1.Events.OnCompleted += s =>
+            {
+                saveInfo = "1";
+                return Task.CompletedTask;
+            };
+            options1.Events.OnRollbacked += s =>
+            {
+                rollbackInfo = "1";
+                return Task.CompletedTask;
+            };
+            options1.Events.OnDispose += s =>
+            {
+                disposeInfo = "1";
+                return Task.CompletedTask;
+            };
+
+            var options2 = new UnitOfWorkOptions();
+            options2.Events.OnCompleted += s =>
+            {
+                saveInfo2 = "2";
+                return Task.CompletedTask;
+            };
+            options2.Events.OnRollbacked += s =>
+            {
+                rollbackInfo2 = "2";
+                return Task.CompletedTask;
+            };
+            options2.Events.OnDispose += s =>
+            {
+                disposeInfo2 = "2";
+                return Task.CompletedTask;
+            };
+
+            using (var uow1 = manager.Create(options1))
+            {
+                using (var uow2 = manager.Create(options2))
+                {
+                    uow2.SaveChanges();
+                    uow2.Rollback();
+                }
+                uow1.SaveChanges();
+                uow1.Rollback();
+            }
+
+            Assert.Equal("1", saveInfo);
+            Assert.Equal("1", rollbackInfo);
+            Assert.Equal("1", disposeInfo);
+
+            Assert.Equal("2", saveInfo2);
+            Assert.Equal("2", rollbackInfo2);
+            Assert.Equal("2", disposeInfo2);
         }
 
-        [Fact]
-        public void ChildUow_UseParentOption()
-        {
-
-        }
 
         #region 多线程下无法控制
         //[Fact(DisplayName = "多线程条件下获取工作单元")]

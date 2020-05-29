@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.Uow.Test.Fakes
 {
-    public class LowLevelScopeTransactionProvider:ITransactionProvider
+    public class LowLevelScopeTransactionProvider : ITransactionProvider
     {
         //优先级低于TestScopeTransactionObject.
         //则当于TestScopeTransactionObject 共同存在的时候，该provider永远不会创建出事务

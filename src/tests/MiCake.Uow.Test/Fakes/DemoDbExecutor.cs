@@ -23,7 +23,7 @@ namespace MiCake.Uow.Test.Fakes
             if (transaction.TransactionInstance is int)
             {
                 TransactionObject = transaction;
-                this.DbOjectInstance.SetTransaction(transaction.TransactionInstance);
+                DbOjectInstance.SetTransaction(transaction.TransactionInstance);
                 return true;
             }
 
@@ -32,14 +32,14 @@ namespace MiCake.Uow.Test.Fakes
 
         protected override Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken)
         {
-            var result =  SetTransaction(transaction);
+            var result = SetTransaction(transaction);
 
             return Task.FromResult(result);
         }
 
         public override void Dispose()
         {
-            this.IsDispose = true;
+            IsDispose = true;
 
             base.Dispose();
         }

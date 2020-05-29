@@ -30,12 +30,24 @@ namespace MiCake.Core
         /// <summary>
         /// The collection for <see cref="IMiCakeHandler"/>.
         /// </summary>
-        public MiCakeHandlerCollection Handlers { get; set; }
+        public MiCakeHandlerCollection Handlers { get; set; } = new MiCakeHandlerCollection();
 
         /// <summary>
         /// Some additional information.
         /// Be careful:These data will be released after the app is started
         /// </summary>
         public DataDepositPool AdditionalInfo { get; set; } = new DataDepositPool();
+
+        /// <summary>
+        /// Use given option value.
+        /// </summary>
+        /// <param name="applicationOptions"></param>
+        public void Apply(MiCakeApplicationOptions applicationOptions)
+        {
+            FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
+            DomianLayerAssemblies = applicationOptions.DomianLayerAssemblies;
+            Handlers = applicationOptions.Handlers;
+            AdditionalInfo = applicationOptions.AdditionalInfo;
+        }
     }
 }

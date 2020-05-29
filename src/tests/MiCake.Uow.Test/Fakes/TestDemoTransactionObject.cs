@@ -22,7 +22,7 @@ namespace MiCake.Uow.Test.Fakes
 
         public override void Dispose()
         {
-            
+
         }
 
         public override void Rollback()

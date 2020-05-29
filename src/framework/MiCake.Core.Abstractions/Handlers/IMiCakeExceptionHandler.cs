@@ -1,14 +1,17 @@
-﻿namespace MiCake.Core.Handlers
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace MiCake.Core.Handlers
 {
     /// <summary>
     ///  Intercepting errors(<see cref="MiCakeException"/>).
     /// </summary>
-    public interface IMiCakeExceptionHandler
+    public interface IMiCakeExceptionHandler : IMiCakeHandler
     {
         /// <summary>
         /// Handle micake exception
         /// </summary>
-        /// <param name="micakeException"><see cref="MiCakeException"/></param>
-        void Handle(MiCakeException micakeException);
+        /// <param name="exceptionContext"><see cref="MiCakeExceptionContext"/></param>
+        Task Handle(MiCakeExceptionContext exceptionContext, CancellationToken cancellationToken = default);
     }
 }

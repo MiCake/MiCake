@@ -1,6 +1,7 @@
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.EFCore.Repositories;
+using BaseMiCakeApplication.Handlers;
 using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
 using Microsoft.AspNetCore.Builder;
@@ -38,11 +39,16 @@ namespace BaseMiCakeApplication
             });
 
             services.AddTransient<IItineraryRepository, ItineraryRepository>();
-            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(miCakeAspNetConfig: options =>
-            {
-                options.UseCustomModel();
-                options.DataWrapperOptions.IsDebug = true;
-            }).Build();
+            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(
+                miCakeConfig: config =>
+                {
+                    config.Handlers.Add(new DemoExceptionHanlder());
+                },
+                miCakeAspNetConfig: options =>
+                {
+                    options.UseCustomModel();
+                    options.DataWrapperOptions.IsDebug = true;
+                }).Build();
 
             //Add Swagger
             services.AddSwaggerDocument(document => document.DocumentName = "MiCake Demo Application");

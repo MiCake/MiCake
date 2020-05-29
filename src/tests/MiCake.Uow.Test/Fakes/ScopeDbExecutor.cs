@@ -10,27 +10,27 @@ namespace MiCake.Uow.Test.Fakes
 
         public ITransactionObject TransactionObject { get; set; }
 
-        public ScopeDbExecutor(FakeDbContext dbContext):base(dbContext)
+        public ScopeDbExecutor(FakeDbContext dbContext) : base(dbContext)
         {
         }
 
         protected override bool SetTransaction(ITransactionObject transaction)
         {
             TransactionObject = transaction;
-            this.DbOjectInstance.SetTransaction(transaction.TransactionInstance);
+            DbOjectInstance.SetTransaction(transaction.TransactionInstance);
             return true;
         }
 
         protected override Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken)
         {
             TransactionObject = transaction;
-            this.DbOjectInstance.SetTransaction(transaction.TransactionInstance);
+            DbOjectInstance.SetTransaction(transaction.TransactionInstance);
             return Task.FromResult(true);
         }
 
         public override void Dispose()
         {
-            this.IsDispose = true;
+            IsDispose = true;
 
             base.Dispose();
         }

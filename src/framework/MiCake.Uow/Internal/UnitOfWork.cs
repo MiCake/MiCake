@@ -64,11 +64,11 @@ namespace MiCake.Uow.Internal
         {
             CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
 
-            if (!EnsureToOpenTransaction())
-                return true;
-
             //added executor.Guarantee that it will eventually be released
             AddedExecutors.AddIfNotContains(dbExecutor);
+
+            if (!EnsureToOpenTransaction())
+                return true;
 
             if (dbExecutor.HasTransaction)
                 return true;
@@ -131,11 +131,11 @@ namespace MiCake.Uow.Internal
         {
             CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
 
-            if (!EnsureToOpenTransaction())
-                return true;
-
             //added executor.Guarantee that it will eventually be released
             AddedExecutors.AddIfNotContains(dbExecutor);
+
+            if (!EnsureToOpenTransaction())
+                return true;
 
             if (dbExecutor.HasTransaction)
                 return true;
@@ -310,7 +310,7 @@ namespace MiCake.Uow.Internal
 
         //If config scope is Suppress,Transaction will not be opened
         private bool EnsureToOpenTransaction()
-            => this.UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress;
+            => UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress;
         #endregion
 
         public void SetParts(UnitOfWorkNeedParts parts)

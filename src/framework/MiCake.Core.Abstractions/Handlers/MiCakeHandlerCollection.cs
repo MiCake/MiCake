@@ -10,6 +10,7 @@ namespace MiCake.Core.Handlers
     {
         /// <summary>
         /// Adds a type representing an <see cref="IMiCakeHandler"/>.
+        /// Current type depends on <see cref="IServiceProvider"/> for instantiation,so you can use other services that in container.
         /// </summary>
         /// <typeparam name="TMiCakeHandler">Type representing an <see cref="IMiCakeHandler"/>.</typeparam>
         /// <returns>An <see cref="IMiCakeHandler"/> representing the added type.</returns>
@@ -18,6 +19,7 @@ namespace MiCake.Core.Handlers
 
         /// <summary>
         /// Adds a type representing an <see cref="IMiCakeHandler"/>.
+        /// Current type depends on <see cref="IServiceProvider"/> for instantiation,so you can use other services that in container.
         /// </summary>
         /// <param name="handler">Type representing an <see cref="IMiCakeHandler"/>.</param>
         /// <returns>An <see cref="IMiCakeHandler"/> representing the added type.</returns>

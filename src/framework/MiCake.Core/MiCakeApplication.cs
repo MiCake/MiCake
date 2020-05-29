@@ -151,7 +151,7 @@ namespace MiCake.Core
         private void AddMiCakeCoreSerivces(IServiceCollection services)
         {
             services.AddSingleton<IMiCakeApplication>(this);
-            services.Configure<MiCakeApplicationOptions>(op => op = ApplicationOptions);
+            services.Configure<MiCakeApplicationOptions>(op => op.Apply(ApplicationOptions));
 
             services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
             {

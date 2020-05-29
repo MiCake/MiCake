@@ -3,7 +3,6 @@ using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Infrastructure.StroageModels;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Uow;
-using MiCake.Uow;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -15,7 +15,6 @@ namespace BaseMiCakeApplication
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                })
-                 ;
+                });
     }
 }

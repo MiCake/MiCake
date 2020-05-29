@@ -16,7 +16,7 @@ namespace MiCake.Uow.Test.Fakes
 
         public TTransactionSource Transaction => (TTransactionSource)TransactionInstance;
 
-        public BaseTransactionObject(TTransactionSource  transactionSource)
+        public BaseTransactionObject(TTransactionSource transactionSource)
         {
             ID = Guid.NewGuid();
             TransactionType = transactionSource.GetType();
@@ -40,7 +40,7 @@ namespace MiCake.Uow.Test.Fakes
 
         public override bool Equals(object obj)
         {
-            return ReferenceEquals(obj, this.TransactionInstance);
+            return ReferenceEquals(obj, TransactionInstance);
         }
     }
 }

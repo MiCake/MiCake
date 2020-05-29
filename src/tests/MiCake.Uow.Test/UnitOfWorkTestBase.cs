@@ -6,7 +6,7 @@ namespace MiCake.Uow.Test
 {
     public abstract class UnitOfWorkTestBase
     {
-        protected virtual IServiceProvider GetServiceProvider(Action<IServiceCollection> otherServices=null)
+        protected virtual IServiceProvider GetServiceProvider(Action<IServiceCollection> otherServices = null)
         {
             IServiceCollection services = new ServiceCollection();
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();

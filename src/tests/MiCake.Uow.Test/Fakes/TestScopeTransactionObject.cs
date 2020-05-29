@@ -8,20 +8,20 @@ namespace MiCake.Uow.Test.Fakes
     {
         public string Source { get; set; }
 
-        public TestScopeTransactionObject(TransactionScope transactionSource,string source ="None") : base(transactionSource)
+        public TestScopeTransactionObject(TransactionScope transactionSource, string source = "None") : base(transactionSource)
         {
             Source = source;
         }
 
         public override void Commit()
         {
-            this.IsCommit = true;
+            IsCommit = true;
             Transaction.Complete();
         }
 
         public override Task CommitAsync(CancellationToken cancellationToken = default)
         {
-            this.IsCommit = true;
+            IsCommit = true;
             Transaction.Complete();
 
             return Task.CompletedTask;

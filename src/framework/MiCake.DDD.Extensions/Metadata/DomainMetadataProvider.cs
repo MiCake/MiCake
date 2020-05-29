@@ -15,8 +15,7 @@ namespace MiCake.DDD.Extensions.Metadata
         public DomainMetadataProvider(
             IMiCakeModuleContext moduleContext,
             IOptions<MiCakeApplicationOptions> appOptions,
-            DomainObjectFactory domainObjectFactory
-            )
+            DomainObjectFactory domainObjectFactory)
         {
             _domainObjectFactory = domainObjectFactory;
 
