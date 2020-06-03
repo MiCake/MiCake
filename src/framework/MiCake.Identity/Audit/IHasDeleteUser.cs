@@ -1,19 +1,14 @@
-﻿namespace MiCake.Identity.Audit
+﻿namespace MiCake.Audit
 {
     /// <summary>
-    /// Mark a class has delete user
+    /// Represents has a delete user. If audit is enabled, it will be assigned to the audited system later.
     /// </summary>
-    public interface IHasDeleteUser : IHasAuditUser
+    /// <typeparam name="TKey">the primary key type of user.Must be consistent with <see cref="IMiCakeUser{TKey}"/></typeparam>
+    public interface IHasDeleteUser<TKey> : IHasAuditUser
     {
-        long DeleteUserID { get; set; }
-    }
-
-    /// <summary>
-    /// Mark a class has delete user
-    /// </summary>
-    /// <typeparam name="TUserKeyType">the primary key type of user</typeparam>
-    public interface IHasDeleteUser<TUserKeyType> : IHasAuditUser
-    {
-        TUserKeyType DeleteUserID { get; set; }
+        /// <summary>
+        /// The primary key for user.
+        /// </summary>
+        TKey DeleteUserID { get; set; }
     }
 }

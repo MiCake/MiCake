@@ -1,12 +1,14 @@
-﻿namespace MiCake.Identity.Audit
+﻿namespace MiCake.Audit
 {
-    public interface IHasModifyUser : IHasAuditUser
+    /// <summary>
+    /// Represents has a modify user. If audit is enabled, it will be assigned to the audited system later.
+    /// </summary>
+    /// <typeparam name="TKey">the primary key type of user.Must be consistent with <see cref="IMiCakeUser{TKey}"/></typeparam>
+    public interface IHasModifyUser<TKey> : IHasAuditUser
     {
-        long? ModifyUserID { get; set; }
-    }
-
-    public interface IHasModifyUser<TUserKeyType> : IHasAuditUser
-    {
-        TUserKeyType ModifyUserID { get; set; }
+        /// <summary>
+        /// The primary key for user.
+        /// </summary>
+        TKey ModifyUserID { get; set; }
     }
 }

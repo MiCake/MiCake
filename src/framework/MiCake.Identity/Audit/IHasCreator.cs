@@ -1,18 +1,14 @@
-﻿namespace MiCake.Identity.Audit
+﻿namespace MiCake.Audit
 {
-    public interface IHasCreator : IHasAuditUser
+    /// <summary>
+    /// Represents has a creator.If audit is enabled, it will be assigned to the audited system later.
+    /// </summary>
+    /// <typeparam name="TKey">The type used for the primary key for the user.Must be consistent with <see cref="IMiCakeUser{TKey}"/</typeparam>
+    public interface IHasCreator<TKey> : IHasAuditUser
     {
         /// <summary>
-        /// Id of the creator.
+        /// The primary key for user.
         /// </summary>
-        long CreatorID { get; set; }
-    }
-
-    public interface IHasCreator<TUserKeyType> : IHasAuditUser
-    {
-        /// <summary>
-        /// Id of the creator.
-        /// </summary>
-        TUserKeyType CreatorID { get; set; }
+        TKey CreatorID { get; set; }
     }
 }
