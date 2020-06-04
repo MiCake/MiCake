@@ -1,4 +1,5 @@
-﻿using MiCake.Audit.Core;
+﻿using MiCake.Audit;
+using MiCake.Audit.Core;
 using MiCake.DDD.Extensions;
 
 namespace MiCake.Identity.Audit

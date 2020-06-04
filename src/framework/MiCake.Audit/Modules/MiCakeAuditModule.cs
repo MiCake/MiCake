@@ -4,11 +4,13 @@ using MiCake.Audit.SoftDeletion;
 using MiCake.Audit.Store;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions.LifeTime;
+using MiCake.DDD.Extensions.Modules;
 using MiCake.DDD.Extensions.Store.Configure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.Audit.Modules
 {
+    [RelyOn(typeof(MiCakeDDDExtensionsModule))]
     public class MiCakeAuditModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
