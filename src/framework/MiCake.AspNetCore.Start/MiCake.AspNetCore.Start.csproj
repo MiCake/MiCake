@@ -10,7 +10,6 @@
     <ProjectReference Include="..\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
     <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
     <ProjectReference Include="..\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
-    <ProjectReference Include="..\MiCake.Identity\MiCake.Identity.csproj" />
   </ItemGroup>
 
 </Project>

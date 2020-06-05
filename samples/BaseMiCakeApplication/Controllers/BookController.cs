@@ -1,5 +1,6 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.Dto;
+using MiCake.AspNetCore.Security;
 using MiCake.Core;
 using MiCake.DDD.Domain;
 using Microsoft.AspNetCore.Mvc;

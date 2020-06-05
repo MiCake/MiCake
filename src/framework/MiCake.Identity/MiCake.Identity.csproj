@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Description>MiCake's implementation for identity.</Description>
+    <Description>MiCake's implementation for identity in AspNet Core.</Description>
   </PropertyGroup>
 
   <ItemGroup>
