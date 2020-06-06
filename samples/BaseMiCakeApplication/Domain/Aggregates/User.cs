@@ -6,6 +6,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
 {
     public class User : IMiCakeUser<Guid>
     {
+        [JwtClaim]
         public Guid Id { get; set; }
 
         [JwtClaim]

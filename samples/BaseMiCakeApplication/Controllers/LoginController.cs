@@ -1,8 +1,10 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
+using MiCake.AspNetCore.Security;
 using MiCake.Identity.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -28,7 +30,7 @@ namespace BaseMiCakeApplication.Controllers
             user.SetName("bob");
 
             var result = _jwtSupporter.CreateToken(user);
-         
+
             var hanlder = new JwtSecurityTokenHandler();
             var reader = hanlder.ReadToken(result);
 
@@ -37,7 +39,7 @@ namespace BaseMiCakeApplication.Controllers
 
         [HttpGet]
         [Authorize]
-        public List<string> GetInfo()
+        public List<string> GetInfo([CurrentUser] Guid userID)
         {
             var httpContext = _httpContextAccessor.HttpContext;
             var userInfo = httpContext?.User;
@@ -45,5 +47,24 @@ namespace BaseMiCakeApplication.Controllers
             var result = userInfo?.Claims.Select(s => s.Value).ToList();
             return result;
         }
+
+        [HttpPost]
+        [Authorize]
+        public List<string> GetInfoWithDto([CurrentUser] [FromBody] UserDto userID)
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            var userInfo = httpContext?.User;
+
+            var result = userInfo?.Claims.Select(s => s.Value).ToList();
+            return result;
+        }
+    }
+
+    public class UserDto
+    {
+        [VerifyUserId]
+        public Guid UserID { get; set; }
+
+        public string UserName { get; set; }
     }
 }
