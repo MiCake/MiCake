@@ -1,4 +1,5 @@
 ﻿using MiCake.AspNetCore.Security;
+using MiCake.Core.Util.Convert;
 using MiCake.Identity;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
@@ -19,9 +20,10 @@ namespace MiCake.AspNetCore.Identity
             var userIDClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(s => s.Type.Equals(VerifyUserClaims.UserID));
 
             if (userIDClaim == null)
-                return default(TKey);
+                return default;
 
-            return default;
+            var userId = ConvertHelper.ConvertValue<string, TKey>(userIDClaim.Value);
+            return userId;
         }
     }
 }
