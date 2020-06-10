@@ -5,6 +5,6 @@
         /// <summary>
         /// Claim name used to validate the user ID
         /// </summary>
-        public static string UserID = "id";
+        public static string UserID = "userId";
     }
 }

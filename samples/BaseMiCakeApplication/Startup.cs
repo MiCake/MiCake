@@ -53,7 +53,6 @@ namespace BaseMiCakeApplication
                     options.UseCustomModel();
                     options.DataWrapperOptions.IsDebug = true;
                 })
-                .AddIdentityWithJwt<User>(null)
                 .Build();
 
             //Add Swagger

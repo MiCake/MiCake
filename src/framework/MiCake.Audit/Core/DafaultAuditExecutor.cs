@@ -2,12 +2,10 @@
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Store;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.Audit.Tests")]
 namespace MiCake.Audit.Core
 {
-    internal class DefaultAuditExecutor : IAuditExecutor
+    public class DefaultAuditExecutor : IAuditExecutor
     {
         private IEnumerable<IAuditProvider> _providers;
 
@@ -16,7 +14,7 @@ namespace MiCake.Audit.Core
             _providers = providers;
         }
 
-        public void Execute(object needAuditEntity, RepositoryEntityState entityState)
+        public virtual void Execute(object needAuditEntity, RepositoryEntityState entityState)
         {
             //Only deal with micake domain object.
             var entityType = needAuditEntity.GetType();
