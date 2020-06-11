@@ -1,11 +1,11 @@
-﻿namespace MiCake.Core.Util.Convert
+﻿namespace MiCake.Core.Util.Converts
 {
     /// <summary>
     /// Defined a class can convert incoming type to destination type.
     /// </summary>
     /// <typeparam name="TSource">source type</typeparam>
     /// <typeparam name="TDestination">destination type</typeparam>
-    public interface IValueConvert<TSource, TDestination>
+    public interface IValueConvert<in TSource, out TDestination>
     {
         /// <summary>
         /// Convert value to destination type.

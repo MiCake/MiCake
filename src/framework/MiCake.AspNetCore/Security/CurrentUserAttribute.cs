@@ -1,5 +1,5 @@
-﻿using System;
-using MiCake.Identity;
+﻿using MiCake.Identity;
+using System;
 
 namespace MiCake.AspNetCore.Security
 {

@@ -1,4 +1,5 @@
 ﻿using MiCake.Audit;
+using MiCake.DDD.Domain;
 using System;
 
 namespace MiCake.Identity.Tests.FakeUser
@@ -6,10 +7,9 @@ namespace MiCake.Identity.Tests.FakeUser
     /// <summary>
     /// Will be worng,creator key type is different from user key type.
     /// </summary>
-    public class HasAuditUserWithWrongKeyType : IMiCakeUser<long>, IHasCreator<Guid>
+    public class HasAuditUserWithWrongKeyType : Entity<long>, IMiCakeUser<long>, IHasCreator<Guid>
     {
         public Guid CreatorID { get; set; }
-        public long Id { get; set; }
 
         public HasAuditUserWithWrongKeyType()
         {

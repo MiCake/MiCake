@@ -1,11 +1,10 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.Core.Util.Reflection;
+using MiCake.DDD.Extensions;
 using MiCake.Identity.Audit;
 using MiCake.Identity.Tests.FakeUser;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace MiCake.Identity.Tests.Audit
@@ -18,20 +17,68 @@ namespace MiCake.Identity.Tests.Audit
 
 
         [Fact]
-        public void AuditUser_withMoreAudit()
+        public void AuditUser_hasCreator_hasModifyUser_hasDeleteUser()
         {
             HasAuditUser user = new HasAuditUser()
             {
                 Id = 1001
             };
 
-            var serivces = BuildServicesWithAuditProvider(user);
+            var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
             var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();
 
+            Assert.Equal(default, user.CreatorID);
+            auditProvider.Execute(user, RepositoryEntityState.Added);
+            Assert.Equal(1001, user.CreatorID);
+
+            Assert.Equal(default, user.ModifyUserID);
+            auditProvider.Execute(user, RepositoryEntityState.Modified);
+            Assert.Equal(1001, user.ModifyUserID);
+
+            Assert.Equal(default, user.DeleteUserID);
+            auditProvider.Execute(user, RepositoryEntityState.Deleted);
+            Assert.Equal(1001, user.DeleteUserID);
+        }
+
+        [Fact]
+        public void AuditUser_hasCreator_hasModifyUser_hasDeleteUser_NoSoftDeletion()
+        {
+            HasAuditUserWithNoSoftDeletion user = new HasAuditUserWithNoSoftDeletion()
+            {
+                Id = 1001
+            };
+
+            var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
+            var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();
+
+            Assert.Equal(default, user.CreatorID);
+            auditProvider.Execute(user, RepositoryEntityState.Added);
+            Assert.Equal(1001, user.CreatorID);
+
+            Assert.Equal(default, user.ModifyUserID);
+            auditProvider.Execute(user, RepositoryEntityState.Modified);
+            Assert.Equal(1001, user.ModifyUserID);
+
+            Assert.Equal(default, user.DeleteUserID);
+            auditProvider.Execute(user, RepositoryEntityState.Deleted);
+            Assert.Equal(default, user.DeleteUserID);
+        }
+
+        [Fact]
+        public void AuditUser_WithWrongKeyType()
+        {
+            HasAuditUserWithWrongKeyType user = new HasAuditUserWithWrongKeyType();
+
+            var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
+            var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();
+
+            Assert.Equal(default, user.CreatorID);
+            auditProvider.Execute(user, RepositoryEntityState.Added);
+            Assert.Equal(default, user.CreatorID);
         }
 
 
-        private IServiceCollection BuildServicesWithAuditProvider<TUser>(TUser user)
+        private IServiceCollection BuildServicesWithAuditProvider<TUser>(TUser user, Type CurrentUserType)
             where TUser : IMiCakeUser
         {
             var services = new ServiceCollection();
@@ -44,6 +91,9 @@ namespace MiCake.Identity.Tests.Audit
 
             var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType(userKeyType[0]);
             services.AddScoped(typeof(IAuditProvider), auditProviderType);
+
+            var currentUser = typeof(ICurrentMiCakeUser<>).MakeGenericType(userKeyType[0]);
+            services.AddScoped(currentUser, CurrentUserType);
 
             return services;
         }

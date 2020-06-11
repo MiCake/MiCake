@@ -14,6 +14,7 @@ namespace MiCake.Identity.Modules
         {
             var services = context.Services;
 
+            //add jwt supporter.
             services.TryAddSingleton<IJwtSupporter, JwtSupporter>();
         }
     }

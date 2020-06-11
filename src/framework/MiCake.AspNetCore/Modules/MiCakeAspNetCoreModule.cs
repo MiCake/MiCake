@@ -2,6 +2,7 @@
 using MiCake.AspNetCore.Internal;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions.Modules;
+using MiCake.Identity.Modules;
 using MiCake.Uow.Modules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace MiCake.AspNetCore.Modules
 {
-    [RelyOn(typeof(MiCakeDDDExtensionsModule), typeof(MiCakeUowModule))]
+    [RelyOn(typeof(MiCakeDDDExtensionsModule), typeof(MiCakeUowModule), typeof(MiCakeIdentityModule))]
     public class MiCakeAspNetCoreModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;

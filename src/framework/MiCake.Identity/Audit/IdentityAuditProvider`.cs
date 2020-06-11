@@ -1,5 +1,6 @@
 ﻿using MiCake.Audit;
 using MiCake.Audit.Core;
+using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Extensions;
 
 namespace MiCake.Identity.Audit
@@ -44,25 +45,19 @@ namespace MiCake.Identity.Audit
         private void SetCreateUser<TUserKey>(object entity, TUserKey userID)
         {
             if (entity is IHasCreator<TUserKey> creatorEntity)
-            {
                 creatorEntity.CreatorID = userID;
-            }
         }
 
         private void SetModifyUser<TUserKey>(object entity, TUserKey userID)
         {
             if (entity is IHasModifyUser<TUserKey> modifyUser)
-            {
                 modifyUser.ModifyUserID = userID;
-            }
         }
 
         private void SetDeleteUser<TUserKey>(object entity, TUserKey userID)
         {
-            if (entity is IHasDeleteUser<TUserKey> deleteUser)
-            {
+            if (entity is ISoftDeletion && entity is IHasDeleteUser<TUserKey> deleteUser)
                 deleteUser.DeleteUserID = userID;
-            }
         }
     }
 }

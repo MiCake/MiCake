@@ -1,6 +1,6 @@
 ﻿using static System.Convert;
 
-namespace MiCake.Core.Util.Convert
+namespace MiCake.Core.Util.Converts
 {
     internal class BaseConvert<TSource, TDestination> : IValueConvert<TSource, TDestination>
     {

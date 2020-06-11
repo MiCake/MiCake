@@ -1,4 +1,3 @@
-using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.EFCore.Repositories;

@@ -14,7 +14,7 @@
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        object ICurrentMiCakeUser.UserID => this.UserID;
+        object ICurrentMiCakeUser.UserID => UserID;
 
         public CurrentMiCakeUser()
         {

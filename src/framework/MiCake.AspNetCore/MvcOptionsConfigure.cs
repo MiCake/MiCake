@@ -28,9 +28,12 @@ namespace MiCake.AspNetCore
                 options.Filters.Add(typeof(DataWrapperFilter));
                 options.Filters.Add(typeof(ExceptionDataWrapperFilter));
 
-                //Security
-                options.Filters.Add(new VerifyCurrentUserFilter());   //not required some services,use instance directly.
+
             }
+
+            //Security : auto verify 
+            if (_micakeAspNetOptions.UseAutoVerifyUserId)
+                options.Filters.Add(new VerifyCurrentUserFilter());   //not required some services,use instance directly.
         }
     }
 }

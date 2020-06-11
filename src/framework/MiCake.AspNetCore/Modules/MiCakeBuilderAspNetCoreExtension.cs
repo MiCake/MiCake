@@ -5,7 +5,7 @@ using System;
 
 namespace MiCake.AspNetCore
 {
-    public static class MiCakeBuilderAspNetCoreExtesion
+    public static class MiCakeBuilderAspNetCoreExtension
     {
         /// <summary>
         /// Add MiCake AspnetCore services.

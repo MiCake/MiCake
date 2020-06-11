@@ -1,4 +1,5 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
+using MiCake.AspNetCore.Security;
 using MiCake.Uow;
 using System.Collections.Generic;
 
@@ -24,6 +25,12 @@ namespace MiCake.AspNetCore
         /// The data wrap config for micake in asp net core.
         /// </summary>
         public DataWrapperOptions DataWrapperOptions { get; set; }
+
+        /// <summary>
+        /// Whether it is need to verify user id automic.
+        /// When you open this option,<see cref="CurrentUserAttribute"/> will take effect.
+        /// </summary>
+        public bool UseAutoVerifyUserId { get; set; } = true;
 
         public MiCakeAspNetOptions()
         {
