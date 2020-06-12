@@ -77,6 +77,14 @@ namespace MiCake.Core
             //Pre activation ServiceLocator
             AppServiceProvider.GetService(typeof(IServiceLocator));
 
+            //Module Inspection.
+            var inspectContext = new ModuleInspectionContext(AppServiceProvider, ModuleContext.AllModules);
+            foreach (var module in ModuleContext.AllModules)
+            {
+                if (module is IModuleSelfInspection selfInspection)
+                    selfInspection.Inspect(inspectContext);
+            }
+
             var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
 

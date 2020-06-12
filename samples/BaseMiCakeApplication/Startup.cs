@@ -6,10 +6,12 @@ using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NSwag.Generation.Processors.Security;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Pomelo.EntityFrameworkCore.MySql.Storage;
 using System;
@@ -38,6 +40,7 @@ namespace BaseMiCakeApplication
                     .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
             });
 
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddTransient<IItineraryRepository, ItineraryRepository>();
             services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(
                 miCakeConfig: config =>
@@ -48,10 +51,22 @@ namespace BaseMiCakeApplication
                 {
                     options.UseCustomModel();
                     options.DataWrapperOptions.IsDebug = true;
-                }).Build();
+                })
+                .Build();
 
             //Add Swagger
-            services.AddSwaggerDocument(document => document.DocumentName = "MiCake Demo Application");
+            services.AddSwaggerDocument(document =>
+            {
+                document.DocumentName = "MiCake Demo Application";
+                document.AddSecurity("JWT", new NSwag.OpenApiSecurityScheme()
+                {
+                    Description = "Authorization format : Bearer {token}",
+                    Name = "Authorization",
+                    In = NSwag.OpenApiSecurityApiKeyLocation.Header,
+                    Type = NSwag.OpenApiSecuritySchemeType.ApiKey
+                });
+                document.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,6 +81,7 @@ namespace BaseMiCakeApplication
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.StartMiCake();

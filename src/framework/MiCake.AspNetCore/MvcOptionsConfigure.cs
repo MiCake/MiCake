@@ -1,4 +1,5 @@
 ﻿using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Security;
 using MiCake.AspNetCore.Uow;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,13 @@ namespace MiCake.AspNetCore
             {
                 options.Filters.Add(typeof(DataWrapperFilter));
                 options.Filters.Add(typeof(ExceptionDataWrapperFilter));
+
+
             }
+
+            //Security : auto verify 
+            if (_micakeAspNetOptions.UseAutoVerifyUserId)
+                options.Filters.Add(new VerifyCurrentUserFilter());   //not required some services,use instance directly.
         }
     }
 }

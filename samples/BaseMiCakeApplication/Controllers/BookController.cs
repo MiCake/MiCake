@@ -48,11 +48,11 @@ namespace BaseMiCakeApplication.Controllers
         }
 
         [HttpPost]
-        public async Task AddBook([FromBody]AddBookDto bookDto)
+        public async Task AddBook([FromBody] AddBookDto bookDto)
             => await _bookRepository.AddAsync(new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName));
 
         [HttpPost]
-        public async Task<bool> ChangeAuthor([FromBody]ChangeBookAuthorDto bookDto)
+        public async Task<bool> ChangeAuthor([FromBody] ChangeBookAuthorDto bookDto)
         {
             var _bookInfo = await _bookRepository.FindAsync(bookDto.BookID)
                                 ?? throw new SoftlyMiCakeException("未找到对应书籍信息");
