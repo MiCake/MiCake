@@ -61,7 +61,7 @@ namespace MiCake.AspNetCore.Security
                 return false;
             }
 
-            var userIDClaimValue = currentUser.Claims.FirstOrDefault(s => s.Type.ToLower().Equals(VerifyUserClaims.UserID));
+            var userIDClaimValue = currentUser.Claims.FirstOrDefault(s => s.Type.Equals(VerifyUserClaims.UserID));
             if (userIDClaimValue == null)
             {
                 await httpContext.ForbidAsync();

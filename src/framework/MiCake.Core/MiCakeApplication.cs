@@ -83,7 +83,7 @@ namespace MiCake.Core
             {
                 if (module is IModuleSelfInspection selfInspection)
                     selfInspection.Inspect(inspectContext);
-            } 
+            }
 
             var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);

@@ -3,7 +3,7 @@
     <Product>MiCake</Product>
     <Authors>uoyoCsharp</Authors>
     <owners>uoyoCsharp</owners>
-    <Version>0.2.3-alpha</Version>
+    <Version>0.3.0-alpha</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</PackageProjectUrl>
     <RepositoryUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</RepositoryUrl>
