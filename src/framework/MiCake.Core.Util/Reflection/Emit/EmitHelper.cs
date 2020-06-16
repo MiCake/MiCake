@@ -20,6 +20,10 @@ namespace MiCake.Core.Util.Reflection.Emit
         /// Creating a basic class(has no properties or fields or methods).
         /// </summary>
         /// <param name="className">Created class name</param>
+        /// <param name="assemblyName"></param>
+        /// <param name="moduleName"></param>
+        /// <param name="typeAttributes"></param>
+        /// <param name="baseType"></param>
         /// <returns><see cref="TypeBuilder"/></returns>
         public static TypeBuilder CreateClass(string className,
                                        string assemblyName = "",

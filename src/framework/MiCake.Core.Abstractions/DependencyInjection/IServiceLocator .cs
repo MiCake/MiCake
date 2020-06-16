@@ -14,13 +14,11 @@ namespace MiCake.Core.DependencyInjection
         /// <summary>
         /// Get a service in ioc container
         /// </summary>
-        /// <param name="type">service type</param>
         T GetSerivce<T>();
 
         /// <summary>
         /// Get services in ioc container
         /// </summary>
-        /// <param name="type">service type</param>
         IEnumerable<T> GetSerivces<T>();
     }
 }

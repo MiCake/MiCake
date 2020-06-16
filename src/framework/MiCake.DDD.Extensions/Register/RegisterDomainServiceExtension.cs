@@ -14,6 +14,7 @@ namespace MiCake
         /// <summary>
         /// Add customer <see cref="IDomainService"/>
         /// </summary>
+        /// <param name="context"></param>
         /// <param name="serviceType">Interface type of domain service</param>
         /// <param name="implementationType">ImplementationType type of domain service</param>
         /// <param name="miCakeServiceLifeTime"><see cref="MiCakeServiceLifetime"/></param>
@@ -38,6 +39,7 @@ namespace MiCake
         /// </summary>
         /// <typeparam name="TService">Interface type of domain service</typeparam>
         /// <typeparam name="TImpl">ImplementationType type of domain service</typeparam>
+        /// <param name="context"></param>
         /// <param name="miCakeServiceLifeTime"><see cref="MiCakeServiceLifetime"/></param>
         public static void RegisterDomainService<TService, TImpl>(
             this ModuleConfigServiceContext context,

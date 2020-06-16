@@ -44,6 +44,7 @@ namespace MiCake.Uow
         /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
         /// </summary>
         /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
+        /// <param name="cancellationToken"></param>
         Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default);
 
         /// <summary>

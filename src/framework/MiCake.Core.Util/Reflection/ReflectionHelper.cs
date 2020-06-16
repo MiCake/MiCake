@@ -203,7 +203,7 @@ namespace MiCake.Core.Util.Reflection
         /// Gets the propertyInfo marked by the specified attribute in a class type.
         /// </summary>
         /// <param name="classType">class type to find</param>
-        /// <param name="attribute">attribute</param>
+        /// <param name="attributeType">attribute</param>
         /// <returns>some properties info who is marked by the specified attribute</returns>
         public static IEnumerable<PropertyInfo> GetHasAttributeProperties(Type classType, Type attributeType)
         {

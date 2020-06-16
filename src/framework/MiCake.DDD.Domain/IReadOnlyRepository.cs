@@ -7,6 +7,7 @@ namespace MiCake.DDD.Domain
     /// A Repository only has get method
     /// </summary>
     /// <typeparam name="TAggregateRoot"></typeparam>
+    /// <typeparam name="TKey">The key type of <typeparamref name="TAggregateRoot"/></typeparam>
     public interface IReadOnlyRepository<TAggregateRoot, TKey> : IRepository
         where TAggregateRoot : class, IAggregateRoot<TKey>
     {

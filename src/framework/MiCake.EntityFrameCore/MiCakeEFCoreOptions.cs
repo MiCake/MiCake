@@ -1,4 +1,6 @@
 ﻿using MiCake.Core.DependencyInjection;
+using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.Freedom;
 using System;
 
 namespace MiCake.EntityFrameworkCore
@@ -7,26 +9,26 @@ namespace MiCake.EntityFrameworkCore
     {
         /// <summary>
         /// <para>
-        /// Whether to register default repository.
+        ///     Whether to register default repository.
         /// </para>
         /// <para>
-        /// If is true,MiCake will register default repository to ISeviceCollection.Like: IRepository<MyDemoAggregate,Guid>
+        ///     If is true,MiCake will register default repository to ISeviceCollection.Like: <see cref="IRepository{TAggregateRoot, TKey}"/>
         /// </para>
         /// <para>
-        /// Default value is true.
+        ///     Default value is true.
         /// </para>
         /// </summary>
         public bool RegisterDefaultRepository { get; set; } = true;
 
         /// <summary>
         /// <para>
-        /// Whether to register default free repository.
+        ///     Whether to register default free repository.
         /// </para>
         /// <para>
-        /// If is true,MiCake will register default free repository to ISeviceCollection.Like: IFreeRepository<MyDemoAggregate,Guid>
+        ///     If is true,MiCake will register default free repository to ISeviceCollection.Like: <see cref="IFreeRepository{TEntity, TKey}"/>
         /// </para>
         /// <para>
-        /// Default value is false.Beacuse MiCake recommends  you use default repository.
+        ///     Default value is false.Beacuse MiCake recommends  you use default repository.
         /// </para>
         /// </summary>
         public bool RegisterFreeRepository { get; set; } = false;

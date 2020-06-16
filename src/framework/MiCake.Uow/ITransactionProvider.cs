@@ -38,6 +38,7 @@ namespace MiCake.Uow
         /// Get a <see cref="ITransactionObject"/> asynchronous.
         /// </summary>
         /// <param name="context"><see cref="CreateTransactionContext"/></param>
+        /// <param name="cancellationToken"></param>
         Task<ITransactionObject> GetTransactionObjectAsync(CreateTransactionContext context, CancellationToken cancellationToken = default);
     }
 }

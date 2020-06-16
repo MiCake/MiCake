@@ -32,6 +32,7 @@ namespace MiCake.Core.Data
         /// <summary>
         /// Deposit required data.
         /// </summary>
+        /// <param name="key"></param>
         /// <param name="dataInfo">data infomation</param>
         public void Deposit(string key, object dataInfo)
         {

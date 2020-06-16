@@ -12,16 +12,26 @@ namespace MiCake.AspNetCore.Modules
 {
     public static class MiCakeAspNetCoreIdenityBuilderExtension
     {
-        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> jwtOptions = null)
+        /// <summary>
+        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// </summary>
+        /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
+        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder)
             where TMiCakeUser : IMiCakeUser
         {
-            return UseIdentity(builder, typeof(TMiCakeUser), jwtOptions);
+            return UseIdentity(builder, typeof(TMiCakeUser));
         }
 
-        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeJwtOptions> jwtOptions = null)
+        /// <summary>
+        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// </summary>
+        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>
+        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType)
         {
             //Add identity core.
-            builder.AddIdentityCore(miCakeUserType, jwtOptions);
+            builder.AddIdentityCore(miCakeUserType);
 
             //register user services
             var userKeyType = TypeHelper.GetGenericArguments(miCakeUserType, typeof(IMiCakeUser<>));
@@ -40,6 +50,38 @@ namespace MiCake.AspNetCore.Modules
                 services.Replace(new ServiceDescriptor(currentMiCakeUserType, aspnetCoreCurrentUser, ServiceLifetime.Scoped));
             });
 
+            return builder;
+        }
+
+        /// <summary>
+        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// </summary>
+        /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
+        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        /// <param name="jwtSupportOptionsConfig">config <see cref="MiCakeJwtOptions"/>.This optios will be used by <see cref="IJwtSupporter"/></param>
+        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> jwtSupportOptionsConfig)
+            where TMiCakeUser : IMiCakeUser
+        {
+            return UseIdentity(builder, typeof(TMiCakeUser), jwtSupportOptionsConfig);
+        }
+
+        /// <summary>
+        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// </summary>
+        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>
+        /// <param name="jwtSupportOptionsConfig">config <see cref="MiCakeJwtOptions"/>.This optios will be used by <see cref="IJwtSupporter"/></param>
+        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeJwtOptions> jwtSupportOptionsConfig)
+        {
+            UseIdentity(builder, miCakeUserType);
+
+            if (jwtSupportOptionsConfig != null)
+            {
+                builder.ConfigureApplication((app, services) =>
+                {
+                    services.PostConfigure(jwtSupportOptionsConfig);
+                });
+            }
             return builder;
         }
     }

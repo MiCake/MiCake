@@ -3,7 +3,6 @@ using MiCake.Core;
 using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity.Audit;
-using MiCake.Identity.Authentication;
 using MiCake.Identity.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -17,10 +16,10 @@ namespace MiCake.Identity
         /// </summary>
         /// <typeparam name="TMiCakeUser"><see cref="IMiCakeUser{TKey}"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        public static IMiCakeBuilder AddIdentityCore<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> jwtOptions = null)
+        public static IMiCakeBuilder AddIdentityCore<TMiCakeUser>(this IMiCakeBuilder builder)
             where TMiCakeUser : IMiCakeUser
         {
-            return AddIdentityCore(builder, typeof(TMiCakeUser), jwtOptions);
+            return AddIdentityCore(builder, typeof(TMiCakeUser));
         }
 
         /// <summary>
@@ -29,12 +28,12 @@ namespace MiCake.Identity
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="miCakeUserType"><see cref="IMiCakeUser{TKey}"/></param>
         /// <returns></returns>
-        public static IMiCakeBuilder AddIdentityCore(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeJwtOptions> jwtOptions = null)
+        public static IMiCakeBuilder AddIdentityCore(this IMiCakeBuilder builder, Type miCakeUserType)
         {
             CheckValue.NotNull(miCakeUserType, nameof(miCakeUserType));
 
-            if (typeof(IMiCakeUser).IsAssignableFrom(miCakeUserType))
-                throw new ArgumentException($"Wrong user type,must use {nameof(IMiCakeUser)} to registe your micake user.");
+            if (!typeof(IMiCakeUser).IsAssignableFrom(miCakeUserType))
+                throw new ArgumentException($"Wrong user type,must use {nameof(IMiCakeUser)} to register your micake user.");
 
             builder.ConfigureApplication((app, services) =>
             {
@@ -49,8 +48,6 @@ namespace MiCake.Identity
 
                 var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType(userKeyType[0]);
                 services.AddScoped(typeof(IAuditProvider), auditProviderType);
-
-                services.Configure(jwtOptions);
             });
 
             return builder;

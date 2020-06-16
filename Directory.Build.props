@@ -3,7 +3,7 @@
     <Product>MiCake</Product>
     <Authors>uoyoCsharp</Authors>
     <owners>uoyoCsharp</owners>
-    <Version>0.3.0-alpha</Version>
+    <Version>0.3.0-alpha2</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</PackageProjectUrl>
     <RepositoryUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</RepositoryUrl>
@@ -12,8 +12,13 @@
     <PackageTags>AspNetCore;DDD;MiCake</PackageTags>
     <PackageOutputPath>$(MSBuildThisFileDirectory)src\nuget</PackageOutputPath>
     <PackageIcon>nuget_logo.png</PackageIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NoWarn>CS1591</NoWarn>
+  </PropertyGroup>
+  
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" Visible="false" PackagePath="\"/>
 </ItemGroup>

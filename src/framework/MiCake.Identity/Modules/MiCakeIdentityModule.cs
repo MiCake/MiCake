@@ -1,6 +1,7 @@
 ﻿using MiCake.Audit.Modules;
 using MiCake.Core.Modularity;
 using MiCake.Identity.Authentication;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Identity.Modules
@@ -16,6 +17,7 @@ namespace MiCake.Identity.Modules
 
             //add jwt supporter.
             services.TryAddSingleton<IJwtSupporter, JwtSupporter>();
+            services.AddOptions<MiCakeJwtOptions>();
         }
     }
 }

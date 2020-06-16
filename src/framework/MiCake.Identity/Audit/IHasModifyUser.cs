@@ -1,4 +1,6 @@
-﻿namespace MiCake.Audit
+﻿using MiCake.Identity;
+
+namespace MiCake.Audit
 {
     /// <summary>
     /// Represents has a modify user. If audit is enabled, it will be assigned to the audited system later.

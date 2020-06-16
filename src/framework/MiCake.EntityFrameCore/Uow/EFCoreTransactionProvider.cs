@@ -64,7 +64,10 @@ namespace MiCake.EntityFrameworkCore.Uow
                         return false;
 
                     //It's mean they use same database.
+
+#pragma warning disable EF1001 // Internal EF Core API usage.
                     return relationDatabase.RelationalConnection.DbConnection.ConnectionString.Equals(dbTransaction.Connection.ConnectionString);
+#pragma warning restore EF1001 // Internal EF Core API usage.
                 }
                 return false;
             });

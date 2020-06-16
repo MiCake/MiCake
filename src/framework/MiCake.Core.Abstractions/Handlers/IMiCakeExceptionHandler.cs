@@ -12,6 +12,7 @@ namespace MiCake.Core.Handlers
         /// Handle micake exception
         /// </summary>
         /// <param name="exceptionContext"><see cref="MiCakeExceptionContext"/></param>
+        /// <param name="cancellationToken"></param>
         Task Handle(MiCakeExceptionContext exceptionContext, CancellationToken cancellationToken = default);
     }
 }
