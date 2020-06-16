@@ -12,8 +12,13 @@
     <PackageTags>AspNetCore;DDD;MiCake</PackageTags>
     <PackageOutputPath>$(MSBuildThisFileDirectory)src\nuget</PackageOutputPath>
     <PackageIcon>nuget_logo.png</PackageIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NoWarn>CS1591</NoWarn>
+  </PropertyGroup>
+  
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" Visible="false" PackagePath="\"/>
 </ItemGroup>

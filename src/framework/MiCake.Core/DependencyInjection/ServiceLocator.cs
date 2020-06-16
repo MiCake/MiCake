@@ -23,7 +23,6 @@ namespace MiCake.Core.DependencyInjection
         /// Get a service in ioc container
         /// [The "service locator" is not recommended if you can try constructor injection]
         /// </summary>
-        /// <param name="type">service type</param>
         public T GetSerivce<T>()
         {
             if (Locator == null)
@@ -36,7 +35,6 @@ namespace MiCake.Core.DependencyInjection
         /// Get services in ioc container
         /// [The "service locator" is not recommended if you can try constructor injection]
         /// </summary>
-        /// <param name="type">service type</param>
         public IEnumerable<T> GetSerivces<T>()
         {
             if (Locator == null)

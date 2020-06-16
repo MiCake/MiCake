@@ -18,7 +18,7 @@ namespace MiCake.Core
         /// Adds a delegate for configuring micake application.
         /// It will execute before application initialize.
         /// </summary>
-        /// <param name="configureServices">A delegate for configuring the <see cref="IMiCakeApplication"/>.</param>
+        /// <param name="configureApp">A delegate for configuring the <see cref="IMiCakeApplication"/>.</param>
         /// <returns>The <see cref="IMiCakeBuilder"/>.</returns>
         IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp);
 

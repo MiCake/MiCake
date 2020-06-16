@@ -10,7 +10,7 @@ namespace MiCake.Core.Util.Converts
         /// </summary>
         /// <typeparam name="TSource">source type</typeparam>
         /// <typeparam name="TDestination">destination type</typeparam>
-        /// <param name="srouce">source value</param>
+        /// <param name="source">source value</param>
         /// <returns>if cannot convert,return defalut value.</returns>
         public static TDestination ConvertValue<TSource, TDestination>(TSource source)
         {

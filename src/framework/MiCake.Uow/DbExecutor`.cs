@@ -7,7 +7,7 @@ namespace MiCake.Uow
 {
     /// <summary>
     /// A base <see cref="IDbExecutor"/>.
-    /// <see cref="TDbOject"/> is your Db Connect object.For example,DbContext in EFCore.
+    /// <typeparamref name="TDbOject"/> is your Db Connect object.For example,DbContext in EFCore.
     /// </summary>
     /// <typeparam name="TDbOject">Db Connect object</typeparam>
     public abstract class DbExecutor<TDbOject> : IDbExecutor
@@ -84,6 +84,7 @@ namespace MiCake.Uow
         /// Give transaction to current <see cref="DbOjectInstance"/>
         /// </summary>
         /// <param name="transaction"><see cref="ITransactionObject"/></param>
+        /// <param name="cancellationToken"></param>
         protected abstract Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken);
     }
 }

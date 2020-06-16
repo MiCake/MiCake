@@ -12,6 +12,7 @@ namespace MiCake
         /// <summary>
         /// Add customer repository.
         /// </summary>
+        /// <param name="context"></param>
         /// <param name="serviceType">Interface type of repository</param>
         /// <param name="implementationType">Implementation type of repository</param>
         public static void RegisterRepository(this ModuleConfigServiceContext context, Type serviceType, Type implementationType)

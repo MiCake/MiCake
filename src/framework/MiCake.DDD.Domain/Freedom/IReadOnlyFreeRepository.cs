@@ -13,14 +13,12 @@ namespace MiCake.DDD.Domain.Freedom
         /// <summary>
         /// Gets a list of all the entities.
         /// </summary>
-        /// <param name="includeDetails">Set true to include all children of this entity</param>
         /// <returns>Entity</returns>
         List<TEntity> GetList();
 
         /// <summary>
         /// Gets a list of all the entities.
         /// </summary>
-        /// <param name="includeDetails">Set true to include all children of this entity</param>
         /// <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>Entity</returns>
         Task<List<TEntity>> GetListAsync(CancellationToken cancellationToken = default);

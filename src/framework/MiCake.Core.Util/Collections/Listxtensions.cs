@@ -134,6 +134,7 @@ namespace MiCake.Core.Util.Collections
         /// </summary>
         /// <param name="source">The collection</param>
         /// <param name="item">Elements requiring exchange order</param>
+        /// <param name="index"></param>
         /// <returns>The collection of new order.</returns>
         public static IList<T> ExchangeOrder<T>(this IList<T> source, T item, int index)
         {

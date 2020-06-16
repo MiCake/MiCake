@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiCake.Uow.Internal;
+using System;
 
 namespace MiCake.Uow
 {

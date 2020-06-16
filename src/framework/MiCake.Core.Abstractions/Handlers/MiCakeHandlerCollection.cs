@@ -23,7 +23,6 @@ namespace MiCake.Core.Handlers
         /// </summary>
         /// <param name="handler">Type representing an <see cref="IMiCakeHandler"/>.</param>
         /// <returns>An <see cref="IMiCakeHandler"/> representing the added type.</returns>
-        /// </remarks>
         public IMiCakeHandler Add(Type handler)
         {
             if (handler == null)

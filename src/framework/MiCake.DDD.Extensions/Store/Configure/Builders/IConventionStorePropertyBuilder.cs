@@ -5,6 +5,7 @@
     /// It may be changed or removed without notice in any release.
     /// 
     ///  Provides a simple API surface for configuring an <see cref="StoreProperty" /> from conventions.
+    ///  </summary>
     public interface IConventionStorePropertyBuilder
     {
         /// <summary>
