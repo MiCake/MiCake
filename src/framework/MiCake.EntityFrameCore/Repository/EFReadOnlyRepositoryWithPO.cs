@@ -42,13 +42,13 @@ namespace MiCake.EntityFrameworkCore.Repository
             return ToEntity(snapshotModel);
         }
 
-        public async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
+        public virtual async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
             var snapshotModel = await DbContext.FindAsync<TPersistentObject>(new object[] { ID }, cancellationToken);
             return ToEntity(snapshotModel);
         }
 
-        public long GetCount()
+        public virtual long GetCount()
         {
             return DbSet.CountAsync().Result;
         }

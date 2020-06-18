@@ -1,5 +1,6 @@
 ﻿using MiCake.Core.Util;
 using MiCake.Uow;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Threading;
@@ -15,8 +16,9 @@ namespace MiCake.EntityFrameworkCore.Uow
         public object TransactionInstance => _efCoreTransaction;
 
         private readonly IDbContextTransaction _efCoreTransaction;
+        private readonly DbContext _dbContext;
 
-        public EFCoreTransactionObject(IDbContextTransaction dbContextTransaction)
+        public EFCoreTransactionObject(IDbContextTransaction dbContextTransaction, DbContext dbContext)
         {
             CheckValue.NotNull(dbContextTransaction, nameof(dbContextTransaction));
 
@@ -24,6 +26,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             TransactionType = dbContextTransaction.GetType();
 
             _efCoreTransaction = dbContextTransaction;
+            _dbContext = dbContext;
         }
 
         public void Commit()
@@ -33,6 +36,8 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
 
             IsCommit = true;
+
+            _dbContext.SaveChanges();
             _efCoreTransaction.Commit();
         }
 
@@ -43,6 +48,8 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
 
             IsCommit = true;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
             await _efCoreTransaction.CommitAsync(cancellationToken);
         }
 

@@ -17,7 +17,7 @@ namespace MiCake.DDD.Tests.ProxyRepository
         {
             //Add domainMetadata
             Assembly[] assemblies = { GetType().Assembly };
-            Services.Configure<MiCakeApplicationOptions>(options => options.DomianLayerAssemblies = assemblies);
+            Services.Configure<MiCakeApplicationOptions>(options => options.DomainLayerAssemblies = assemblies);
             BuildServiceCollection();
 
             Services.AddTransient(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));

@@ -21,11 +21,11 @@ namespace MiCake.Identity.Audit
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
             //if there is no user login.do nothing.
-            if (_currentMiCakeUser.UserID.Equals(default(TKey)))
+            if (_currentMiCakeUser.UserId.Equals(default(TKey)))
                 return;
 
             var entity = auditObjectModel.AuditEntity;
-            var userID = _currentMiCakeUser.UserID;
+            var userID = _currentMiCakeUser.UserId;
             switch (auditObjectModel.EntityState)
             {
                 case RepositoryEntityState.Deleted:

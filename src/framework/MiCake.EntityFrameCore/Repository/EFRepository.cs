@@ -16,34 +16,34 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
         }
 
-        public void Add(TAggregateRoot aggregateRoot)
+        public virtual void Add(TAggregateRoot aggregateRoot)
             => DbContext.Add(aggregateRoot);
 
-        public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
+        public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
             => DbContext.Add(aggregateRoot).Entity;
 
-        public async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             var entityInfo = await DbContext.AddAsync(aggregateRoot, cancellationToken);
             return entityInfo.Entity;
         }
 
-        public async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public virtual async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => await DbContext.AddAsync(aggregateRoot, cancellationToken);
 
-        public void Delete(TAggregateRoot aggregateRoot)
+        public virtual void Delete(TAggregateRoot aggregateRoot)
             => DbContext.Remove(aggregateRoot);
 
-        public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public virtual Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             DbContext.Remove(aggregateRoot);
             return Task.CompletedTask;
         }
 
-        public void Update(TAggregateRoot aggregateRoot)
+        public virtual void Update(TAggregateRoot aggregateRoot)
             => DbContext.Update(aggregateRoot);
 
-        public Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public virtual Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             DbContext.Update(aggregateRoot);
             return Task.CompletedTask;

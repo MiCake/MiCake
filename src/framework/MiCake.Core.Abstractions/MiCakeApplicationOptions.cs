@@ -25,7 +25,7 @@ namespace MiCake.Core
         /// Assemblies of domain layer
         /// Providing this parameter will facilitate micake to better scan related domain objects in the program.
         /// </summary>
-        public Assembly[] DomianLayerAssemblies { get; set; }
+        public Assembly[] DomainLayerAssemblies { get; set; }
 
         /// <summary>
         /// The collection for <see cref="IMiCakeHandler"/>.
@@ -45,7 +45,7 @@ namespace MiCake.Core
         public void Apply(MiCakeApplicationOptions applicationOptions)
         {
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
-            DomianLayerAssemblies = applicationOptions.DomianLayerAssemblies;
+            DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
             Handlers = applicationOptions.Handlers;
             AdditionalInfo = applicationOptions.AdditionalInfo;
         }

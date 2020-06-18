@@ -8,7 +8,7 @@
         /// <summary>
         /// The id of current user.
         /// </summary>
-        public object UserID { get; }
+        public object UserId { get; }
     }
 
     /// <summary>
@@ -20,6 +20,6 @@
         /// <summary>
         /// The id of current user.
         /// </summary>
-        public new TKey UserID { get; }
+        public new TKey UserId { get; }
     }
 }

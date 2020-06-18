@@ -27,7 +27,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             var dbContext = CheckContextAndGetDbContext(context);
 
             var dbContextTransaction = dbContext.Database.BeginTransaction();
-            return new EFCoreTransactionObject(dbContextTransaction);
+            return new EFCoreTransactionObject(dbContextTransaction, dbContext);
         }
 
         public async Task<ITransactionObject> GetTransactionObjectAsync(CreateTransactionContext context, CancellationToken cancellationToken = default)
@@ -35,7 +35,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             var dbContext = CheckContextAndGetDbContext(context);
 
             var dbContextTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            return new EFCoreTransactionObject(dbContextTransaction);
+            return new EFCoreTransactionObject(dbContextTransaction, dbContext);
         }
 
         public ITransactionObject Reused(IEnumerable<ITransactionObject> existedTrasactions, IDbExecutor dbExecutor)

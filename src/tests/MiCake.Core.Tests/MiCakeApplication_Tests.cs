@@ -22,7 +22,7 @@ namespace MiCake.Core.Tests
             Assembly[] assemblies = { GetType().Assembly };
             MiCakeApplicationOptions options = new MiCakeApplicationOptions()
             {
-                DomianLayerAssemblies = assemblies
+                DomainLayerAssemblies = assemblies
             };
 
             MiCakeApplication miCakeApplication = new MiCakeApplication(Services, options, false);

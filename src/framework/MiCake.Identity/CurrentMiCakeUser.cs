@@ -6,19 +6,41 @@
     /// </summary>
     public abstract class CurrentMiCakeUser<TKey> : ICurrentMiCakeUser<TKey>
     {
+        private static object @object = new object();
+        private bool hasGetUserId = false;
+
+        private TKey _userId;
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public TKey UserID { get; set; }
+        public virtual TKey UserId
+        {
+            get
+            {
+                lock (@object)
+                {
+                    if (hasGetUserId)
+                        return _userId;
+
+                    hasGetUserId = true;
+                    _userId = GetUserID();
+
+                    return _userId;
+                }
+            }
+            set
+            {
+                _userId = value;
+            }
+        }
 
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        object ICurrentMiCakeUser.UserID => UserID;
+        object ICurrentMiCakeUser.UserId => UserId;
 
         public CurrentMiCakeUser()
         {
-            UserID = GetUserID();
         }
 
         public abstract TKey GetUserID();

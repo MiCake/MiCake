@@ -23,7 +23,7 @@ namespace MiCake.DDD.Extensions.Metadata
                                              .Where(s => !s.Instance.IsFrameworkLevel)
                                              .ToMiCakeModuleCollection();
 
-            _domainLayerAsm = appOptions.Value.DomianLayerAssemblies ?? GetDomianLayer(exceptModules);
+            _domainLayerAsm = appOptions.Value.DomainLayerAssemblies ?? GetDomainLayer(exceptModules);
         }
 
         public DomainMetadata GetDomainMetadata()
@@ -33,7 +33,7 @@ namespace MiCake.DDD.Extensions.Metadata
             return new DomainMetadata(_domainLayerAsm, domainObject);
         }
 
-        private Assembly[] GetDomianLayer(IMiCakeModuleCollection miCakeModules)
+        private Assembly[] GetDomainLayer(IMiCakeModuleCollection miCakeModules)
         {
             return miCakeModules.GetAssemblies(false).Where(asm =>
                             asm.GetTypes().AsEnumerable().Any(inModuleType =>

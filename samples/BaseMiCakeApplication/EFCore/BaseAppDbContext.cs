@@ -11,8 +11,9 @@ namespace BaseMiCakeApplication.EFCore
         {
         }
 
-        public DbSet<ItinerarySnapshotModel> Itinerary { get; set; }
-        public DbSet<Book> Books { get; set; }
+        public virtual DbSet<ItinerarySnapshotModel> Itinerary { get; set; }
+        public virtual DbSet<Book> Books { get; set; }
+        public virtual DbSet<User> Users { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

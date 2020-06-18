@@ -24,7 +24,7 @@ namespace MiCake.DDD.Tests.Metadata
             BuildServiceCollection();
 
             Assembly[] assemblies = { GetType().Assembly };
-            Services.Configure<MiCakeApplicationOptions>(options => options.DomianLayerAssemblies = assemblies);
+            Services.Configure<MiCakeApplicationOptions>(options => options.DomainLayerAssemblies = assemblies);
 
             var provider = Services.BuildServiceProvider();
             var domainMetadata = provider.GetService<DomainMetadata>();
@@ -94,7 +94,7 @@ namespace MiCake.DDD.Tests.Metadata
             BuildServiceCollection();
 
             Assembly[] assemblies = { GetType().Assembly };
-            Services.Configure<MiCakeApplicationOptions>(options => options.DomianLayerAssemblies = assemblies);
+            Services.Configure<MiCakeApplicationOptions>(options => options.DomainLayerAssemblies = assemblies);
 
             var provider = Services.BuildServiceProvider();
             var metadata = provider.GetService<DomainMetadata>();

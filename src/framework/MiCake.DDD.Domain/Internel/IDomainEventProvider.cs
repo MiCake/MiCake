@@ -2,7 +2,7 @@
 
 namespace MiCake.DDD.Domain.Internel
 {
-    public interface IDomianEventProvider
+    public interface IDomainEventProvider
     {
         /// <summary>
         /// Get All DomainEvents

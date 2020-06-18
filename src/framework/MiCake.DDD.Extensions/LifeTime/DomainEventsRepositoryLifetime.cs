@@ -17,9 +17,9 @@ namespace MiCake.DDD.Extensions.LifeTime
 
         public RepositoryEntityState PreSaveChanges(RepositoryEntityState entityState, object entity)
         {
-            if (entity is IDomianEventProvider domianEventProvider)
+            if (entity is IDomainEventProvider domainEventProvider)
             {
-                var entityEvents = domianEventProvider.GetDomainEvents();
+                var entityEvents = domainEventProvider.GetDomainEvents();
                 var completedEventCount = 0;
 
                 if (entityEvents == null || entityEvents.Count == 0)
@@ -46,9 +46,9 @@ namespace MiCake.DDD.Extensions.LifeTime
 
         public async ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
-            if (entity is IDomianEventProvider domianEventProvider)
+            if (entity is IDomainEventProvider domainEventProvider)
             {
-                var entityEvents = domianEventProvider.GetDomainEvents();
+                var entityEvents = domainEventProvider.GetDomainEvents();
                 var completedEventCount = 0;
 
                 if (entityEvents == null || entityEvents.Count == 0)

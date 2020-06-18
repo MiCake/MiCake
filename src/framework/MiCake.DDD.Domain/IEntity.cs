@@ -2,7 +2,7 @@
 
 namespace MiCake.DDD.Domain
 {
-    public interface IEntity : IDomianEventProvider
+    public interface IEntity : IDomainEventProvider
     {
         void AddDomainEvent(IDomainEvent domainEvent);
 

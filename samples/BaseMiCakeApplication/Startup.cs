@@ -1,9 +1,9 @@
-using BaseMiCakeApplication.Domain.Repositories;
+using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.EFCore;
-using BaseMiCakeApplication.EFCore.Repositories;
 using BaseMiCakeApplication.Handlers;
 using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
+using MiCake.AspNetCore.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -41,7 +41,6 @@ namespace BaseMiCakeApplication
             });
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddTransient<IItineraryRepository, ItineraryRepository>();
             services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(
                 miCakeConfig: config =>
                 {
@@ -52,6 +51,7 @@ namespace BaseMiCakeApplication
                     options.UseCustomModel();
                     options.DataWrapperOptions.IsDebug = true;
                 })
+                .UseIdentity<User>()
                 .Build();
 
             //Add Swagger

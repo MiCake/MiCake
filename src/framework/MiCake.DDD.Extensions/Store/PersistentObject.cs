@@ -8,7 +8,7 @@ namespace MiCake.DDD.Extensions.Store
     /// Defines an persistent object.
     /// Mabey you need use generic type <see cref="IPersistentObject{TEntity}"/>
     /// </summary>
-    public interface IPersistentObject : IDomianEventProvider
+    public interface IPersistentObject : IDomainEventProvider
     {
         IPersistentObject AddDomainEvents(List<IDomainEvent> domainEvents);
 

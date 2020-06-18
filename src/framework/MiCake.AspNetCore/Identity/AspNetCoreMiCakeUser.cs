@@ -20,7 +20,8 @@ namespace MiCake.AspNetCore.Identity
 
         public override TKey GetUserID()
         {
-            var userIDClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(s => s.Type.Equals(VerifyUserClaims.UserID));
+            var userIDClaim = _httpContextAccessor.HttpContext.User?.Claims
+                                                  .FirstOrDefault(s => s.Type.Equals(VerifyUserClaims.UserID));
 
             if (userIDClaim == null)
                 return default;

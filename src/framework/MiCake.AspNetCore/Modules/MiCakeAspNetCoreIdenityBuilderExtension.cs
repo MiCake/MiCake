@@ -43,7 +43,7 @@ namespace MiCake.AspNetCore.Modules
                 //make sure has add ihttpcontextaccessor.
                 services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-                var currentMiCakeUserType = typeof(CurrentMiCakeUser<>).MakeGenericType(userKeyType);
+                var currentMiCakeUserType = typeof(ICurrentMiCakeUser<>).MakeGenericType(userKeyType);
                 var aspnetCoreCurrentUser = typeof(AspNetCoreMiCakeUser<>).MakeGenericType(userKeyType);
                 //add ICurrentMiCakeUser
                 services.Replace(new ServiceDescriptor(typeof(ICurrentMiCakeUser), aspnetCoreCurrentUser, ServiceLifetime.Scoped));

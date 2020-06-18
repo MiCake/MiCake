@@ -19,17 +19,17 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
         }
 
-        public TAggregateRoot Find(TKey ID)
+        public virtual TAggregateRoot Find(TKey ID)
         {
             return DbContext.Find<TAggregateRoot>(ID);
         }
 
-        public async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
+        public virtual async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
             return await DbContext.FindAsync<TAggregateRoot>(new object[] { ID }, cancellationToken);
         }
 
-        public long GetCount()
+        public virtual long GetCount()
         {
             return DbSet.CountAsync().Result;
         }

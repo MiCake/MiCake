@@ -1,13 +1,17 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
+using BaseMiCakeApplication.Dto;
+using Mapster;
 using MiCake.AspNetCore.Security;
+using MiCake.DDD.Domain;
 using MiCake.Identity.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Threading.Tasks;
+using MiCakeApp = BaseMiCakeApplication.Domain.Aggregates;
 
 namespace BaseMiCakeApplication.Controllers
 {
@@ -17,24 +21,28 @@ namespace BaseMiCakeApplication.Controllers
     {
         private readonly IJwtSupporter _jwtSupporter;
         private IHttpContextAccessor _httpContextAccessor;
-        public LoginController(IJwtSupporter jwtSupporter, IHttpContextAccessor httpContextAccessor)
+        private readonly IRepository<User, Guid> _userRepo;
+
+
+        public LoginController(
+            IJwtSupporter jwtSupporter,
+            IHttpContextAccessor httpContextAccessor,
+            IRepository<User, Guid> userRepository)
         {
             _jwtSupporter = jwtSupporter;
             _httpContextAccessor = httpContextAccessor;
+            _userRepo = userRepository;
         }
 
         [HttpPost]
-        public string Login()
+        public async Task<LoginResultDto> Register(RegisterUserDto registerInfo)
         {
-            var user = new User();
-            user.SetName("bob");
+            var user = MiCakeApp.User.Create(registerInfo.Phone, registerInfo.Password, registerInfo.Name, registerInfo.Age);
+            await _userRepo.AddAsync(user);
 
-            var result = _jwtSupporter.CreateToken(user);
+            var token = _jwtSupporter.CreateToken(user);
 
-            var hanlder = new JwtSecurityTokenHandler();
-            var reader = hanlder.ReadToken(result);
-
-            return result;
+            return new LoginResultDto() { AccessToken = token, HasUser = true, UserInfo = user.Adapt<UserDto>() };
         }
 
         [HttpGet]
@@ -50,7 +58,7 @@ namespace BaseMiCakeApplication.Controllers
 
         [HttpPost]
         [Authorize]
-        public List<string> GetInfoWithDto([CurrentUser] [FromBody] UserDto userID)
+        public List<string> GetInfoWithDto([CurrentUser] [FromBody] GetUserInfoDto userID)
         {
             var httpContext = _httpContextAccessor.HttpContext;
             var userInfo = httpContext?.User;
@@ -60,7 +68,7 @@ namespace BaseMiCakeApplication.Controllers
         }
     }
 
-    public class UserDto
+    public class GetUserInfoDto
     {
         [VerifyUserId]
         public Guid UserID { get; set; }
