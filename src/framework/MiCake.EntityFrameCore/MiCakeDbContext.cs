@@ -21,7 +21,7 @@ namespace MiCake.EntityFrameworkCore
         {
         }
 
-        protected MiCakeDbContext()
+        protected MiCakeDbContext() : base()
         {
         }
 
