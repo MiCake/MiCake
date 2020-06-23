@@ -35,6 +35,24 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
+        public void CreateToken_useMiCakeUser_privateProperty()
+        {
+            var options = new MiCakeJwtOptions(); //default value.
+            var supporter = CreateJwtSupporter(options);
+
+            var micakeUser = new UserWithPrivateProperty() { Id = 10086 };
+            var token = supporter.CreateToken(micakeUser);
+            var tokenModel = JwtHander.ReadJwtToken(token);
+
+            var userIdClaim = tokenModel.Claims.FirstOrDefault(s => s.Type.Equals("userid"));
+            var ageClaim = tokenModel.Claims.FirstOrDefault(s => s.Type.Equals("age"));
+
+            Assert.NotNull(userIdClaim);
+            Assert.NotNull(ageClaim);
+            Assert.Equal("10086", userIdClaim.Value);
+        }
+
+        [Fact]
         public void CreateToken_useMiCakeUser_userHasClaimeAttribute()
         {
             var options = new MiCakeJwtOptions(); //default value.
@@ -140,5 +158,16 @@ namespace MiCake.Identity.Tests.Authentication
         {
             return new JwtSupporter(Options.Create(miCakeJwtOptions));
         }
+    }
+
+    public class UserWithPrivateProperty : IMiCakeUser<long>
+    {
+        public long Id { get; set; }
+
+        [JwtClaim(ClaimName = "userId")]
+        private long UserId => this.Id;
+
+        [JwtClaim(ClaimName = "age")]
+        public long Age { get; set; }
     }
 }
