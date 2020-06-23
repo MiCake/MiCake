@@ -22,7 +22,7 @@ namespace MiCake.Identity.Authentication
         {
             IDictionary<string, object> claimCollection = null;
 
-            var userProperties = miCakeUser.GetType().GetProperties();
+            var userProperties = miCakeUser.GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
             foreach (var userProperty in userProperties)
             {
                 var jwtProperty = userProperty.GetCustomAttribute<JwtClaimAttribute>();
