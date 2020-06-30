@@ -22,11 +22,11 @@ namespace MiCake.DDD.Extensions.Internal
         public void Add(TAggregateRoot aggregateRoot)
             => _inner.Add(aggregateRoot);
 
-        public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
-            => _inner.AddAndReturn(aggregateRoot);
+        public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute)
+            => _inner.AddAndReturn(aggregateRoot, autoExecute);
 
-        public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
-            => _inner.AddAndReturnAsync(aggregateRoot, cancellationToken);
+        public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute, CancellationToken cancellationToken = default)
+            => _inner.AddAndReturnAsync(aggregateRoot, autoExecute, cancellationToken);
 
         public Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.AddAsync(aggregateRoot, cancellationToken);

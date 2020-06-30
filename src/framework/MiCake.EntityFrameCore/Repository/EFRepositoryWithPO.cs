@@ -31,13 +31,13 @@ namespace MiCake.EntityFrameworkCore.Repository
             DbContext.Add(ToPersistentObject(aggregateRoot));
         }
 
-        public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
+        public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute = true)
         {
             var addSnapshotEntity = DbContext.Add(ToPersistentObject(aggregateRoot)).Entity;
             return ToEntity(addSnapshotEntity);
         }
 
-        public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true,CancellationToken cancellationToken = default)
         {
             var addSnapshotEntity = await DbContext.AddAsync(ToPersistentObject(aggregateRoot), cancellationToken);
             return ToEntity(addSnapshotEntity.Entity);

@@ -19,12 +19,12 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
             throw new NotImplementedException();
         }
 
-        public TEntity AddAndReturn(TEntity entity)
+        public TEntity AddAndReturn(TEntity entity, bool autoExecute = true)
         {
             throw new NotImplementedException();
         }
 
-        public Task<TEntity> AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

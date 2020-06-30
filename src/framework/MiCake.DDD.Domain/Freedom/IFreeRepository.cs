@@ -24,14 +24,29 @@ namespace MiCake.DDD.Domain.Freedom
         Task AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Add a new aggregateRoot.and return this aggregate.you can get it Primary key
+        /// Add a new entity.and return this entity.you can get it Primary key.
+        /// 
+        /// <para>
+        /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.
+        /// So,you need keep <paramref name="autoExecute"/> true.
+        /// </para>
         /// </summary>
-        TEntity AddAndReturn(TEntity entity);
+        /// <param name="entity">The entity to be added.</param>
+        /// <param name="autoExecute">Auto execute save method(sql).Default value:true</param>
+        TEntity AddAndReturn(TEntity entity, bool autoExecute = true);
 
         /// <summary>
-        /// Add a new aggregateRoot.And return this aggregate.you can get it Primary key
+        /// Add a new entity.and return this entity.you can get it Primary key.
+        /// 
+        /// <para>
+        /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.
+        /// So,you need keep <paramref name="autoExecute"/> true.
+        /// </para>
         /// </summary>
-        Task<TEntity> AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default);
+        /// <param name="entity">The entity to be added.</param>
+        /// <param name="autoExecute">Auto execute save method(sql).Default value:true</param>
+        /// <param name="cancellationToken"></param>
+        Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.

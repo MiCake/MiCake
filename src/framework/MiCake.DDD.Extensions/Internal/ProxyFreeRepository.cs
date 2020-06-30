@@ -26,11 +26,11 @@ namespace MiCake.DDD.Extensions.Internal
         public void Add(TEntity entity)
             => _inner.Add(entity);
 
-        public TEntity AddAndReturn(TEntity entity)
-            => _inner.AddAndReturn(entity);
+        public TEntity AddAndReturn(TEntity entity, bool autoExecute = true)
+            => _inner.AddAndReturn(entity,autoExecute);
 
-        public Task<TEntity> AddAndReturnAsync(TEntity entity, CancellationToken cancellationToken = default)
-            => _inner.AddAndReturnAsync(entity, cancellationToken);
+        public Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default)
+            => _inner.AddAndReturnAsync(entity, autoExecute, cancellationToken);
 
         public Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
             => _inner.AddAsync(entity, cancellationToken);
