@@ -29,8 +29,9 @@ namespace MiCake.DDD.Extensions.Store
 
         private List<Type> FilterPersistentTypeFormMetadata(DomainMetadata domainMetadata)
         {
-            return domainMetadata.DomainObject.AggregateRoots.Where(s => s.HasPersistentObject && s.PersistentObject != null)
-                                                .Select(j => j.PersistentObject).ToList();
+            return domainMetadata.DomainObject.AggregateRoots
+                                 .Where(s => s.HasPersistentObject && s.PersistentObject != null)
+                                 .Select(j => j.PersistentObject).ToList();
         }
     }
 }

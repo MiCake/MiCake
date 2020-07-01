@@ -1,4 +1,4 @@
-﻿namespace MiCake.Core.ExceptionHandling
+﻿namespace MiCake.Core
 {
     /// <summary>
     /// Indicates a non critical error message

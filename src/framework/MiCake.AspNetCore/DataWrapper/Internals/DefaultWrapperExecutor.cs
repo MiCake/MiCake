@@ -1,5 +1,4 @@
 ﻿using MiCake.Core;
-using MiCake.Core.ExceptionHandling;
 using MiCake.Core.Util;
 using MiCake.Core.Util.CommonTypes;
 using MiCake.Core.Util.Reflection;

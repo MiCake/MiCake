@@ -1,5 +1,4 @@
-﻿using MiCake.Core.ExceptionHandling;
-using System;
+﻿using System;
 
 namespace MiCake.Core
 {

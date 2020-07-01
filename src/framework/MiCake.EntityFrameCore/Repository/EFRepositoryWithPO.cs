@@ -3,6 +3,7 @@ using MiCake.DDD.Domain.Store;
 using MiCake.DDD.Extensions.Store;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,12 +35,24 @@ namespace MiCake.EntityFrameworkCore.Repository
         public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute = true)
         {
             var addSnapshotEntity = DbContext.Add(ToPersistentObject(aggregateRoot)).Entity;
+
+            if (autoExecute)
+            {
+                DbContext.SaveChanges();
+            }
+
             return ToEntity(addSnapshotEntity);
         }
 
-        public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true,CancellationToken cancellationToken = default)
+        public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
             var addSnapshotEntity = await DbContext.AddAsync(ToPersistentObject(aggregateRoot), cancellationToken);
+
+            if (autoExecute)
+            {
+                await DbContext.SaveChangesAsync(cancellationToken);
+            }
+
             return ToEntity(addSnapshotEntity.Entity);
         }
 
@@ -67,7 +80,14 @@ namespace MiCake.EntityFrameworkCore.Repository
         public virtual Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             DbSet.Update(ToPersistentObject(aggregateRoot));
+
+            List<int> s = new List<int>();
+            s.GetHashCode();
             return Task.CompletedTask;
         }
+
+        private TAggregateRoot ToEntity(TPersistentObject obj) { return null; }
+
+        private TPersistentObject ToPersistentObject(TAggregateRoot obj) { return null; }
     }
 }

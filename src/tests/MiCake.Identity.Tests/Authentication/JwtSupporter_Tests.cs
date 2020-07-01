@@ -165,7 +165,7 @@ namespace MiCake.Identity.Tests.Authentication
         public long Id { get; set; }
 
         [JwtClaim(ClaimName = "userId")]
-        private long UserId => this.Id;
+        private long UserId => Id;
 
         [JwtClaim(ClaimName = "age")]
         public long Age { get; set; }

@@ -1,13 +1,9 @@
-﻿using Mapster;
-using MiCake.Core.Util.Collections;
-using MiCake.DDD.Domain;
+﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Store;
 using MiCake.DDD.Extensions.Store;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,23 +25,21 @@ namespace MiCake.EntityFrameworkCore.Repository
     {
         protected new DbSet<TPersistentObject> DbSet => DbContext.Set<TPersistentObject>();
 
-        //the relationship between entity instance and persistent object instancae.
-        private ConcurrentDictionary<object, object> _entityRelationship = new ConcurrentDictionary<object, object>();
-
         public EFReadOnlyRepositoryWithPO(IDbContextProvider<TDbContext> dbContextProvider) : base(dbContextProvider)
         {
+
         }
 
         public TAggregateRoot Find(TKey ID)
         {
             var snapshotModel = DbContext.Find<TPersistentObject>(ID);
-            return ToEntity(snapshotModel);
+            return default;
         }
 
         public virtual async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
             var snapshotModel = await DbContext.FindAsync<TPersistentObject>(new object[] { ID }, cancellationToken);
-            return ToEntity(snapshotModel);
+            return default;
         }
 
         public virtual long GetCount()
@@ -53,83 +47,9 @@ namespace MiCake.EntityFrameworkCore.Repository
             return DbSet.CountAsync().Result;
         }
 
-        protected virtual TAggregateRoot ToEntity(TPersistentObject snapshot)
-        {
-            TAggregateRoot result;
-
-            var key = _entityRelationship.GetFirstKeyByValue(snapshot);
-            if (key != null)
-            {
-                result = snapshot.Adapt((TAggregateRoot)key);
-            }
-            else
-            {
-                result = snapshot.Adapt<TAggregateRoot>();
-                _entityRelationship.TryAdd(result, snapshot);
-            }
-
-            return result;
-        }
-
-        protected virtual List<TAggregateRoot> ToEntity(List<TPersistentObject> snapshot)
-        {
-            List<TAggregateRoot> result;
-
-            var key = _entityRelationship.GetFirstKeyByValue(snapshot);
-            if (key != null)
-            {
-                result = snapshot.Adapt((List<TAggregateRoot>)key);
-            }
-            else
-            {
-                result = snapshot.Adapt<List<TAggregateRoot>>();
-                _entityRelationship.TryAdd(result, snapshot);
-            }
-
-            return result;
-        }
-
-        protected virtual TPersistentObject ToPersistentObject(TAggregateRoot aggregateRoot)
-        {
-            TPersistentObject persistentObject;
-
-            if (_entityRelationship.TryGetValue(aggregateRoot, out var model))
-            {
-                TPersistentObject convertModel = (TPersistentObject)model;
-                persistentObject = aggregateRoot.Adapt(convertModel);
-            }
-            else
-            {
-                persistentObject = aggregateRoot.Adapt<TPersistentObject>();
-                _entityRelationship.TryAdd(aggregateRoot, persistentObject);
-            }
-
-            return persistentObject;
-        }
-
-        protected virtual List<TPersistentObject> ToPersistentObject(List<TAggregateRoot> aggregateRoot)
-        {
-            List<TPersistentObject> persistentObjects;
-
-            if (_entityRelationship.TryGetValue(aggregateRoot, out var model))
-            {
-                persistentObjects = aggregateRoot.Adapt((List<TPersistentObject>)model);
-            }
-            else
-            {
-                persistentObjects = aggregateRoot.Adapt<List<TPersistentObject>>();
-                _entityRelationship.TryAdd(aggregateRoot, persistentObjects);
-            }
-
-            return persistentObjects;
-        }
-
         public void Dispose()
         {
-            if (_entityRelationship.Count > 0)
-                _entityRelationship.Clear();
-
-            _entityRelationship = null;
+            throw new NotImplementedException();
         }
     }
 }

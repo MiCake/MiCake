@@ -15,7 +15,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             if (dbContext.Database.CurrentTransaction != null)
             {
                 //If there is a transaction to prove that the user is already using the dbcontext, the dbcontext is not hosted by the unit of work
-                CurrentTransaction = new EFCoreTransactionObject(dbContext.Database.CurrentTransaction,dbContext);
+                CurrentTransaction = new EFCoreTransactionObject(dbContext.Database.CurrentTransaction, dbContext);
             }
         }
 
