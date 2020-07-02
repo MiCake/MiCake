@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiCake.DDD.Extensions\MiCake.DDD.Extensions.csproj" />
+    <ProjectReference Include="..\MiCake.Mapster\MiCake.Mapster.csproj" />
     <ProjectReference Include="..\MiCake.Uow\MiCake.Uow.csproj" />
   </ItemGroup>
 

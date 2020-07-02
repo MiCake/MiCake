@@ -1,4 +1,6 @@
-﻿using MiCake.DDD.Extensions.Metadata;
+﻿using MiCake.Core.Data;
+using MiCake.DDD.Extensions.Metadata;
+using MiCake.DDD.Extensions.Store.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +13,12 @@ namespace MiCake.DDD.Extensions.Store
     internal class PersistentObjectActivator : IPersistentObjectActivator
     {
         private DomainMetadata _domainMetadata;
+        private IPersistentObjectMapper _persistentObjectMapper;
 
-        public PersistentObjectActivator(DomainMetadata domainMetadata)
+        public PersistentObjectActivator(DomainMetadata domainMetadata, IPersistentObjectMapper persistentObjectMapper)
         {
             _domainMetadata = domainMetadata;
+            _persistentObjectMapper = persistentObjectMapper;
         }
 
         public void ActivateMapping()
@@ -23,7 +27,11 @@ namespace MiCake.DDD.Extensions.Store
 
             foreach (var model in persistentObject)
             {
-                ((IPersistentObject)Activator.CreateInstance(model)).ConfigureMapping();
+                var persistentObjInstance = ((IPersistentObject)Activator.CreateInstance(model));
+
+                //Active mapping config.
+                (persistentObject as INeedParts<IPersistentObjectMapper>)?.SetParts(_persistentObjectMapper);
+                persistentObjInstance.ConfigureMapping();
             }
         }
 

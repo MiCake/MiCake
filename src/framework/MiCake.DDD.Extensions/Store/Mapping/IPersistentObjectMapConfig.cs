@@ -1,5 +1,6 @@
 ﻿using MiCake.DDD.Domain;
 using System;
+using System.Linq.Expressions;
 
 namespace MiCake.DDD.Extensions.Store.Mapping
 {
@@ -21,7 +22,7 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         /// <param name="persistentObjectProperty">The Func to choose persistent object property</param>
         /// <returns></returns>
         IPersistentObjectMapConfig<TDomainEntity, TPersistentObject> MapProperty<TEntityProperty, TPersistentObjectProperty>(
-                Func<TDomainEntity, TEntityProperty> domainEntiyProperty,
-                Func<TDomainEntity, TPersistentObjectProperty> persistentObjectProperty);
+                Expression<Func<TDomainEntity, TEntityProperty>> domainEntiyProperty,
+                Expression<Func<TPersistentObject, TPersistentObjectProperty>> persistentObjectProperty);
     }
 }

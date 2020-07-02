@@ -6,12 +6,11 @@ using MiCake.DDD.Extensions.Internal;
 using MiCake.DDD.Extensions.LifeTime;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Extensions.Store;
-using MiCake.Mapster.Modules;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Extensions.Modules
 {
-    [RelyOn(typeof(MiCakeMapsterModule), typeof(MiCakeDomainModule))]
+    [RelyOn(typeof(MiCakeDomainModule))]
     public class MiCakeDDDExtensionsModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
@@ -40,6 +39,15 @@ namespace MiCake.DDD.Extensions.Modules
 
             //LifeTime
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+        }
+
+        public override void Initialization(ModuleBearingContext context)
+        {
+            var provider = context.ServiceProvider;
+
+            //activate all mapping relationship between  persistent object and domain object.
+            var persistentObjectActivator = provider.GetService<IPersistentObjectActivator>();
+            persistentObjectActivator.ActivateMapping();
         }
     }
 }

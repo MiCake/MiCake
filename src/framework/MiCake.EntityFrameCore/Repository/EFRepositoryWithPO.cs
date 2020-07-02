@@ -1,9 +1,8 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Store;
 using MiCake.DDD.Extensions.Store;
-using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +13,7 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// </summary>
     /// <typeparam name="TDbContext">Type Of DBContext</typeparam>
     /// <typeparam name="TAggregateRoot">Type of <see cref="IAggregateRoot"/></typeparam>
-    /// <typeparam name="TPersistentObject">Type of <see cref="PersistentObject{TEntity}"/></typeparam>
+    /// <typeparam name="TPersistentObject">Type of <see cref="PersistentObject{TEntity, TPersistentObject}"/></typeparam>
     /// <typeparam name="TKey">Primary key type of <see cref="IAggregateRoot"/></typeparam>
     public class EFRepositoryWithPO<TDbContext, TAggregateRoot, TPersistentObject, TKey> :
         EFReadOnlyRepositoryWithPO<TDbContext, TAggregateRoot, TPersistentObject, TKey>,
@@ -23,71 +22,64 @@ namespace MiCake.EntityFrameworkCore.Repository
         where TPersistentObject : class, IPersistentObject
         where TDbContext : DbContext
     {
-        public EFRepositoryWithPO(IDbContextProvider<TDbContext> dbContextProvider) : base(dbContextProvider)
+        public EFRepositoryWithPO(IServiceProvider serviceProvider) : base(serviceProvider)
         {
         }
 
         public virtual void Add(TAggregateRoot aggregateRoot)
         {
-            DbContext.Add(ToPersistentObject(aggregateRoot));
+            DbContext.Add(POManager.MapToPO(aggregateRoot));
         }
 
         public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute = true)
         {
-            var addSnapshotEntity = DbContext.Add(ToPersistentObject(aggregateRoot)).Entity;
+            var addedEntity = DbContext.Add(POManager.MapToPO(aggregateRoot)).Entity;
 
             if (autoExecute)
             {
                 DbContext.SaveChanges();
             }
 
-            return ToEntity(addSnapshotEntity);
+            return POManager.MapToDO(addedEntity);
         }
 
         public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
-            var addSnapshotEntity = await DbContext.AddAsync(ToPersistentObject(aggregateRoot), cancellationToken);
+            var addedEntity = (await DbContext.AddAsync(POManager.MapToPO(aggregateRoot), cancellationToken)).Entity;
 
             if (autoExecute)
             {
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
 
-            return ToEntity(addSnapshotEntity.Entity);
+            return POManager.MapToDO(addedEntity);
         }
 
         public virtual async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            await DbContext.AddAsync(ToPersistentObject(aggregateRoot), cancellationToken);
+            await DbContext.AddAsync(POManager.MapToPO(aggregateRoot), cancellationToken);
         }
 
         public virtual void Delete(TAggregateRoot aggregateRoot)
         {
-            DbSet.Remove(ToPersistentObject(aggregateRoot));
+            DbSet.Remove(POManager.MapToPO(aggregateRoot));
         }
 
         public virtual Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbSet.Remove(ToPersistentObject(aggregateRoot));
+            DbSet.Remove(POManager.MapToPO(aggregateRoot));
             return Task.CompletedTask;
         }
 
         public virtual void Update(TAggregateRoot aggregateRoot)
         {
-            DbSet.Update(ToPersistentObject(aggregateRoot));
+            DbSet.Update(POManager.MapToPO(aggregateRoot));
         }
 
         public virtual Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbSet.Update(ToPersistentObject(aggregateRoot));
-
-            List<int> s = new List<int>();
-            s.GetHashCode();
+            DbSet.Update(POManager.MapToPO(aggregateRoot));
             return Task.CompletedTask;
         }
-
-        private TAggregateRoot ToEntity(TPersistentObject obj) { return null; }
-
-        private TPersistentObject ToPersistentObject(TAggregateRoot obj) { return null; }
     }
 }

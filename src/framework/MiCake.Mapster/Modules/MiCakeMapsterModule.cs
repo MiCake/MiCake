@@ -1,4 +1,6 @@
 ﻿using MiCake.Core.Modularity;
+using MiCake.DDD.Extensions.Store.Mapping;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Mapster.Modules
 {
@@ -8,5 +10,11 @@ namespace MiCake.Mapster.Modules
     public class MiCakeMapsterModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
+
+        public override void ConfigServices(ModuleConfigServiceContext context)
+        {
+            var services = context.Services;
+            services.TryAddSingleton<IPersistentObjectMapper, MapsterPersistentObjectMapper>();
+        }
     }
 }

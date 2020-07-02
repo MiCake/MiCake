@@ -13,14 +13,14 @@ namespace BaseMiCakeApplication.EFCore.Repositories
         EFRepositoryWithPO<BaseAppDbContext, Itinerary, ItinerarySnapshotModel, Guid>,
         IItineraryRepository
     {
-        public ItineraryRepository(IDbContextProvider<BaseAppDbContext> dbContextProvider) : base(dbContextProvider)
+        public ItineraryRepository(IServiceProvider serviceProvider) : base(serviceProvider)
         {
         }
 
         public List<Itinerary> GetLastWeekItineraryInfo()
         {
             var persistentObjects = DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
-            return ToEntity(persistentObjects);
+            return this.POManager.MapToDO(persistentObjects);
         }
 
         public void UpdateLastWeekItineraryInfo(List<Itinerary> itineraries)

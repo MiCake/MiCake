@@ -11,13 +11,13 @@ namespace MiCake.DDD.Tests.ProxyRepository
         public void Add(TAggregateRoot aggregateRoot)
         => Data.Add(aggregateRoot);
 
-        public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot)
+        public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute = true)
         {
             Data.Add(aggregateRoot);
             return aggregateRoot;
         }
 
-        public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
             Data.Add(aggregateRoot);
             return Task.FromResult(aggregateRoot);
@@ -57,16 +57,16 @@ namespace MiCake.DDD.Tests.ProxyRepository
         public void Add(TEntity aggregateRoot)
         => Data.Add(aggregateRoot);
 
-        public TEntity AddAndReturn(TEntity aggregateRoot)
+        public TEntity AddAndReturn(TEntity entity, bool autoExecute = true)
         {
-            Data.Add(aggregateRoot);
-            return aggregateRoot;
+            Data.Add(entity);
+            return entity;
         }
 
-        public Task<TEntity> AddAndReturnAsync(TEntity aggregateRoot, CancellationToken cancellationToken = default)
+        public Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
-            Data.Add(aggregateRoot);
-            return Task.FromResult(aggregateRoot);
+            Data.Add(entity);
+            return Task.FromResult(entity);
         }
 
         public Task AddAsync(TEntity aggregateRoot, CancellationToken cancellationToken = default)

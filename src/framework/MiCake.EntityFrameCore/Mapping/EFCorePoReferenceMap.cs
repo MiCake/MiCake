@@ -1,5 +1,4 @@
 ﻿using MiCake.DDD.Extensions.Store;
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,12 +15,13 @@ namespace MiCake.EntityFrameworkCore.Mapping
 
         public void AddOrUpdate(object domainEntity, object persistentObj)
         {
-            throw new NotImplementedException();
+            _mapStore = _mapStore ?? new Dictionary<object, object>();
+            _mapStore[domainEntity] = persistentObj;
         }
 
         public bool TryGet(object domainEntity, out object persistentObj)
         {
-            throw new NotImplementedException();
+            return _mapStore.TryGetValue(domainEntity, out persistentObj);
         }
 
         public void Release()
@@ -34,6 +34,19 @@ namespace MiCake.EntityFrameworkCore.Mapping
         {
             Release();
             return Task.CompletedTask;
+        }
+
+
+        class PoMapKey
+        {
+            public PoMapKey()
+            {
+            }
+
+            public override int GetHashCode()
+            {
+                return base.GetHashCode();
+            }
         }
     }
 }

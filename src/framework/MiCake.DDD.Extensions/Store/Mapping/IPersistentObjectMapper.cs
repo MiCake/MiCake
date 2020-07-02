@@ -20,5 +20,51 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         IPersistentObjectMapConfig<TDomainEntity, TPersistentObject> Create<TDomainEntity, TPersistentObject>()
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject;
+
+        /// <summary>
+        /// Map domain entity to persistent object.
+        /// </summary>
+        /// <typeparam name="TDomainEntity">The type of domain entity</typeparam>
+        /// <typeparam name="TPersistentObject">The type of persistent object</typeparam>
+        /// <param name="domainEntity"></param>
+        /// <returns></returns>
+        TPersistentObject ToPersistentObject<TDomainEntity, TPersistentObject>(TDomainEntity domainEntity)
+            where TDomainEntity : IEntity
+            where TPersistentObject : IPersistentObject;
+
+        /// <summary>
+        /// Map domain entity to persistent object.Mapping based on the original value.
+        /// </summary>
+        /// <typeparam name="TDomainEntity">The type of domain entity</typeparam>
+        /// <typeparam name="TPersistentObject">The type of persistent object</typeparam>
+        /// <param name="domainEntity"></param>
+        /// <param name="originalSource">original persistent object value</param>
+        /// <returns></returns>
+        TPersistentObject ToPersistentObject<TDomainEntity, TPersistentObject>(TDomainEntity domainEntity, TPersistentObject originalSource)
+            where TDomainEntity : IEntity
+            where TPersistentObject : IPersistentObject;
+
+        /// <summary>
+        /// Map persistent object to domain entity.
+        /// </summary>
+        /// <typeparam name="TDomainEntity">The type of domain entity</typeparam>
+        /// <typeparam name="TPersistentObject">The type of persistent object</typeparam>
+        /// <param name="persistentObject"></param>
+        /// <returns></returns>
+        TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject)
+            where TDomainEntity : IEntity
+            where TPersistentObject : IPersistentObject;
+
+        /// <summary>
+        /// Map persistent object to domain entity.Mapping based on the original value.
+        /// </summary>
+        /// <typeparam name="TDomainEntity">The type of domain entity</typeparam>
+        /// <typeparam name="TPersistentObject">The type of persistent object</typeparam>
+        /// <param name="persistentObject"></param>
+        /// <param name="originalSource">original domain entity value</param>
+        /// <returns></returns>
+        TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject, TDomainEntity originalSource)
+            where TDomainEntity : IEntity
+            where TPersistentObject : IPersistentObject;
     }
 }
