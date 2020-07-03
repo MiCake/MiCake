@@ -1,5 +1,5 @@
-﻿using MiCake.DDD.Extensions.Store;
-using System.Collections.Generic;
+﻿using MiCake.Core.Util.Collections;
+using MiCake.DDD.Extensions.Store;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,21 +7,15 @@ namespace MiCake.EntityFrameworkCore.Mapping
 {
     public class EFCorePoReferenceMap : IPersistentObjectReferenceMap
     {
-        private Dictionary<object, object> _mapStore;
+        private Map<object, object> _mapStore = new Map<object, object>();
 
         public EFCorePoReferenceMap()
         {
         }
 
-        public void AddOrUpdate(object domainEntity, object persistentObj)
+        public void Add(object domainEntity, object persistentObj)
         {
-            _mapStore = _mapStore ?? new Dictionary<object, object>();
-            _mapStore[domainEntity] = persistentObj;
-        }
-
-        public bool TryGet(object domainEntity, out object persistentObj)
-        {
-            return _mapStore.TryGetValue(domainEntity, out persistentObj);
+            _mapStore.Add(domainEntity, persistentObj);
         }
 
         public void Release()
@@ -36,17 +30,14 @@ namespace MiCake.EntityFrameworkCore.Mapping
             return Task.CompletedTask;
         }
 
-
-        class PoMapKey
+        public bool TryGetPersistentObj(object domainEntity, out object persistentObj)
         {
-            public PoMapKey()
-            {
-            }
+            return _mapStore.Forward.TryGetValue(domainEntity, out persistentObj);
+        }
 
-            public override int GetHashCode()
-            {
-                return base.GetHashCode();
-            }
+        public bool TryGetDomainEntity(object persistentObj, out object domainEntity)
+        {
+            return _mapStore.Reverse.TryGetValue(persistentObj, out domainEntity);
         }
     }
 }

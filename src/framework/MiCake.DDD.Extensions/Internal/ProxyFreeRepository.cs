@@ -2,7 +2,6 @@
 using MiCake.DDD.Domain.Freedom;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -47,7 +46,7 @@ namespace MiCake.DDD.Extensions.Internal
         public Task<TEntity> FindAsync(TKey ID, CancellationToken cancellationToken = default)
             => _inner.FindAsync(ID, cancellationToken);
 
-        public IQueryable<TEntity> FindMatch(params Expression<Func<TEntity, object>>[] propertySelectors)
+        public IQueryable<TEntity> FindMatch(Expression<Func<TEntity, bool>> propertySelectors)
             => _inner.FindMatch(propertySelectors);
 
         public long GetCount()
@@ -56,16 +55,19 @@ namespace MiCake.DDD.Extensions.Internal
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
             => _inner.GetCountAsync(cancellationToken);
 
-        public List<TEntity> GetList()
-            => _inner.GetList();
+        public IQueryable<TEntity> GetAll()
+            => _inner.GetAll();
 
-        public Task<List<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
-            => _inner.GetListAsync(cancellationToken);
+        public Task<IQueryable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+            => _inner.GetAllAsync(cancellationToken);
 
         public void Update(TEntity entity)
             => _inner.Update(entity);
 
         public Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
             => _inner.UpdateAsync(entity, cancellationToken);
+
+        public Task<IQueryable<TEntity>> FindMatchAsync(Expression<Func<TEntity, bool>> propertySelectors, CancellationToken cancellationToken = default)
+            => _inner.FindMatchAsync(propertySelectors, cancellationToken);
     }
 }

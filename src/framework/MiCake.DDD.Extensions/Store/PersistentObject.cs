@@ -58,7 +58,7 @@ namespace MiCake.DDD.Extensions.Store
             => _domainEvents;
 
         /// <summary>
-        /// Configure relationship mapping between <see cref="IEntity"/> and <see cref="TPersistentObject"/>.
+        /// Configure relationship mapping between <see cref="IEntity"/> and <see cref="IPersistentObject"/>.
         /// </summary>
         public abstract void ConfigureMapping();
 

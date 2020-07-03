@@ -54,19 +54,28 @@ namespace MiCake.DDD.Tests.ProxyRepository
         public long GetCount()
         => Data.Count;
 
-        public List<TEntity> GetList()
-        => Data;
-
-        public Task<List<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(Data);
-
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
         {
             long count = Data.Count;
             return Task.FromResult(count);
         }
 
-        public IQueryable<TEntity> FindMatch(params Expression<Func<TEntity, object>>[] propertySelectors)
+        public IQueryable<TEntity> FindMatch(Expression<Func<TEntity, object>> propertySelectors)
         => null;
+
+        IQueryable<TEntity> IReadOnlyFreeRepository<TEntity, TKey>.GetAll()
+        => Data.AsQueryable();
+
+        Task<IQueryable<TEntity>> IReadOnlyFreeRepository<TEntity, TKey>.GetAllAsync(CancellationToken cancellationToken)
+        => Task.FromResult(Data.AsQueryable());
+
+        public IQueryable<TEntity> FindMatch(Expression<Func<TEntity, bool>> propertySelectors)
+        => Data.AsQueryable().Where(propertySelectors);
+
+        public Task<IQueryable<TEntity>> FindMatchAsync(Expression<Func<TEntity, bool>> propertySelectors, CancellationToken cancellationToken = default)
+        {
+            var result = Data.AsQueryable().Where(propertySelectors);
+            return Task.FromResult(result);
+        }
     }
 }

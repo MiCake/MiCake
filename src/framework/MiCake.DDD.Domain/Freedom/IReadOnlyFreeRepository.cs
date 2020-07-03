@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -11,36 +10,36 @@ namespace MiCake.DDD.Domain.Freedom
         where TEntity : class, IEntity<TKey>
     {
         /// <summary>
-        /// Gets a list of all the entities.
+        /// Get all entities.
         /// </summary>
         /// <returns>Entity</returns>
-        List<TEntity> GetList();
+        IQueryable<TEntity> GetAll();
 
         /// <summary>
-        /// Gets a list of all the entities.
+        /// Get all entities.
         /// </summary>
         /// <param name="cancellationToken">A <see cref="T:System.Threading.CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>Entity</returns>
-        Task<List<TEntity>> GetListAsync(CancellationToken cancellationToken = default);
+        Task<IQueryable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets total count of all entities.
+        /// Get total count of all entities.
         /// </summary>
         long GetCount();
 
         /// <summary>
-        /// Gets total count of all entities.
+        /// Get total count of all entities.
         /// </summary>
         Task<long> GetCountAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Find your AggrageteRoot with primary key
+        /// Find entity with primary key
         /// </summary>
         /// <param name="ID">Primary key of the aggrageteRoot to get</param>
         TEntity Find(TKey ID);
 
         /// <summary>
-        /// Find your AggrageteRoot with primary key
+        /// Find entity with primary key
         /// </summary>
         /// <param name="ID">>Primary key of the aggrageteRoot to get</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
@@ -48,10 +47,18 @@ namespace MiCake.DDD.Domain.Freedom
         Task<TEntity> FindAsync(TKey ID, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// 
+        /// Get entity collection according to filter criteria
         /// </summary>
-        /// <param name="propertySelectors"></param>
+        /// <param name="propertySelectors">filter expression</param>
         /// <returns></returns>
-        IQueryable<TEntity> FindMatch(params Expression<Func<TEntity, object>>[] propertySelectors);
+        IQueryable<TEntity> FindMatch(Expression<Func<TEntity, bool>> propertySelectors);
+
+        /// <summary>
+        /// Get entity collection according to filter criteria asynchronous.
+        /// </summary>
+        /// <param name="propertySelectors">filter expression</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<IQueryable<TEntity>> FindMatchAsync(Expression<Func<TEntity, bool>> propertySelectors, CancellationToken cancellationToken = default);
     }
 }

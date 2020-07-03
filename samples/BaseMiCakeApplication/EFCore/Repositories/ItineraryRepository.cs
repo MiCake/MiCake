@@ -2,7 +2,6 @@
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Infrastructure.StroageModels;
 using MiCake.EntityFrameworkCore.Repository;
-using MiCake.EntityFrameworkCore.Uow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,12 +19,11 @@ namespace BaseMiCakeApplication.EFCore.Repositories
         public List<Itinerary> GetLastWeekItineraryInfo()
         {
             var persistentObjects = DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
-            return this.POManager.MapToDO(persistentObjects);
+            return MapToDO(persistentObjects).ToList();
         }
 
         public void UpdateLastWeekItineraryInfo(List<Itinerary> itineraries)
         {
-
         }
     }
 }

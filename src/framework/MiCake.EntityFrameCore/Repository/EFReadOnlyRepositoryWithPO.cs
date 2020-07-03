@@ -5,6 +5,7 @@ using MiCake.EntityFrameworkCore.Mapping;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -60,6 +61,26 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             base.InitComponents();
             POManager = ServiceProvider.GetService<EFCorePoManager<TAggregateRoot, TPersistentObject>>();
+        }
+
+        protected virtual TPersistentObject MapToPO(TAggregateRoot aggregateRoot)
+        {
+            return POManager.MapToPO(aggregateRoot);
+        }
+
+        protected virtual IEnumerable<TPersistentObject> MapToPO(IEnumerable<TAggregateRoot> aggregateRoot)
+        {
+            return POManager.MapToPO(aggregateRoot);
+        }
+
+        protected virtual TAggregateRoot MapToDO(TPersistentObject aggregateRoot)
+        {
+            return POManager.MapToDO(aggregateRoot);
+        }
+
+        protected virtual IEnumerable<TAggregateRoot> MapToDO(IEnumerable<TPersistentObject> aggregateRoot)
+        {
+            return POManager.MapToDO(aggregateRoot);
         }
     }
 }

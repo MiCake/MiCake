@@ -2,91 +2,75 @@
 using MiCake.DDD.Domain.Freedom;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository.Freedom
 {
-    public class EFFreeRepository<TDbContext, TEntity, TKey> : IFreeRepository<TEntity, TKey>
-        where TEntity : class, IAggregateRoot<TKey>
+    public class EFFreeRepository<TDbContext, TEntity, TKey> :
+        EFReadOnlyFreeRepository<TDbContext, TEntity, TKey>,
+        IFreeRepository<TEntity, TKey>
+        where TEntity : class, IEntity<TKey>
         where TDbContext : DbContext
     {
+        public EFFreeRepository(IServiceProvider serviceProvider) : base(serviceProvider)
+        {
+        }
+
         public void Add(TEntity entity)
         {
-            throw new NotImplementedException();
+            DbSet.Add(entity);
         }
 
         public TEntity AddAndReturn(TEntity entity, bool autoExecute = true)
         {
-            throw new NotImplementedException();
+            var result = DbSet.Add(entity);
+
+            if (autoExecute)
+            {
+                DbContext.SaveChanges();
+            }
+
+            return result.Entity;
         }
 
-        public Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default)
+        public async Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var result = await DbSet.AddAsync(entity, cancellationToken);
+
+            if (autoExecute)
+            {
+                await DbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return result.Entity;
         }
 
-        public Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public async Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            await DbSet.AddAsync(entity, cancellationToken);
         }
 
         public void Delete(TEntity entity)
         {
-            throw new NotImplementedException();
+            DbSet.Remove(entity);
         }
 
         public Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
-        }
-
-        public TEntity Find(TKey ID)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TEntity> FindAsync(TKey ID, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IQueryable<TEntity> FindMatch(params Expression<Func<TEntity, object>>[] propertySelectors)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long GetCount()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<TEntity> GetList()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
+            DbSet.Remove(entity);
+            return Task.CompletedTask;
         }
 
         public void Update(TEntity entity)
         {
-            throw new NotImplementedException();
+            DbSet.Update(entity);
         }
 
         public Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DbSet.Update(entity);
+            return Task.CompletedTask;
         }
     }
 }

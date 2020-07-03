@@ -24,7 +24,7 @@ namespace MiCake.DDD.Domain.Freedom
         Task AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Add a new entity.and return this entity.you can get it Primary key.
+        /// Add a new entity.and return this entity.sometimes can use this way to get primary key.
         /// 
         /// <para>
         /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.
@@ -36,7 +36,7 @@ namespace MiCake.DDD.Domain.Freedom
         TEntity AddAndReturn(TEntity entity, bool autoExecute = true);
 
         /// <summary>
-        /// Add a new entity.and return this entity.you can get it Primary key.
+        /// Add a new entity.and return this entity.sometimes can use this way to get primary key.
         /// 
         /// <para>
         /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.

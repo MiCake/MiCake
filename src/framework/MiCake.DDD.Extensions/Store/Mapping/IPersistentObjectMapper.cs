@@ -66,5 +66,26 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject, TDomainEntity originalSource)
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject;
+
+        /// <summary>
+        /// Mapping entity and persistent object Freely.
+        /// Can mapping entity list to persistent list or other.
+        /// </summary>
+        /// <typeparam name="TSource">The source type.</typeparam>
+        /// <typeparam name="TDestination">The destination type.</typeparam>
+        /// <param name="source">Need mapping source value.</param>
+        /// <returns></returns>
+        TDestination Map<TSource, TDestination>(TSource source);
+
+        /// <summary>
+        /// Mapping entity and persistent object Freely based on the destination original value.
+        /// Can mapping entity list to persistent list or other.
+        /// </summary>
+        /// <typeparam name="TSource">The source type.</typeparam>
+        /// <typeparam name="TDestination">The destination type.</typeparam>
+        /// <param name="source">Need mapping source value.</param>
+        /// <param name="originalValue">original destination value.</param>
+        /// <returns></returns>
+        TDestination Map<TSource, TDestination>(TSource source, TDestination originalValue);
     }
 }

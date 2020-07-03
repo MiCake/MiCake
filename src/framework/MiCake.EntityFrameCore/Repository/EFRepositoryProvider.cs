@@ -2,12 +2,11 @@
 using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Metadata;
-using MiCake.EntityFrameworkCore.Repository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MiCake.EntityFrameworkCore
+namespace MiCake.EntityFrameworkCore.Repository
 {
     internal class EFRepositoryProvider<TAggregateRoot, TKey> : IRepositoryProvider<TAggregateRoot, TKey>
          where TAggregateRoot : class, IAggregateRoot<TKey>

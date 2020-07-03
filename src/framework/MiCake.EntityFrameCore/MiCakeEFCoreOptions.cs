@@ -28,7 +28,7 @@ namespace MiCake.EntityFrameworkCore
         ///     If is true,MiCake will register default free repository to ISeviceCollection.Like: <see cref="IFreeRepository{TEntity, TKey}"/>
         /// </para>
         /// <para>
-        ///     Default value is false.Beacuse MiCake recommends  you use default repository.
+        ///     Default value is false.Beacuse MiCake recommends you use default repository.
         /// </para>
         /// </summary>
         public bool RegisterFreeRepository { get; set; } = false;

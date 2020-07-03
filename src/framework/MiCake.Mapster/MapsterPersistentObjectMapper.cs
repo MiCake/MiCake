@@ -28,6 +28,16 @@ namespace MiCake.Mapster
             return new MapsterPersistentObjectMapConfig<TDomainEntity, TPersistentObject>(result);
         }
 
+        public TDestination Map<TSource, TDestination>(TSource source)
+        {
+            return source.Adapt<TDestination>();
+        }
+
+        public TDestination Map<TSource, TDestination>(TSource source, TDestination originalValue)
+        {
+            return source.Adapt(originalValue);
+        }
+
         public TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject)
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject

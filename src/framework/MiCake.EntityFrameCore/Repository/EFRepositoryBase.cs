@@ -9,8 +9,8 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// <summary>
     /// a base repository for efcore
     /// </summary>
-    public abstract class EFRepositoryBase<TDbContext, TAggregateRoot, TKey>
-         where TAggregateRoot : class, IAggregateRoot<TKey>
+    public abstract class EFRepositoryBase<TDbContext, TEntity, TKey>
+         where TEntity : class, IEntity<TKey>
          where TDbContext : DbContext
     {
         /// <summary>
@@ -36,7 +36,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// The DbSet for current aggregate root.
         /// </summary>
-        protected virtual DbSet<TAggregateRoot> DbSet => DbContext.Set<TAggregateRoot>();
+        protected virtual DbSet<TEntity> DbSet => DbContext.Set<TEntity>();
 
         private TDbContext _currentDbContext;
         private IDbContextProvider<TDbContext> _dbContextProvider;
