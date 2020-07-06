@@ -1,9 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
-    public abstract class MiCakeModule : IMiCakeModule, IModuleConfigServicesLifeTime, IModuleLifeTime
+    public abstract class MiCakeModule : IMiCakeModule
     {
         /// <summary>
         /// Tag this module is farmework level.
@@ -24,7 +21,7 @@ namespace MiCake.Core.Modularity
         {
         }
 
-        public virtual void Initialization(ModuleBearingContext context)
+        public virtual void Initialization(ModuleLoadContext context)
         {
         }
 
@@ -32,7 +29,7 @@ namespace MiCake.Core.Modularity
         {
         }
 
-        public virtual void PostInitialization(ModuleBearingContext context)
+        public virtual void PostInitialization(ModuleLoadContext context)
         {
         }
 
@@ -40,23 +37,16 @@ namespace MiCake.Core.Modularity
         {
         }
 
-        public virtual void PreInitialization(ModuleBearingContext context)
+        public virtual void PreInitialization(ModuleLoadContext context)
         {
         }
 
-        public virtual void PreShutDown(ModuleBearingContext context)
+        public virtual void PreShutDown(ModuleLoadContext context)
         {
         }
 
-        public virtual void Shutdown(ModuleBearingContext context)
+        public virtual void Shutdown(ModuleLoadContext context)
         {
-        }
-
-        protected static T GetServiceFromCollection<T>(IServiceCollection services)
-        {
-            return (T)services
-                .LastOrDefault(d => d.ServiceType == typeof(T))
-                ?.ImplementationInstance;
         }
     }
 }

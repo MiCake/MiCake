@@ -1,12 +1,14 @@
 ﻿using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Modules;
+using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Mapping;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Repository.Freedom;
 using MiCake.Mapster.Modules;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {
@@ -25,6 +27,8 @@ namespace MiCake.EntityFrameworkCore.Modules
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
+
+            services.TryAddTransient<IEFSaveChangesLifetime, DefaultEFSaveChangesLifetime>();
             //add ef repository provider
             services.AddScoped(typeof(IRepositoryProvider<,>), typeof(EFRepositoryProvider<,>));
             services.AddScoped(typeof(IFreeRepositoryProvider<,>), typeof(EFFreeRepositoryProvider<,>));
@@ -35,7 +39,7 @@ namespace MiCake.EntityFrameworkCore.Modules
             //services.AddScoped(typeof(SaveChangesInterceptor));
         }
 
-        public override void Initialization(ModuleBearingContext context)
+        public override void Initialization(ModuleLoadContext context)
         {
             // [Cancel:See Azure Board #ISSUE 12]
             // DiagnosticListener.AllListeners.Subscribe(new EfGlobalListener(context.ServiceProvider));

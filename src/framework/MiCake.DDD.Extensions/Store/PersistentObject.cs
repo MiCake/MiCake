@@ -1,7 +1,7 @@
 ﻿using MiCake.Core.Data;
 using MiCake.Core.Util;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Internel;
+using MiCake.DDD.Domain.Internal;
 using MiCake.DDD.Extensions.Store.Mapping;
 using System.Collections.Generic;
 

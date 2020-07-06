@@ -1,4 +1,4 @@
-﻿using MiCake.DDD.Domain.Internel;
+﻿using MiCake.DDD.Domain.Internal;
 
 namespace MiCake.DDD.Domain
 {

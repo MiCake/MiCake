@@ -19,7 +19,7 @@ namespace MiCake.DDD.Extensions.Internal
             var factory = serviceProvider.GetService<IFreeRepositoryFactory<TEntity, TKey>>() ??
                             throw new NullReferenceException($"Cannot get a {nameof(IFreeRepositoryFactory<TEntity, TKey>)} instance.");
 
-            _inner = factory.CreateFreeRepository();
+            _inner = factory.CreateReadOnlyFreeRepository();
         }
 
         public TEntity Find(TKey ID)

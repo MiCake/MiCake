@@ -2,13 +2,13 @@
 
 namespace MiCake.Core.Modularity
 {
-    public class ModuleBearingContext
+    public class ModuleLoadContext
     {
         public IServiceProvider ServiceProvider { get; private set; }
         public IMiCakeModuleCollection MiCakeModules { get; private set; }
         public MiCakeApplicationOptions MiCakeApplicationOptions { get; set; }
 
-        public ModuleBearingContext(
+        public ModuleLoadContext(
             IServiceProvider serviceProvider,
             IMiCakeModuleCollection miCakeModules,
             MiCakeApplicationOptions applicationOptions

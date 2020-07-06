@@ -1,6 +1,4 @@
-﻿using MiCake.Core.Reactive;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Diagnostics;
 
 
@@ -16,41 +14,55 @@ namespace MiCake.EntityFrameworkCore.Diagnostics
     [Obsolete]
     internal class EfGlobalListener : IObserver<DiagnosticListener>
     {
-        //need ServiceProvider to reslove services
-        private IServiceProvider _serviceProvider;
+        ////need ServiceProvider to reslove services
+        //private IServiceProvider _serviceProvider;
 
-        private SaveChangesInterceptor saveChangesInterceptor;
-        internal SaveChangesInterceptor SaveChangesInterceptor
-        {
-            get
-            {
-                if (saveChangesInterceptor != null)
-                    return saveChangesInterceptor;
+        //private SaveChangesInterceptor saveChangesInterceptor;
+        //internal SaveChangesInterceptor SaveChangesInterceptor
+        //{
+        //    get
+        //    {
+        //        if (saveChangesInterceptor != null)
+        //            return saveChangesInterceptor;
 
-                saveChangesInterceptor = new SaveChangesInterceptor(_serviceProvider);
-                return saveChangesInterceptor;
-            }
-        }
+        //        saveChangesInterceptor = new SaveChangesInterceptor(_serviceProvider);
+        //        return saveChangesInterceptor;
+        //    }
+        //}
 
-        public EfGlobalListener(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-        }
+        //public EfGlobalListener(IServiceProvider serviceProvider)
+        //{
+        //    _serviceProvider = serviceProvider;
+        //}
 
+        //public void OnCompleted()
+        //{
+        //}
+
+        //public void OnError(Exception error)
+        //{
+        //}
+
+        //public void OnNext(DiagnosticListener listener)
+        //{
+        //    if (listener.Name == DbLoggerCategory.Name)
+        //    {
+        //        listener.SubscribeAsync(SaveChangesInterceptor);
+        //    }
+        //}
         public void OnCompleted()
         {
+            throw new NotImplementedException();
         }
 
         public void OnError(Exception error)
         {
+            throw new NotImplementedException();
         }
 
-        public void OnNext(DiagnosticListener listener)
+        public void OnNext(DiagnosticListener value)
         {
-            if (listener.Name == DbLoggerCategory.Name)
-            {
-                listener.SubscribeAsync(SaveChangesInterceptor);
-            }
+            throw new NotImplementedException();
         }
     }
 }

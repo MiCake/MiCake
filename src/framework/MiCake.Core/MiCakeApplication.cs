@@ -85,7 +85,7 @@ namespace MiCake.Core
                     selfInspection.Inspect(inspectContext);
             }
 
-            var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
+            var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.Initialization(context);
 
             //Release options additional infomation.
@@ -100,7 +100,7 @@ namespace MiCake.Core
             if (_isShutdown)
                 throw new InvalidOperationException($"MiCake has already shutdown.");
 
-            var context = new ModuleBearingContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
+            var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.AllModules, ApplicationOptions);
             _miCakeModuleBoot.ShutDown(context);
 
             _appServiceScope?.Dispose();
@@ -116,7 +116,7 @@ namespace MiCake.Core
                                         $"The {nameof(Initialize)} method only can called once!");
 
             if (_entryType == null)
-                throw new NullReferenceException($"Cannot find entry module type,Please marke sure you has already call {nameof(SetEntry)} method.");
+                throw new NullReferenceException($"Cannot find entry module type,Please make sure you has already call {nameof(SetEntry)} method.");
 
             AddMiCakeCoreSerivces(_services);
 
@@ -144,7 +144,7 @@ namespace MiCake.Core
         /// </summary>
         public void SetEntry(Type type)
         {
-            _entryType = type ?? throw new ArgumentException("Please add startUp type when you use AddMiCake().");
+            _entryType = type ?? throw new ArgumentException("Please add startup type when you use AddMiCake().");
         }
 
         /// <summary>

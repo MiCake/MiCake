@@ -1,6 +1,9 @@
 ﻿namespace MiCake.Core.Modularity
 {
-    public interface IMiCakeModule
+    /// <summary>
+    /// Define a MiCake module info.
+    /// </summary>
+    public interface IMiCakeModule : IModuleConfigServicesLifetime, IModuleLifetime
     {
         /// <summary>
         /// Tag this module is farmework level.

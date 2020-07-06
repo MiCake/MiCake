@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace MiCake.DDD.Domain.Internel
+namespace MiCake.DDD.Domain.Internal
 {
     internal static class DomainEventHandlerRegistrar
     {

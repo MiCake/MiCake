@@ -19,7 +19,7 @@ namespace MiCake.Uow.Modules
             context.Services.AddTransient<IUnitOfWork, UnitOfWork>();
         }
 
-        public override void Initialization(ModuleBearingContext context)
+        public override void Initialization(ModuleLoadContext context)
         {
         }
     }

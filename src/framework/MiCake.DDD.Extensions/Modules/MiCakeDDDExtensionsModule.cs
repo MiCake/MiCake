@@ -41,7 +41,7 @@ namespace MiCake.DDD.Extensions.Modules
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
         }
 
-        public override void Initialization(ModuleBearingContext context)
+        public override void Initialization(ModuleLoadContext context)
         {
             var provider = context.ServiceProvider;
 

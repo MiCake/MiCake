@@ -1,7 +1,7 @@
-﻿
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MiCake.Core.Modularity
 {
@@ -16,7 +16,7 @@ namespace MiCake.Core.Modularity
         private MiCakeModuleLogger _moduleLogger;
 
         private Action<ModuleConfigServiceContext> _configServiceActions;
-        private Action<ModuleBearingContext> _initializationActions;
+        private Action<ModuleLoadContext> _initializationActions;
 
         public MiCakeModuleBoot(
             ILoggerFactory loggerFactory,
@@ -29,58 +29,32 @@ namespace MiCake.Core.Modularity
 
         public void ConfigServices(ModuleConfigServiceContext context)
         {
-            var services = context.Services;
+            var services = context.Services ??
+                throw new ArgumentNullException(nameof(context.Services));
 
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
+            _logger.LogInformation("MiCake:ActivateServices......");
 
-            _logger.LogInformation("MiCake:ActivateServices...");
-
-            for (int index = 0; index < configServicesLifetimes.Count; index++)
-            {
-                var des = configServiceDes[index];
-                foreach (var miCakeModule in _modules)
-                {
-                    _moduleLogger.LogModuleInfo(miCakeModule, $"MiCake {des}: ");
-                    configServicesLifetimes[index](miCakeModule.Instance, context);
-                }
-            }
+            StartModuleLifetime(_modules, bootInfos.Where(s => s.Type == ModuleBootType.ConfigService), context);
             _configServiceActions?.Invoke(context);
 
-            _logger.LogInformation("MiCake:ActivateServices Completed.....");
+            _logger.LogInformation("MiCake:ActivateServices Completed.");
         }
 
-        public void Initialization(ModuleBearingContext context)
+        public void Initialization(ModuleLoadContext context)
         {
-            _logger.LogInformation("Initialization MiCake Application...");
+            _logger.LogInformation("Initialization MiCake Application......");
 
-            for (int index = 0; index < initializationLifetimes.Count; index++)
-            {
-                var des = initializationDes[index];
-                foreach (var miCakeModule in _modules)
-                {
-                    _moduleLogger.LogModuleInfo(miCakeModule, $"MiCake {des}: ");
-                    initializationLifetimes[index](miCakeModule.Instance, context);
-                }
-            }
+            StartModuleLifetime(_modules, bootInfos.Where(s => s.Type == ModuleBootType.Init), context);
             _initializationActions?.Invoke(context);
 
             _logger.LogInformation("Initialization MiCake Application Completed.");
         }
 
-        public void ShutDown(ModuleBearingContext context)
+        public void ShutDown(ModuleLoadContext context)
         {
-            _logger.LogInformation("ShutDown MiCake Application...");
+            _logger.LogInformation("ShutDown MiCake Application......");
 
-            for (int index = 0; index < shutdownLifetimes.Count; index++)
-            {
-                var des = shutdownDes[index];
-                foreach (var miCakeModule in _modules)
-                {
-                    _moduleLogger.LogModuleInfo(miCakeModule, $"MiCake {des}: ");
-                    shutdownLifetimes[index](miCakeModule.Instance, context);
-                }
-            }
+            StartModuleLifetime(_modules, bootInfos.Where(s => s.Type == ModuleBootType.Shutdown), context);
 
             _logger.LogInformation("ShutDown MiCake Application Completed.");
         }
@@ -90,37 +64,96 @@ namespace MiCake.Core.Modularity
             _configServiceActions += configServiceAction;
         }
 
-        public void AddInitalzation(Action<ModuleBearingContext> initalzationAction)
+        public void AddInitalzation(Action<ModuleLoadContext> initalzationAction)
         {
             _initializationActions += initalzationAction;
         }
 
+        private void StartModuleLifetime(
+            IMiCakeModuleCollection modules,
+            IEnumerable<ModuleBootInfo> lifetimes,
+            object contextInfo)
+        {
+            foreach (var lifetimeInfo in lifetimes)
+            {
+                foreach (var module in modules)
+                {
+                    //logging current module info.
+                    _moduleLogger.LogModuleInfo(module, $"MiCake {lifetimeInfo.Description}: ");
+                    //execute current module lifetime.
+                    lifetimeInfo.StartAction(module.Instance, contextInfo);
+                }
+            }
+        }
+
         #region LifeTimes
-        private string[] configServiceDes = { "PreConfigServices", "ConfigServices", "PostConfigServices" };
-        private List<Action<IModuleConfigServicesLifeTime, ModuleConfigServiceContext>> configServicesLifetimes =
-            new List<Action<IModuleConfigServicesLifeTime, ModuleConfigServiceContext>>
+        private List<ModuleBootInfo> bootInfos = new List<ModuleBootInfo>()
         {
-            (s,context) => s.PreConfigServices(context),
-             (s,context) => s.ConfigServices(context),
-              (s,context) => s.PostConfigServices(context)
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.ConfigService,
+                Description = "PreConfigServices",
+                StartAction = (s,context) => s.PreConfigServices((ModuleConfigServiceContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.ConfigService,
+                Description = "ConfigServices",
+                StartAction = (s,context) => s.ConfigServices((ModuleConfigServiceContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.ConfigService,
+                Description = "PostConfigServices",
+                StartAction = (s,context) => s.PostConfigServices((ModuleConfigServiceContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.Init,
+                Description = "PreInitialization",
+                StartAction = (s,context) => s.PreInitialization((ModuleLoadContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.Init,
+                Description = "Initialization",
+                StartAction = (s,context) => s.Initialization((ModuleLoadContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.Init,
+                Description = "PostInitialization",
+                StartAction = (s,context) => s.PostInitialization((ModuleLoadContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.Shutdown,
+                Description = "PreShutDown",
+                StartAction = (s,context) => s.PreShutDown((ModuleLoadContext)context)
+            },
+            new ModuleBootInfo()
+            {
+                Type = ModuleBootType.Shutdown,
+                Description = "Shutdown",
+                StartAction = (s,context) => s.Shutdown((ModuleLoadContext)context)
+            },
         };
 
-        private string[] initializationDes = { "PreInitialization", "Initialization", "PostInitialization" };
-        private List<Action<IModuleLifeTime, ModuleBearingContext>> initializationLifetimes =
-            new List<Action<IModuleLifeTime, ModuleBearingContext>>
+        class ModuleBootInfo
         {
-            (s,context) => s.PreInitialization(context),
-             (s,context) => s.Initialization(context),
-              (s,context) => s.PostInitialization(context)
-        };
+            public ModuleBootType Type { get; set; }
 
-        private string[] shutdownDes = { "PreShutDown", "Shutdown" };
-        private List<Action<IModuleLifeTime, ModuleBearingContext>> shutdownLifetimes =
-            new List<Action<IModuleLifeTime, ModuleBearingContext>>
+            public Action<IMiCakeModule, object> StartAction { get; set; }
+
+            public string Description { get; set; }
+        }
+
+        enum ModuleBootType
         {
-            (s,context) => s.PreShutDown(context),
-             (s,context) => s.Shutdown(context),
-        };
+            ConfigService,
+            Init,
+            Shutdown
+        }
         #endregion
     }
 }

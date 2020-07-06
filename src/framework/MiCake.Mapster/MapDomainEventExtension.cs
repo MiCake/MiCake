@@ -8,7 +8,7 @@ namespace Mapster
         /// <summary>
         /// Store aggregate domain Events to persistent object. 
         /// </summary>
-        /// <typeparam name="TEntity"><see cref="IAggregateRoot"/></typeparam>
+        /// <typeparam name="TEntity"><see cref="IEntity"/></typeparam>
         /// <typeparam name="TPersistentObject"><see cref="IPersistentObject"/></typeparam>
         public static TypeAdapterSetter<TEntity, TPersistentObject> MapDomainEvent<TEntity, TPersistentObject>(this TypeAdapterSetter<TEntity, TPersistentObject> setter)
             where TEntity : IEntity

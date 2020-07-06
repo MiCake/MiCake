@@ -1,19 +1,19 @@
 ﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// MiCake Module lift cycle.
-    /// When the module is started, execute in order
+    /// MiCake module lifetime.
+    /// When the module is initialized, it is called in turn according to the calling order.
     /// </summary>
-    public interface IModuleLifeTime
+    public interface IModuleLifetime
     {
-        void PreInitialization(ModuleBearingContext context);
+        void PreInitialization(ModuleLoadContext context);
 
-        void Initialization(ModuleBearingContext context);
+        void Initialization(ModuleLoadContext context);
 
-        void PostInitialization(ModuleBearingContext context);
+        void PostInitialization(ModuleLoadContext context);
 
-        void PreShutDown(ModuleBearingContext context);
+        void PreShutDown(ModuleLoadContext context);
 
-        void Shutdown(ModuleBearingContext context);
+        void Shutdown(ModuleLoadContext context);
     }
 }

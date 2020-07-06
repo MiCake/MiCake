@@ -51,10 +51,9 @@ namespace MiCake.DDD.Tests.ProxyRepository
 
             var list = repository.GetAll();
             var listAsync = repository.GetAllAsync().Result;
-            Assert.Same(list, listAsync);
             Assert.Equal(2, list.Count());
 
-            Assert.Null(repository.FindMatch(s => s.Id == 0));
+            Assert.Equal(0, repository.FindMatch(s => s.Id == 0).Count());
         }
 
         [Fact]

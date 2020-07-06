@@ -9,9 +9,9 @@ namespace MiCake.Core.Modularity
     {
         void ConfigServices(ModuleConfigServiceContext context);
 
-        void Initialization(ModuleBearingContext context);
+        void Initialization(ModuleLoadContext context);
 
-        void ShutDown(ModuleBearingContext context);
+        void ShutDown(ModuleLoadContext context);
 
         /// <summary>
         /// Add other configservice actions. 
@@ -25,6 +25,6 @@ namespace MiCake.Core.Modularity
         /// This part of the operation will be called at the end of Initialization().
         /// </summary>
         /// <param name="initalzationAction"></param>
-        void AddInitalzation(Action<ModuleBearingContext> initalzationAction);
+        void AddInitalzation(Action<ModuleLoadContext> initalzationAction);
     }
 }

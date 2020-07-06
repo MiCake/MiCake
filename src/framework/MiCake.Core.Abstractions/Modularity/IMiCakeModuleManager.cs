@@ -3,7 +3,7 @@
 namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// Manages the modules of an Micake application.
+    /// Manages the modules of an MiCake application.
     /// </summary>
     public interface IMiCakeModuleManager
     {
