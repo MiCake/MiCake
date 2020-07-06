@@ -27,8 +27,6 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public IReadOnlyRepository<TAggregateRoot, TKey> GetReadOnlyRepository()
         {
-            Check();
-
             IReadOnlyRepository<TAggregateRoot, TKey> result;
 
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
@@ -56,8 +54,6 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public IRepository<TAggregateRoot, TKey> GetRepository()
         {
-            Check();
-
             IRepository<TAggregateRoot, TKey> result;
 
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
@@ -81,12 +77,6 @@ namespace MiCake.EntityFrameworkCore.Repository
             }
 
             return result;
-        }
-
-        private void Check()
-        {
-            if (!_options.RegisterDefaultRepository)
-                throw new ArgumentException($"the {nameof(_options.RegisterDefaultRepository)} value is false.so you can not use IReadOnlyRepository or IRepository");
         }
     }
 }

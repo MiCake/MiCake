@@ -22,24 +22,14 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
 
         public IFreeRepository<TEntity, TKey> GetFreeRepository()
         {
-            Check();
-
             var type = typeof(EFReadOnlyFreeRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TEntity), typeof(TKey));
             return (IFreeRepository<TEntity, TKey>)Activator.CreateInstance(type, _serviceProvider);
         }
 
         public IReadOnlyFreeRepository<TEntity, TKey> GetReadOnlyFreeRepository()
         {
-            Check();
-
             var type = typeof(EFFreeRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TEntity), typeof(TKey));
             return (IReadOnlyFreeRepository<TEntity, TKey>)Activator.CreateInstance(type, _serviceProvider);
-        }
-
-        private void Check()
-        {
-            if (!_options.RegisterFreeRepository)
-                throw new ArgumentException($"the {nameof(_options.RegisterFreeRepository)} value is false.so you can not use IFreeReadOnlyRepository or IFreeRepository");
         }
     }
 }
