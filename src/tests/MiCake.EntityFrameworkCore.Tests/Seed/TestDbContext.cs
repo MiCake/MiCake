@@ -1,9 +1,8 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace MiCake.EntityFrameworkCore.Tests.Seed
 {
-    public class TestDbContext : DbContext
+    public class TestDbContext : MiCakeDbContext
     {
         public TestDbContext(DbContextOptions options) : base(options)
         {

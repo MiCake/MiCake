@@ -18,4 +18,9 @@
     <ProjectReference Include="..\..\framework\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repository\" />
+    <Folder Include="Uow\" />
+  </ItemGroup>
+
 </Project>

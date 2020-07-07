@@ -32,15 +32,15 @@ namespace MiCake.DDD.Extensions.Store
     /// Base class of persistent object.
     /// You should configure relationship mapping between <see cref="IEntity"/> and persistent object by override <see cref="ConfigureMapping"/>
     /// </summary>
-    /// <typeparam name="TEntity"><see cref="IEntity"/></typeparam>
-    /// <typeparam name="TPersistentObject"></typeparam>
-    public abstract class PersistentObject<TEntity, TPersistentObject> : IPersistentObject<TEntity>
-        where TEntity : IAggregateRoot
-        where TPersistentObject : IPersistentObject<TEntity>
+    /// <typeparam name="TAggregateRoot"><see cref="IEntity"/></typeparam>
+    /// <typeparam name="TSelf">self type</typeparam>
+    public abstract class PersistentObject<TAggregateRoot, TSelf> : IPersistentObject<TAggregateRoot>
+        where TAggregateRoot : IAggregateRoot
+        where TSelf : IPersistentObject<TAggregateRoot>
     {
         private List<IDomainEvent> _domainEvents;
 
-        protected IPersistentObjectMapConfig<TEntity, TPersistentObject> MapConfig { get; private set; }
+        protected IPersistentObjectMapConfig<TAggregateRoot, TSelf> MapConfig { get; private set; }
 
         public IPersistentObject AddDomainEvents(List<IDomainEvent> domainEvents)
         {
@@ -65,7 +65,7 @@ namespace MiCake.DDD.Extensions.Store
         void INeedParts<IPersistentObjectMapper>.SetParts(IPersistentObjectMapper parts)
         {
             CheckValue.NotNull(parts, nameof(IPersistentObjectMapper));
-            MapConfig = parts.Create<TEntity, TPersistentObject>();
+            MapConfig = parts.Create<TAggregateRoot, TSelf>();
         }
     }
 }

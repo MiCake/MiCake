@@ -2,7 +2,9 @@
 using MiCake.DDD.Extensions.Modules;
 using MiCake.DDD.Extensions.Store.Mapping;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("MiCake.EntityFrameworkCore.Tests")]
 namespace MiCake.Mapster.Modules
 {
     /// <summary>
