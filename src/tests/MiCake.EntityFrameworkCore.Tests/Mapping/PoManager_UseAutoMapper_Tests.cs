@@ -2,18 +2,21 @@
 using MiCake.DDD.Extensions.Store.Mapping;
 using MiCake.EntityFrameworkCore.Mapping;
 using MiCake.EntityFrameworkCore.Tests.Fakes;
-using MiCake.Mapster;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using MiCake.AutoMapper;
+using AutoMapper;
 
 namespace MiCake.EntityFrameworkCore.Tests.Mapping
 {
-    public class PoManager_UseMapster_Tests
+    public class PoManager_UseAutoMapper_Tests
     {
-        public IPersistentObjectMapper MapsterMapper { get; set; } = new MapsterPersistentObjectMapper();
+        public IPersistentObjectMapper MapsterMapper { get; set; } = new AutoMapperPersistentObjectMapper(new Mapper(null));
+        private static bool hasInit = false;
 
-        public PoManager_UseMapster_Tests()
+        public PoManager_UseAutoMapper_Tests()
         {
             ActiveAllPOConfig();
         }
@@ -80,7 +83,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
             Assert.Equal(255, helloDoResult.Color.R);
             Assert.Equal(255, helloDoResult.Color.G);
             Assert.Equal(255, helloDoResult.Color.B);
-
         }
 
         [Fact]
@@ -102,16 +104,49 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
         {
             var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
 
-            var poSource = new AggregateRootPOModel("Hello", 255, 255, 255);
+            var poSource = new AggregateRootPOModel("Hello", 255, 255, 255) { Id = 10086 };
             //For example:repository.Find();
             var doResult = mapper.MapToDO(poSource);
 
-            doResult.Id = 10086;
+            doResult.SetColor(new ColorValueObject(0, 0, 0));
+
             //For example:repository.Update();
             var updatedPoSource = mapper.MapToPO(doResult);
 
             Assert.Same(poSource, updatedPoSource);
             Assert.Equal(10086, updatedPoSource.Id);
+            Assert.Equal(0, updatedPoSource.R);
+            Assert.Equal(0, updatedPoSource.G);
+            Assert.Equal(0, updatedPoSource.B);
+        }
+
+        [Fact]
+        public void MapDoAndPO_GiveOriginalObject_ShouldChangeOriginalObjectValue_List()
+        {
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+
+            //List update
+            var poModels = new List<AggregateRootPOModel>
+            {
+                new AggregateRootPOModel("Hello", 255,255,255){ Id = 1},
+                new AggregateRootPOModel("World", 0,0,0){ Id=2}
+            };
+
+            var before = poModels.FirstOrDefault();
+
+            var doResults = mapper.MapToDO(poModels).ToList();
+            var selectR = doResults.Select(s => s);
+
+            doResults.First().SetColor(new ColorValueObject(10, 10, 10));
+
+            var updatedPoSources = mapper.MapToPO(doResults);
+
+            var after = updatedPoSources.ToList().FirstOrDefault();
+
+            var s = before == after;
+
+            Assert.Same(poModels, updatedPoSources);
+            Assert.Equal(10, updatedPoSources.First().G);
         }
 
         [Fact]
@@ -121,15 +156,27 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
 
             var aggregateRoot = new PersistentAggregateRoot("Hello", new ColorValueObject(255, 255, 255));
             var poResult = mapper.MapToPO(aggregateRoot);
+
+            mapper.Dispose();
+
+            Assert.Throws<NullReferenceException>(() =>
+            {
+                mapper.MapToPO(aggregateRoot);
+            });
         }
 
         private void ActiveAllPOConfig()
         {
-            //use to active mapping info.
-            AggregateRootPOModel po = new AggregateRootPOModel();
-            (po as INeedParts<IPersistentObjectMapper>).SetParts(MapsterMapper);
+            if (!hasInit)
+            {
+                //use to active mapping info.
+                AggregateRootPOModel po = new AggregateRootPOModel();
+                (po as INeedParts<IPersistentObjectMapper>).SetParts(MapsterMapper);
 
-            po.ConfigureMapping();
+                po.ConfigureMapping();
+
+                hasInit = true;
+            }
         }
     }
 }

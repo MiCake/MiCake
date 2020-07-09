@@ -1,11 +1,11 @@
-﻿using MiCake.Core.Modularity;
+﻿using MiCake.AutoMapper.Modules;
+using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Mapping;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Repository.Freedom;
-using MiCake.Mapster.Modules;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 namespace MiCake.EntityFrameworkCore.Modules
 {
     [RelyOn(
-        typeof(MiCakeMapsterModule),
+        typeof(MiCakeAutoMapperModule),
         typeof(MiCakeUowModule),
         typeof(MiCakeDDDExtensionsModule))]
     public class MiCakeEFCoreModule : MiCakeModule

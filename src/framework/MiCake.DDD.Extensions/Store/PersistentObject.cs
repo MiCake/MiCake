@@ -39,8 +39,7 @@ namespace MiCake.DDD.Extensions.Store
         where TSelf : IPersistentObject<TAggregateRoot>
     {
         private List<IDomainEvent> _domainEvents;
-
-        protected IPersistentObjectMapConfig<TAggregateRoot, TSelf> MapConfig { get; private set; }
+        protected IPersistentObjectMapConfig<TAggregateRoot, TSelf> MapConfiger;
 
         public IPersistentObject AddDomainEvents(List<IDomainEvent> domainEvents)
         {
@@ -65,7 +64,7 @@ namespace MiCake.DDD.Extensions.Store
         void INeedParts<IPersistentObjectMapper>.SetParts(IPersistentObjectMapper parts)
         {
             CheckValue.NotNull(parts, nameof(IPersistentObjectMapper));
-            MapConfig = parts.Create<TAggregateRoot, TSelf>();
+            MapConfiger = parts.Create<TAggregateRoot, TSelf>();
         }
     }
 }

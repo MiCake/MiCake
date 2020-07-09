@@ -1,69 +1,51 @@
-﻿using Mapster;
+﻿using AutoMapper;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions.Store;
 using MiCake.DDD.Extensions.Store.Mapping;
+using System;
 
-namespace MiCake.Mapster
+namespace MiCake.AutoMapper
 {
     /// <summary>
-    /// <see cref="IPersistentObjectMapper"/> implement for mapster.
+    /// <see cref="IPersistentObjectMapper"/> implement for AutoMapper.
     /// </summary>
-    internal class MapsterPersistentObjectMapper : IPersistentObjectMapper
+    internal class AutoMapperPersistentObjectMapper : IPersistentObjectMapper
     {
-        public MapsterPersistentObjectMapper()
-        {
-        }
+        private readonly IMapper _mapper;
+        public AutoMapperPersistentObjectMapper(IMapper mapper)
+            => _mapper = mapper;
 
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
         public IPersistentObjectMapConfig<TDomainEntity, TPersistentObject> Create<TDomainEntity, TPersistentObject>()
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject
         {
-            var result = TypeAdapterConfig<TDomainEntity, TPersistentObject>.NewConfig()
-                                      .MapDomainEvent()
-                                      .TwoWays();
-
-            return new MapsterPersistentObjectMapConfig<TDomainEntity, TPersistentObject>(result);
+            throw new NotImplementedException();
         }
 
         public TDestination Map<TSource, TDestination>(TSource source)
-        {
-            return source.Adapt<TDestination>();
-        }
+            => _mapper.Map<TDestination>(source);
 
         public TDestination Map<TSource, TDestination>(TSource source, TDestination originalValue)
-        {
-            return source.Adapt(originalValue);
-        }
+            => _mapper.Map(source, originalValue);
 
         public TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject)
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject
-        {
-            return persistentObject.Adapt<TDomainEntity>();
-        }
+            => _mapper.Map<TDomainEntity>(persistentObject);
 
         public TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject, TDomainEntity originalSource)
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject
-        {
-            return persistentObject.Adapt(originalSource);
-        }
+            => _mapper.Map(persistentObject, originalSource);
 
         public TPersistentObject ToPersistentObject<TDomainEntity, TPersistentObject>(TDomainEntity domainEntity)
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject
-        {
-            return domainEntity.Adapt<TPersistentObject>();
-        }
+            => _mapper.Map<TPersistentObject>(domainEntity);
 
         public TPersistentObject ToPersistentObject<TDomainEntity, TPersistentObject>(TDomainEntity domainEntity, TPersistentObject originalSource)
             where TDomainEntity : IEntity
             where TPersistentObject : IPersistentObject
-        {
-            return domainEntity.Adapt(originalSource);
-        }
+            => _mapper.Map(domainEntity, originalSource);
     }
 }

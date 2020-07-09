@@ -18,7 +18,7 @@ namespace BaseMiCakeApplication.Infrastructure.StroageModels
 
         public override void ConfigureMapping()
         {
-            MapConfig.MapProperty(d => d.Note.Content, s => s.Content)
+            MapConfiger.MapProperty(d => d.Note.Content, s => s.Content)
                           .MapProperty(d => d.Note.NoteTime, s => s.NoteTime)
                           .MapProperty(d => d.Id, s => s.Id);
         }

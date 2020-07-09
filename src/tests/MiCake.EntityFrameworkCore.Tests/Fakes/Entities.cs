@@ -30,6 +30,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Fakes
             Name = name;
             Color = color;
         }
+
+        public void SetColor(ColorValueObject color) => Color = color;
     }
 
     public class ColorValueObject : ValueObject
@@ -70,7 +72,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Fakes
 
         public override void ConfigureMapping()
         {
-            this.MapConfig.MapProperty(s => s.Color.R, d => d.R)
+            this.MapConfiger.MapProperty(s => s.Color.R, d => d.R)
                 .MapProperty(s => s.Color.G, d => d.G)
                 .MapProperty(s => s.Color.B, d => d.B)
                 .MapProperty(s => s.Name, d => d.Name);

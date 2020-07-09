@@ -3,6 +3,7 @@ using MiCake.DDD.Extensions.Store.Configure;
 using MiCake.EntityFrameworkCore.Interprets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace MiCake.EntityFrameworkCore
     /// </summary>
     public class MiCakeDbContext : DbContext
     {
+        private IServiceScope currentSavechangeLifetimeScope;
         private IEFSaveChangesLifetime _saveChangesLifetime;
         protected IEFSaveChangesLifetime SaveChangesLifetime
         {
@@ -22,8 +24,9 @@ namespace MiCake.EntityFrameworkCore
                 if (_saveChangesLifetime != null)
                     return _saveChangesLifetime;
 
-                _saveChangesLifetime = ServiceLocator.Instance.GetSerivce<IEFSaveChangesLifetime>()
-                    ?? throw new ArgumentNullException($"Can not reslove {nameof(IEFSaveChangesLifetime)},Please check that this service is registered with DI.");
+                currentSavechangeLifetimeScope = ServiceLocator.Instance.GetSerivce<IServiceScopeFactory>().CreateScope();
+                _saveChangesLifetime = currentSavechangeLifetimeScope.ServiceProvider.GetService<IEFSaveChangesLifetime>() ??
+                    throw new ArgumentNullException($"Can not reslove {nameof(IEFSaveChangesLifetime)},Please check that this service is registered with DI.");
 
                 return _saveChangesLifetime;
             }
@@ -35,6 +38,12 @@ namespace MiCake.EntityFrameworkCore
 
         protected MiCakeDbContext() : base()
         {
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            currentSavechangeLifetimeScope?.Dispose();
         }
 
         /// <summary>

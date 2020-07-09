@@ -52,6 +52,13 @@ namespace BaseMiCakeApplication.Controllers
         }
 
         [HttpPost]
+        public void ChangeItineraryNotesAsync()
+        {
+            var s = _repository.GetLastWeekItineraryInfo();
+            _repository.UpdateLastWeekItineraryInfo(s);
+        }
+
+        [HttpPost]
         public async Task DeleteItineraryAsync(Guid id)
         {
             var entity = await _repository.FindAsync(id);

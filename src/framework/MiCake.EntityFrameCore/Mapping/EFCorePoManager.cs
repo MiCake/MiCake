@@ -10,8 +10,10 @@ namespace MiCake.EntityFrameworkCore.Mapping
         where TDomainEntity : IEntity
         where TPersistentObject : IPersistentObject
     {
-        private readonly IPersistentObjectReferenceMap _referenceMap = new EFCorePoReferenceMap();
-        private readonly IPersistentObjectMapper _mapper;
+        private IPersistentObjectReferenceMap _referenceMap = new EFCorePoReferenceMap();
+        private IPersistentObjectMapper _mapper;
+
+        private bool isDispose;
 
         public EFCorePoManager(IPersistentObjectMapper persistentObjectMapper)
         {
@@ -20,7 +22,14 @@ namespace MiCake.EntityFrameworkCore.Mapping
 
         public void Dispose()
         {
+            if (isDispose)
+                return;
+
             _referenceMap.Release();
+            _mapper = null;
+            _referenceMap = null;
+
+            isDispose = true;
         }
 
         public TDomainEntity MapToDO(TPersistentObject persistentObject)
