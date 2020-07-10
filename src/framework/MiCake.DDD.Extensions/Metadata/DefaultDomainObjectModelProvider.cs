@@ -73,7 +73,7 @@ namespace MiCake.DDD.Extensions.Metadata
 
             //get persistent object.
             var currentPersistentType = persistentTypes.FirstOrDefault(s =>
-                                        TypeHelper.GetGenericArguments(s, typeof(IPersistentObject<>)).FirstOrDefault() == type);
+                                        TypeHelper.GetGenericArguments(s, typeof(IPersistentObject<,>))?[1] == type);
 
             if (currentPersistentType != null)
                 result.SetPersistentObject(currentPersistentType);

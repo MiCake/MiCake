@@ -24,19 +24,6 @@ namespace BaseMiCakeApplication.EFCore.Repositories
 
         public void UpdateLastWeekItineraryInfo(List<Itinerary> itineraries)
         {
-            var infos = DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
-
-            var before = infos.FirstOrDefault();
-            var changeInfos = infos.AsEnumerable().Select(s => new ItinerarySnapshotModel()
-            {
-                Id = s.Id,
-                Content = s.Content
-            });
-            var after = changeInfos.FirstOrDefault();
-            var s = before == after;
-
-            DbSet.UpdateRange(changeInfos);
-
             var doToPo = MapToDO(DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList());
             DbSet.UpdateRange(MapToPO(doToPo));
         }

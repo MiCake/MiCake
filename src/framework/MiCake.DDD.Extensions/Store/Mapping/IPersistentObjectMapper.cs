@@ -8,18 +8,24 @@ namespace MiCake.DDD.Extensions.Store.Mapping
     public interface IPersistentObjectMapper
     {
         /// <summary>
+        /// Whether to initialize automatically when the MiCake module startup.
+        /// </summary>
+        bool InitAtStartup { get; }
+
+        /// <summary>
         /// Create mapping relationship between domain entity and persistent object.
         /// 
         /// <para>
-        ///     This method return <see cref="IPersistentObjectMapConfig{TDomainEntity, TPersistentObject}"/>,you will use it to config mapping rule.
+        ///     This method return <see cref="IPersistentObjectMapConfig{TKey,TDomainEntity, TPersistentObject}"/>,you will use it to config mapping rule.
         /// </para>
         /// </summary>
+        /// <typeparam name="TKey">unique key type</typeparam>
         /// <typeparam name="TDomainEntity">The type of domain entity</typeparam>
         /// <typeparam name="TPersistentObject">The type of persistent object</typeparam>
-        /// <returns><see cref="IPersistentObjectMapConfig{TDomainEntity, TPersistentObject}"/></returns>
-        IPersistentObjectMapConfig<TDomainEntity, TPersistentObject> Create<TDomainEntity, TPersistentObject>()
-            where TDomainEntity : IEntity
-            where TPersistentObject : IPersistentObject;
+        /// <returns><see cref="IPersistentObjectMapConfig{TKey,TDomainEntity, TPersistentObject}"/></returns>
+        IPersistentObjectMapConfig<TKey, TDomainEntity, TPersistentObject> Create<TKey, TDomainEntity, TPersistentObject>()
+            where TDomainEntity : IAggregateRoot<TKey>
+            where TPersistentObject : IPersistentObject<TKey, TDomainEntity>;
 
         /// <summary>
         /// Map domain entity to persistent object.
@@ -29,7 +35,7 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         /// <param name="domainEntity"></param>
         /// <returns></returns>
         TPersistentObject ToPersistentObject<TDomainEntity, TPersistentObject>(TDomainEntity domainEntity)
-            where TDomainEntity : IEntity
+            where TDomainEntity : IAggregateRoot
             where TPersistentObject : IPersistentObject;
 
         /// <summary>
@@ -41,7 +47,7 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         /// <param name="originalSource">original persistent object value</param>
         /// <returns></returns>
         TPersistentObject ToPersistentObject<TDomainEntity, TPersistentObject>(TDomainEntity domainEntity, TPersistentObject originalSource)
-            where TDomainEntity : IEntity
+            where TDomainEntity : IAggregateRoot
             where TPersistentObject : IPersistentObject;
 
         /// <summary>
@@ -52,7 +58,7 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         /// <param name="persistentObject"></param>
         /// <returns></returns>
         TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject)
-            where TDomainEntity : IEntity
+            where TDomainEntity : IAggregateRoot
             where TPersistentObject : IPersistentObject;
 
         /// <summary>
@@ -64,7 +70,7 @@ namespace MiCake.DDD.Extensions.Store.Mapping
         /// <param name="originalSource">original domain entity value</param>
         /// <returns></returns>
         TDomainEntity ToDomainEntity<TDomainEntity, TPersistentObject>(TPersistentObject persistentObject, TDomainEntity originalSource)
-            where TDomainEntity : IEntity
+            where TDomainEntity : IAggregateRoot
             where TPersistentObject : IPersistentObject;
 
         /// <summary>

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace MiCake.EntityFrameworkCore.Mapping
 {
     public class EFCorePoManager<TDomainEntity, TPersistentObject> : IDisposable
-        where TDomainEntity : IEntity
+        where TDomainEntity : IAggregateRoot
         where TPersistentObject : IPersistentObject
     {
         private IPersistentObjectReferenceMap _referenceMap = new EFCorePoReferenceMap();
@@ -54,22 +54,10 @@ namespace MiCake.EntityFrameworkCore.Mapping
 
         public IEnumerable<TDomainEntity> MapToDO(IEnumerable<TPersistentObject> persistentObject)
         {
-            IEnumerable<TDomainEntity> result;
-
-            if (_referenceMap.TryGetDomainEntity(persistentObject, out var relatedDomainEntity))
+            foreach (var po in persistentObject)
             {
-                //If can find the associated result, change it based on it.
-                result = _mapper.Map(persistentObject, (IEnumerable<TDomainEntity>)relatedDomainEntity);
+                yield return MapToDO(po);
             }
-            else
-            {
-                var domainEntity = _mapper.Map<IEnumerable<TPersistentObject>, IEnumerable<TDomainEntity>>(persistentObject);
-                _referenceMap.Add(domainEntity, persistentObject);
-
-                result = domainEntity;
-            }
-
-            return result;
         }
 
         public TPersistentObject MapToPO(TDomainEntity domainEntity)
@@ -94,22 +82,10 @@ namespace MiCake.EntityFrameworkCore.Mapping
 
         public IEnumerable<TPersistentObject> MapToPO(IEnumerable<TDomainEntity> domainEntity)
         {
-            IEnumerable<TPersistentObject> result;
-
-            if (_referenceMap.TryGetPersistentObj(domainEntity, out var relatedPersistentObj))
+            foreach (var entity in domainEntity)
             {
-                //If can find the associated result, change it based on it.
-                result = _mapper.Map(domainEntity, (IEnumerable<TPersistentObject>)relatedPersistentObj);
+                yield return MapToPO(entity);
             }
-            else
-            {
-                var persistentObjInstance = _mapper.Map<IEnumerable<TDomainEntity>, IEnumerable<TPersistentObject>>(domainEntity);
-                _referenceMap.Add(domainEntity, persistentObjInstance);
-
-                result = persistentObjInstance;
-            }
-
-            return result;
         }
     }
 }

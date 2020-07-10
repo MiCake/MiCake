@@ -1,4 +1,7 @@
-﻿using MiCake.Core.Data;
+﻿using AutoMapper;
+using AutoMapper.EquivalencyExpression;
+using MiCake.AutoMapper;
+using MiCake.Core.Data;
 using MiCake.DDD.Extensions.Store.Mapping;
 using MiCake.EntityFrameworkCore.Mapping;
 using MiCake.EntityFrameworkCore.Tests.Fakes;
@@ -6,15 +9,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using MiCake.AutoMapper;
-using AutoMapper;
 
 namespace MiCake.EntityFrameworkCore.Tests.Mapping
 {
     public class PoManager_UseAutoMapper_Tests
     {
-        public IPersistentObjectMapper MapsterMapper { get; set; } = new AutoMapperPersistentObjectMapper(new Mapper(null));
-        private static bool hasInit = false;
+        public IPersistentObjectMapper AutoMapper_POMapper { get; set; }
 
         public PoManager_UseAutoMapper_Tests()
         {
@@ -24,7 +24,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
         [Fact]
         public void MapDoAndPO_NormalMap()
         {
-            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(AutoMapper_POMapper);
 
             var aggregateRoot = new PersistentAggregateRoot("Hello", new ColorValueObject(255, 255, 255));
             var poResult = mapper.MapToPO(aggregateRoot);
@@ -48,7 +48,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
         [Fact]
         public void MapDoAndPO_MapList()
         {
-            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(AutoMapper_POMapper);
 
             var aggregateRoots = new List<PersistentAggregateRoot>
             {
@@ -88,7 +88,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
         [Fact]
         public void MapDoAndPO_HasDomainEvent()
         {
-            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(AutoMapper_POMapper);
 
             var aggregateRoot = new PersistentAggregateRoot("Hello", new ColorValueObject(255, 255, 255));
             aggregateRoot.AddDomainEvent(new DemoDomainEvent() { Name = "Event" });
@@ -102,7 +102,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
         [Fact]
         public void MapDoAndPO_GiveOriginalObject_ShouldChangeOriginalObjectValue()
         {
-            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(AutoMapper_POMapper);
 
             var poSource = new AggregateRootPOModel("Hello", 255, 255, 255) { Id = 10086 };
             //For example:repository.Find();
@@ -123,7 +123,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
         [Fact]
         public void MapDoAndPO_GiveOriginalObject_ShouldChangeOriginalObjectValue_List()
         {
-            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(AutoMapper_POMapper);
 
             //List update
             var poModels = new List<AggregateRootPOModel>
@@ -135,24 +135,21 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
             var before = poModels.FirstOrDefault();
 
             var doResults = mapper.MapToDO(poModels).ToList();
-            var selectR = doResults.Select(s => s);
 
             doResults.First().SetColor(new ColorValueObject(10, 10, 10));
 
             var updatedPoSources = mapper.MapToPO(doResults);
 
-            var after = updatedPoSources.ToList().FirstOrDefault();
+            var after = updatedPoSources.FirstOrDefault();
 
-            var s = before == after;
-
-            Assert.Same(poModels, updatedPoSources);
-            Assert.Equal(10, updatedPoSources.First().G);
+            Assert.Same(before, after);
+            Assert.Equal(10, after.G);
         }
 
         [Fact]
         public void MapDoAndPO_ShouldDispose()
         {
-            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(MapsterMapper);
+            var mapper = new EFCorePoManager<PersistentAggregateRoot, AggregateRootPOModel>(AutoMapper_POMapper);
 
             var aggregateRoot = new PersistentAggregateRoot("Hello", new ColorValueObject(255, 255, 255));
             var poResult = mapper.MapToPO(aggregateRoot);
@@ -167,16 +164,24 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
 
         private void ActiveAllPOConfig()
         {
-            if (!hasInit)
-            {
-                //use to active mapping info.
-                AggregateRootPOModel po = new AggregateRootPOModel();
-                (po as INeedParts<IPersistentObjectMapper>).SetParts(MapsterMapper);
+            AutoMapper_POMapper = new AutoMapperPersistentObjectMapper(null);
 
-                po.ConfigureMapping();
+            var config = new MapperConfiguration(cfg =>
+             {
+                 cfg.DisableConstructorMapping();
+                 cfg.AddCollectionMappers();
 
-                hasInit = true;
-            }
+                 ((AutoMapperPersistentObjectMapper)AutoMapper_POMapper).SetAutoMapperConfigExpression(cfg);
+
+                 //use to active mapping info.
+                 AggregateRootPOModel po = new AggregateRootPOModel();
+                 (po as INeedParts<IPersistentObjectMapper>).SetParts(AutoMapper_POMapper);
+                 po.ConfigureMapping();
+                 (po as IHasAccessor<IPersistentObjectMapConfig>)?.Instance?.Build();
+             });
+
+            var mapper = config.CreateMapper();
+            AutoMapper_POMapper = new AutoMapperPersistentObjectMapper(mapper);
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Store;
 using MiCake.DDD.Extensions.Store;
-using System.Drawing;
 
 namespace MiCake.EntityFrameworkCore.Tests.Fakes
 {
@@ -42,6 +41,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Fakes
 
         public int B { get; private set; }
 
+        public ColorValueObject()
+        {
+        }
+
         public ColorValueObject(int r, int g, int b)
         {
             R = r;
@@ -50,9 +53,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Fakes
         }
     }
 
-    public class AggregateRootPOModel : PersistentObject<PersistentAggregateRoot, AggregateRootPOModel>
+    public class AggregateRootPOModel : PersistentObject<long, PersistentAggregateRoot, AggregateRootPOModel>
     {
-        public long Id { get; set; }
         public int R { get; private set; }
         public int G { get; private set; }
         public int B { get; private set; }
@@ -72,7 +74,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Fakes
 
         public override void ConfigureMapping()
         {
-            this.MapConfiger.MapProperty(s => s.Color.R, d => d.R)
+            MapConfiger.MapProperty(s => s.Color.R, d => d.R)
                 .MapProperty(s => s.Color.G, d => d.G)
                 .MapProperty(s => s.Color.B, d => d.B)
                 .MapProperty(s => s.Name, d => d.Name);

@@ -4,12 +4,13 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Internal;
 using MiCake.DDD.Extensions.Store.Mapping;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MiCake.DDD.Extensions.Store
 {
     /// <summary>
     /// Defines an persistent object.
-    /// Mabey you need use generic type <see cref="IPersistentObject{TEntity}"/>
+    /// Mabey you need use generic type <see cref="IPersistentObject{TKey, TEntity}"/>
     /// </summary>
     public interface IPersistentObject : IDomainEventProvider, INeedParts<IPersistentObjectMapper>
     {
@@ -23,23 +24,32 @@ namespace MiCake.DDD.Extensions.Store
         void ConfigureMapping();
     }
 
-    public interface IPersistentObject<TEntity> : IPersistentObject
+    public interface IPersistentObject<TKey, TEntity> : IPersistentObject
         where TEntity : IAggregateRoot
     {
+        TKey Id { get; set; }
     }
 
     /// <summary>
     /// Base class of persistent object.
-    /// You should configure relationship mapping between <see cref="IEntity"/> and persistent object by override <see cref="ConfigureMapping"/>
+    /// You should configure relationship mapping between <see cref="IAggregateRoot"/> and persistent object by override <see cref="ConfigureMapping"/>
     /// </summary>
     /// <typeparam name="TAggregateRoot"><see cref="IEntity"/></typeparam>
     /// <typeparam name="TSelf">self type</typeparam>
-    public abstract class PersistentObject<TAggregateRoot, TSelf> : IPersistentObject<TAggregateRoot>
-        where TAggregateRoot : IAggregateRoot
-        where TSelf : IPersistentObject<TAggregateRoot>
+    /// <typeparam name="TKey">unique key type.</typeparam>
+    public abstract class PersistentObject<TKey, TAggregateRoot, TSelf> : IPersistentObject<TKey, TAggregateRoot>, IHasAccessor<IPersistentObjectMapConfig>
+        where TAggregateRoot : IAggregateRoot<TKey>
+        where TSelf : IPersistentObject<TKey, TAggregateRoot>
     {
         private List<IDomainEvent> _domainEvents;
-        protected IPersistentObjectMapConfig<TAggregateRoot, TSelf> MapConfiger;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        protected IPersistentObjectMapConfig<TKey, TAggregateRoot, TSelf> MapConfiger;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IPersistentObjectMapConfig IHasAccessor<IPersistentObjectMapConfig>.Instance => MapConfiger;
+
+        public TKey Id { get; set; }
 
         public IPersistentObject AddDomainEvents(List<IDomainEvent> domainEvents)
         {
@@ -63,8 +73,8 @@ namespace MiCake.DDD.Extensions.Store
 
         void INeedParts<IPersistentObjectMapper>.SetParts(IPersistentObjectMapper parts)
         {
-            CheckValue.NotNull(parts, nameof(IPersistentObjectMapper));
-            MapConfiger = parts.Create<TAggregateRoot, TSelf>();
+            CheckValue.NotNull(parts, nameof(parts));
+            MapConfiger = parts.Create<TKey, TAggregateRoot, TSelf>();
         }
     }
 }
