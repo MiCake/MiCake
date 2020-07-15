@@ -1,4 +1,4 @@
-﻿namespace MiCake.DDD.Extensions.LifeTime
+﻿namespace MiCake.DDD.Extensions.Lifetime
 {
     /// <summary>
     /// Provide a life cycle interface of repository operation process

@@ -9,9 +9,7 @@ using MiCake.EntityFrameworkCore.Repository.Freedom;
 using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.EntityFrameworkCore.Tests")]
 namespace MiCake.EntityFrameworkCore.Modules
 {
     [RelyOn(

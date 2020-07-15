@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\framework\MiCake.AutoMapper\AutoMapperPersistentObjectMapConfig.cs" Link="Links\AutoMapperPersistentObjectMapConfig.cs" />
+    <Compile Include="..\..\framework\MiCake.AutoMapper\AutoMapperPersistentObjectMapper.cs" Link="Links\AutoMapperPersistentObjectMapper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="3.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="xunit" Version="2.4.0" />
@@ -21,6 +26,7 @@
   <ItemGroup>
     <Folder Include="Repository\" />
     <Folder Include="Uow\" />
+    <Folder Include="Links\" />
   </ItemGroup>
 
 </Project>

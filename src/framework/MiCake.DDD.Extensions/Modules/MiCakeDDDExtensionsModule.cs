@@ -3,7 +3,7 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Freedom;
 using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Internal;
-using MiCake.DDD.Extensions.LifeTime;
+using MiCake.DDD.Extensions.Lifetime;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Extensions.Store;
 using MiCake.DDD.Extensions.Store.Mapping;

@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\framework\MiCake.AspNetCore\DataWrapper\Internals\DataWrapperFilter.cs" Link="Links\DataWrapperFilter.cs" />
+    <Compile Include="..\..\framework\MiCake.AspNetCore\DataWrapper\Internals\DefaultWrapperExecutor.cs" Link="Links\DefaultWrapperExecutor.cs" />
+    <Compile Include="..\..\framework\MiCake.AspNetCore\DataWrapper\Internals\ExceptionDataWrapperFilter.cs" Link="Links\ExceptionDataWrapperFilter.cs" />
+    <Compile Include="..\..\framework\MiCake.AspNetCore\DataWrapper\ResponseMessage.cs" Link="Links\ResponseMessage.cs" />
+    <Compile Include="..\..\framework\MiCake.AspNetCore\Security\VerifyCurrentUserFilter.cs" Link="Links\VerifyCurrentUserFilter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   
@@ -19,6 +27,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Links\" />
   </ItemGroup>
 
 </Project>

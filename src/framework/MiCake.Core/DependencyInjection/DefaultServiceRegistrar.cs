@@ -3,9 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.Core.Tests")]
 namespace MiCake.Core.DependencyInjection
 {
     internal class DefaultServiceRegistrar : MiCakeServiceRegistrarBase

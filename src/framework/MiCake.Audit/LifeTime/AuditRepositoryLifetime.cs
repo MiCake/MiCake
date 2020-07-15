@@ -1,10 +1,10 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.LifeTime;
+using MiCake.DDD.Extensions.Lifetime;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Audit.LifeTime
+namespace MiCake.Audit.Lifetime
 {
     internal class AuditRepositoryLifetime : IRepositoryPreSaveChanges
     {

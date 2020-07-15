@@ -7,9 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.AspNetCore.Tests")]
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
     /// <summary>

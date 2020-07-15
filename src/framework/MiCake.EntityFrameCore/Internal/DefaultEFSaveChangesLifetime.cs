@@ -1,4 +1,4 @@
-﻿using MiCake.DDD.Extensions.LifeTime;
+﻿using MiCake.DDD.Extensions.Lifetime;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Collections.Generic;
 using System.Linq;

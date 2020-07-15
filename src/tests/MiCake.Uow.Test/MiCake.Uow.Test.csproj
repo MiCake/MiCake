@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\framework\MiCake.Uow\Internal\ChildUnitOfWork.cs" Link="Links\ChildUnitOfWork.cs" />
+    <Compile Include="..\..\framework\MiCake.Uow\Internal\CurrentUnitOfWork.cs" Link="Links\CurrentUnitOfWork.cs" />
+    <Compile Include="..\..\framework\MiCake.Uow\Internal\UnitOfWork.cs" Link="Links\UnitOfWork.cs" />
+    <Compile Include="..\..\framework\MiCake.Uow\Internal\UnitOfWorkManager.cs" Link="Links\UnitOfWorkManager.cs" />
+    <Compile Include="..\..\framework\MiCake.Uow\UnitOfWorkCallContext.cs" Link="Links\UnitOfWorkCallContext.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="Moq" Version="4.13.1" />
     <PackageReference Include="xunit" Version="2.4.0" />
@@ -17,6 +25,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake.Uow\MiCake.Uow.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Links\" />
   </ItemGroup>
 
 </Project>

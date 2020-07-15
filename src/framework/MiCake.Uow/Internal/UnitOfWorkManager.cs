@@ -2,9 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.Uow.Test")]
 namespace MiCake.Uow.Internal
 {
     /// <summary>

@@ -16,7 +16,7 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// </summary>
     /// <typeparam name="TDbContext">Type Of DBContext</typeparam>
     /// <typeparam name="TAggregateRoot">Type of <see cref="IAggregateRoot"/></typeparam>
-    /// <typeparam name="TPersistentObject">Type of <see cref="PersistentObject{TEntity, TPersistentObject}"/></typeparam>
+    /// <typeparam name="TPersistentObject">Type of <see cref="PersistentObject{TKey,TEntity, TPersistentObject}"/></typeparam>
     /// <typeparam name="TKey">Primary key type of <see cref="IAggregateRoot"/></typeparam>
     public class EFReadOnlyRepositoryWithPO<TDbContext, TAggregateRoot, TPersistentObject, TKey> :
         EFRepositoryBase<TDbContext, TAggregateRoot, TKey>,

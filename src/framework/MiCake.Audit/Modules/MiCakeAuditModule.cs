@@ -1,9 +1,9 @@
 ﻿using MiCake.Audit.Core;
-using MiCake.Audit.LifeTime;
+using MiCake.Audit.Lifetime;
 using MiCake.Audit.SoftDeletion;
 using MiCake.Audit.Store;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Extensions.LifeTime;
+using MiCake.DDD.Extensions.Lifetime;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.DDD.Extensions.Store.Configure;
 using Microsoft.Extensions.DependencyInjection;

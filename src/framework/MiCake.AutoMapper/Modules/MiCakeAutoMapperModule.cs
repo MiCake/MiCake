@@ -5,9 +5,7 @@ using MiCake.DDD.Extensions.Store.Mapping;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.EntityFrameworkCore.Tests")]
 namespace MiCake.AutoMapper.Modules
 {
     [RelyOn(typeof(MiCakeDDDExtensionsModule))]

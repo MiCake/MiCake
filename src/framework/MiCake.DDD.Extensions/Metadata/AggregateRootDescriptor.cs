@@ -43,7 +43,7 @@ namespace MiCake.DDD.Extensions.Metadata
             HasPersistentObject = EntityHelper.HasPersistentObject(type);
         }
 
-        internal void SetPersistentObject(Type persistentType)
+        public void SetPersistentObject(Type persistentType)
         {
             if (!ReflectionHelper.IsAssignableToGenericType(persistentType, typeof(IPersistentObject<,>)))
                 throw new ArgumentException($"The type {persistentType.Name} is not implements/inherits {nameof(PersistentObject)}.");

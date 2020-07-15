@@ -4,9 +4,7 @@ using MiCake.DDD.Extensions.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MiCake.DDD.Tests")]
 namespace MiCake.DDD.Extensions.Internal
 {
     internal class DefaultFreeRepositoryFactory<TEntity, TKey> : IFreeRepositoryFactory<TEntity, TKey>

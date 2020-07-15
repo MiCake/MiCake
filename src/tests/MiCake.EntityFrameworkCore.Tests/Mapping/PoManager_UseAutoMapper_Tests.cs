@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.EquivalencyExpression;
 using MiCake.AutoMapper;
 using MiCake.Core.Data;
 using MiCake.DDD.Extensions.Store.Mapping;
@@ -169,7 +168,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Mapping
             var config = new MapperConfiguration(cfg =>
              {
                  cfg.DisableConstructorMapping();
-                 cfg.AddCollectionMappers();
 
                  ((AutoMapperPersistentObjectMapper)AutoMapper_POMapper).SetAutoMapperConfigExpression(cfg);
 

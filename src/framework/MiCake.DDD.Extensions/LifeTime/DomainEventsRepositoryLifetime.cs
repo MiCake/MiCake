@@ -3,7 +3,7 @@ using MiCake.DDD.Domain.Internal;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.DDD.Extensions.LifeTime
+namespace MiCake.DDD.Extensions.Lifetime
 {
     internal class DomainEventsRepositoryLifetime : IRepositoryPreSaveChanges
     {
