@@ -1,6 +1,6 @@
-﻿using System.Threading;
+﻿using MiCake.Bus.Messages;
+using System.Threading;
 using System.Threading.Tasks;
-using MiCake.Bus.Messages;
 
 namespace MiCake.Bus.Serialization
 {

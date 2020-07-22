@@ -1,32 +1,30 @@
-﻿using MiCake.Bus.Messages;
+﻿using MiCake.Bus.Broker;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.Bus.Transport
 {
     /// <summary>
-    /// The transport is responsible for sending and receiving messages
+    /// Defined the implementation details of a broker
     /// </summary>
     public interface ITransport
     {
         /// <summary>
-        /// Gets the global address of the transport's input queue
+        /// Get the transport connection info.
         /// </summary>
-        string Address { get; }
+        BrokerConnection Connection { get; }
 
         /// <summary>
-        /// Sends the given <see cref="TransportMessage"/> to the queue.
+        /// Ready to connect to broker.
         /// </summary>
-        /// <param name="transportMessage"><see cref="TransportMessage"/></param>
+        /// <returns></returns>
+        Task StartAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Close current transport.
+        /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task SendAsync(TransportMessage transportMessage, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Receives the message from the transport's queue.
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        Task<TransportMessage> Receive(CancellationToken cancellationToken = default);
+        Task CloseAsync(CancellationToken cancellationToken = default);
     }
 }
