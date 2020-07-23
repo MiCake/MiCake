@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Serialization\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
   </ItemGroup>
 

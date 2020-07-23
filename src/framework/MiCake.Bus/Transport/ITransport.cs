@@ -12,7 +12,7 @@ namespace MiCake.Bus.Transport
         /// <summary>
         /// Get the transport connection info.
         /// </summary>
-        BrokerConnection Connection { get; }
+        IBrokerConnection Connection { get; }
 
         /// <summary>
         /// Ready to connect to broker.

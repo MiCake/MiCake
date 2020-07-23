@@ -3,18 +3,18 @@
 namespace MiCake.Bus.Broker
 {
     /// <summary>
-    /// 
+    /// Indicates the link information for the current broker.
     /// </summary>
-    public class BrokerConnection
+    public interface IBrokerConnection
     {
         /// <summary>
-        /// 
+        /// Current endpoint info.
         /// </summary>
-        public Uri EndPoint { get; private set; }
+        Uri EndPoint { get; }
 
         /// <summary>
-        /// 
+        /// Indicates current connection is closed.
         /// </summary>
-        public bool IsClosed { get; private set; }
+        bool IsClosed { get; }
     }
 }

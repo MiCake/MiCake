@@ -8,10 +8,10 @@ namespace MiCake.Bus.Messages
     /// </summary>
     public class Message
     {
-        public Message(Dictionary<string, string> headers, object playload)
+        public Message(Dictionary<string, string> headers, object body)
         {
             Headers = headers ?? throw new ArgumentNullException(nameof(headers));
-            Playload = playload ?? throw new ArgumentNullException(nameof(playload));
+            Body = body ?? throw new ArgumentNullException(nameof(body));
         }
 
         /// <summary>
@@ -22,6 +22,6 @@ namespace MiCake.Bus.Messages
         /// <summary>
         /// Gets the wrapped playload object of this message
         /// </summary>
-        public object Playload { get; private set; }
+        public object Body { get; private set; }
     }
 }

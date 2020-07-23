@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +25,6 @@ namespace MiCake.Bus
         /// <param name="headers">some header info.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task SendAsync(object message, Dictionary<string, string> headers = null, CancellationToken cancellationToken = default);
+        Task SendAsync(object message, Dictionary<string, string> headers, CancellationToken cancellationToken = default);
     }
 }

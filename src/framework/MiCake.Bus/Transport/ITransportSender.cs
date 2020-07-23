@@ -1,4 +1,5 @@
 ﻿using MiCake.Bus.Messages;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,6 +10,11 @@ namespace MiCake.Bus.Transport
     /// </summary>
     public interface ITransportSender : ITransport
     {
+        ///  <summary>
+        /// A event handler when message sended.
+        /// </summary>
+        event EventHandler<TransportMessage> OnMessageSended;
+
         /// <summary>
         /// Sends the given <see cref="TransportMessage"/> to the queue.
         /// </summary>

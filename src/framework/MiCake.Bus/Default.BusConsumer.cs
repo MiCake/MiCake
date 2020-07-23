@@ -3,7 +3,7 @@
     /// <summary>
     /// Default impl for <see cref="IBusConsumer"/>.
     /// </summary>
-    internal class DefaultBusConsumer : IBusConsumer
+    public class DefaultBusConsumer : IBusConsumer
     {
     }
 }
