@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Bus\MiCake.Bus.csproj" />
+    <ProjectReference Include="..\MiCake.MessageBus\MiCake.MessageBus.csproj" />
   </ItemGroup>
 
 </Project>

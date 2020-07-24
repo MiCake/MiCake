@@ -9,8 +9,7 @@ namespace MiCake.MessageBus.Modules
         {
             var services = context.Services;
 
-            services.TryAddSingleton<IMessageBus, DefaultBus>();
-            services.TryAddSingleton<IBusConsumer, DefaultBusConsumer>();
+            services.TryAddSingleton<IMessageBus, DefaultMessageBus>();
         }
     }
 }

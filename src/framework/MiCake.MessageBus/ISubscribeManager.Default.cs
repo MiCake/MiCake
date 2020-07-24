@@ -28,5 +28,10 @@ namespace MiCake.MessageBus
         {
             throw new NotImplementedException();
         }
+
+        public Task RemoveAsync(IMessageSubscriber messageSubscriber)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
