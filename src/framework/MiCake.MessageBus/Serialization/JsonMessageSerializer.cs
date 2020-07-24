@@ -1,11 +1,11 @@
-﻿using MiCake.Bus.Messages;
+﻿using MiCake.Core.Util;
+using MiCake.MessageBus.Messages;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
-using MiCake.Core.Util;
 
-namespace MiCake.Bus.Serialization
+namespace MiCake.MessageBus.Serialization
 {
     /// <summary>
     /// A <see cref="IMessageSerializer"/> use json and utf-8.

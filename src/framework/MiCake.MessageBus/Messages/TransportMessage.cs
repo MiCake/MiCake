@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MiCake.Bus.Messages
+namespace MiCake.MessageBus.Messages
 {
     /// <summary>
     /// Transport message wrapper that has a set of headers and a stream of raw data to be sent/received

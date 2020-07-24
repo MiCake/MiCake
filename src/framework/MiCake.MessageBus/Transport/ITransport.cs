@@ -1,8 +1,8 @@
-﻿using MiCake.Bus.Broker;
+﻿using MiCake.MessageBus.Broker;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Bus.Transport
+namespace MiCake.MessageBus.Transport
 {
     /// <summary>
     /// Defined the implementation details of a broker

@@ -1,26 +1,36 @@
-﻿using MiCake.Bus.Messages;
-using MiCake.Bus.Serialization;
-using MiCake.Bus.Transport;
-using MiCake.Core.Util;
+﻿using MiCake.Core.Util;
+using MiCake.MessageBus.Messages;
+using MiCake.MessageBus.Serialization;
+using MiCake.MessageBus.Transport;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Bus
+namespace MiCake.MessageBus
 {
     /// <summary>
-    /// Default impl for <see cref="IBus"/>.
+    /// Default impl for <see cref="IMessageBus"/>.
     /// </summary>
-    public class DefaultBus : IBus
+    public class DefaultMessageBus : IMessageBus
     {
         private readonly ITransportSender _transport;
         private readonly IMessageSerializer _serializer;
 
-        public DefaultBus(ITransportSender transport, IMessageSerializer messageSerializer)
+        public DefaultMessageBus(ITransportSender transport, IMessageSerializer messageSerializer)
         {
             _transport = transport ?? throw new ArgumentNullException(nameof(transport));
             _serializer = messageSerializer ?? throw new ArgumentNullException(nameof(messageSerializer));
+        }
+
+        public Task CancelSubscribeAsync(IMessageSubscriber messageSubscriber)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IMessageSubscriber> CreateSubscriberAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         public virtual Task SendAsync(object message, CancellationToken cancellationToken = default)
@@ -39,6 +49,11 @@ namespace MiCake.Bus
 
             var transportMsg = await _serializer.SerializeAsync(new Message(headers, message));
             await _transport.SendAsync(transportMsg, cancellationToken);
+        }
+
+        public Task SendAsync(object message, Dictionary<string, string> headers, MessageDeliveryOptions options, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

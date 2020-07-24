@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace MiCake.Bus.Transport
+namespace MiCake.MessageBus
 {
     /// <summary>
-    /// A options for subscribe to the message queue.
+    /// Describes the configuration where messages are delivered.
     /// </summary>
-    public class TransportSubscribeOptions
+    public class MessageDeliveryOptions
     {
         /// <summary>
         /// A set of topic name.

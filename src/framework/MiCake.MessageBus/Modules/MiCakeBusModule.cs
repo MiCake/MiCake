@@ -1,7 +1,7 @@
 ﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MiCake.Bus.Modules
+namespace MiCake.MessageBus.Modules
 {
     public class MiCakeBusModule : MiCakeModule
     {
@@ -9,7 +9,7 @@ namespace MiCake.Bus.Modules
         {
             var services = context.Services;
 
-            services.TryAddSingleton<IBus, DefaultBus>();
+            services.TryAddSingleton<IMessageBus, DefaultBus>();
             services.TryAddSingleton<IBusConsumer, DefaultBusConsumer>();
         }
     }

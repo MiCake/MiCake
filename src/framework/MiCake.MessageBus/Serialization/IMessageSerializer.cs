@@ -1,8 +1,8 @@
-﻿using MiCake.Bus.Messages;
+﻿using MiCake.MessageBus.Messages;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Bus.Serialization
+namespace MiCake.MessageBus.Serialization
 {
     /// <summary>
     /// A message serializer that serialize/deserialize <see cref="TransportMessage"/> and <see cref="Message"/>

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MiCake.Bus.Messages
+namespace MiCake.MessageBus.Messages
 {
     /// <summary>
     /// A message wrapper that transmitted between message bus and will be serialized into <see cref="TransportMessage"/>.

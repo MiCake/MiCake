@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MiCake.Bus.Broker
+namespace MiCake.MessageBus.Broker
 {
     /// <summary>
     /// Indicates the link information for the current broker.

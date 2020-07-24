@@ -1,9 +1,9 @@
-﻿using MiCake.Bus.Messages;
+﻿using MiCake.MessageBus.Messages;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Bus.Transport
+namespace MiCake.MessageBus.Transport
 {
     /// <summary>
     /// The transport is responsible for receiving message.
@@ -33,9 +33,9 @@ namespace MiCake.Bus.Transport
         /// <summary>
         /// Subscribe to the message queue by appoint config.
         /// </summary>
-        /// <param name="options"><see cref="TransportSubscribeOptions"/></param>
+        /// <param name="options"><see cref="MessageExchangeOptions"/></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task SubscribeAsync(TransportSubscribeOptions options, CancellationToken cancellationToken = default);
+        Task SubscribeAsync(MessageExchangeOptions options, CancellationToken cancellationToken = default);
     }
 }
