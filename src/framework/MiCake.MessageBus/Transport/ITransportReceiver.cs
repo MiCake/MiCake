@@ -8,7 +8,7 @@ namespace MiCake.MessageBus.Transport
     /// <summary>
     /// The transport is responsible for receiving message.
     /// </summary>
-    public interface ITransportReceiver
+    public interface ITransportReceiver : ITransport
     {
         /// <summary>
         /// A event handler when message received.
