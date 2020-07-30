@@ -40,19 +40,19 @@ namespace MiCake.MessageBus
             return _subscribeManager.RemoveAsync(messageSubscriber);
         }
 
-        public Task<IMessageSubscriber> CreateSubscriberAsync(CancellationTokenSource cancellationTokenSource)
+        public Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Message Bus create a subscriber.");
 
-            return _subscribeManager.CreateAsync(cancellationTokenSource);
+            return _subscribeManager.CreateAsync(options, cancellationToken);
         }
 
-        public virtual Task SendAsync(object message, CancellationToken cancellationToken = default)
+        public virtual Task PublishAsync(object message, CancellationToken cancellationToken = default)
         {
-            return SendAsync(message, new Dictionary<string, string>(), cancellationToken);
+            return PublishAsync(message, new Dictionary<string, string>(), cancellationToken);
         }
 
-        public virtual async Task SendAsync(object message, Dictionary<string, string> headers, CancellationToken cancellationToken = default)
+        public virtual async Task PublishAsync(object message, Dictionary<string, string> headers, CancellationToken cancellationToken = default)
         {
             CheckMessage(message);
 
@@ -60,20 +60,16 @@ namespace MiCake.MessageBus
             await _transport.SendAsync(transportMsg, cancellationToken);
         }
 
-        public virtual async Task SendAsync(object message, Dictionary<string, string> headers, MessageDeliveryOptions options, CancellationToken cancellationToken = default)
+        public virtual async Task PublishAsync(object message, Dictionary<string, string> headers, MessageDeliveryOptions options, CancellationToken cancellationToken = default)
         {
             CheckMessage(message);
 
             var transportMsg = await _serializer.SerializeAsync(new Message(headers, message));
-            await _transport.SendAsync(transportMsg, ConvertMessageOptions(options), cancellationToken);
-        }
 
-        private MessageExchangeOptions ConvertMessageOptions(MessageDeliveryOptions deliveryOptions)
-        {
-            return new MessageExchangeOptions()
+            foreach (var topic in options.Topics)
             {
-                Topics = deliveryOptions.Topics
-            };
+                await _transport.SendAsync(transportMsg, new MessageExchangeOptions() { Topic = topic }, cancellationToken);
+            }
         }
 
         private void CheckMessage(object message)

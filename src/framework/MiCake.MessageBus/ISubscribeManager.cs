@@ -19,9 +19,10 @@ namespace MiCake.MessageBus
         /// <summary>
         /// Create a new <see cref="IMessageSubscriber"/>.
         /// </summary>
-        /// <param name="cancellationTokenSource">token source that used to cancel subscriber listen.</param>
+        /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IMessageSubscriber> CreateAsync(CancellationTokenSource cancellationTokenSource);
+        Task<IMessageSubscriber> CreateAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Remove current <see cref="IMessageSubscriber"/>.

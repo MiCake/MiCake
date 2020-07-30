@@ -19,25 +19,25 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
         /// Create a new <see cref="IModel"/>.
         /// </summary>
         /// <returns></returns>
-        RabbitMQBorkerConnection CreateModel();
+        RabbitMQBrokerConnection CreateModel();
 
         /// <summary>
         /// Break appoint <see cref="IModel"/>.
         /// </summary>
         /// <param name="rabbitConnection"></param>
-        bool BreakModel(RabbitMQBorkerConnection rabbitConnection);
+        bool BreakModel(RabbitMQBrokerConnection rabbitConnection);
 
         /// <summary>
         /// Rent a <see cref="IModel"/> to avoid unnecessary overhead by constantly creating new links.
         /// If current has no resouce,will create a new <see cref="IModel"/> and push in pool.
         /// </summary>
         /// <returns></returns>
-        RabbitMQBorkerConnection RentModel();
+        RabbitMQBrokerConnection RentModel();
 
         /// <summary>
-        /// Return current <see cref="IModel"/>,easy to use next time
+        /// Return current <see cref="IModel"/>,order to use next time.
         /// </summary>
         /// <returns></returns>
-        bool ReturnModel(RabbitMQBorkerConnection rabbitConnection);
+        bool ReturnModel(RabbitMQBrokerConnection rabbitConnection);
     }
 }

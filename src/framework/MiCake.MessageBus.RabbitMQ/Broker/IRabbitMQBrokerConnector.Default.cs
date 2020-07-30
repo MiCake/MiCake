@@ -36,12 +36,12 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
             _connectionActivator = CreateConnection(_options);
         }
 
-        public RabbitMQBorkerConnection CreateModel()
+        public RabbitMQBrokerConnection CreateModel()
         {
             try
             {
                 var model = GetConnection().CreateModel();
-                return RabbitMQBorkerConnection.ConnectionSuccess(_options.HostName, model);
+                return RabbitMQBrokerConnection.ConnectionSuccess(_options.HostName, model, _options);
             }
             catch (Exception e)
             {
@@ -51,7 +51,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
             }
         }
 
-        public bool BreakModel(RabbitMQBorkerConnection rabbitConnection)
+        public bool BreakModel(RabbitMQBrokerConnection rabbitConnection)
         {
             if (rabbitConnection.IsClosed)
                 return true;
@@ -70,7 +70,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
             }
         }
 
-        public RabbitMQBorkerConnection RentModel()
+        public RabbitMQBrokerConnection RentModel()
         {
             lock (SLock)
             {
@@ -82,7 +82,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
             }
         }
 
-        private RabbitMQBorkerConnection RentModelInternal()
+        private RabbitMQBrokerConnection RentModelInternal()
         {
             if (_pool.TryDequeue(out var model))
             {
@@ -90,7 +90,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
 
                 Debug.Assert(_count >= 0);
 
-                return RabbitMQBorkerConnection.ConnectionSuccess(_options.HostName, model);
+                return RabbitMQBrokerConnection.ConnectionSuccess(_options.HostName, model, _options);
             }
 
             try
@@ -104,10 +104,10 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
                 throw;
             }
 
-            return RabbitMQBorkerConnection.ConnectionSuccess(_options.HostName, model);
+            return RabbitMQBrokerConnection.ConnectionSuccess(_options.HostName, model, _options);
         }
 
-        public bool ReturnModel(RabbitMQBorkerConnection rabbitConnection)
+        public bool ReturnModel(RabbitMQBrokerConnection rabbitConnection)
         {
             var rbtModel = rabbitConnection.RabbitMQModel;
             if (Interlocked.Increment(ref _count) <= _maxSize && rbtModel.IsOpen)

@@ -14,7 +14,7 @@ namespace MiCake.MessageBus.Tests
             IMessageBus bus = Mock.Of<IMessageBus>();
 
             //send
-            await bus.SendAsync(null);
+            await bus.PublishAsync(null);
 
             //subscribe
             StartSubscirbe(bus);

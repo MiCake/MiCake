@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Util;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,38 +13,37 @@ namespace MiCake.MessageBus
     /// </summary>
     internal class DefaultSubscribeManager : ISubscribeManager
     {
-        private ConcurrentDictionary<IMessageSubscriber, CancellationTokenSource> _subscriberTokenDic;
-        private readonly IMessageSubscribeFactory _subscribeProvider;
+        private ConcurrentDictionary<IMessageSubscriber, MessageSubscriberOptions> _subscriberDic;
+        private readonly IMessageSubscribeFactory _subscribeFactory;
         private readonly ILogger<ISubscribeManager> _logger;
 
         private bool isDisposed;
 
         public DefaultSubscribeManager(
-            IMessageSubscribeFactory subscribeProvider,
+            IMessageSubscribeFactory subscribeFactory,
             ILoggerFactory loggerFactory)
         {
-            _subscribeProvider = subscribeProvider;
+            _subscribeFactory = subscribeFactory;
             _logger = loggerFactory.CreateLogger<ISubscribeManager>();
-            _subscriberTokenDic = new ConcurrentDictionary<IMessageSubscriber, CancellationTokenSource>();
+            _subscriberDic = new ConcurrentDictionary<IMessageSubscriber, MessageSubscriberOptions>();
         }
 
         /// <summary>
         /// Use <see cref="IMessageSubscribeFactory"/> create a new subscriber,
-        /// And save it's Corresponding cancel token source to dic.
         /// </summary>
-        public Task<IMessageSubscriber> CreateAsync(CancellationTokenSource cancellationTokenSource)
+        /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<IMessageSubscriber> CreateAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default)
         {
-            var cts = cancellationTokenSource ??
-                throw new ArgumentNullException($"The {nameof(cancellationTokenSource)} cannot be null when create new {nameof(IMessageSubscriber)}.");
+            var subscriber = await _subscribeFactory.CreateSubscriberAsync(options, cancellationToken);
+            _subscriberDic.TryAdd(subscriber, options);
 
-            var subscriber = _subscribeProvider.CreateSubscriber();
-            _subscriberTokenDic.TryAdd(subscriber, cts);
-
-            return Task.FromResult(subscriber);
+            return subscriber;
         }
 
         public IEnumerable<IMessageSubscriber> GetAllSubscribers()
-            => _subscriberTokenDic.Select(s => s.Key);
+            => _subscriberDic.Select(s => s.Key);
 
         /// <summary>
         /// Cancel the subscriber's listening and remove it from the dictionary so that GC can reclaim the resources it occupies
@@ -55,29 +53,14 @@ namespace MiCake.MessageBus
             CheckValue.NotNull(messageSubscriber, nameof(messageSubscriber));
 
             //if no result,return completed directly.
-            if (!_subscriberTokenDic.TryGetValue(messageSubscriber, out var cts))
+            if (!_subscriberDic.TryGetValue(messageSubscriber, out _))
             {
                 messageSubscriber.Dispose();
                 return Task.CompletedTask;
             }
 
-            //get token and cancel current subscriber.
-            try
-            {
-                cts.Cancel();
-            }
-            catch (OperationCanceledException canceledException)
-            {
-                _logger.LogWarning($"{messageSubscriber.ToString()} has been cancelled.There is no need to cancel again." +
-                    $"\r\n Exception Message is:{canceledException.Message}");
-            }
-            finally
-            {
-                //it is mean release subscribe connection or other resources.
-                messageSubscriber.Dispose();
-
-                _subscriberTokenDic.TryRemove(messageSubscriber, out cts);
-            }
+            _subscriberDic.TryRemove(messageSubscriber, out _);
+            messageSubscriber.Dispose();
 
             return Task.CompletedTask;
         }
@@ -90,11 +73,11 @@ namespace MiCake.MessageBus
             isDisposed = true;
 
             //release all subscriber
-            foreach (var kvp in _subscriberTokenDic)
+            foreach (var kvp in _subscriberDic)
             {
                 RemoveAsync(kvp.Key).GetAwaiter().GetResult();
             }
-            _subscriberTokenDic.Clear();
+            _subscriberDic.Clear();
         }
     }
 }

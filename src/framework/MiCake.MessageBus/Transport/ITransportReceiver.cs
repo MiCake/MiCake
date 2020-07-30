@@ -37,5 +37,11 @@ namespace MiCake.MessageBus.Transport
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task SubscribeAsync(MessageExchangeOptions options, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Keep listening to the queue and receive messages continuously.
+        /// </summary>
+        /// <returns></returns>
+        Task ListenAsync(CancellationToken cancellationToken = default);
     }
 }

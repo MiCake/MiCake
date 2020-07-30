@@ -1,4 +1,7 @@
-﻿namespace MiCake.MessageBus
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace MiCake.MessageBus
 {
     /// <summary>
     /// A provider for <see cref="IMessageSubscriber"/>.
@@ -9,6 +12,6 @@
         /// Create new <see cref="IMessageSubscriber"/>.
         /// </summary>
         /// <returns></returns>
-        IMessageSubscriber CreateSubscriber();
+        Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default);
     }
 }

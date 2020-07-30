@@ -26,7 +26,7 @@ namespace MiCake.MessageBus.RabbitMQ
         /// <summary>
         /// Default exchange name (value: "cap.default.router").
         /// </summary>
-        public const string DefaultExchangeName = "cap.default.router";
+        public const string DefaultExchangeName = "micake.default.router";
 
         /// <summary> The topic exchange type. </summary>
         public const string ExchangeType = "topic";
@@ -56,6 +56,11 @@ namespace MiCake.MessageBus.RabbitMQ
         /// Topic exchange name when declare a topic exchange.
         /// </summary>
         public string ExchangeName { get; set; } = DefaultExchangeName;
+
+        /// <summary>
+        /// Default topic name.If no send and receive configuration is specified, this value is used.
+        /// </summary>
+        public string Topic { get; set; } = "micake.default.topic";
 
         /// <summary>
         /// The port to connect on.

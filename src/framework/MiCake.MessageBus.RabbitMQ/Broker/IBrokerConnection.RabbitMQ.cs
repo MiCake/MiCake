@@ -4,7 +4,7 @@ using System;
 
 namespace MiCake.MessageBus.RabbitMQ.Broker
 {
-    internal class RabbitMQBorkerConnection : IBrokerConnection
+    internal class RabbitMQBrokerConnection : IBrokerConnection
     {
         public Uri EndPoint { get; private set; }
 
@@ -12,21 +12,25 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
 
         public IModel RabbitMQModel { get; private set; }
 
-        public RabbitMQBorkerConnection()
+        public RabbitMQOptions RabbitMQOptions { get; private set; }
+
+        public RabbitMQBrokerConnection()
         {
         }
 
-        public static RabbitMQBorkerConnection ConnectionSuccess(string hostAddress, IModel rabbitModel)
-            => new RabbitMQBorkerConnection()
+        public static RabbitMQBrokerConnection ConnectionSuccess(string hostAddress, IModel rabbitModel, RabbitMQOptions options)
+            => new RabbitMQBrokerConnection()
             {
                 EndPoint = new Uri(hostAddress),
-                RabbitMQModel = rabbitModel
+                RabbitMQModel = rabbitModel,
+                RabbitMQOptions = options
             };
 
-        public static RabbitMQBorkerConnection ConnectionFailed(string hostAddress)
-            => new RabbitMQBorkerConnection()
+        public static RabbitMQBrokerConnection ConnectionFailed(string hostAddress, RabbitMQOptions options)
+            => new RabbitMQBrokerConnection()
             {
-                EndPoint = new Uri(hostAddress)
+                EndPoint = new Uri(hostAddress),
+                RabbitMQOptions = options
             };
     }
 }
