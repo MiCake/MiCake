@@ -1,5 +1,6 @@
 ﻿using MiCake.MessageBus;
 using MiCake.MessageBus.RabbitMQ;
+using MiCake.MessageBus.RabbitMQ.Broker;
 using MiCake.MessageBus.RabbitMQ.Transport;
 using MiCake.MessageBus.Transport;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ namespace MiCake
             services.Configure(optionsAction);
             services.TryAddSingleton<ITransportSender, RabbitMQTransportSender>();
             services.TryAddSingleton<IMessageSubscribeFactory, RabbitMQMessageSubscribeFactory>();
+            services.TryAddSingleton<IRabbitMQBrokerConnector, RabbitMQBrokerConnector>();
 
             return services;
         }

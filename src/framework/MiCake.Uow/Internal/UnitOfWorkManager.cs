@@ -8,7 +8,7 @@ namespace MiCake.Uow.Internal
     /// <summary>
     /// Set the DI level to scoped in order to automatically release resources on each HTTP request.
     /// </summary>
-    public class UnitOfWorkManager : IUnitOfWorkManager
+    internal class UnitOfWorkManager : IUnitOfWorkManager
     {
         /// <summary>
         /// The ServiceProvider use to create ServiceScope for each of unit of work.

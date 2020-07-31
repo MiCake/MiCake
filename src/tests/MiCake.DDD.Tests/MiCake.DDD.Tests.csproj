@@ -7,31 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\framework\MiCake.DDD.Domain\Internal\DomainEventHandlerRegistrar.cs" Link="Links\DomainEventHandlerRegistrar.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Internal\DefaultFreeRepositoryFactory.cs" Link="Links\DefaultFreeRepositoryFactory.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Internal\DefaultRepositoryFacotry.cs" Link="Links\DefaultRepositoryFacotry.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Internal\ProxyFreeRepository.cs" Link="Links\ProxyFreeRepository.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Internal\ProxyReadOnlyFreeRepository.cs" Link="Links\ProxyReadOnlyFreeRepository.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Internal\ProxyReadOnlyRepositoty.cs" Link="Links\ProxyReadOnlyRepositoty.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Internal\ProxyRepository.cs" Link="Links\ProxyRepository.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Metadata\DefaultDomainObjectModelProvider.cs" Link="Links\DefaultDomainObjectModelProvider.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Metadata\DomainMetadataProvider.cs" Link="Links\DomainMetadataProvider.cs" />
-    <Compile Include="..\..\framework\MiCake.DDD.Extensions\Metadata\DomainObjectFactory.cs" Link="Links\DomainObjectFactory.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
-    <PackageReference Include="xunit" Version="2.4.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
-    <PackageReference Include="coverlet.collector" Version="1.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="1.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake.DDD.Extensions\MiCake.DDD.Extensions.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Links\" />
   </ItemGroup>
 
 </Project>

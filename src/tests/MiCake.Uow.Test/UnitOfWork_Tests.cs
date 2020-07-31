@@ -1,4 +1,4 @@
-﻿using MiCake.Uow.Test.Fakes;
+﻿using MiCake.Uow.Tests.Fakes;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading;
@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Transactions;
 using Xunit;
 
-namespace MiCake.Uow.Test
+namespace MiCake.Uow.Tests
 {
     public class UnitOfWork_Tests : UnitOfWorkTestBase
     {

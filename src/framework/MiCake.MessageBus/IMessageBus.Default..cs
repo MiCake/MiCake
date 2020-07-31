@@ -1,4 +1,5 @@
 ﻿using MiCake.Core.Util;
+using MiCake.MessageBus.Helpers;
 using MiCake.MessageBus.Messages;
 using MiCake.MessageBus.Serialization;
 using MiCake.MessageBus.Transport;
@@ -40,7 +41,7 @@ namespace MiCake.MessageBus
             return _subscribeManager.RemoveAsync(messageSubscriber);
         }
 
-        public Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken)
+        public Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation($"Message Bus create a subscriber.");
 
@@ -54,7 +55,7 @@ namespace MiCake.MessageBus
 
         public virtual async Task PublishAsync(object message, Dictionary<string, string> headers, CancellationToken cancellationToken = default)
         {
-            CheckMessage(message);
+            await CheckMessage(message, cancellationToken);
 
             var transportMsg = await _serializer.SerializeAsync(new Message(headers, message));
             await _transport.SendAsync(transportMsg, cancellationToken);
@@ -62,7 +63,7 @@ namespace MiCake.MessageBus
 
         public virtual async Task PublishAsync(object message, Dictionary<string, string> headers, MessageDeliveryOptions options, CancellationToken cancellationToken = default)
         {
-            CheckMessage(message);
+            await CheckMessage(message, cancellationToken);
 
             var transportMsg = await _serializer.SerializeAsync(new Message(headers, message));
 
@@ -72,13 +73,19 @@ namespace MiCake.MessageBus
             }
         }
 
-        private void CheckMessage(object message)
+        private async Task CheckMessage(object message, CancellationToken cancellationToken)
         {
             CheckValue.NotNull(message, nameof(message));
 
-            if (_transport.Connection.IsClosed)
+            if (_transport.IsClose())
             {
-                throw new InvalidOperationException($"Current broker has already closed,Please make sure broker is running.");
+                await _transport.StartAsync(cancellationToken);
+
+                //if is also no connection.throw error.
+                if (_transport.IsClose())
+                {
+                    throw new InvalidOperationException($"Current broker has already closed,Please make sure broker is running.");
+                }
             }
         }
     }

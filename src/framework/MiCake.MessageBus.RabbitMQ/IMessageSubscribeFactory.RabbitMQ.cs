@@ -24,6 +24,7 @@ namespace MiCake.MessageBus.RabbitMQ
             CheckValue.NotNull(connector, nameof(connector));
 
             _connector = connector;
+            _serializer = serializer;
             _loggerFactory = loggerFactory;
         }
 

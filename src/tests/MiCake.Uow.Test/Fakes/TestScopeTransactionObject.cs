@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using System.Transactions;
 
-namespace MiCake.Uow.Test.Fakes
+namespace MiCake.Uow.Tests.Fakes
 {
     public class TestScopeTransactionObject : BaseTransactionObject<TransactionScope>
     {

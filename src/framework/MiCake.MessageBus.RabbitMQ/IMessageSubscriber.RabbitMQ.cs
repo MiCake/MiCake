@@ -1,4 +1,5 @@
 ﻿using MiCake.Core.Util;
+using MiCake.MessageBus.Helpers;
 using MiCake.MessageBus.RabbitMQ.Broker;
 using MiCake.MessageBus.RabbitMQ.Transport;
 using MiCake.MessageBus.Serialization;
@@ -14,10 +15,11 @@ namespace MiCake.MessageBus.RabbitMQ
     internal class RabbitMQMessageSubscriber : IMessageSubscriber
     {
         private readonly ILogger<RabbitMQMessageSubscriber> _logger;
-        private readonly RabbitMQTransportReceiver _transportReceiver;
         private readonly IMessageSerializer _serializer;
+        private RabbitMQTransportReceiver _transportReceiver;
 
         private SubscriberMessageReceived receivedHandlers;
+        private bool isDisposed = false;
 
         public RabbitMQMessageSubscriber(
             MessageSubscriberOptions options,
@@ -41,7 +43,13 @@ namespace MiCake.MessageBus.RabbitMQ
 
         public void Dispose()
         {
+            if (isDisposed)
+                return;
+
+            isDisposed = true;
+
             _transportReceiver.CloseAsync().GetAwaiter().GetResult();
+            _transportReceiver = null;
         }
 
         public Task ListenAsync(CancellationToken cancellationToken = default)
@@ -60,9 +68,10 @@ namespace MiCake.MessageBus.RabbitMQ
             return _transportReceiver.ListenAsync(cancellationToken);
         }
 
-        public Task SubscribeAsync(CancellationToken cancellationToken = default)
+        public async Task SubscribeAsync(CancellationToken cancellationToken = default)
         {
-            return _transportReceiver.SubscribeAsync(cancellationToken);
+            await TryConnection(_transportReceiver, cancellationToken);
+            _ = _transportReceiver.SubscribeAsync(cancellationToken);
         }
 
         public async Task SubscribeAsync(MessageDeliveryOptions options, CancellationToken cancellationToken = default)
@@ -70,9 +79,19 @@ namespace MiCake.MessageBus.RabbitMQ
             if (options.Topics.Count() == 0)
                 throw new ArgumentException($"{nameof(MessageDeliveryOptions.Topics)} count is zero.");
 
+            await TryConnection(_transportReceiver, cancellationToken);
+
             foreach (var topic in options.Topics)
             {
                 await _transportReceiver.SubscribeAsync(new MessageExchangeOptions() { Topic = topic }, cancellationToken); ;
+            }
+        }
+
+        private async Task TryConnection(ITransportReceiver transportReceiver, CancellationToken cancellationToken)
+        {
+            if (transportReceiver.IsClose())
+            {
+                await transportReceiver.StartAsync(cancellationToken);
             }
         }
     }

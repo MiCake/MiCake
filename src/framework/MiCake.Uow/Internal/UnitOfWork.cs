@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MiCake.Uow.Internal
 {
-    public class UnitOfWork : IUnitOfWork, INeedParts<UnitOfWorkNeedParts>
+    internal class UnitOfWork : IUnitOfWork, INeedParts<UnitOfWorkNeedParts>
     {
         public Guid ID { get; }
         public bool IsDisposed { get; private set; }

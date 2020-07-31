@@ -42,7 +42,7 @@ namespace MiCake.MessageBus
         /// <param name="options"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken);
+        Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Cancel the current subscriber and release its resources.

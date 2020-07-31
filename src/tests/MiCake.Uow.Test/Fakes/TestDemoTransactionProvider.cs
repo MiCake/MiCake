@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Uow.Test.Fakes
+namespace MiCake.Uow.Tests.Fakes
 {
     //优先级中等，只接受类型为DemoDbExecutor的操作对象。
     //永远不会复用事务。
