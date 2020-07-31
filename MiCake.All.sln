@@ -43,7 +43,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Tests", "src\tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore.Tests", "src\tests\MiCake.EntityFrameworkCore.Tests\MiCake.EntityFrameworkCore.Tests.csproj", "{82FE8335-6674-48FB-859D-27309E706DDD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow.Test", "src\tests\MiCake.Uow.Test\MiCake.Uow.Test.csproj", "{8C571B7C-68A5-42F4-890E-6D3B9978367B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Uow.Tests", "src\tests\MiCake.Uow.Test\MiCake.Uow.Tests.csproj", "{8C571B7C-68A5-42F4-890E-6D3B9978367B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Core.Util.Tests", "src\tests\MiCake.Core.Util.Tests\MiCake.Core.Util.Tests.csproj", "{F20669C0-7C4E-4B9C-A993-5C696E97E617}"
 EndProject
@@ -52,6 +52,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		azure-pipelines.yml = azure-pipelines.yml
 		Directory.Build.props = Directory.Build.props
+		src\tests\runsettings.xml = src\tests\runsettings.xml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.AspNetCore.Tests", "src\tests\MiCake.AspNetCore.Tests\MiCake.AspNetCore.Tests.csproj", "{E69EEA7A-593F-4428-A2B2-DD550DDD0D47}"
@@ -64,9 +65,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.AutoMapper", "src\fr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.MessageBus", "src\framework\MiCake.MessageBus\MiCake.MessageBus.csproj", "{FD291D0E-B372-4A29-8DA4-10AE581E3E20}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.MessageBus.Tests", "src\tests\MiCake.MessageBus.Tests\MiCake.MessageBus.Tests.csproj", "{CD97C20E-6EB8-4E6C-B3D5-9BBFED59AD47}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.MessageBus.Tests", "src\tests\MiCake.MessageBus.Tests\MiCake.MessageBus.Tests.csproj", "{CD97C20E-6EB8-4E6C-B3D5-9BBFED59AD47}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.MessageBus.RabbitMQ", "src\framework\MiCake.MessageBus.RabbitMQ\MiCake.MessageBus.RabbitMQ.csproj", "{EE8DAB25-FC6C-4091-9312-AE5D782171D8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBus.ConsoleDemo", "samples\MessageBus.ConsoleDemo\MessageBus.ConsoleDemo.csproj", "{2AF7933A-E181-4CFD-A598-609649EBF77C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -178,6 +181,10 @@ Global
 		{EE8DAB25-FC6C-4091-9312-AE5D782171D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE8DAB25-FC6C-4091-9312-AE5D782171D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE8DAB25-FC6C-4091-9312-AE5D782171D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AF7933A-E181-4CFD-A598-609649EBF77C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AF7933A-E181-4CFD-A598-609649EBF77C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AF7933A-E181-4CFD-A598-609649EBF77C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AF7933A-E181-4CFD-A598-609649EBF77C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -209,6 +216,7 @@ Global
 		{FD291D0E-B372-4A29-8DA4-10AE581E3E20} = {DD51C453-21A0-4639-9163-4EBF895F4546}
 		{CD97C20E-6EB8-4E6C-B3D5-9BBFED59AD47} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
 		{EE8DAB25-FC6C-4091-9312-AE5D782171D8} = {DD51C453-21A0-4639-9163-4EBF895F4546}
+		{2AF7933A-E181-4CFD-A598-609649EBF77C} = {8436B979-6C9B-4CF7-B020-548E84408B77}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C31E5600-E4DC-4009-A5F6-E5250C8085F4}

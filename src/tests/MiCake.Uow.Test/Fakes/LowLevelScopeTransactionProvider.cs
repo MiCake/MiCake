@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Uow.Test.Fakes
+namespace MiCake.Uow.Tests.Fakes
 {
     public class LowLevelScopeTransactionProvider : ITransactionProvider
     {

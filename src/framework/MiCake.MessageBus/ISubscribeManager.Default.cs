@@ -1,5 +1,8 @@
-﻿using System;
+﻿using MiCake.Core.Util;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,28 +13,71 @@ namespace MiCake.MessageBus
     /// </summary>
     internal class DefaultSubscribeManager : ISubscribeManager
     {
-        public DefaultSubscribeManager()
+        private ConcurrentDictionary<IMessageSubscriber, MessageSubscriberOptions> _subscriberDic;
+        private readonly IMessageSubscribeFactory _subscribeFactory;
+        private readonly ILogger<ISubscribeManager> _logger;
+
+        private bool isDisposed;
+
+        public DefaultSubscribeManager(
+            IMessageSubscribeFactory subscribeFactory,
+            ILoggerFactory loggerFactory)
         {
+            _subscribeFactory = subscribeFactory;
+            _logger = loggerFactory.CreateLogger<ISubscribeManager>();
+            _subscriberDic = new ConcurrentDictionary<IMessageSubscriber, MessageSubscriberOptions>();
         }
 
-        public Task<IMessageSubscriber> CreateAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Use <see cref="IMessageSubscribeFactory"/> create a new subscriber,
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<IMessageSubscriber> CreateAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var subscriber = await _subscribeFactory.CreateSubscriberAsync(options, cancellationToken);
+            _subscriberDic.TryAdd(subscriber, options);
+
+            return subscriber;
         }
 
         public IEnumerable<IMessageSubscriber> GetAllSubscribers()
-        {
-            throw new NotImplementedException();
-        }
+            => _subscriberDic.Select(s => s.Key);
 
-        public Task RemoveAsync(IMessageSubscriber messageSubscriber, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// Cancel the subscriber's listening and remove it from the dictionary so that GC can reclaim the resources it occupies
+        /// </summary>
         public Task RemoveAsync(IMessageSubscriber messageSubscriber)
         {
-            throw new NotImplementedException();
+            CheckValue.NotNull(messageSubscriber, nameof(messageSubscriber));
+
+            //if no result,return completed directly.
+            if (!_subscriberDic.TryGetValue(messageSubscriber, out _))
+            {
+                messageSubscriber.Dispose();
+                return Task.CompletedTask;
+            }
+
+            _subscriberDic.TryRemove(messageSubscriber, out _);
+            messageSubscriber.Dispose();
+
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            if (isDisposed)
+                return;
+
+            isDisposed = true;
+
+            //release all subscriber
+            foreach (var kvp in _subscriberDic)
+            {
+                RemoveAsync(kvp.Key).GetAwaiter().GetResult();
+            }
+            _subscriberDic.Clear();
         }
     }
 }

@@ -4,7 +4,7 @@ using System;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace MiCake.Uow.Test
+namespace MiCake.Uow.Tests
 {
     public class MiCake_UowManager_Test : UnitOfWorkTestBase
     {

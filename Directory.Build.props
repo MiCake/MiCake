@@ -3,7 +3,7 @@
     <Product>MiCake</Product>
     <Authors>uoyoCsharp</Authors>
     <owners>uoyoCsharp</owners>
-    <Version>0.4.0-preview1</Version>
+    <Version>0.4.0-preview2</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</PackageProjectUrl>
     <RepositoryUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</RepositoryUrl>
@@ -18,8 +18,13 @@
   <PropertyGroup>
     <NoWarn>CS1591</NoWarn>
   </PropertyGroup>
-  
+
   <ItemGroup>
+    <!--In order to unit test-->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>$(MSBuildProjectName).Tests</_Parameter1>
+    </AssemblyAttribute>
+
     <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" Visible="false" PackagePath="\"/>
-</ItemGroup>
+  </ItemGroup>
 </Project>

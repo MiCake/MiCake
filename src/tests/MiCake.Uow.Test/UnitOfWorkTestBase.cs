@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.Uow.Test
+namespace MiCake.Uow.Tests
 {
     public abstract class UnitOfWorkTestBase
     {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,7 +8,7 @@ namespace MiCake.MessageBus
     /// <summary>
     /// Define a manager to manange <see cref="IMessageSubscriber"/>
     /// </summary>
-    public interface ISubscribeManager
+    public interface ISubscribeManager : IDisposable
     {
         /// <summary>
         /// Get all registered <see cref="IMessageSubscriber"/>(s).
@@ -18,9 +19,10 @@ namespace MiCake.MessageBus
         /// <summary>
         /// Create a new <see cref="IMessageSubscriber"/>.
         /// </summary>
+        /// <param name="options"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IMessageSubscriber> CreateAsync(CancellationToken cancellationToken = default);
+        Task<IMessageSubscriber> CreateAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Remove current <see cref="IMessageSubscriber"/>.

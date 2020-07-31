@@ -10,39 +10,39 @@ namespace MiCake.MessageBus
     public interface IMessageBus
     {
         /// <summary>
-        /// Send a message to bus.
+        /// Publish a message to bus.
         /// </summary>
         /// <param name="message">message info.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task SendAsync(object message, CancellationToken cancellationToken = default);
+        Task PublishAsync(object message, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Send a message to bus with some optional headers.
+        /// Publish a message to bus with some optional headers.
         /// </summary>
         /// <param name="message">message info.</param>
         /// <param name="headers">some header info.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task SendAsync(object message, Dictionary<string, string> headers, CancellationToken cancellationToken = default);
+        Task PublishAsync(object message, Dictionary<string, string> headers, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Send a message to bus with some optional headers and appoint options.
+        /// Publish a message to bus with some optional headers and appoint options.
         /// </summary>
         /// <param name="message">message info.</param>
         /// <param name="headers">some header info.</param>
         /// <param name="options"></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task SendAsync(object message, Dictionary<string, string> headers, MessageDeliveryOptions options, CancellationToken cancellationToken = default);
+        Task PublishAsync(object message, Dictionary<string, string> headers, MessageDeliveryOptions options, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create a <see cref="IMessageSubscriber"/> use to subsricbe bus message.
-        /// Specifies that the cancellationtoken is used to cancel the subscriber's action.
         /// </summary>
-        /// <param name="cancellationToken">Unsubscribed token</param>
+        /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IMessageSubscriber> CreateSubscriberAsync(CancellationToken cancellationToken);
+        Task<IMessageSubscriber> CreateSubscriberAsync(MessageSubscriberOptions options, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Cancel the current subscriber and release its resources.

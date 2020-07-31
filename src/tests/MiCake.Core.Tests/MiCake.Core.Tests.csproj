@@ -15,27 +15,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\framework\MiCake.Core\DependencyInjection\DefaultFindServiceTypes.cs" Link="Links\DefaultFindServiceTypes.cs" />
-    <Compile Include="..\..\framework\MiCake.Core\DependencyInjection\DefaultServiceRegistrar.cs" Link="Links\DefaultServiceRegistrar.cs" />
-    <Compile Include="..\..\framework\MiCake.Core\DependencyInjection\IMiCakeServiceRegistrar.cs" Link="Links\IMiCakeServiceRegistrar.cs" />
-    <Compile Include="..\..\framework\MiCake.Core\DependencyInjection\MiCakeServiceRegistrarBase.cs" Link="Links\MiCakeServiceRegistrarBase.cs" />
-    <Compile Include="..\..\framework\MiCake.Core\Modularity\MiCakeModuleHelper.cs" Link="Links\MiCakeModuleHelper.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
-    <PackageReference Include="Moq" Version="4.13.1" />
-    <PackageReference Include="xunit" Version="2.4.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
-    <PackageReference Include="coverlet.collector" Version="1.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+    <PackageReference Include="Moq" Version="4.14.5" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="1.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake.Core\MiCake.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Links\" />
   </ItemGroup>
 
 </Project>

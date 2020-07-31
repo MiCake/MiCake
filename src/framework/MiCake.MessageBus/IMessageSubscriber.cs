@@ -34,8 +34,13 @@ namespace MiCake.MessageBus
 
         /// <summary>
         /// Keep listen to receive bus message(s).
-        /// Consider doing this in a separate thread, otherwise the main thread will be unavailable
         /// </summary>
-        void Listen();
+        Task ListenAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Add a handler to receive message form subscriber.
+        /// </summary>
+        /// <param name="handler"><see cref="SubscriberMessageReceived"/>A delegate for receive message.</param>
+        void AddReceivedHandler(SubscriberMessageReceived handler);
     }
 }

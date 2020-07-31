@@ -8,7 +8,7 @@ namespace MiCake.MessageBus.Transport
     /// <summary>
     /// The transport is responsible for receiving message.
     /// </summary>
-    public interface ITransportReceiver
+    public interface ITransportReceiver : ITransport
     {
         /// <summary>
         /// A event handler when message received.
@@ -37,5 +37,11 @@ namespace MiCake.MessageBus.Transport
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task SubscribeAsync(MessageExchangeOptions options, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Keep listening to the queue and receive messages continuously.
+        /// </summary>
+        /// <returns></returns>
+        Task ListenAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Uow.Test.Fakes
+namespace MiCake.Uow.Tests.Fakes
 {
     //优先级高，接受类型为ScopeDbExecutor的执行对象。
     //会复用类型为TestScopeTransactionObject的事务对象。
