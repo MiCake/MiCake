@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
     <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
-    <ProjectReference Include="..\MiCake.EntityFrameCore\MiCake.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
 </Project>
