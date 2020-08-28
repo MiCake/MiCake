@@ -1,7 +1,7 @@
 ﻿using MiCake.AspNetCore.Security;
-using MiCake.Core.Util.Converts;
 using MiCake.Identity;
 using Microsoft.AspNetCore.Http;
+using System.ComponentModel;
 using System.Linq;
 using System.Security.Claims;
 
@@ -26,7 +26,8 @@ namespace MiCake.AspNetCore.Identity
             if (userIDClaim == null)
                 return default;
 
-            var userId = ConvertHelper.ConvertValue<string, TKey>(userIDClaim.Value);
+            //convert string to TKey type.
+            var userId = (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(userIDClaim.Value);
             return userId;
         }
     }

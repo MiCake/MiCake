@@ -1,6 +1,5 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.Dto;
-using Mapster;
 using MiCake.AspNetCore.Security;
 using MiCake.DDD.Domain;
 using MiCake.Identity.Authentication;
@@ -42,7 +41,7 @@ namespace BaseMiCakeApplication.Controllers
 
             var token = _jwtSupporter.CreateToken(user);
 
-            return new LoginResultDto() { AccessToken = token, HasUser = true, UserInfo = user.Adapt<UserDto>() };
+            return new LoginResultDto() { AccessToken = token, HasUser = true, UserInfo = null };
         }
 
         [HttpGet]
