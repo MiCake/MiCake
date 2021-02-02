@@ -11,10 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NSwag.Generation.Processors.Security;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using Pomelo.EntityFrameworkCore.MySql.Storage;
-using System;
+using Microsoft.OpenApi.Models;
 
 namespace BaseMiCakeApplication
 {
@@ -36,8 +33,7 @@ namespace BaseMiCakeApplication
 
             services.AddDbContext<BaseAppDbContext>(options =>
             {
-                options.UseMySql("Server=localhost;Database=micakeexample;User=root;Password=a12345;", mySqlOptions => mySqlOptions
-                    .ServerVersion(new ServerVersion(new Version(10, 5, 0), ServerType.MariaDb)));
+                options.UseNpgsql("Host=localhost;Port=54320;Database=micake_db;Username=postgres;Password=a12345");
             });
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -55,17 +51,16 @@ namespace BaseMiCakeApplication
                 .Build();
 
             //Add Swagger
-            services.AddSwaggerDocument(document =>
+            services.AddSwaggerGen(c =>
             {
-                document.DocumentName = "MiCake Demo Application";
-                document.AddSecurity("JWT", new NSwag.OpenApiSecurityScheme()
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "MiCake Application", Version = "v1" });
+                c.AddSecurityDefinition("JWT", new OpenApiSecurityScheme()
                 {
                     Description = "Authorization format : Bearer {token}",
                     Name = "Authorization",
-                    In = NSwag.OpenApiSecurityApiKeyLocation.Header,
-                    Type = NSwag.OpenApiSecuritySchemeType.ApiKey
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey
                 });
-                document.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
             });
         }
 
@@ -76,6 +71,8 @@ namespace BaseMiCakeApplication
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "MiCake Application"));
 
             app.UseHttpsRedirection();
 
@@ -90,9 +87,6 @@ namespace BaseMiCakeApplication
             {
                 endpoints.MapControllers();
             });
-
-            app.UseOpenApi();
-            app.UseSwaggerUi3();
         }
     }
 }
