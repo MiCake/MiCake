@@ -18,14 +18,15 @@ namespace BaseMiCakeApplication.EFCore.Repositories
 
         public List<Itinerary> GetLastWeekItineraryInfo()
         {
-            var persistentObjects = DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
-            return MapToDO(persistentObjects).ToList();
+            var persistentObjects = DbSetQuery.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList();
+            return Convert(persistentObjects).ToList();
         }
 
         public void UpdateLastWeekItineraryInfo(List<Itinerary> itineraries)
         {
-            var doToPo = MapToDO(DbSet.Where(s => s.CreationTime > DateTime.Now.AddDays(-7)).ToList());
-            DbSet.UpdateRange(MapToPO(doToPo));
+            var doToPo = Convert(DbSetQuery.Where(s => s.CreationTime > DateTime.Now.AddDays(-7))).ToList();
+            doToPo.ForEach(s => s.ChangeNote($"{DateTime.Now.ToShortTimeString()}:这是被修改后的内容"));
+            ReverseConvert(doToPo);
         }
     }
 }

@@ -2,7 +2,6 @@
 using MiCake.AutoMapper;
 using MiCake.Core.Data;
 using MiCake.DDD.Extensions.Store.Mapping;
-using MiCake.EntityFrameworkCore.Mapping;
 using MiCake.EntityFrameworkCore.Tests.Fakes;
 using System;
 using System.Collections.Generic;

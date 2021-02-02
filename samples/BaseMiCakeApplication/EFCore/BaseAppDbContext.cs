@@ -2,6 +2,7 @@
 using BaseMiCakeApplication.Infrastructure.StroageModels;
 using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace BaseMiCakeApplication.EFCore
 {
@@ -18,6 +19,7 @@ namespace BaseMiCakeApplication.EFCore
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
+            optionsBuilder.LogTo(Console.WriteLine);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

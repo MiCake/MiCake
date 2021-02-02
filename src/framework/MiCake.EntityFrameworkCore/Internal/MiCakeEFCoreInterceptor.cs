@@ -1,12 +1,12 @@
 ﻿using MiCake.DDD.Extensions.Lifetime;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
 
 namespace MiCake.EntityFrameworkCore.Internal
 {

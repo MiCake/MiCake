@@ -19,7 +19,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         EFReadOnlyRepositoryWithPO<TDbContext, TAggregateRoot, TPersistentObject, TKey>,
         IRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>, IHasPersistentObject
-        where TPersistentObject : class, IPersistentObject
+        where TPersistentObject : class, IPersistentObject<TKey, TAggregateRoot>
         where TDbContext : DbContext
     {
         public EFRepositoryWithPO(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -28,57 +28,57 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public virtual void Add(TAggregateRoot aggregateRoot)
         {
-            DbContext.Add(POManager.MapToPO(aggregateRoot));
+            DbContext.Add(ReverseConvert(aggregateRoot));
         }
 
         public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute = true)
         {
-            var addedEntity = DbContext.Add(POManager.MapToPO(aggregateRoot)).Entity;
+            var addedEntity = DbContext.Add(ReverseConvert(aggregateRoot)).Entity;
 
             if (autoExecute)
             {
                 DbContext.SaveChanges();
             }
 
-            return POManager.MapToDO(addedEntity);
+            return Convert(addedEntity);
         }
 
         public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default)
         {
-            var addedEntity = (await DbContext.AddAsync(POManager.MapToPO(aggregateRoot), cancellationToken)).Entity;
+            var addedEntity = (await DbContext.AddAsync(ReverseConvert(aggregateRoot), cancellationToken)).Entity;
 
             if (autoExecute)
             {
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
 
-            return POManager.MapToDO(addedEntity);
+            return Convert(addedEntity);
         }
 
         public virtual async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            await DbContext.AddAsync(POManager.MapToPO(aggregateRoot), cancellationToken);
+            await DbContext.AddAsync(ReverseConvert(aggregateRoot), cancellationToken);
         }
 
         public virtual void Delete(TAggregateRoot aggregateRoot)
         {
-            DbSet.Remove(POManager.MapToPO(aggregateRoot));
+            DbSet.Remove(ReverseConvert(aggregateRoot));
         }
 
         public virtual Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbSet.Remove(POManager.MapToPO(aggregateRoot));
+            DbSet.Remove(ReverseConvert(aggregateRoot));
             return Task.CompletedTask;
         }
 
         public virtual void Update(TAggregateRoot aggregateRoot)
         {
-            DbSet.Update(POManager.MapToPO(aggregateRoot));
+           ReverseConvert(aggregateRoot);   // will call update automtic
         }
 
         public virtual Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbSet.Update(POManager.MapToPO(aggregateRoot));
+            ReverseConvert(aggregateRoot);  // will call update automtic
             return Task.CompletedTask;
         }
     }
