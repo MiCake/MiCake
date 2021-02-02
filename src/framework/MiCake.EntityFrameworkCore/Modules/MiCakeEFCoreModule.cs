@@ -34,15 +34,10 @@ namespace MiCake.EntityFrameworkCore.Modules
             services.AddScoped(typeof(IFreeRepositoryProvider<,>), typeof(EFFreeRepositoryProvider<,>));
 
             services.AddTransient(typeof(EFCorePoManager<,>));
-
-            //[Cancel:See Azure Board #ISSUE 12] add ef core interceptor
-            //services.AddScoped(typeof(SaveChangesInterceptor));
         }
 
         public override void Initialization(ModuleLoadContext context)
         {
-            // [Cancel:See Azure Board #ISSUE 12]
-            // DiagnosticListener.AllListeners.Subscribe(new EfGlobalListener(context.ServiceProvider));
         }
     }
 }
