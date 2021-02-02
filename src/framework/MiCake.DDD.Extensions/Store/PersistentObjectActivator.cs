@@ -31,7 +31,7 @@ namespace MiCake.DDD.Extensions.Store
                 var persistentObjInstance = ((IPersistentObject)Activator.CreateInstance(model));
 
                 //Active mapping config.
-                (persistentObjInstance as INeedParts<IPersistentObjectMapper>)?.SetParts(_persistentObjectMapper);
+                persistentObjInstance?.SetParts(_persistentObjectMapper);
                 persistentObjInstance.ConfigureMapping();
                 (persistentObjInstance as IHasAccessor<IPersistentObjectMapConfig>)?.Instance?.Build();
             }
