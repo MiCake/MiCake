@@ -5,8 +5,6 @@ using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Internal;
 using MiCake.DDD.Extensions.Lifetime;
 using MiCake.DDD.Extensions.Metadata;
-using MiCake.DDD.Extensions.Store;
-using MiCake.DDD.Extensions.Store.Mapping;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.DDD.Extensions.Modules
@@ -29,8 +27,6 @@ namespace MiCake.DDD.Extensions.Modules
                 return provider.GetDomainMetadata();
             });
 
-            services.AddTransient<IPersistentObjectActivator, PersistentObjectActivator>();
-
             services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
             services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
             services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
@@ -44,21 +40,6 @@ namespace MiCake.DDD.Extensions.Modules
 
         public override void Initialization(ModuleLoadContext context)
         {
-            var provider = context.ServiceProvider;
-
-            //activate all mapping relationship between  persistent object and domain object.
-            var persistentObjectActivator = provider.GetService<IPersistentObjectActivator>();
-
-            using (var currentScope = provider.CreateScope())
-            {
-                var mapper = currentScope.ServiceProvider.GetService<IPersistentObjectMapper>();
-                if (mapper.InitAtStartup)
-                {
-                    //need to initialize automatically
-                    persistentObjectActivator.SetMapper(mapper);
-                    persistentObjectActivator.ActivateMapping();
-                }
-            }
         }
     }
 }

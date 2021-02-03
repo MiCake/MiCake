@@ -1,5 +1,4 @@
-﻿using MiCake.AutoMapper.Modules;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Modules;
 using MiCake.EntityFrameworkCore.Internal;
@@ -12,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace MiCake.EntityFrameworkCore.Modules
 {
     [RelyOn(
-        typeof(MiCakeAutoMapperModule),
         typeof(MiCakeUowModule),
         typeof(MiCakeDDDExtensionsModule))]
     public class MiCakeEFCoreModule : MiCakeModule

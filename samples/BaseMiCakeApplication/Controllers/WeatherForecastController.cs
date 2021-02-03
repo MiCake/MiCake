@@ -1,6 +1,4 @@
-﻿using BaseMiCakeApplication.Domain.Aggregates;
-using MiCake.DDD.Domain;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -18,12 +16,10 @@ namespace BaseMiCakeApplication.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
-        private readonly IRepository<Itinerary, Guid> _repository;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IRepository<Itinerary, Guid> repository)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
         {
             _logger = logger;
-            _repository = repository;
         }
 
         [HttpGet]

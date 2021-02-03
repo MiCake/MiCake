@@ -1,5 +1,4 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
-using BaseMiCakeApplication.Infrastructure.StroageModels;
 using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -12,7 +11,6 @@ namespace BaseMiCakeApplication.EFCore
         {
         }
 
-        public virtual DbSet<ItinerarySnapshotModel> Itinerary { get; set; }
         public virtual DbSet<Book> Books { get; set; }
         public virtual DbSet<User> Users { get; set; }
 

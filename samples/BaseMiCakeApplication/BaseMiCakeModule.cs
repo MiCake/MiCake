@@ -1,7 +1,4 @@
-﻿using BaseMiCakeApplication.Domain.Repositories;
-using BaseMiCakeApplication.EFCore.Repositories;
-using MiCake;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 
 namespace BaseMiCakeApplication
 {
@@ -9,7 +6,6 @@ namespace BaseMiCakeApplication
     {
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
-            context.RegisterRepository<IItineraryRepository, ItineraryRepository>();
         }
     }
 }

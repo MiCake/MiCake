@@ -27,56 +27,22 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         public IReadOnlyRepository<TAggregateRoot, TKey> GetReadOnlyRepository()
         {
-            IReadOnlyRepository<TAggregateRoot, TKey> result;
-
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
+            var type = typeof(EFReadOnlyRepository<,,>).MakeGenericType(_options.DbContextType,
+                                                                typeof(TAggregateRoot),
+                                                                typeof(TKey));
 
-            if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
-            {
-                var type = typeof(EFReadOnlyRepositoryWithPO<,,,>).MakeGenericType(_options.DbContextType,
-                                                                                 typeof(TAggregateRoot),
-                                                                                 aggregateDescriptor.PersistentObject,
-                                                                                 typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-            else
-            {
-                var type = typeof(EFReadOnlyRepository<,,>).MakeGenericType(_options.DbContextType,
-                                                                    typeof(TAggregateRoot),
-                                                                    typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-
-            return result;
+            return (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
         }
 
         public IRepository<TAggregateRoot, TKey> GetRepository()
         {
-            IRepository<TAggregateRoot, TKey> result;
-
             var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
+            var type = typeof(EFRepository<,,>).MakeGenericType(_options.DbContextType,
+                                                                typeof(TAggregateRoot),
+                                                                typeof(TKey));
 
-            if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
-            {
-                var type = typeof(EFRepositoryWithPO<,,,>).MakeGenericType(_options.DbContextType,
-                                                                                 typeof(TAggregateRoot),
-                                                                                 aggregateDescriptor.PersistentObject,
-                                                                                 typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-            else
-            {
-                var type = typeof(EFRepository<,,>).MakeGenericType(_options.DbContextType,
-                                                                    typeof(TAggregateRoot),
-                                                                    typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-
-            return result;
+            return (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
         }
     }
 }
