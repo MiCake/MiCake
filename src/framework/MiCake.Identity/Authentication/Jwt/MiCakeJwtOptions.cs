@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace MiCake.Identity.Authentication
+namespace MiCake.Identity.Authentication.Jwt
 {
     /// <summary>
     /// The options for config micake jwt authentication.
@@ -39,10 +39,18 @@ namespace MiCake.Identity.Authentication
         /// <summary>
         /// The "exp" (expiration time) claim identifies the expiration time on or after which the JWT MUST NOT be accepted for processing.
         /// <para>
-        ///     Default value is one day(1440 min): 24 * 60.
+        ///     Default value is 1440 [one day(1440 min)].
         /// </para>
         /// </summary>
-        public int ExpirationMinutes { get; set; } = 1440;
+        public int AccessTokenExpiration { get; set; } = 1440;
+
+        /// <summary>
+        /// The expiration time for refresh-token.
+        /// <para>
+        ///     Default value is 14400 [ten day(14400 min)].
+        /// </para>
+        /// </summary>
+        public int RefreshTokenExpiration { get; set; } = 14400;
 
         /// <summary>
         /// Gets or sets the <see cref="EncryptingCredentials"/> used to create a encrypted security token.
@@ -50,14 +58,15 @@ namespace MiCake.Identity.Authentication
         /// </summary>
         public EncryptingCredentials EncryptingCredentials { get; set; }
 
-        public void FromOtherOptions(MiCakeJwtOptions otherOptios)
-        {
-            SecurityKey = otherOptios.SecurityKey;
-            Algorithm = otherOptios.Algorithm;
-            Issuer = otherOptios.Issuer;
-            Audience = otherOptios.Audience;
-            ExpirationMinutes = otherOptios.ExpirationMinutes;
-            EncryptingCredentials = otherOptios.EncryptingCredentials;
-        }
+        /// <summary>
+        /// Remove the previous records when creating a new token automatic.Default value is true.
+        /// <para>
+        ///    Its working method is to delete the records in the store according to the <see cref="IJwtStoreKeyGenerator.RetrieveKey(JwtAuthContext, System.Threading.CancellationToken)"/>
+        /// </para>
+        /// <para>
+        ///     If set false,will keep previous refresh-token.It's mean that user can use the previous refresh-token to operate.
+        /// </para>
+        /// </summary>
+        public bool AutoRemoveRefreshTokenHistory { get; set; } = true;
     }
 }

@@ -31,7 +31,9 @@ namespace MiCake.EntityFrameworkCore
         /// <returns></returns>
         public static DbContextOptionsBuilder AddMiCakeConfigure(this DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(ServiceLocator.Instance.Locator));
+            if (ServiceLocator.Instance.Locator != null)
+                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(ServiceLocator.Instance.Locator));
+
             return optionsBuilder;
         }
     }
