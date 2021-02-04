@@ -27,7 +27,7 @@ namespace MiCake.Identity.Authentication.Jwt
             if (expiresTime < DateTime.Now)
                 return;
 
-            await _cache.SetAsync(refreshToken, EncodingData(new JwtRefreshToken(refreshToken, expiresTime)), new DistributedCacheEntryOptions()
+            await _cache.SetAsync(key, EncodingData(new JwtRefreshToken(refreshToken, expiresTime)), new DistributedCacheEntryOptions()
             {
                 AbsoluteExpiration = expiresTime
             }, cancellationToken);
@@ -36,7 +36,7 @@ namespace MiCake.Identity.Authentication.Jwt
         public async Task<JwtRefreshToken?> GetRefreshToken(string key, CancellationToken cancellationToken = default)
         {
             var result = await _cache.GetAsync(key, cancellationToken);
-            if (result.Length == 0)
+            if (result == null)
                 return null;
 
             return DecodingData(result);

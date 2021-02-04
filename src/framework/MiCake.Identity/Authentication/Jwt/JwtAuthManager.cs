@@ -137,8 +137,9 @@ namespace MiCake.Identity.Authentication.Jwt
             var token = jwtHandler.CreateJwtSecurityToken(issuer, audience, subject, notBefore, expires, issuedAt, signingCredentials, encryptingCredentials, claimCollection);
             var accessToken = jwtHandler.WriteToken(token);
 
-            var allClaim = subject.Clone();
-            allClaim.AddClaims(claimCollection.Select(s => new Claim(s.Key, (string)s.Value)));
+            var allClaim = subject?.Clone() ?? new ClaimsIdentity();
+            if (claimCollection != null)
+                allClaim.AddClaims(claimCollection.Select(s => new Claim(s.Key, (string)s.Value)));
 
             var currentContext = new JwtAuthContext()
             {

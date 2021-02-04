@@ -19,10 +19,10 @@ namespace MiCake.Identity.Authentication.Jwt
         /// You can get Common algorithms with <see cref="SecurityAlgorithms"/>
         /// 
         /// <para>
-        ///     If this parameter is not specified, <see cref="SecurityAlgorithms.HmacSha256Signature"/> will be used
+        ///     If this parameter is not specified, <see cref="SecurityAlgorithms.HmacSha256"/> will be used
         /// </para>
         /// </summary>
-        public string Algorithm { get; set; } = SecurityAlgorithms.HmacSha256Signature;
+        public string Algorithm { get; set; } = SecurityAlgorithms.HmacSha256;
 
         /// <summary>
         /// The "iss" (issuer) claim identifies the principal that issued the JWT.

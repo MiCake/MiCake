@@ -2,7 +2,7 @@
 using BaseMiCakeApplication.Dto;
 using MiCake.AspNetCore.Security;
 using MiCake.DDD.Domain;
-using MiCake.Identity.Authentication;
+using MiCake.Identity.Authentication.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,17 +18,17 @@ namespace BaseMiCakeApplication.Controllers
     [Route("[controller]/[action]")]
     public class LoginController : ControllerBase
     {
-        private readonly IJwtSupporter _jwtSupporter;
+        private readonly IJwtAuthManager _jwtManager;
         private IHttpContextAccessor _httpContextAccessor;
         private readonly IRepository<User, Guid> _userRepo;
 
 
         public LoginController(
-            IJwtSupporter jwtSupporter,
+            IJwtAuthManager jwtSupporter,
             IHttpContextAccessor httpContextAccessor,
             IRepository<User, Guid> userRepository)
         {
-            _jwtSupporter = jwtSupporter;
+            _jwtManager = jwtSupporter;
             _httpContextAccessor = httpContextAccessor;
             _userRepo = userRepository;
         }
@@ -39,9 +39,9 @@ namespace BaseMiCakeApplication.Controllers
             var user = MiCakeApp.User.Create(registerInfo.Phone, registerInfo.Password, registerInfo.Name, registerInfo.Age);
             await _userRepo.AddAsync(user);
 
-            var token = _jwtSupporter.CreateToken(user);
+            var token = await _jwtManager.CreateToken(user);
 
-            return new LoginResultDto() { AccessToken = token, HasUser = true, UserInfo = null };
+            return new LoginResultDto() { AccessToken = token.AccessToken, HasUser = true, UserInfo = null };
         }
 
         [HttpGet]
@@ -57,7 +57,7 @@ namespace BaseMiCakeApplication.Controllers
 
         [HttpPost]
         [Authorize]
-        public List<string> GetInfoWithDto([CurrentUser] [FromBody] GetUserInfoDto userID)
+        public List<string> GetInfoWithDto([CurrentUser][FromBody] GetUserInfoDto userID)
         {
             var httpContext = _httpContextAccessor.HttpContext;
             var userInfo = httpContext?.User;

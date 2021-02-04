@@ -1,6 +1,6 @@
 ﻿using MiCake.AspNetCore.Identity;
 using MiCake.Audit;
-using MiCake.Identity.Authentication;
+using MiCake.Identity.Authentication.Jwt;
 using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
