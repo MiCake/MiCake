@@ -7,11 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
-
-    <!--In order to unit test-->
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>MiCake.Identity.Tests</_Parameter1>
-    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
