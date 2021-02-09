@@ -1,8 +1,5 @@
 ﻿using MiCake.Audit.Modules;
 using MiCake.Core.Modularity;
-using MiCake.Identity.Authentication;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Identity.Modules
 {
@@ -13,11 +10,6 @@ namespace MiCake.Identity.Modules
 
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
-            var services = context.Services;
-
-            //add jwt supporter.
-            services.TryAddSingleton<IJwtSupporter, JwtSupporter>();
-            services.AddOptions<MiCakeJwtOptions>();
         }
     }
 }

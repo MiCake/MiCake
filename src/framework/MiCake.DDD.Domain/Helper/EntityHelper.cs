@@ -1,6 +1,4 @@
-﻿
-using MiCake.DDD.Domain.Store;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -18,11 +16,6 @@ namespace MiCake.DDD.Domain.Helper
             return typeof(IAggregateRoot).IsAssignableFrom(type);
         }
 
-        public static bool HasPersistentObject(Type type)
-        {
-            return typeof(IHasPersistentObject).IsAssignableFrom(type);
-        }
-
         public static bool HasDefaultId<TKey>(IEntity<TKey> entity)
         {
             if (EqualityComparer<TKey>.Default.Equals(entity.Id, default))
@@ -31,27 +24,6 @@ namespace MiCake.DDD.Domain.Helper
             }
 
             return false;
-        }
-
-        public static Type FindEntityPersistentType<TEntity>()
-            where TEntity : IEntity, IHasPersistentObject
-        {
-            return FindEntityPersistentType(typeof(TEntity));
-        }
-
-        public static Type FindEntityPersistentType(Type entityType)
-        {
-            if (!typeof(IEntity).IsAssignableFrom(entityType))
-            {
-                throw new ArgumentException($"Given {nameof(entityType)} is not an entity. It should implement {typeof(IEntity).AssemblyQualifiedName}!");
-            }
-
-            if (!typeof(IHasPersistentObject).IsAssignableFrom(entityType))
-            {
-                throw new ArgumentException($"Given {nameof(entityType)} is not an entity. It should implement {typeof(IHasPersistentObject).AssemblyQualifiedName}!");
-            }
-
-            return null;
         }
 
         public static Type FindPrimaryKeyType<TEntity>()

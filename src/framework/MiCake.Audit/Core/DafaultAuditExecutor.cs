@@ -1,6 +1,5 @@
 ﻿using MiCake.DDD.Domain.Helper;
 using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Store;
 using System.Collections.Generic;
 
 namespace MiCake.Audit.Core
@@ -18,7 +17,7 @@ namespace MiCake.Audit.Core
         {
             //Only deal with micake domain object.
             var entityType = needAuditEntity.GetType();
-            if (!typeof(IPersistentObject).IsAssignableFrom(entityType) && !DomainTypeHelper.IsDomainObject(entityType))
+            if (!DomainTypeHelper.IsDomainObject(entityType))
                 return;
 
             var model = new AuditObjectModel(needAuditEntity, entityState);

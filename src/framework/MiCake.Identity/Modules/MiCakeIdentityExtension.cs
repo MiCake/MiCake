@@ -3,8 +3,10 @@ using MiCake.Core;
 using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity.Audit;
+using MiCake.Identity.Authentication.Jwt;
 using MiCake.Identity.Modules;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 
 namespace MiCake.Identity
@@ -48,6 +50,26 @@ namespace MiCake.Identity
 
                 var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType(userKeyType[0]);
                 services.AddScoped(typeof(IAuditProvider), auditProviderType);
+            });
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Add Jwt support:can use <see cref="IJwtAuthManager"/> to create jwt token or and refresh-token.
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static IMiCakeBuilder AddJwt(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> options)
+        {
+            builder.ConfigureApplication((app, services) =>
+            {
+                services.AddSingleton<IJwtAuthManager, JwtAuthManager>();
+                services.TryAddSingleton<IJwtTokenStore, DefaultJwtTokenStore>();
+                services.TryAddSingleton<IJwtStoreKeyGenerator, DefaultJwtStoreKeyGenerator>();
+                services.TryAddSingleton<IRefreshTokenGenerator, DefaultRefreshTokenGenerator>();
+                services.Configure(options);
             });
 
             return builder;

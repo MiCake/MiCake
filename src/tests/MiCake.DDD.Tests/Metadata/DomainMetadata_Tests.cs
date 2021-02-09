@@ -1,10 +1,6 @@
 ﻿using MiCake.Core;
 using MiCake.DDD.Extensions.Metadata;
-using MiCake.DDD.Tests.Fakes.Aggregates;
-using MiCake.DDD.Tests.Fakes.Entities;
-using MiCake.DDD.Tests.Fakes.PersistentObjects;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Linq;
 using System.Reflection;
 using Xunit;
@@ -67,55 +63,6 @@ namespace MiCake.DDD.Tests.Metadata
 
             var lastRecordInfo = "TestDomainObjectModelProviderOnProvidersExecuted";
             Assert.Equal(lastRecordInfo, recorder.ModelProviderInfo.Last().Trim());
-        }
-
-        [Fact]
-        public void AggregateRootDescriptor_ShouldSetRightPOModel()
-        {
-            var aggregateRootDescriptor = new AggregateRootDescriptor(typeof(HasPOAggregateRoot));
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                aggregateRootDescriptor.SetPersistentObject(typeof(EntityA));
-            });
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                aggregateRootDescriptor.SetPersistentObject(typeof(WrongPOModel));
-            });
-
-            aggregateRootDescriptor.SetPersistentObject(typeof(DemoPOModel));
-            Assert.Equal(typeof(DemoPOModel), aggregateRootDescriptor.PersistentObject);
-        }
-
-        [Fact]
-        public void DomainMetadata_ShouldRightInfo()
-        {
-            BuildServiceCollection();
-
-            Assembly[] assemblies = { GetType().Assembly };
-            Services.Configure<MiCakeApplicationOptions>(options => options.DomainLayerAssemblies = assemblies);
-
-            var provider = Services.BuildServiceProvider();
-            var metadata = provider.GetService<DomainMetadata>();
-
-            var entitiesCount = metadata.DomainObject.Entities.Count;
-            Assert.Equal(7, entitiesCount);
-
-            Assert.Equal(2, metadata.DomainObject.AggregateRoots.Count);
-
-            var entityDesc = metadata.DomainObject.Entities.FirstOrDefault(s => s.Type.Equals(typeof(EntityA)));
-            Assert.NotNull(entityDesc);
-            Assert.Equal(typeof(int), entityDesc.PrimaryKey);
-
-            var inheritEntityDesc = metadata.DomainObject.Entities.FirstOrDefault(s => s.Type.Equals(typeof(ClassAInheritGenericEntityA)));
-            Assert.NotNull(inheritEntityDesc);
-            Assert.Equal(typeof(Guid), inheritEntityDesc.PrimaryKey);
-
-            var hasPOAggregate = metadata.DomainObject.AggregateRoots.FirstOrDefault(s => s.Type.Equals(typeof(HasPOAggregateRoot)));
-            Assert.NotNull(hasPOAggregate);
-            Assert.Equal(typeof(DemoPOModel), hasPOAggregate.PersistentObject);
-            Assert.Equal(typeof(Guid), hasPOAggregate.PrimaryKey);
         }
     }
 }

@@ -7,7 +7,7 @@ using System;
 namespace MiCake.EntityFrameworkCore.Repository
 {
     /// <summary>
-    /// a base repository for efcore
+    /// a base repository for EFCore
     /// </summary>
     public abstract class EFRepositoryBase<TDbContext, TEntity, TKey>
          where TEntity : class, IEntity<TKey>
@@ -41,6 +41,10 @@ namespace MiCake.EntityFrameworkCore.Repository
         private TDbContext _currentDbContext;
         private IDbContextProvider<TDbContext> _dbContextProvider;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="serviceProvider"></param>
         public EFRepositoryBase(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
@@ -48,6 +52,12 @@ namespace MiCake.EntityFrameworkCore.Repository
             InitComponents();
         }
 
+        /// <summary>
+        /// Can use this method to initialization services or other action.
+        /// <para>
+        ///     for example:can get some di services from <see cref="ServiceProvider"/>
+        /// </para>
+        /// </summary>
         protected virtual void InitComponents()
         {
             _dbContextProvider = ServiceProvider.GetService<IDbContextProvider<TDbContext>>() ??

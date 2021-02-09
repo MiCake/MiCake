@@ -3,6 +3,7 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Freedom;
 using MiCake.DDD.Extensions;
 using System;
+using System.Collections.Concurrent;
 
 namespace MiCake.EntityFrameworkCore.Repository.Freedom
 {
@@ -11,6 +12,9 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly MiCakeEFCoreOptions _options;
+
+        static readonly ConcurrentDictionary<Type, Type> _repoTypeCache = new();
+        static readonly ConcurrentDictionary<Type, Type> _readOnlyRepoTypeCache = new();
 
         public EFFreeRepositoryProvider(
             IServiceProvider serviceProvider,
@@ -22,13 +26,13 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
 
         public IFreeRepository<TEntity, TKey> GetFreeRepository()
         {
-            var type = typeof(EFReadOnlyFreeRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TEntity), typeof(TKey));
+            var type = _repoTypeCache.GetOrAdd(typeof(TEntity), key => typeof(EFReadOnlyFreeRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TEntity), typeof(TKey)));
             return (IFreeRepository<TEntity, TKey>)Activator.CreateInstance(type, _serviceProvider);
         }
 
         public IReadOnlyFreeRepository<TEntity, TKey> GetReadOnlyFreeRepository()
         {
-            var type = typeof(EFFreeRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TEntity), typeof(TKey));
+            var type = _readOnlyRepoTypeCache.GetOrAdd(typeof(TEntity), typeof(EFFreeRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TEntity), typeof(TKey)));
             return (IReadOnlyFreeRepository<TEntity, TKey>)Activator.CreateInstance(type, _serviceProvider);
         }
     }

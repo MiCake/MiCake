@@ -6,14 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.AutoMapper\MiCake.AutoMapper.csproj" />
     <ProjectReference Include="..\MiCake.DDD.Extensions\MiCake.DDD.Extensions.csproj" />
     <ProjectReference Include="..\MiCake.Uow\MiCake.Uow.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.1.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.2" />
   </ItemGroup>
 
 </Project>

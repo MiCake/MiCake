@@ -1,10 +1,8 @@
 ﻿using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Metadata;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Concurrent;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
@@ -12,71 +10,33 @@ namespace MiCake.EntityFrameworkCore.Repository
          where TAggregateRoot : class, IAggregateRoot<TKey>
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly List<AggregateRootDescriptor> _aggregateRootsMetadata;
         private readonly MiCakeEFCoreOptions _options;
+
+        static readonly ConcurrentDictionary<Type, Type> _repoTypeCache = new();
+        static readonly ConcurrentDictionary<Type, Type> _readOnlyRepoTypeCache = new();
 
         public EFRepositoryProvider(
             IServiceProvider serviceProvider,
-            DomainMetadata domainMetadata,
             IObjectAccessor<MiCakeEFCoreOptions> options)
         {
             _serviceProvider = serviceProvider;
-            _aggregateRootsMetadata = domainMetadata.DomainObject.AggregateRoots;
             _options = options.Value;
         }
 
         public IReadOnlyRepository<TAggregateRoot, TKey> GetReadOnlyRepository()
         {
-            IReadOnlyRepository<TAggregateRoot, TKey> result;
+            var repoType = _readOnlyRepoTypeCache.GetOrAdd(typeof(TAggregateRoot),
+                  key => typeof(EFReadOnlyRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TAggregateRoot), typeof(TKey)));
 
-            var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
-
-            if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
-            {
-                var type = typeof(EFReadOnlyRepositoryWithPO<,,,>).MakeGenericType(_options.DbContextType,
-                                                                                 typeof(TAggregateRoot),
-                                                                                 aggregateDescriptor.PersistentObject,
-                                                                                 typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-            else
-            {
-                var type = typeof(EFReadOnlyRepository<,,>).MakeGenericType(_options.DbContextType,
-                                                                    typeof(TAggregateRoot),
-                                                                    typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-
-            return result;
+            return (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(repoType, _serviceProvider);
         }
 
         public IRepository<TAggregateRoot, TKey> GetRepository()
         {
-            IRepository<TAggregateRoot, TKey> result;
+            var repoType = _repoTypeCache.GetOrAdd(typeof(TAggregateRoot),
+                  key => typeof(EFRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TAggregateRoot), typeof(TKey)));
 
-            var aggregateDescriptor = _aggregateRootsMetadata.First(s => s.Type.Equals(typeof(TAggregateRoot)));
-
-            if (aggregateDescriptor.HasPersistentObject && aggregateDescriptor.PersistentObject != null)
-            {
-                var type = typeof(EFRepositoryWithPO<,,,>).MakeGenericType(_options.DbContextType,
-                                                                                 typeof(TAggregateRoot),
-                                                                                 aggregateDescriptor.PersistentObject,
-                                                                                 typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-            else
-            {
-                var type = typeof(EFRepository<,,>).MakeGenericType(_options.DbContextType,
-                                                                    typeof(TAggregateRoot),
-                                                                    typeof(TKey));
-
-                result = (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(type, _serviceProvider);
-            }
-
-            return result;
+            return (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(repoType, _serviceProvider);
         }
     }
 }

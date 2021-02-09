@@ -1,7 +1,7 @@
 ﻿using MiCake.Core.Util;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -65,9 +65,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
                     //It's mean they use same database.
 
-#pragma warning disable EF1001 // Internal EF Core API usage.
                     return relationDatabase.RelationalConnection.DbConnection.ConnectionString.Equals(dbTransaction.Connection.ConnectionString);
-#pragma warning restore EF1001 // Internal EF Core API usage.
                 }
                 return false;
             });

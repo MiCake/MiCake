@@ -1,9 +1,9 @@
 ﻿<Project>
   <PropertyGroup>
     <Product>MiCake</Product>
-    <Authors>uoyoCsharp</Authors>
-    <owners>uoyoCsharp</owners>
-    <Version>0.4.0-preview3</Version>
+    <Authors>MiCake</Authors>
+    <owners>MiCake</owners>
+    <Version>0.5.0-preview1</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</PackageProjectUrl>
     <RepositoryUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</RepositoryUrl>
@@ -13,8 +13,10 @@
     <PackageOutputPath>$(MSBuildThisFileDirectory)src\nuget</PackageOutputPath>
     <PackageIcon>nuget_logo.png</PackageIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!--xml notes for all method or property-->
   <PropertyGroup>
     <NoWarn>CS1591</NoWarn>
   </PropertyGroup>

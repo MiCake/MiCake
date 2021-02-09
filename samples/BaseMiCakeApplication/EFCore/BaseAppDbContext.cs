@@ -1,7 +1,7 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
-using BaseMiCakeApplication.Infrastructure.StroageModels;
 using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace BaseMiCakeApplication.EFCore
 {
@@ -11,12 +11,13 @@ namespace BaseMiCakeApplication.EFCore
         {
         }
 
-        public virtual DbSet<ItinerarySnapshotModel> Itinerary { get; set; }
         public virtual DbSet<Book> Books { get; set; }
         public virtual DbSet<User> Users { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            base.OnConfiguring(optionsBuilder);
+            optionsBuilder.LogTo(Console.WriteLine);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

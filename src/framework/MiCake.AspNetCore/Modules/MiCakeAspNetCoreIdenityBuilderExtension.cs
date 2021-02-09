@@ -2,7 +2,7 @@
 using MiCake.Core;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity;
-using MiCake.Identity.Authentication;
+using MiCake.Identity.Authentication.Jwt;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -54,35 +54,13 @@ namespace MiCake.AspNetCore.Modules
         }
 
         /// <summary>
-        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
-        /// </summary>
-        /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
-        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        /// <param name="jwtSupportOptionsConfig">config <see cref="MiCakeJwtOptions"/>.This optios will be used by <see cref="IJwtSupporter"/></param>
-        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> jwtSupportOptionsConfig)
-            where TMiCakeUser : IMiCakeUser
-        {
-            return UseIdentity(builder, typeof(TMiCakeUser), jwtSupportOptionsConfig);
-        }
-
-        /// <summary>
-        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// Add Jwt support.
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>
-        /// <param name="jwtSupportOptionsConfig">config <see cref="MiCakeJwtOptions"/>.This optios will be used by <see cref="IJwtSupporter"/></param>
-        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeJwtOptions> jwtSupportOptionsConfig)
+        /// <param name="jwtSupportOptionsConfig">config <see cref="MiCakeJwtOptions"/>.This optios will be used by <see cref="IJwtAuthManager"/></param>
+        public static IMiCakeBuilder UseJwt(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> jwtSupportOptionsConfig)
         {
-            UseIdentity(builder, miCakeUserType);
-
-            if (jwtSupportOptionsConfig != null)
-            {
-                builder.ConfigureApplication((app, services) =>
-                {
-                    services.PostConfigure(jwtSupportOptionsConfig);
-                });
-            }
-            return builder;
+            return builder.AddJwt(jwtSupportOptionsConfig);
         }
     }
 }
