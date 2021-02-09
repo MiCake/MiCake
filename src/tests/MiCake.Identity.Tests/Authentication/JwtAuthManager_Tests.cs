@@ -167,26 +167,9 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void ValiateToken_ExpiredToken()
-        {
-            var supporter = CreateJwtAuthManager(s => { s.AccessTokenExpiration = -1; });
-            var micakeUser = new UserWithJwtClaim()
-            {
-                Id = Guid.NewGuid(),
-                Name = "bob"
-            };
-            var token = await supporter.CreateToken(micakeUser);
-            await Assert.ThrowsAnyAsync<Exception>(async () =>
-            {
-                // because old record is remove form store,so will throw exception.
-                await supporter.DecodeJwtToken(token.AccessToken);
-            });
-        }
-
-        [Fact]
         public async void RefreshToken_RefreshTokenHasExpired()
         {
-            var supporter = CreateJwtAuthManager(s => { s.RefreshTokenExpiration = -1; });
+            var supporter = CreateJwtAuthManager(s => { s.RefreshTokenExpiration = 0; });
             var micakeUser = new UserWithJwtClaim()
             {
                 Id = Guid.NewGuid(),

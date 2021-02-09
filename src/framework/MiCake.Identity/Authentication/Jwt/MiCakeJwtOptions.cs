@@ -42,7 +42,7 @@ namespace MiCake.Identity.Authentication.Jwt
         ///     Default value is 1440 [one day(1440 min)].
         /// </para>
         /// </summary>
-        public int AccessTokenExpiration { get; set; } = 1440;
+        public uint AccessTokenExpiration { get; set; } = 1440;
 
         /// <summary>
         /// The expiration time for refresh-token.
@@ -50,7 +50,7 @@ namespace MiCake.Identity.Authentication.Jwt
         ///     Default value is 14400 [ten day(14400 min)].
         /// </para>
         /// </summary>
-        public int RefreshTokenExpiration { get; set; } = 14400;
+        public uint RefreshTokenExpiration { get; set; } = 14400;
 
         /// <summary>
         /// Gets or sets the <see cref="EncryptingCredentials"/> used to create a encrypted security token.
