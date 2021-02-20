@@ -6,6 +6,7 @@ namespace BaseMiCakeApplication
     {
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
+            context.AutoRegisterRepositories(typeof(BaseMiCakeModule).Assembly);
         }
     }
 }

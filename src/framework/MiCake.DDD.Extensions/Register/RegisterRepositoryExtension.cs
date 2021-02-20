@@ -1,11 +1,9 @@
-﻿using MiCake.Core.Modularity;
-using MiCake.DDD.Domain;
+﻿using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-// Default method,so namespace is the highest level
-namespace MiCake
+namespace MiCake.Core.Modularity
 {
     public static class RegisterRepositoryExtension
     {

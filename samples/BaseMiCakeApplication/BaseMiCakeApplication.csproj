@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Domain\Repositories\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

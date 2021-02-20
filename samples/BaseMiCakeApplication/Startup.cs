@@ -37,7 +37,7 @@ namespace BaseMiCakeApplication
             });
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddMiCakeWithDefault<BaseAppDbContext, BaseMiCakeModule>(
+            services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(
                 miCakeConfig: config =>
                 {
                     config.Handlers.Add(new DemoExceptionHanlder());

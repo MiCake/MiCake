@@ -3,6 +3,7 @@ using MiCake.Audit;
 using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -13,18 +14,18 @@ namespace MiCake
         /// <summary>
         /// Using MiCake's default configuration for aspnetcore
         /// </summary>
-        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <typeparam name="TEntryModule">Entry point module</typeparam>
+        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="miCakeConfig">The config for MiCake application</param>
         /// <param name="miCakeEFConfig">The config for MiCake EFCore extension</param>
         /// <param name="miCakeAspNetConfig">The config for MiCake AspNetCore extension</param>
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext, TEntryModule>(
+        public static IMiCakeBuilder AddMiCakeWithDefault<TEntryModule, TDbContext>(
                 this IServiceCollection services,
                 Action<MiCakeApplicationOptions> miCakeConfig = null,
                 Action<MiCakeEFCoreOptions> miCakeEFConfig = null,
                 Action<MiCakeAspNetOptions> miCakeAspNetConfig = null)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
             where TEntryModule : MiCakeModule
         {
             return AddMiCakeWithDefault(services, typeof(TEntryModule), typeof(TDbContext), miCakeConfig, miCakeEFConfig, miCakeAspNetConfig);
@@ -39,7 +40,7 @@ namespace MiCake
         public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(
             this IServiceCollection services,
             Type entryModule)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
         {
             return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), null);
         }
@@ -55,7 +56,7 @@ namespace MiCake
             this IServiceCollection services,
             Type entryModule,
             Action<MiCakeApplicationOptions> miCakeConfig)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
         {
             return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), miCakeConfig, null);
         }
@@ -73,7 +74,7 @@ namespace MiCake
             Type entryModule,
             Action<MiCakeApplicationOptions> miCakeConfig,
             Action<MiCakeEFCoreOptions> miCakeEFConfig)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
         {
             return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), miCakeConfig, miCakeEFConfig, null);
         }
@@ -93,7 +94,7 @@ namespace MiCake
             Action<MiCakeApplicationOptions> miCakeConfig,
             Action<MiCakeEFCoreOptions> miCakeEFConfig,
             Action<MiCakeAspNetOptions> miCakeAspNetConfig)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
         {
             return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), miCakeConfig, miCakeEFConfig, miCakeAspNetConfig);
         }

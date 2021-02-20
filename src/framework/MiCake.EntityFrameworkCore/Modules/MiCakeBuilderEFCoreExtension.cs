@@ -2,6 +2,7 @@
 using MiCake.Core.DependencyInjection;
 using MiCake.EntityFrameworkCore.Modules;
 using MiCake.EntityFrameworkCore.Uow;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -16,7 +17,7 @@ namespace MiCake.EntityFrameworkCore
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseEFCore<TDbContext>(this IMiCakeBuilder builder)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
         {
             UseEFCore<TDbContext>(builder, null);
             return builder;
@@ -32,7 +33,7 @@ namespace MiCake.EntityFrameworkCore
         public static IMiCakeBuilder UseEFCore<TDbContext>(
             this IMiCakeBuilder builder,
             Action<MiCakeEFCoreOptions> optionsBuilder)
-            where TDbContext : MiCakeDbContext
+            where TDbContext : DbContext
         {
             return UseEFCore(builder, typeof(TDbContext), optionsBuilder);
         }
