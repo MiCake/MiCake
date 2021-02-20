@@ -11,6 +11,6 @@ namespace MiCake.Audit
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey CreatorID { get; set; }
+        TKey? CreatorID { get; set; }
     }
 }
