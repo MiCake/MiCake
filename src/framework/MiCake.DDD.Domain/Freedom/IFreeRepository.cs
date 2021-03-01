@@ -19,7 +19,7 @@ namespace MiCake.DDD.Domain.Freedom
         void Add(TEntity entity);
 
         /// <summary>
-        /// Add a new aggregateRoot.
+        /// Add a new entity.
         /// </summary>
         Task AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
@@ -49,23 +49,28 @@ namespace MiCake.DDD.Domain.Freedom
         Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Update aggregateRoot.
+        /// Update entity.
         /// </summary>
         void Update(TEntity entity);
 
         /// <summary>
-        /// Update aggregateRoot.
+        /// Update entity.
         /// </summary>
         Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Delete aggregateRoot from repository
+        /// Delete entity from repository
         /// </summary>
         void Delete(TEntity entity);
 
         /// <summary>
-        /// Delete aggregateRoot from repository
+        /// Delete entity from repository
         /// </summary>
         Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete entity from repository by id
+        /// </summary>
+        Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default);
     }
 }

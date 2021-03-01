@@ -12,7 +12,7 @@ namespace MiCake.DDD.Extensions.Internal
     internal class ProxyFreeRepository<TEntity, TKey> : IFreeRepository<TEntity, TKey>
          where TEntity : class, IEntity<TKey>
     {
-        private IFreeRepository<TEntity, TKey> _inner;
+        private readonly IFreeRepository<TEntity, TKey> _inner;
 
         public ProxyFreeRepository(IServiceProvider serviceProvider)
         {
@@ -69,5 +69,8 @@ namespace MiCake.DDD.Extensions.Internal
 
         public Task<IQueryable<TEntity>> FindMatchAsync(Expression<Func<TEntity, bool>> propertySelectors, CancellationToken cancellationToken = default)
             => _inner.FindMatchAsync(propertySelectors, cancellationToken);
+
+        public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+            => _inner.DeleteByIdAsync(ID, cancellationToken);
     }
 }
