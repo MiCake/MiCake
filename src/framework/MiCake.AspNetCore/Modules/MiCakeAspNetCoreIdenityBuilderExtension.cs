@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 
-namespace MiCake.AspNetCore.Modules
+namespace MiCake
 {
     public static class MiCakeAspNetCoreIdenityBuilderExtension
     {
