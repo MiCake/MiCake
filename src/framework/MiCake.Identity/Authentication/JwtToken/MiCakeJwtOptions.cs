@@ -1,7 +1,8 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using MiCake.Identity.Authentication.JwtToken.Abstractions;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace MiCake.Identity.Authentication.Jwt
+namespace MiCake.Identity.Authentication.JwtToken
 {
     /// <summary>
     /// The options for config micake jwt authentication.
@@ -39,18 +40,10 @@ namespace MiCake.Identity.Authentication.Jwt
         /// <summary>
         /// The "exp" (expiration time) claim identifies the expiration time on or after which the JWT MUST NOT be accepted for processing.
         /// <para>
-        ///     Default value is 1440 [one day(1440 min)].
+        ///     Lifetime of access token in seconds (defaults to 3600 seconds / 1 hour)
         /// </para>
         /// </summary>
-        public uint AccessTokenExpiration { get; set; } = 1440;
-
-        /// <summary>
-        /// The expiration time for refresh-token.
-        /// <para>
-        ///     Default value is 14400 [ten day(14400 min)].
-        /// </para>
-        /// </summary>
-        public uint RefreshTokenExpiration { get; set; } = 14400;
+        public uint AccessTokenLifetime { get; set; } = 3600;
 
         /// <summary>
         /// Gets or sets the <see cref="EncryptingCredentials"/> used to create a encrypted security token.
@@ -59,14 +52,29 @@ namespace MiCake.Identity.Authentication.Jwt
         public EncryptingCredentials EncryptingCredentials { get; set; }
 
         /// <summary>
-        /// Remove the previous records when creating a new token automatic.Default value is true.
-        /// <para>
-        ///    Its working method is to delete the records in the store according to the <see cref="IJwtStoreKeyGenerator.RetrieveKey(JwtAuthContext, System.Threading.CancellationToken)"/>
-        /// </para>
-        /// <para>
-        ///     If set false,will keep previous refresh-token.It's mean that user can use the previous refresh-token to operate.
-        /// </para>
+        /// Whether the refresh token scheme is needed
         /// </summary>
-        public bool AutoRemoveRefreshTokenHistory { get; set; } = true;
+        public bool UseRefreshToken { get; set; } = true;
+
+        /// <summary>
+        /// <see cref="RefreshTokenUsageMode"/>
+        /// </summary>
+        public RefreshTokenUsageMode RefreshTokenMode { get; set; } = RefreshTokenUsageMode.Reuse;
+
+        /// <summary>
+        /// When use <see cref="RefreshTokenUsageMode.RecreateBeforeOverdue"/>,need set this property.
+        /// </summary>
+        public double RecreateRefreshTokenBeforeOverdueMinutes { get; set; }
+
+        /// <summary>
+        /// Maximum lifetime of a refresh token in seconds. Defaults to 2592000 seconds / 30 days.
+        /// If value is less than 0,It's mean unlimited.
+        /// </summary>
+        public int AbsoluteRefreshTokenLifetime { get; set; } = 2592000;
+
+        /// <summary>
+        ///  Sliding lifetime of a refresh token in seconds. Defaults to 1296000 seconds / 15 days
+        /// </summary>
+        public int SlidingRefreshTokenLifetime { get; set; } = 1296000;
     }
 }

@@ -1,4 +1,5 @@
-﻿using MiCake.Identity.Authentication.Jwt;
+﻿using MiCake.Identity.Authentication.JwtToken;
+using MiCake.Identity.Authentication.JwtToken.Abstractions;
 using MiCake.Identity.Tests.FakeUser;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -34,6 +35,21 @@ namespace MiCake.Identity.Tests.Authentication
 
             Assert.False(string.IsNullOrWhiteSpace(token.AccessToken));
             Assert.False(string.IsNullOrWhiteSpace(token.RefreshToken));
+        }
+
+        [Fact]
+        public async void CreateToken_NotUseRefreshToken_ShowEmptyRefreshToken()
+        {
+            var supporter = CreateJwtAuthManager(s => { s.UseRefreshToken = false; });
+
+            var micakeUser = new CommonUser()
+            {
+                Id = 1,
+                Name = "bob"
+            };
+            var token = await supporter.CreateToken(micakeUser);
+
+            Assert.True(string.IsNullOrWhiteSpace(token.RefreshToken));
         }
 
         [Fact]
@@ -132,7 +148,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void MultipleUseSameRefreshToken_WillThrowException()
+        public async void RefreshToken_ReUseMode_ShouldSame()
         {
             var supporter = CreateJwtAuthManager(s => { });
             var micakeUser = new UserWithJwtClaim()
@@ -141,52 +157,68 @@ namespace MiCake.Identity.Tests.Authentication
                 Name = "bob"
             };
             var token = await supporter.CreateToken(micakeUser);
+
             var newToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
-            await Assert.ThrowsAnyAsync<Exception>(async () =>
-            {
-                // because old record is remove form store,so will throw exception.
-                await supporter.Refresh(token.RefreshToken, token.AccessToken);
-            });
+            Assert.Same(token.RefreshToken, newToken.RefreshToken);
         }
 
         [Fact]
-        public async void MultipleUseSameRefreshToken_NoAutoDeletedRecord()
+        public async void RefreshToken_ReCreateMode_ShouldNotSame()
         {
-            var supporter = CreateJwtAuthManager(s => { s.AutoRemoveRefreshTokenHistory = false; });
+            var supporter = CreateJwtAuthManager(s =>
+            {
+                s.RefreshTokenMode = RefreshTokenUsageMode.Recreate;
+            });
             var micakeUser = new UserWithJwtClaim()
             {
                 Id = Guid.NewGuid(),
                 Name = "bob"
             };
             var token = await supporter.CreateToken(micakeUser);
-            var newToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
-            // because AutoRemoveRefreshTokenHistory is false,The previous token will also take effect
-            var multipleToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
 
-            Assert.NotNull(multipleToken.AccessToken);
+            var newToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
+            Assert.NotSame(token.RefreshToken, newToken.RefreshToken);
         }
 
         [Fact]
-        public async void RefreshToken_RefreshTokenHasExpired()
+        public async void RefreshToken_RecreateBeforeOverdueMode_ShouldNotSame()
         {
-            var supporter = CreateJwtAuthManager(s => { s.RefreshTokenExpiration = 0; });
+            var supporter = CreateJwtAuthManager(s =>
+            {
+                s.RefreshTokenMode = RefreshTokenUsageMode.RecreateBeforeOverdue;
+            });
             var micakeUser = new UserWithJwtClaim()
             {
                 Id = Guid.NewGuid(),
                 Name = "bob"
             };
             var token = await supporter.CreateToken(micakeUser);
-            await Assert.ThrowsAnyAsync<Exception>(async () =>
-            {
-                // because old record is remove form store,so will throw exception.
-                await supporter.Refresh(token.RefreshToken, token.AccessToken);
-            });
+
+            var newToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
+            Assert.Same(token.RefreshToken, newToken.RefreshToken);
         }
 
-        public long GetTimestamp(DateTime dateTime)
+        [Fact]
+        public async void RefreshToken_RevokeRefreshToken_StillUse_WillThrowException()
         {
-            DateTime dt1970 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-            return (dateTime.Ticks - dt1970.Ticks) / (10000 * 1000);
+            var supporter = CreateJwtAuthManager(s =>
+            {
+                s.RefreshTokenMode = RefreshTokenUsageMode.RecreateBeforeOverdue;
+            });
+            var micakeUser = new UserWithJwtClaim()
+            {
+                Id = Guid.NewGuid(),
+                Name = "bob"
+            };
+            var token = await supporter.CreateToken(micakeUser);
+
+            // remove current refresh token.
+            await supporter.RevokeRefreshToken(token.RefreshToken);
+
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+            {
+                await supporter.Refresh(token.RefreshToken, token.AccessToken);
+            });
         }
 
         public IJwtAuthManager CreateJwtAuthManager(Action<MiCakeJwtOptions> miCakeJwtOptions)
@@ -194,10 +226,11 @@ namespace MiCake.Identity.Tests.Authentication
             var services = new ServiceCollection();
             services.AddDistributedMemoryCache();
 
-            services.AddSingleton<IJwtAuthManager, JwtAuthManager>();
-            services.TryAddSingleton<IJwtTokenStore, DefaultJwtTokenStore>();
-            services.TryAddSingleton<IJwtStoreKeyGenerator, DefaultJwtStoreKeyGenerator>();
-            services.TryAddSingleton<IRefreshTokenGenerator, DefaultRefreshTokenGenerator>();
+            services.TryAddSingleton<IJwtAuthManager, JwtAuthManager>();
+            services.TryAddSingleton<IRefreshTokenService, DefaultRefreshTokenService>();
+
+            services.TryAddSingleton<IRefreshTokenStore, DefaultRefreshTokenStore>();
+            services.TryAddSingleton<IRefreshTokenHandleGenerator, DefaultRefreshTokenHandleGenerator>(); ;
             services.Configure(miCakeJwtOptions);
 
             ServiceProvider = services.BuildServiceProvider();
