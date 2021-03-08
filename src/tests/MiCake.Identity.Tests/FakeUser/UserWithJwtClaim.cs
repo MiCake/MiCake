@@ -1,4 +1,4 @@
-﻿using MiCake.Identity.Authentication.Jwt;
+﻿using MiCake.Identity.Authentication.JwtToken;
 using System;
 
 namespace MiCake.Identity.Tests.FakeUser

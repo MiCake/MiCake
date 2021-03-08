@@ -72,5 +72,13 @@ namespace MiCake.DDD.Domain
         /// Delete aggregateRoot from repository
         /// </summary>
         Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete aggregateRoot form repository by id.
+        /// </summary>
+        /// <param name="ID"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default);
     }
 }

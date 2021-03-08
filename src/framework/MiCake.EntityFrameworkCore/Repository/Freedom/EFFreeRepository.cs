@@ -22,26 +22,22 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
             DbSet.Add(entity);
         }
 
-        public TEntity AddAndReturn(TEntity entity, bool autoExecute = true)
+        public TEntity AddAndReturn(TEntity entity, bool autoExecute = false)
         {
             var result = DbSet.Add(entity);
 
             if (autoExecute)
-            {
                 DbContext.SaveChanges();
-            }
 
             return result.Entity;
         }
 
-        public async Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = true, CancellationToken cancellationToken = default)
+        public async Task<TEntity> AddAndReturnAsync(TEntity entity, bool autoExecute = false, CancellationToken cancellationToken = default)
         {
             var result = await DbSet.AddAsync(entity, cancellationToken);
 
             if (autoExecute)
-            {
                 await DbContext.SaveChangesAsync(cancellationToken);
-            }
 
             return result.Entity;
         }
@@ -60,6 +56,13 @@ namespace MiCake.EntityFrameworkCore.Repository.Freedom
         {
             DbSet.Remove(entity);
             return Task.CompletedTask;
+        }
+
+        public async Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+        {
+            var item = await DbSet.FindAsync(new object[] { ID }, cancellationToken);
+            if (item != null)
+                DbSet.Remove(item);
         }
 
         public void Update(TEntity entity)

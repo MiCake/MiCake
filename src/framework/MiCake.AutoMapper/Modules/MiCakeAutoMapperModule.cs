@@ -1,14 +1,14 @@
 ﻿using AutoMapper;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Extensions.Modules;
 using System.Linq;
 using System.Reflection;
 
-namespace MiCake.AutoMapper.Modules
+namespace MiCake.AutoMapper
 {
-    [RelyOn(typeof(MiCakeDDDExtensionsModule))]
-    public class MiCakeAutoMapperModule : MiCakeModule
+    public class MiCakeAutoMapperModule : MiCakeModule, IFeatureModule
     {
+        public FeatureModuleLoadOrder Order => FeatureModuleLoadOrder.AfterCommonModule;
+
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
         }

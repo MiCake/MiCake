@@ -38,6 +38,11 @@ namespace MiCake.DDD.Tests.ProxyRepository
             return Task.CompletedTask;
         }
 
+        public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public void Update(TAggregateRoot aggregateRoot)
         {
             Data.RemoveAll(s => s.Id.Equals(aggregateRoot.Id));
@@ -82,6 +87,11 @@ namespace MiCake.DDD.Tests.ProxyRepository
         {
             Data.Remove(aggregateRoot);
             return Task.CompletedTask;
+        }
+
+        public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+        {
+            throw new System.NotImplementedException();
         }
 
         public void Update(TEntity aggregateRoot)

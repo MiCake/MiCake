@@ -1,10 +1,10 @@
-﻿namespace MiCake.Identity.Authentication.Jwt
+﻿namespace MiCake.Identity.Authentication.JwtToken.Abstractions
 {
     /// <summary>
     /// A result for <see cref="IJwtAuthManager"/> create or refresh.
-    /// Include token and refresh-token.
+    /// Include token and  refresh-token(if open use refresh-token).
     /// </summary>
-    public class JwtAuthResult
+    public class JwtTokenAuthResult
     {
         /// <summary>
         /// The AccessToken for JWT
@@ -14,6 +14,6 @@
         /// <summary>
         /// The RefreshToken for JWT
         /// </summary>
-        public string RefreshToken { get; set; }
+        public string? RefreshToken { get; set; }
     }
 }

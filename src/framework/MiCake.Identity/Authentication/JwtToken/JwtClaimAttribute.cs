@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MiCake.Identity.Authentication.Jwt
+namespace MiCake.Identity.Authentication.JwtToken
 {
     /// <summary>
     /// The attribute is used to mark a property of <see cref="IMiCakeUser{TKey}"/> will be saved in jwt.

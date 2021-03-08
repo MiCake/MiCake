@@ -27,7 +27,7 @@ namespace MiCake.Core.Modularity
         {
             AutoRegisterRepositories(context, assembly, (repo, repoInterface, index) =>
             {
-                return index == 0;
+                return repoInterface.Name.Contains(repo.Name);
             });
         }
 
@@ -46,7 +46,7 @@ namespace MiCake.Core.Modularity
             foreach (var repo in allRepoTypes)
             {
                 var interfaces = repo.GetInterfaces().Where(s => !s.Name.Contains(nameof(IRepository))).Reverse();
-                
+
                 int tempIndex = 0;
                 foreach (var repoInterface in interfaces)
                 {

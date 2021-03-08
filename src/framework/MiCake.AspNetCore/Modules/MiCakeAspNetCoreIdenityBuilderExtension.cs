@@ -2,13 +2,13 @@
 using MiCake.Core;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity;
-using MiCake.Identity.Authentication.Jwt;
+using MiCake.Identity.Authentication.JwtToken;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 
-namespace MiCake.AspNetCore.Modules
+namespace MiCake
 {
     public static class MiCakeAspNetCoreIdenityBuilderExtension
     {

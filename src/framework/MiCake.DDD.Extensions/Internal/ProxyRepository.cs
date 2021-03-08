@@ -9,7 +9,7 @@ namespace MiCake.DDD.Extensions.Internal
     internal class ProxyRepository<TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey>
          where TAggregateRoot : class, IAggregateRoot<TKey>
     {
-        private IRepository<TAggregateRoot, TKey> _inner;
+        private readonly IRepository<TAggregateRoot, TKey> _inner;
 
         public ProxyRepository(IServiceProvider serviceProvider)
         {
@@ -36,6 +36,9 @@ namespace MiCake.DDD.Extensions.Internal
 
         public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.DeleteAsync(aggregateRoot, cancellationToken);
+
+        public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+         => _inner.DeleteByIdAsync(ID, cancellationToken);
 
         public TAggregateRoot Find(TKey ID)
             => _inner.Find(ID);

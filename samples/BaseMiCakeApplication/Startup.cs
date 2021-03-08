@@ -3,7 +3,6 @@ using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.Handlers;
 using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
-using MiCake.AspNetCore.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

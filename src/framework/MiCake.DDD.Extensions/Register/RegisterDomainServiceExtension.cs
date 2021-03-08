@@ -25,7 +25,7 @@ namespace MiCake.Core.Modularity
             if (!DomainTypeHelper.IsDomainService(serviceType))
                 throw new ArgumentException($"{serviceType.FullName} is not a domain service,Please give a right type!");
 
-            if (!DomainTypeHelper.IsRepository(implementationType))
+            if (!DomainTypeHelper.IsDomainService(implementationType))
                 throw new ArgumentException($"{implementationType.FullName} is not a domain service,Please give a right type!");
 
             var serviceDescpritor = new ServiceDescriptor(serviceType, implementationType, miCakeServiceLifeTime.ConvertToMSLifetime());
@@ -44,6 +44,19 @@ namespace MiCake.Core.Modularity
             MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
         {
             RegisterDomainService(context, typeof(TService), typeof(TImpl), miCakeServiceLifeTime);
+        }
+
+        /// <summary>
+        /// Add customer <see cref="IDomainService"/>
+        /// </summary>
+        /// <typeparam name="TService">Type of domain service</typeparam>
+        /// <param name="context"></param>
+        /// <param name="miCakeServiceLifeTime"><see cref="MiCakeServiceLifetime"/></param>
+        public static void RegisterDomainService<TService>(
+            this ModuleConfigServiceContext context,
+            MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
+        {
+            RegisterDomainService(context, typeof(TService), typeof(TService), miCakeServiceLifeTime);
         }
     }
 }

@@ -2,7 +2,7 @@
 using BaseMiCakeApplication.Dto;
 using MiCake.AspNetCore.Security;
 using MiCake.DDD.Domain;
-using MiCake.Identity.Authentication.Jwt;
+using MiCake.Identity.Authentication.JwtToken;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

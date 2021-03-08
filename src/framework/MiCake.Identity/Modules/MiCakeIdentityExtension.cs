@@ -3,7 +3,8 @@ using MiCake.Core;
 using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity.Audit;
-using MiCake.Identity.Authentication.Jwt;
+using MiCake.Identity.Authentication.JwtToken;
+using MiCake.Identity.Authentication.JwtToken.Abstractions;
 using MiCake.Identity.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -65,10 +66,11 @@ namespace MiCake.Identity
         {
             builder.ConfigureApplication((app, services) =>
             {
-                services.AddSingleton<IJwtAuthManager, JwtAuthManager>();
-                services.TryAddSingleton<IJwtTokenStore, DefaultJwtTokenStore>();
-                services.TryAddSingleton<IJwtStoreKeyGenerator, DefaultJwtStoreKeyGenerator>();
-                services.TryAddSingleton<IRefreshTokenGenerator, DefaultRefreshTokenGenerator>();
+                services.TryAddSingleton<IJwtAuthManager, JwtAuthManager>();
+                services.TryAddSingleton<IRefreshTokenService, DefaultRefreshTokenService>();
+
+                services.TryAddSingleton<IRefreshTokenStore, DefaultRefreshTokenStore>();
+                services.TryAddSingleton<IRefreshTokenHandleGenerator, DefaultRefreshTokenHandleGenerator>();
                 services.Configure(options);
             });
 
