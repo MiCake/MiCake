@@ -1,5 +1,7 @@
 ﻿using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,10 +9,13 @@ namespace MiCake.DDD.Extensions.Lifetime
 {
     internal class DomainEventsRepositoryLifetime : IRepositoryPreSaveChanges
     {
-        private IEventDispatcher _eventDispatcher;
-        public DomainEventsRepositoryLifetime(IEventDispatcher eventDispatcher)
+        private readonly IEventDispatcher _eventDispatcher;
+        private readonly ILogger<DomainEventsRepositoryLifetime> _logger;
+
+        public DomainEventsRepositoryLifetime(IEventDispatcher eventDispatcher, ILoggerFactory loggerFactory)
         {
             _eventDispatcher = eventDispatcher;
+            _logger = loggerFactory.CreateLogger<DomainEventsRepositoryLifetime>();
         }
 
         public int Order { get; set; } = -1000;
@@ -32,7 +37,10 @@ namespace MiCake.DDD.Extensions.Lifetime
                         _eventDispatcher.Dispatch(@event);
                         completedEventCount++;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "There has a error when dispatch domain event.");
+                    }
                 }
 
                 if (completedEventCount != entityEvents.Count)
@@ -61,7 +69,10 @@ namespace MiCake.DDD.Extensions.Lifetime
                         await _eventDispatcher.DispatchAsync(@event);
                         completedEventCount++;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "There has a error when dispatch domain event.");
+                    }
                 }
 
                 if (completedEventCount != entityEvents.Count)
