@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MiCake.Core.Modularity;
+using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Reflection;
 
