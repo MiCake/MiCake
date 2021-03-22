@@ -57,7 +57,7 @@ namespace MiCake.Uow
         public IUnitOfWork PopUnitOfWork()
         {
             // if is root . it's parent is null.
-            if (_currentContext.Parent == null)
+            if (_currentContext?.Parent == null)
             {
                 _currentContext = null;
                 return null;

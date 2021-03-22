@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Data;
 
 namespace MiCake.Uow
@@ -21,6 +22,15 @@ namespace MiCake.Uow
         /// <see cref="UnitOfWorkScope"/>
         /// </summary>
         public UnitOfWorkScope Scope { get; set; }
+
+        /// <summary>
+        /// Specifies a <see cref="IServiceScope"/> to get the unit of work. 
+        /// If the value is not specified, a new scope is created using the default <see cref="IServiceProvider"/>.
+        /// <para>
+        ///     If you specify this parameter, it means you will control the release of the scope yourself.
+        /// </para>
+        /// </summary>
+        public IServiceScope? ServiceScope { get; set; }
 
         /// <summary>
         /// Specifies events which the <see cref="IUnitOfWork"/> invokes to enable developer control unit of work process.

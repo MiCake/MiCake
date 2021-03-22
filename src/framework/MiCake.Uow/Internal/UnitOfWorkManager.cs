@@ -13,17 +13,17 @@ namespace MiCake.Uow.Internal
         /// <summary>
         /// The ServiceProvider use to create ServiceScope for each of unit of work.
         /// </summary>
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// When no configuration item is specified, this default configuration will be used.
         /// </summary>
-        private UnitOfWorkOptions _defaultOptions;
+        private readonly UnitOfWorkOptions _defaultOptions;
 
         /// <summary>
         /// Used to save existing units of work as stack structure.
         /// </summary>
-        private UnitOfWorkCallContext _callContext = new UnitOfWorkCallContext();
+        private readonly UnitOfWorkCallContext _callContext = new UnitOfWorkCallContext();
 
         private bool _isDisposed = false;
 
@@ -62,10 +62,10 @@ namespace MiCake.Uow.Internal
                 //create child unit of work ,it will use the configuration of the previous unit of work
                 resultUow = new ChildUnitOfWork(_callContext.GetCurrentUow());
 
-                Action<IUnitOfWork> handler = context =>
+                void handler(IUnitOfWork context)
                 {
                     _callContext.PopUnitOfWork();
-                };
+                }
 
                 UnitOfWorkNeedParts uowNeedParts = new UnitOfWorkNeedParts() { Options = options, DisposeHandler = handler };
                 (resultUow as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
@@ -118,16 +118,18 @@ namespace MiCake.Uow.Internal
             IUnitOfWork result;
 
             //Give this scope to unit of work who will be created.
-            var uowScope = _serviceProvider.CreateScope();
-
+            var uowScope = options.ServiceScope ?? _serviceProvider.CreateScope();
+            var autoDispose = options.ServiceScope == null;
             try
             {
                 //Release resources and update _callContext status through Ondispose event.
-                Action<IUnitOfWork> handler = context =>
+                void handler(IUnitOfWork context)
                 {
-                    uowScope.Dispose();
                     _callContext.PopUnitOfWork();
-                };
+
+                    if (autoDispose)
+                        uowScope.Dispose();
+                }
 
                 result = uowScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 

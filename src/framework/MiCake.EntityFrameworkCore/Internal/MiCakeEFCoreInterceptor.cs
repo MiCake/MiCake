@@ -15,17 +15,15 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// </summary>
     internal class MiCakeEFCoreInterceptor : ISaveChangesInterceptor
     {
-        private readonly IServiceProvider _micakeRootServices;
+        private readonly IServiceProvider _services;
         private readonly IEFSaveChangesLifetime _saveChangesLifetime;
 
         private IEnumerable<EntityEntry> _efcoreEntries;
 
         public MiCakeEFCoreInterceptor(IServiceProvider services)
         {
-            _micakeRootServices = services ?? throw new ArgumentException($"{nameof(MiCakeEFCoreInterceptor)} received a null value of {nameof(IServiceProvider)}");
-
-            var currentScoped = _micakeRootServices.CreateScope();      // notice:current scoped will not release,beacuse efcore interceptor use current class instance.
-            _saveChangesLifetime = currentScoped.ServiceProvider.GetService<IEFSaveChangesLifetime>() ??
+            _services = services ?? throw new ArgumentException($"{nameof(MiCakeEFCoreInterceptor)} received a null value of {nameof(IServiceProvider)}");
+            _saveChangesLifetime = _services.GetService<IEFSaveChangesLifetime>() ??
                                     throw new ArgumentNullException($"Can not reslove {nameof(IEFSaveChangesLifetime)},Please check has added UseEFCore() in MiCake.");
         }
 

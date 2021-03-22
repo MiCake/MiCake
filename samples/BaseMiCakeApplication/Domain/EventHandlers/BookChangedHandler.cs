@@ -19,6 +19,7 @@ namespace BaseMiCakeApplication.Domain.EventHandlers
         public Task HandleAysnc(BookChangeEvent domainEvent, CancellationToken cancellationToken = default)
         {
             Debug.Write($"exec {nameof(BookChangedHandler)}");
+            _repo.Add(new Aggregates.Book("xx", "x", "x1"));
             return Task.CompletedTask;
         }
     }

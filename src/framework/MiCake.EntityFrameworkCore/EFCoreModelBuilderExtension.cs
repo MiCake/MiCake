@@ -3,6 +3,7 @@ using MiCake.DDD.Extensions.Store.Configure;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Interprets;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -28,12 +29,12 @@ namespace MiCake.EntityFrameworkCore
         /// If you don't inherit <see cref="MiCakeDbContext"/>, you can use this extension method in your DbContent OnConfiguring().
         /// </summary>
         /// <param name="optionsBuilder"></param>
+        /// <param name="serviceProvider"></param>
         /// <returns></returns>
-        public static DbContextOptionsBuilder AddMiCakeConfigure(this DbContextOptionsBuilder optionsBuilder)
+        public static DbContextOptionsBuilder AddMiCakeConfigure(this DbContextOptionsBuilder optionsBuilder, IServiceProvider serviceProvider)
         {
-            if (ServiceLocator.Instance.Locator != null)
-                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(ServiceLocator.Instance.Locator));
-
+            if (serviceProvider != null)
+                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(serviceProvider));
             return optionsBuilder;
         }
     }

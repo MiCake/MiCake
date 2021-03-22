@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MiCake.Core.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace BaseMiCakeApplication.EFCore
@@ -9,7 +10,7 @@ namespace BaseMiCakeApplication.EFCore
         {
             var builder = new DbContextOptionsBuilder<BaseAppDbContext>();
             builder.UseNpgsql("Host=localhost;Port=54320;Database=micake_db;Username=postgres;Password=a12345");
-            return new BaseAppDbContext(builder.Options);
+            return new BaseAppDbContext(builder.Options, ServiceLocator.Instance.Locator);
         }
     }
 }

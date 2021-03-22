@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -7,8 +8,11 @@ namespace MiCake.EntityFrameworkCore
     /// </summary>
     public class MiCakeDbContext : DbContext
     {
-        public MiCakeDbContext(DbContextOptions options) : base(options)
+        public IServiceProvider CurrentScopeServices { get; }
+
+        public MiCakeDbContext(DbContextOptions options, IServiceProvider serviceProvider) : base(options)
         {
+            CurrentScopeServices = serviceProvider;
         }
 
         protected MiCakeDbContext() : base()
@@ -24,7 +28,7 @@ namespace MiCake.EntityFrameworkCore
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.AddMiCakeConfigure();
+            optionsBuilder.AddMiCakeConfigure(CurrentScopeServices);
         }
     }
 }
