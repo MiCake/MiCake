@@ -7,4 +7,12 @@
     <ProjectReference Include="..\..\framework\MiCake.MessageBus\MiCake.MessageBus.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector" Version="3.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="16.9.1" />
+  </ItemGroup>
+
 </Project>

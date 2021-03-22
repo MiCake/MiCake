@@ -35,7 +35,7 @@ namespace MiCake.DDD.Extensions.Modules
             services.AddScoped(typeof(IFreeRepositoryFactory<,>), typeof(DefaultFreeRepositoryFactory<,>));
 
             //LifeTime
-            services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+            services.AddTransient<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
         }
 
         public override void Initialization(ModuleLoadContext context)

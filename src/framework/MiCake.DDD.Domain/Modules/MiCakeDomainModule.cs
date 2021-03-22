@@ -17,7 +17,7 @@ namespace MiCake.DDD.Domain.Modules
             //regiter all domain event handler to services
             services.ResigterDomainEventHandler(moudules);
 
-            services.AddSingleton<IEventDispatcher, EventDispatcher>();
+            services.AddScoped<IEventDispatcher, EventDispatcher>();
         }
     }
 }

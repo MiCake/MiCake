@@ -10,7 +10,7 @@ namespace MiCake.DDD.Domain.EventDispatch
     {
         private static readonly ConcurrentDictionary<Type, DomainEventHandlerWrapper> _domainEventHandlers = new ConcurrentDictionary<Type, DomainEventHandlerWrapper>();
 
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         public EventDispatcher(IServiceProvider serviceProvider)
         {
