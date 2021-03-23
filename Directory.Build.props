@@ -3,10 +3,10 @@
     <Product>MiCake</Product>
     <Authors>MiCake</Authors>
     <owners>MiCake</owners>
-    <Version>0.5.0-preview4</Version>
+    <Version>0.5.0-preview5</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageProjectUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/uoyoCsharp/MiCake/tree/master/src/framework</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/MiCake/MiCake</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MiCake/MiCake</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>AspNetCore;DDD;MiCake</PackageTags>
