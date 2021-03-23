@@ -1,5 +1,4 @@
-﻿using MiCake.Core.DependencyInjection;
-using MiCake.DDD.Extensions.Store.Configure;
+﻿using MiCake.DDD.Extensions.Store.Configure;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Interprets;
 using Microsoft.EntityFrameworkCore;
