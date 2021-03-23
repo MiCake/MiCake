@@ -12,6 +12,7 @@ namespace MiCake.Uow.Tests
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddTransient<IUnitOfWork, UnitOfWork>();
             services.AddOptions<UnitOfWorkOptions>();
+            services.AddLogging();
 
             otherServices?.Invoke(services);
 
