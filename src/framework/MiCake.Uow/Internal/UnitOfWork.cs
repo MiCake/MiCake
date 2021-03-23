@@ -2,6 +2,7 @@ using MiCake.Core.Data;
 using MiCake.Core.Util;
 using MiCake.Core.Util.Collections;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,11 +29,14 @@ namespace MiCake.Uow.Internal
         private bool _isSaved = false;
         private bool _isRollback = false;
 
-        public UnitOfWork(IEnumerable<ITransactionProvider> transactions)
+        private readonly ILogger<UnitOfWork> _logger;
+
+        public UnitOfWork(IEnumerable<ITransactionProvider> transactions, ILoggerFactory loggerFactory)
         {
             _transactions = transactions.OrderBy(s => s.Order);
 
             ID = Guid.NewGuid();
+            _logger = loggerFactory.CreateLogger<UnitOfWork>();
         }
 
         public void Dispose()
@@ -213,12 +217,15 @@ namespace MiCake.Uow.Internal
                 {
                     ErrorTransactions.Add(@transaction);
                     exceptions.Add(ex);
+
+                    _logger.LogError(ex, "unit of work SaveChanges failed.");
                 }
             }
 
             if (exceptions.Count > 0)
                 ReThrow(exceptions);
 
+            _isSaved = true;
             Events?.Completed(this);
         }
 
@@ -238,12 +245,15 @@ namespace MiCake.Uow.Internal
                 {
                     ErrorTransactions.Add(@transaction);
                     exceptions.Add(ex);
+
+                    _logger.LogError(ex, "unit of work SaveChangesAsync failed.");
                 }
             }
 
             if (exceptions.Count > 0)
                 ReThrow(exceptions);
 
+            _isSaved = true;
             Events?.Completed(this);
         }
 
@@ -265,6 +275,7 @@ namespace MiCake.Uow.Internal
 
             //if rollback has error, throw exception to developer.
 
+            _isRollback = true;
             Events?.Rollbacked(this);
         }
 
@@ -286,6 +297,7 @@ namespace MiCake.Uow.Internal
 
             //if rollback has error, throw exception to developer.
 
+            _isRollback = true;
             Events?.Rollbacked(this);
         }
 
@@ -319,6 +331,5 @@ namespace MiCake.Uow.Internal
             ServiceScope = parts.ServiceScope;
             DisposeHandler = parts.DisposeHandler;
         }
-
     }
 }

@@ -23,9 +23,10 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public void AfterSaveChanges(IEnumerable<EntityEntry> entityEntries)
         {
+            var cloneEntries = entityEntries.ToList();
             foreach (var postSaveChange in _repositoryPostSaveChanges)
             {
-                foreach (var entity in entityEntries)
+                foreach (var entity in cloneEntries)
                 {
                     var state = entity.State.ToRepositoryState();
                     postSaveChange.PostSaveChanges(state, entity.Entity);
@@ -35,9 +36,10 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async Task AfterSaveChangesAsync(IEnumerable<EntityEntry> entityEntries, CancellationToken cancellationToken = default)
         {
+            var cloneEntries = entityEntries.ToList();
             foreach (var postSaveChange in _repositoryPostSaveChanges)
             {
-                foreach (var entity in entityEntries)
+                foreach (var entity in cloneEntries)
                 {
                     var state = entity.State.ToRepositoryState();
                     await postSaveChange.PostSaveChangesAsync(state, entity.Entity, cancellationToken);
@@ -47,9 +49,10 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public void BeforeSaveChanges(IEnumerable<EntityEntry> entityEntries)
         {
+            var cloneEntries = entityEntries.ToList();
             foreach (var preSaveChange in _repositoryPreSaveChanges)
             {
-                foreach (var entity in entityEntries)
+                foreach (var entity in cloneEntries)
                 {
                     var originalEFState = entity.State;
 
@@ -63,9 +66,10 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async Task BeforeSaveChangesAsync(IEnumerable<EntityEntry> entityEntries, CancellationToken cancellationToken = default)
         {
+            var cloneEntries = entityEntries.ToList();
             foreach (var preSaveChange in _repositoryPreSaveChanges)
             {
-                foreach (var entity in entityEntries)
+                foreach (var entity in cloneEntries)
                 {
                     var originalEFState = entity.State;
 
