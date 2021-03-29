@@ -66,11 +66,11 @@ namespace MiCake.Identity
         {
             builder.ConfigureApplication((app, services) =>
             {
-                services.TryAddSingleton<IJwtAuthManager, JwtAuthManager>();
-                services.TryAddSingleton<IRefreshTokenService, DefaultRefreshTokenService>();
+                services.TryAddScoped<IJwtAuthManager, JwtAuthManager>();
+                services.TryAddScoped<IRefreshTokenService, DefaultRefreshTokenService>();
 
-                services.TryAddSingleton<IRefreshTokenStore, DefaultRefreshTokenStore>();
-                services.TryAddSingleton<IRefreshTokenHandleGenerator, DefaultRefreshTokenHandleGenerator>();
+                services.TryAddScoped<IRefreshTokenStore, DefaultRefreshTokenStore>();
+                services.TryAddScoped<IRefreshTokenHandleGenerator, DefaultRefreshTokenHandleGenerator>();
                 services.Configure(options);
             });
 
