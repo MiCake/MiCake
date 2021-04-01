@@ -1,4 +1,5 @@
 ﻿using MiCake.DDD.Domain;
+using System.Collections.Generic;
 
 namespace MiCake.EntityFrameworkCore.Tests.Fakes
 {
@@ -29,6 +30,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Fakes
             R = r;
             G = g;
             B = b;
+        }
+
+        protected override IEnumerable<object> GetEqualityComponents()
+        {
+            yield return R;
         }
     }
 

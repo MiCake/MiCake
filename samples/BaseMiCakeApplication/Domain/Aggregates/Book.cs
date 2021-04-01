@@ -1,4 +1,5 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates.Events;
+using BaseMiCakeApplication.Domain.Events;
 using MiCake.Core;
 using MiCake.DDD.Domain;
 using System;
@@ -28,6 +29,8 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void ChangeAuthor(string firstName, string lastName)
         {
             AddDomainEvent(new BookChangeEvent(BookName));
+            AddDomainEvent(new NewBookChangeEvent(BookName));
+
             Author = new BookAuthor(firstName, lastName);
         }
     }

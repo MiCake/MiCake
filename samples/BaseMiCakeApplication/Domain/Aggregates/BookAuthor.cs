@@ -22,7 +22,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
             LastName = lastName;
         }
 
-        protected override IEnumerable<object> GetAtomicValues()
+        protected override IEnumerable<object> GetEqualityComponents()
         {
             yield return FirstName;
             yield return LastName;

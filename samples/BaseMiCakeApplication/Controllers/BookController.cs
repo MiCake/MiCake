@@ -49,7 +49,12 @@ namespace BaseMiCakeApplication.Controllers
 
         [HttpPost]
         public async Task AddBook([FromBody] AddBookDto bookDto)
-            => await _bookRepository.AddAsync(new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName));
+        {
+            var book = new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName);
+
+            book.ChangeAuthor("xx", "aa");
+            await _bookRepository.AddAsync(book);
+        }
 
         [HttpPost]
         public async Task<bool> ChangeAuthor([FromBody] ChangeBookAuthorDto bookDto)
@@ -58,7 +63,6 @@ namespace BaseMiCakeApplication.Controllers
                                 ?? throw new SoftlyMiCakeException("未找到对应书籍信息");
 
             _bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
-            await _bookRepository.UpdateAsync(_bookInfo);
 
             return true;
         }

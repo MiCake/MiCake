@@ -16,11 +16,11 @@ namespace BaseMiCakeApplication.Domain.EventHandlers
             _repo = repo;
         }
 
-        public Task HandleAysnc(BookChangeEvent domainEvent, CancellationToken cancellationToken = default)
+        public async Task HandleAysnc(BookChangeEvent domainEvent, CancellationToken cancellationToken = default)
         {
-            Debug.Write($"exec {nameof(BookChangedHandler)}");
-            _repo.Add(new Aggregates.Book("xx", "x", "x1"));
-            return Task.CompletedTask;
+            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"), cancellationToken);
+            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"), cancellationToken);
+            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"), cancellationToken);
         }
     }
 }
