@@ -9,7 +9,7 @@ namespace MiCake.DDD.Domain
     {
         protected static bool EqualOperator(ValueObject left, ValueObject right)
         {
-            if (ReferenceEquals(left, null) ^ ReferenceEquals(right, null))
+            if (left is null ^ right is null)
             {
                 return false;
             }
@@ -21,14 +21,7 @@ namespace MiCake.DDD.Domain
             return !(EqualOperator(left, right));
         }
 
-        protected virtual IEnumerable<object> GetAtomicValues()
-        {
-            var properties = GetType().GetProperties();
-            foreach (var property in properties)
-            {
-                yield return property.GetValue(this);
-            }
-        }
+        protected abstract IEnumerable<object> GetEqualityComponents();
 
         public override bool Equals(object obj)
         {
@@ -37,29 +30,14 @@ namespace MiCake.DDD.Domain
                 return false;
             }
 
-            ValueObject other = (ValueObject)obj;
-            IEnumerator<object> thisValues = GetAtomicValues().GetEnumerator();
-            IEnumerator<object> otherValues = other.GetAtomicValues().GetEnumerator();
-            while (thisValues.MoveNext() && otherValues.MoveNext())
-            {
-                if (ReferenceEquals(thisValues.Current, null) ^
-                    ReferenceEquals(otherValues.Current, null))
-                {
-                    return false;
-                }
+            var other = (ValueObject)obj;
 
-                if (thisValues.Current != null &&
-                    !thisValues.Current.Equals(otherValues.Current))
-                {
-                    return false;
-                }
-            }
-            return !thisValues.MoveNext() && !otherValues.MoveNext();
+            return GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
         }
 
         public override int GetHashCode()
         {
-            return GetAtomicValues()
+            return GetEqualityComponents()
                 .Select(x => x != null ? x.GetHashCode() : 0)
                 .Aggregate((x, y) => x ^ y);
         }
@@ -79,4 +57,9 @@ namespace MiCake.DDD.Domain
             return !(left == right);
         }
     }
+
+    /// <summary>
+    /// A <see cref="IValueObject"/> use C# record.
+    /// </summary>
+    public abstract record RecordValueObject : IValueObject { };
 }
