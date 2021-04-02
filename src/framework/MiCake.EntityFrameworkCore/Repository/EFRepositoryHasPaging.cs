@@ -25,9 +25,18 @@ namespace MiCake.EntityFrameworkCore.Repository
             return Task.FromResult(new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, GetCount(), result.ToList()));
         }
 
-        public Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync(PagingQueryModel queryModel, Func<TAggregateRoot, TKey> orderSelector, CancellationToken cancellationToken = default)
+        public Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Func<TAggregateRoot, TOrderKey> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
         {
-            var result = DbSet.OrderBy(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum);
+            IEnumerable<TAggregateRoot> result;
+            if (asc)
+            {
+                result = DbSet.OrderBy(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum);
+            }
+            else
+            {
+                result = DbSet.OrderByDescending(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum);
+            }
+
             return Task.FromResult(new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, GetCount(), result.ToList()));
         }
     }
