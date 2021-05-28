@@ -1,7 +1,6 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates.Events;
 using BaseMiCakeApplication.Domain.Repositories;
 using MiCake.DDD.Domain;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +26,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             return Task.FromResult(new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, GetCount(), result.ToList()));
         }
 
-        public Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Func<TAggregateRoot, TOrderKey> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
+        public Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
         {
             IEnumerable<TAggregateRoot> result;
             if (asc)

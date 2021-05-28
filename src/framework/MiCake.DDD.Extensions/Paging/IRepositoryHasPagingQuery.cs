@@ -1,6 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,6 +31,6 @@ namespace MiCake.DDD.Extensions.Paging
         /// <param name="asc"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Func<TAggregateRoot, TOrderKey> orderSelector, bool asc = true, CancellationToken cancellationToken = default);
+        Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default);
     }
 }
