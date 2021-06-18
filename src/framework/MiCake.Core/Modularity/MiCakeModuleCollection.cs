@@ -7,7 +7,7 @@ namespace MiCake.Core.Modularity
 {
     public class MiCakeModuleCollection : IMiCakeModuleCollection
     {
-        private readonly List<MiCakeModuleDescriptor> _descriptors = new List<MiCakeModuleDescriptor>();
+        private readonly List<MiCakeModuleDescriptor> _descriptors = new();
 
         public MiCakeModuleDescriptor this[int index]
         {

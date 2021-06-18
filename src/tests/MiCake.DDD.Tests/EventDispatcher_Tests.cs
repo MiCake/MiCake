@@ -22,7 +22,7 @@ namespace MiCake.DDD.Tests
         [Fact]
         public void AggregateApplyEvent_ShouldFindEvent()
         {
-            HasEventsAggregate aggregate = new HasEventsAggregate();
+            HasEventsAggregate aggregate = new();
             aggregate.OneAddEventCase();
 
             var hasEvent = aggregate.GetDomainEvents().First();
@@ -39,7 +39,7 @@ namespace MiCake.DDD.Tests
 
             var disptcher = Services.BuildServiceProvider().GetService<IEventDispatcher>();
 
-            HasEventsAggregate aggregate = new HasEventsAggregate();
+            HasEventsAggregate aggregate = new();
             aggregate.OneAddEventCase();
 
             var orignalDomainEvent = (CreateOrderEvents)aggregate.GetDomainEvents().First();

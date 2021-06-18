@@ -10,7 +10,7 @@ namespace MiCake.Core.Data
     public class DataDepositPool : IDisposable
     {
         private bool _isDispose = false;
-        private ConcurrentDictionary<string, object> _cachePool = new ConcurrentDictionary<string, object>();
+        private readonly ConcurrentDictionary<string, object> _cachePool = new();
 
         public DataDepositPool()
         {

@@ -22,7 +22,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var httpContext = CreateFakeHttpContext("Get", 200);
-            ObjectResult objectResult = new ObjectResult(1234);
+            ObjectResult objectResult = new(1234);
             var options = Options.Create(new MiCakeAspNetOptions()
             {
                 DataWrapperOptions = new DataWrapperOptions()

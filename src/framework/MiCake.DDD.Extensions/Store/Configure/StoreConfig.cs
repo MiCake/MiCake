@@ -19,8 +19,8 @@ namespace MiCake.DDD.Extensions.Store.Configure
 
         private const string StoreModelCacheKey = "StoreModelKey";
 
-        private readonly ConcurrentDictionary<string, Lazy<IStoreModel>> _storeModels = new ConcurrentDictionary<string, Lazy<IStoreModel>>();
-        private readonly ConcurrentDictionary<string, IStoreModelProvider> _modelProviders = new ConcurrentDictionary<string, IStoreModelProvider>();
+        private readonly ConcurrentDictionary<string, Lazy<IStoreModel>> _storeModels = new();
+        private readonly ConcurrentDictionary<string, IStoreModelProvider> _modelProviders = new();
 
         public StoreConfig()
         {
@@ -39,7 +39,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
 
         private IStoreModel CreateModel()
         {
-            StoreModelBuilder storeModelBuilder = new StoreModelBuilder(new StoreModel());
+            StoreModelBuilder storeModelBuilder = new(new StoreModel());
 
             foreach (var modelProvider in _modelProviders.Values)
             {
@@ -50,7 +50,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
         }
 
         /// <summary>
-        /// This is an internal API  not subject to the same compatibility standards as public APIs.
+        /// This is an internal API not subject to the same compatibility standards as public APIs.
         /// It may be changed or removed without notice in any release.
         /// 
         /// Add <see cref="IStoreModelProvider"/> to this configer.

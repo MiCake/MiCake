@@ -21,8 +21,8 @@ namespace MiCake.AspNetCore.ExceptionHandling
     internal class ExceptionHandlerMiddleware
     {
         private readonly RequestDelegate _next;
-        private DataWrapperOptions _wrapOptions;
-        private bool _useWrapper = false;
+        private readonly DataWrapperOptions _wrapOptions;
+        private readonly bool _useWrapper = false;
 
         public ExceptionHandlerMiddleware(
             RequestDelegate next,

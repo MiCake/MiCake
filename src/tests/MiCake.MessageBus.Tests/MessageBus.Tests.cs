@@ -96,7 +96,7 @@ namespace MiCake.MessageBus.Tests
         [Fact]
         public async Task Bus_MessageReceived_AddMoreHandler()
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
 
@@ -122,7 +122,7 @@ namespace MiCake.MessageBus.Tests
         [Fact]
         public async Task Bus_MoreMessageReceiver()
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
             await subscriber1.SubscribeAsync();
@@ -148,7 +148,7 @@ namespace MiCake.MessageBus.Tests
         [Fact]
         public async Task Bus_MoreMessageReceiver_DifferentTopic()
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
             await subscriber1.SubscribeAsync(new MessageDeliveryOptions() { Topics = new List<string>() { "topic1" } });

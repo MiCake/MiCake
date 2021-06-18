@@ -8,7 +8,7 @@ namespace MiCake.Audit.Lifetime
 {
     internal class AuditRepositoryLifetime : IRepositoryPreSaveChanges
     {
-        private IAuditExecutor _auditExecutor;
+        private readonly IAuditExecutor _auditExecutor;
 
         public AuditRepositoryLifetime(IAuditExecutor auditExecutor)
         {

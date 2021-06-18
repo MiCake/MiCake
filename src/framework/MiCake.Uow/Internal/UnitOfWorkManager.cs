@@ -23,7 +23,7 @@ namespace MiCake.Uow.Internal
         /// <summary>
         /// Used to save existing units of work as stack structure.
         /// </summary>
-        private readonly UnitOfWorkCallContext _callContext = new UnitOfWorkCallContext();
+        private readonly UnitOfWorkCallContext _callContext = new();
 
         private bool _isDisposed = false;
 
@@ -67,7 +67,7 @@ namespace MiCake.Uow.Internal
                     _callContext.PopUnitOfWork();
                 }
 
-                UnitOfWorkNeedParts uowNeedParts = new UnitOfWorkNeedParts() { Options = options, DisposeHandler = handler };
+                UnitOfWorkNeedParts uowNeedParts = new() { Options = options, DisposeHandler = handler };
                 (resultUow as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
             }
             _callContext.PushUnitOfWork(resultUow);
@@ -133,7 +133,7 @@ namespace MiCake.Uow.Internal
 
                 result = uowScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-                UnitOfWorkNeedParts uowNeedParts = new UnitOfWorkNeedParts()
+                UnitOfWorkNeedParts uowNeedParts = new()
                 {
                     Options = options,
                     ServiceScope = uowScope,

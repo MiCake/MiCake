@@ -12,7 +12,7 @@ namespace MiCake.DDD.Extensions.Internal
     internal class ProxyReadOnlyFreeRepository<TEntity, TKey> : IReadOnlyFreeRepository<TEntity, TKey>
           where TEntity : class, IEntity<TKey>
     {
-        private IReadOnlyFreeRepository<TEntity, TKey> _inner;
+        private readonly IReadOnlyFreeRepository<TEntity, TKey> _inner;
 
         public ProxyReadOnlyFreeRepository(IServiceProvider serviceProvider)
         {

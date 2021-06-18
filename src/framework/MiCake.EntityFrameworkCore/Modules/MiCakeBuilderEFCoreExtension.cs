@@ -50,7 +50,7 @@ namespace MiCake.EntityFrameworkCore
             Type miCakeDbContextType,
             Action<MiCakeEFCoreOptions> optionsBulder)
         {
-            MiCakeEFCoreOptions options = new MiCakeEFCoreOptions(miCakeDbContextType);
+            MiCakeEFCoreOptions options = new(miCakeDbContextType);
             optionsBulder?.Invoke(options);
 
             builder.ConfigureApplication((app, services) =>

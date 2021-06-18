@@ -6,6 +6,6 @@ namespace MiCake.DDD.Tests.Store
     {
         protected IStoreModel CreateModel() => new StoreModel();
 
-        protected StoreModelBuilder CreateStoreModelBuilder() => new StoreModelBuilder(CreateModel());
+        protected StoreModelBuilder CreateStoreModelBuilder() => new(CreateModel());
     }
 }

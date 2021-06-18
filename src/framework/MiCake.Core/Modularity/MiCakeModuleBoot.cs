@@ -10,10 +10,10 @@ namespace MiCake.Core.Modularity
     /// </summary>
     internal class MiCakeModuleBoot : IMiCakeModuleBoot
     {
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
-        private IMiCakeModuleCollection _modules;
-        private MiCakeModuleLogger _moduleLogger;
+        private readonly IMiCakeModuleCollection _modules;
+        private readonly MiCakeModuleLogger _moduleLogger;
 
         private Action<ModuleConfigServiceContext> _configServiceActions;
         private Action<ModuleLoadContext> _initializationActions;
@@ -87,55 +87,55 @@ namespace MiCake.Core.Modularity
         }
 
         #region LifeTimes
-        private List<ModuleBootInfo> bootInfos = new List<ModuleBootInfo>()
+        private readonly List<ModuleBootInfo> bootInfos = new()
         {
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.ConfigService,
                 Description = "PreConfigServices",
-                StartAction = (s,context) => s.PreConfigServices((ModuleConfigServiceContext)context)
+                StartAction = (s, context) => s.PreConfigServices((ModuleConfigServiceContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.ConfigService,
                 Description = "ConfigServices",
-                StartAction = (s,context) => s.ConfigServices((ModuleConfigServiceContext)context)
+                StartAction = (s, context) => s.ConfigServices((ModuleConfigServiceContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.ConfigService,
                 Description = "PostConfigServices",
-                StartAction = (s,context) => s.PostConfigServices((ModuleConfigServiceContext)context)
+                StartAction = (s, context) => s.PostConfigServices((ModuleConfigServiceContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.Init,
                 Description = "PreInitialization",
-                StartAction = (s,context) => s.PreInitialization((ModuleLoadContext)context)
+                StartAction = (s, context) => s.PreInitialization((ModuleLoadContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.Init,
                 Description = "Initialization",
-                StartAction = (s,context) => s.Initialization((ModuleLoadContext)context)
+                StartAction = (s, context) => s.Initialization((ModuleLoadContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.Init,
                 Description = "PostInitialization",
-                StartAction = (s,context) => s.PostInitialization((ModuleLoadContext)context)
+                StartAction = (s, context) => s.PostInitialization((ModuleLoadContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.Shutdown,
                 Description = "PreShutDown",
-                StartAction = (s,context) => s.PreShutDown((ModuleLoadContext)context)
+                StartAction = (s, context) => s.PreShutDown((ModuleLoadContext)context)
             },
             new ModuleBootInfo()
             {
                 Type = ModuleBootType.Shutdown,
                 Description = "Shutdown",
-                StartAction = (s,context) => s.Shutdown((ModuleLoadContext)context)
+                StartAction = (s, context) => s.Shutdown((ModuleLoadContext)context)
             },
         };
 

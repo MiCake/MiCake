@@ -1,9 +1,11 @@
-﻿using MiCake.Core.Util.Reflection;
+﻿using MiCake.AspNetCore.Identity;
+using MiCake.Core.Util.Reflection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,10 +19,13 @@ namespace MiCake.AspNetCore.Security
     internal class VerifyCurrentUserFilter : IAsyncActionFilter
     {
         //The method cache used to get the action parameter as the value of the custom model
-        private ConcurrentDictionary<Type, Func<object, object>> _modelActionArgumentGetter = new ConcurrentDictionary<Type, Func<object, object>>();
+        private static readonly ConcurrentDictionary<Type, Func<object, object>> _modelActionArgumentGetter = new();
 
-        public VerifyCurrentUserFilter()
+        private readonly MiCakeIdentityOptions _options;
+
+        public VerifyCurrentUserFilter(IOptions<MiCakeIdentityOptions> options)
         {
+            _options = options.Value;
         }
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -61,7 +66,7 @@ namespace MiCake.AspNetCore.Security
                 return false;
             }
 
-            var userIDClaimValue = currentUser.Claims.FirstOrDefault(s => s.Type.ToLower().Equals(VerifyUserClaims.UserID.ToLower()));
+            var userIDClaimValue = currentUser.Claims.FirstOrDefault(s => s.Type.ToLower().Equals(_options.UserIdClaimName.ToLower()));
             if (userIDClaimValue == null)
             {
                 await httpContext.ForbidAsync();
@@ -95,7 +100,7 @@ namespace MiCake.AspNetCore.Security
                 currentUserTargetValue = getValueFunc?.Invoke(currentValue);
             }
 
-            return currentUserTargetValue == null ? false : candidateValues.Contains(currentUserTargetValue.ToString());
+            return currentUserTargetValue != null && candidateValues.Contains(currentUserTargetValue.ToString());
         }
 
         private Func<object, object> CreateGetModelValueExpression(Type modelType, PropertyInfo effectiveProperty)

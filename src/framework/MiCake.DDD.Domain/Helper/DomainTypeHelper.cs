@@ -7,7 +7,7 @@ namespace MiCake.DDD.Domain.Helper
 {
     public static class DomainTypeHelper
     {
-        public static List<Type> DomainTypes = new List<Type>()
+        public static List<Type> DomainTypes = new()
         {
             typeof(IRepository),
             typeof(IEntity),

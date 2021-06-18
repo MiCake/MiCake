@@ -15,7 +15,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
     /// </summary>
     public class InternalStoreEntityBuilder : IConventionStoreEntityBuilder
     {
-        private Type _clrType;
+        private readonly Type _clrType;
 
         public StoreEntityType Metadata { get; private set; }
 

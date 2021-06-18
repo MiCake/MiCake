@@ -17,10 +17,11 @@ namespace MiCake
         /// </summary>
         /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder)
+        /// <param name="identityOptionsConfig"></param>
+        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeIdentityOptions> identityOptionsConfig = null)
             where TMiCakeUser : IMiCakeUser
         {
-            return UseIdentity(builder, typeof(TMiCakeUser));
+            return UseIdentity(builder, typeof(TMiCakeUser), identityOptionsConfig);
         }
 
         /// <summary>
@@ -28,7 +29,8 @@ namespace MiCake
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>
-        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType)
+        /// <param name="identityOptionsConfig"></param>
+        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeIdentityOptions> identityOptionsConfig = null)
         {
             //Add identity core.
             builder.AddIdentityCore(miCakeUserType);
@@ -48,6 +50,9 @@ namespace MiCake
                 //add ICurrentMiCakeUser
                 services.Replace(new ServiceDescriptor(typeof(ICurrentMiCakeUser), aspnetCoreCurrentUser, ServiceLifetime.Scoped));
                 services.Replace(new ServiceDescriptor(currentMiCakeUserType, aspnetCoreCurrentUser, ServiceLifetime.Scoped));
+
+                Action<MiCakeIdentityOptions> defaultOptions = (s) => { };
+                services.Configure(identityOptionsConfig ?? defaultOptions);
             });
 
             return builder;

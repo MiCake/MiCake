@@ -15,7 +15,7 @@ namespace MiCake.DDD.Domain
     {
         public virtual TKey Id { get; set; }
 
-        protected List<IDomainEvent> _domainEvents = new List<IDomainEvent>();
+        protected List<IDomainEvent> _domainEvents = new();
 
         public virtual void AddDomainEvent(IDomainEvent domainEvent)
           => _domainEvents.Add(domainEvent);

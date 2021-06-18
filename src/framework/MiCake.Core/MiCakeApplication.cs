@@ -46,11 +46,11 @@ namespace MiCake.Core
         private Type _entryType;
         private IMiCakeModuleBoot _miCakeModuleBoot;
         private IServiceProvider _serviceProvider;
-        private bool _needNewScope;
+        private readonly bool _needNewScope;
 
-        private bool _isInitialized = false;
-        private bool _isStarted = false;
-        private bool _isShutdown = false;
+        private readonly bool _isInitialized = false;
+        private readonly bool _isStarted = false;
+        private readonly bool _isShutdown = false;
 
         public MiCakeApplication(
             IServiceCollection services,

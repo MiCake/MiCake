@@ -16,7 +16,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     internal class DefaultWrapperExecutor : IDataWrapperExecutor
     {
         // the cache of custom model.
-        private ConcurrentDictionary<int, CustomModelWithType> _cacheCustomerType;
+        private readonly ConcurrentDictionary<int, CustomModelWithType> _cacheCustomerType;
 
         public DefaultWrapperExecutor()
         {
@@ -45,7 +45,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             }
 
             var micakeException = exception as MiCakeException;
-            ApiError result = new ApiError(exception.Message,
+            ApiError result = new(exception.Message,
                                            originalData,
                                            micakeException?.Code,
                                            options.IsDebug ? exception.StackTrace : null);

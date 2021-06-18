@@ -9,7 +9,7 @@ namespace MiCake.DDD.Tests.Metadata
     {
         public int Order => -1;
 
-        private TestModelProviderRecorder _recorder;
+        private readonly TestModelProviderRecorder _recorder;
 
         public TestDomainObjectModelProvider(TestModelProviderRecorder testModelProviderRecorder)
         {

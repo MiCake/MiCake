@@ -17,7 +17,7 @@ namespace MiCake.Core.DependencyInjection
 
         protected override List<InjectServiceInfo> AddInjectServices(Type currentType)
         {
-            List<InjectServiceInfo> result = new List<InjectServiceInfo>();
+            List<InjectServiceInfo> result = new();
 
             //add attribute mark services
             var injectServiceInfo = currentType.GetCustomAttribute<InjectServiceAttribute>();

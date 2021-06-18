@@ -9,7 +9,7 @@ namespace MiCake.Core.DependencyInjection
 {
     internal abstract class MiCakeServiceRegistrarBase : IMiCakeServiceRegistrar
     {
-        private IServiceCollection _services;
+        private readonly IServiceCollection _services;
         private FindAutoServiceTypesDelegate _serviceTypesFinder;
 
         protected FindAutoServiceTypesDelegate CurrentFinder => _serviceTypesFinder ?? DefaultFindServiceTypes.Finder;

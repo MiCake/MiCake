@@ -39,7 +39,7 @@ namespace MiCake
             Action<MiCakeApplicationOptions> configOptions,
             bool needNewScope = false)
         {
-            MiCakeApplicationOptions options = new MiCakeApplicationOptions();
+            MiCakeApplicationOptions options = new();
 
             configOptions?.Invoke(options);
 

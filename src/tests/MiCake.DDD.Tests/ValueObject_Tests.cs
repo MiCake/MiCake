@@ -8,8 +8,8 @@ namespace MiCake.DDD.Tests
         [Fact]
         public void ValueObject_SameTypeCompare_Test()
         {
-            ValueObjectA mixiObject = new ValueObjectA("mi", "xi");
-            ValueObjectA mixi2Object = new ValueObjectA("mi", "xi");
+            ValueObjectA mixiObject = new("mi", "xi");
+            ValueObjectA mixi2Object = new("mi", "xi");
 
             Assert.Equal(mixiObject, mixi2Object);
         }
@@ -17,9 +17,9 @@ namespace MiCake.DDD.Tests
         [Fact]
         public void ValueObject_Operator_Test()
         {
-            ValueObjectA mixiObject = new ValueObjectA("mi", "xi");
-            ValueObjectA mixi2Object = new ValueObjectA("mi", "xi");
-            ValueObjectA mixi3Object = new ValueObjectA("mii", "xii");
+            ValueObjectA mixiObject = new("mi", "xi");
+            ValueObjectA mixi2Object = new("mi", "xi");
+            ValueObjectA mixi3Object = new("mii", "xii");
 
             var compareResult = mixiObject == mixi2Object;
             Assert.True(compareResult);
@@ -31,7 +31,7 @@ namespace MiCake.DDD.Tests
         [Fact]
         public void Entity_Equal_Test()
         {
-            ValueObjectA mixiObject = new ValueObjectA("mi", "xi");
+            ValueObjectA mixiObject = new("mi", "xi");
 
             Assert.False(mixiObject.Equals(null));
             Assert.False(mixiObject.Equals(new object()));

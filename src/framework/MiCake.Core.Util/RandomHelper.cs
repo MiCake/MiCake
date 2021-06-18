@@ -6,7 +6,7 @@ namespace MiCake.Core.Util
 {
     public class RandomHelper
     {
-        private static readonly Random Rnd = new Random();
+        private static readonly Random Rnd = new();
 
         /// <summary>
         /// Returns a random number within a specified range.

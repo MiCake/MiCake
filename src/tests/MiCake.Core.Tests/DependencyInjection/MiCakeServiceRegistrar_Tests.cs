@@ -19,7 +19,7 @@ namespace MiCake.Core.Tests.DependencyInjection
             MiCakeModules = BuildCurrentModule();
             Services = BuildServiceCollection();
 
-            DefaultServiceRegistrar defaultServiceRegistrar = new DefaultServiceRegistrar(Services);
+            DefaultServiceRegistrar defaultServiceRegistrar = new(Services);
             defaultServiceRegistrar.Register(MiCakeModules);
         }
 

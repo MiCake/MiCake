@@ -764,7 +764,7 @@ namespace MiCake.Uow.Tests
             Assert.True(currentDbExecutor.IsDispose);
         }
 
-        private Action<IServiceCollection> AddScopeTransactionProvider = s
+        private readonly Action<IServiceCollection> AddScopeTransactionProvider = s
             => s.AddTransient<ITransactionProvider, TestScopeTransactionProvider>();
 
         private void AddTwoDifferentTypeProvider(IServiceCollection services)

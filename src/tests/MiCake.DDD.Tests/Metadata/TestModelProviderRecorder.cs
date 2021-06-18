@@ -6,6 +6,6 @@ namespace MiCake.DDD.Tests.Metadata
     {
         public List<string> ModelProviderInfo { get; set; } = new List<string>();
 
-        public List<object> Additionals = new List<object>();
+        public List<object> Additionals = new();
     }
 }

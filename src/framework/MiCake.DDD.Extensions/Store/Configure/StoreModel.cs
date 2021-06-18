@@ -5,7 +5,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
 {
     public class StoreModel : IStoreModel
     {
-        private readonly Dictionary<Type, StoreEntityType> _storeEntityTypes = new Dictionary<Type, StoreEntityType>();
+        private readonly Dictionary<Type, StoreEntityType> _storeEntityTypes = new();
 
         public StoreModel()
         {

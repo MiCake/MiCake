@@ -4,7 +4,7 @@ using System;
 
 namespace MiCake.Audit.SoftDeletion
 {
-    public class SoftDeletionAuditProvider : IAuditProvider
+    internal class SoftDeletionAuditProvider : IAuditProvider
     {
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
@@ -12,7 +12,7 @@ namespace MiCake.Audit.SoftDeletion
                 return;
 
             var entity = auditObjectModel.AuditEntity;
-            if (!(entity is ISoftDeletion softDeletionObj))
+            if (entity is not ISoftDeletion softDeletionObj)
                 return;
 
             softDeletionObj.IsDeleted = true;
