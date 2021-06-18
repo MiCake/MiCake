@@ -6,7 +6,7 @@ namespace MiCake.Audit.Core
     /// <summary>
     /// Give entity creation time or modifaction time.
     /// </summary>
-    public class DefaultTimeAuditProvider : IAuditProvider
+    internal class DefaultTimeAuditProvider : IAuditProvider
     {
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {

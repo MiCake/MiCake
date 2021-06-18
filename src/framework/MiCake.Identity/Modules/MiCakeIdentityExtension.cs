@@ -51,6 +51,13 @@ namespace MiCake.Identity
 
                 var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType(userKeyType[0]);
                 services.AddScoped(typeof(IAuditProvider), auditProviderType);
+
+                // if user key is struce CLR type
+                if (userKeyType[0].IsValueType && !userKeyType[0].IsEnum)
+                {
+                    var structAuditProviderType = typeof(IdentityAuditProviderForStruct<>).MakeGenericType(userKeyType[0]);
+                    services.AddScoped(typeof(IAuditProvider), structAuditProviderType);
+                }
             });
 
             return builder;

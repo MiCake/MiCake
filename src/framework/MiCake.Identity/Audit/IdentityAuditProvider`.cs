@@ -9,7 +9,7 @@ namespace MiCake.Identity.Audit
     /// Internal identity audit provider.
     /// </summary>
     /// <typeparam name="TKey">The type of the primary key for the user.</typeparam>
-    public class IdentityAuditProvider<TKey> : IAuditProvider
+    internal class IdentityAuditProvider<TKey> : IAuditProvider
     {
         private readonly ICurrentMiCakeUser<TKey> _currentMiCakeUser;
 
@@ -42,22 +42,47 @@ namespace MiCake.Identity.Audit
             }
         }
 
-        private void SetCreateUser<TUserKey>(object entity, TUserKey userID)
+        protected virtual void SetCreateUser(object entity, object userID)
         {
-            if (entity is IHasCreator<TUserKey> creatorEntity)
-                creatorEntity.CreatorID = userID;
+            if (entity is IHasCreator<TKey> creatorEntity)
+                creatorEntity.CreatorID = (TKey)userID;
         }
 
-        private void SetModifyUser<TUserKey>(object entity, TUserKey userID)
+        protected virtual void SetModifyUser(object entity, object userID)
         {
-            if (entity is IHasModifyUser<TUserKey> modifyUser)
-                modifyUser.ModifyUserID = userID;
+            if (entity is IHasModifyUser<TKey> modifyUser)
+                modifyUser.ModifyUserID = (TKey)userID;
         }
 
-        private void SetDeleteUser<TUserKey>(object entity, TUserKey userID)
+        protected virtual void SetDeleteUser(object entity, object userID)
         {
-            if (entity is ISoftDeletion && entity is IHasDeleteUser<TUserKey> deleteUser)
-                deleteUser.DeleteUserID = userID;
+            if (entity is ISoftDeletion && entity is IHasDeleteUser<TKey> deleteUser)
+                deleteUser.DeleteUserID = (TKey)userID;
+        }
+    }
+
+    internal class IdentityAuditProviderForStruct<TKey> : IdentityAuditProvider<TKey> where TKey : struct
+    {
+        public IdentityAuditProviderForStruct(ICurrentMiCakeUser<TKey> currentMiCakeUser) : base(currentMiCakeUser)
+        {
+        }
+
+        protected override void SetCreateUser(object entity, object userID)
+        {
+            if (entity is IMayHasCreator<TKey> creatorEntity)
+                creatorEntity.CreatorID = (TKey)userID;
+        }
+
+        protected override void SetModifyUser(object entity, object userID)
+        {
+            if (entity is IMayHasModifyUser<TKey> modifyUser)
+                modifyUser.ModifyUserID = (TKey)userID;
+        }
+
+        protected override void SetDeleteUser(object entity, object userID)
+        {
+            if (entity is ISoftDeletion && entity is IMayHasDeleteUser<TKey> deleteUser)
+                deleteUser.DeleteUserID = (TKey)userID;
         }
     }
 }

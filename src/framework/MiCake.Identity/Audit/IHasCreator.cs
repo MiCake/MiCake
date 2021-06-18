@@ -1,5 +1,4 @@
 ﻿using MiCake.Identity;
-using System;
 
 namespace MiCake.Audit
 {
@@ -13,5 +12,17 @@ namespace MiCake.Audit
         /// The primary key for user.
         /// </summary>
         TKey CreatorID { get; set; }
+    }
+
+    /// <summary>
+    /// Represents has a creator.If audit is enabled, it will be assigned to the audited system later.
+    /// </summary>
+    /// <typeparam name="TKey">The type used for the primary key for the user.Must be consistent with <see cref="IMiCakeUser"/></typeparam>
+    public interface IMayHasCreator<TKey> : IHasAuditUser where TKey : struct
+    {
+        /// <summary>
+        /// The primary key for user.
+        /// </summary>
+        TKey? CreatorID { get; set; }
     }
 }
