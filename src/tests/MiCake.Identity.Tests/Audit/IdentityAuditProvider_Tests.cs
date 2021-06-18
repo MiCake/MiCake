@@ -19,7 +19,7 @@ namespace MiCake.Identity.Tests.Audit
         [Fact]
         public void AuditUser_hasCreator_hasModifyUser_hasDeleteUser()
         {
-            HasAuditUser user = new HasAuditUser()
+            HasAuditUser user = new()
             {
                 Id = 1001
             };
@@ -43,7 +43,7 @@ namespace MiCake.Identity.Tests.Audit
         [Fact]
         public void AuditUser_hasCreator_hasModifyUser_hasDeleteUser_NoSoftDeletion()
         {
-            HasAuditUserWithNoSoftDeletion user = new HasAuditUserWithNoSoftDeletion()
+            HasAuditUserWithNoSoftDeletion user = new()
             {
                 Id = 1001
             };
@@ -67,7 +67,7 @@ namespace MiCake.Identity.Tests.Audit
         [Fact]
         public void AuditUser_WithWrongKeyType()
         {
-            HasAuditUserWithWrongKeyType user = new HasAuditUserWithWrongKeyType();
+            HasAuditUserWithWrongKeyType user = new();
 
             var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
             var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();

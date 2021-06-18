@@ -18,7 +18,7 @@ namespace MiCake
 
         public static IServiceCollection AddRabbitMQ(this IServiceCollection services, Action<RabbitMQOptions> optionsAction)
         {
-            RabbitMQOptions options = new RabbitMQOptions();
+            RabbitMQOptions options = new();
 
             services.Configure(optionsAction);
             services.TryAddSingleton<ITransportSender, RabbitMQTransportSender>();

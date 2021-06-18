@@ -15,8 +15,8 @@ namespace MiCake.Core.Util.Collections
     /// <typeparam name="T2"></typeparam>
     public class Map<T1, T2>
     {
-        private Dictionary<T1, T2> _forward = new Dictionary<T1, T2>();
-        private Dictionary<T2, T1> _reverse = new Dictionary<T2, T1>();
+        private readonly Dictionary<T1, T2> _forward = new();
+        private readonly Dictionary<T2, T1> _reverse = new();
 
         public Map()
         {
@@ -41,7 +41,7 @@ namespace MiCake.Core.Util.Collections
 
         public class Indexer<T3, T4>
         {
-            private Dictionary<T3, T4> _dictionary;
+            private readonly Dictionary<T3, T4> _dictionary;
             public Indexer(Dictionary<T3, T4> dictionary)
             {
                 _dictionary = dictionary;

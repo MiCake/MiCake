@@ -19,7 +19,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
         }
 
         public static RabbitMQBrokerConnection ConnectionSuccess(string hostAddress, IModel rabbitModel, RabbitMQOptions options)
-            => new RabbitMQBrokerConnection()
+            => new()
             {
                 EndPoint = new Uri(hostAddress, UriKind.RelativeOrAbsolute),
                 RabbitMQModel = rabbitModel,
@@ -27,7 +27,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
             };
 
         public static RabbitMQBrokerConnection ConnectionFailed(string hostAddress, RabbitMQOptions options)
-            => new RabbitMQBrokerConnection()
+            => new()
             {
                 EndPoint = new Uri(hostAddress, UriKind.RelativeOrAbsolute),
                 RabbitMQOptions = options

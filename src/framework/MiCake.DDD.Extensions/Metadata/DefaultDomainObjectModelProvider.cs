@@ -9,7 +9,7 @@ namespace MiCake.DDD.Extensions.Metadata
 {
     internal class DefaultDomainObjectModelProvider : IDomainObjectModelProvider
     {
-        private IMiCakeModuleCollection _exceptedModules;
+        private readonly IMiCakeModuleCollection _exceptedModules;
 
         public DefaultDomainObjectModelProvider(
             IMiCakeModuleContext moduleContext)

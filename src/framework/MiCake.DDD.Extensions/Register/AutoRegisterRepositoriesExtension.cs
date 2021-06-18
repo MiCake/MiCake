@@ -41,7 +41,7 @@ namespace MiCake.Core.Modularity
         {
             var allRepoTypes = assembly.GetTypes().Where(s => TypeHelper.IsConcrete(s) && typeof(IRepository).IsAssignableFrom(s));
 
-            List<(Type repoInterface, Type repo)> result = new List<(Type repoInterface, Type repo)>();
+            List<(Type repoInterface, Type repo)> result = new();
 
             foreach (var repo in allRepoTypes)
             {

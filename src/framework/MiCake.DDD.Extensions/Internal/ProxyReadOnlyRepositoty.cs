@@ -9,7 +9,7 @@ namespace MiCake.DDD.Extensions.Internal
     internal class ProxyReadOnlyRepository<TAggregateRoot, TKey> : IReadOnlyRepository<TAggregateRoot, TKey>
           where TAggregateRoot : class, IAggregateRoot<TKey>
     {
-        private IReadOnlyRepository<TAggregateRoot, TKey> _inner;
+        private readonly IReadOnlyRepository<TAggregateRoot, TKey> _inner;
 
         public ProxyReadOnlyRepository(IServiceProvider serviceProvider)
         {

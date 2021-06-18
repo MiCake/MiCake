@@ -16,7 +16,7 @@ namespace MiCake.DDD.Extensions.Store.Configure
     /// </summary>
     public class StoreEntityType : IStoreEntityType, IConventionStoreEntity
     {
-        private Type _originalType;
+        private readonly Type _originalType;
         private bool _directDeletion = true;
 
         private readonly Dictionary<string, StoreProperty> _properties;

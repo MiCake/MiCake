@@ -19,7 +19,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServices().BuildServiceProvider();
 
-            HasCreationTimeModel entity = new HasCreationTimeModel();
+            HasCreationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
@@ -32,7 +32,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasCreationTimeModel entity = new HasCreationTimeModel();
+            HasCreationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveTime = DateTime.Now;
@@ -47,7 +47,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasCreationTimeModel entity = new HasCreationTimeModel();
+            HasCreationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
@@ -62,7 +62,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasModificationTimeModel entity = new HasModificationTimeModel();
+            HasModificationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveTime = DateTime.Now;
@@ -77,7 +77,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasModificationTimeModel entity = new HasModificationTimeModel();
+            HasModificationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
@@ -92,7 +92,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasAuditModel entity = new HasAuditModel();
+            HasAuditModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveCreationTime = DateTime.Now;
@@ -114,7 +114,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasCreationTimeButNotEntity entity = new HasCreationTimeButNotEntity();
+            HasCreationTimeButNotEntity entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
@@ -127,7 +127,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            SoftDeletionModel entity = new SoftDeletionModel();
+            SoftDeletionModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
@@ -140,7 +140,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            SoftDeletionModel entity = new SoftDeletionModel();
+            SoftDeletionModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
@@ -155,7 +155,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasDeletionTimeModel entity = new HasDeletionTimeModel();
+            HasDeletionTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveDeletionTime = DateTime.Now;
@@ -172,7 +172,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasDeletionTimeModel entity = new HasDeletionTimeModel();
+            HasDeletionTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
@@ -188,7 +188,7 @@ namespace MiCake.Audit.Tests
         {
             var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
 
-            HasDeletionTimeModel_NoSoftDeletion entity = new HasDeletionTimeModel_NoSoftDeletion();
+            HasDeletionTimeModel_NoSoftDeletion entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
             executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);

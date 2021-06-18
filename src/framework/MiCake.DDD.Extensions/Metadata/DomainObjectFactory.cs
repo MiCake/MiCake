@@ -6,7 +6,7 @@ namespace MiCake.DDD.Extensions.Metadata
 {
     internal class DomainObjectFactory
     {
-        private IDomainObjectModelProvider[] _modelProviders;
+        private readonly IDomainObjectModelProvider[] _modelProviders;
 
         public DomainObjectFactory(IEnumerable<IDomainObjectModelProvider> modelProviders)
         {

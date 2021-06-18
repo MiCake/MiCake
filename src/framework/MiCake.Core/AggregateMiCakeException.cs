@@ -77,7 +77,7 @@ namespace MiCake.Core
                     return base.Message;
                 }
 
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
                 sb.Append(base.Message);
                 sb.Append(' ');
                 for (int i = 0; i < _exceptions.Count; i++)
@@ -92,7 +92,7 @@ namespace MiCake.Core
 
         public override string ToString()
         {
-            StringBuilder text = new StringBuilder();
+            StringBuilder text = new();
             text.Append(base.ToString());
 
             for (int i = 0; i < _exceptions.Count; i++)

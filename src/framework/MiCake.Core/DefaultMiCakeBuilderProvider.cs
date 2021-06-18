@@ -6,10 +6,10 @@ namespace MiCake.Core
 {
     public sealed class DefaultMiCakeBuilderProvider : IMiCakeBuilderProvider
     {
-        private IServiceCollection _services;
-        private Type _entryModule;
-        private MiCakeApplicationOptions _options;
-        private bool _needScope;
+        private readonly IServiceCollection _services;
+        private readonly Type _entryModule;
+        private readonly MiCakeApplicationOptions _options;
+        private readonly bool _needScope;
 
         public DefaultMiCakeBuilderProvider(
             IServiceCollection services,

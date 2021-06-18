@@ -9,8 +9,8 @@ namespace MiCake.DDD.Extensions.Metadata
 {
     internal class DomainMetadataProvider : IDomainMetadataProvider
     {
-        private DomainObjectFactory _domainObjectFactory;
-        private Assembly[] _domainLayerAsm;
+        private readonly DomainObjectFactory _domainObjectFactory;
+        private readonly Assembly[] _domainLayerAsm;
 
         public DomainMetadataProvider(
             IMiCakeModuleContext moduleContext,

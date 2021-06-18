@@ -19,7 +19,7 @@ namespace MiCake.MessageBus.RabbitMQ.Broker
         private readonly ConcurrentQueue<IModel> _pool;
         private readonly RabbitMQOptions _options;
         private IConnection _connection;
-        private static readonly object SLock = new object();
+        private static readonly object SLock = new();
 
         private int _count;
         private int _maxSize;

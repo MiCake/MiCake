@@ -8,10 +8,10 @@ namespace MiCake.Core
     /// </summary>
     public class MiCakeBuilder : IMiCakeBuilder
     {
-        private MiCakeApplicationOptions _options;
-        private Type _entryType;
-        private IServiceCollection _services;
-        private bool _needNewScopeed;
+        private readonly MiCakeApplicationOptions _options;
+        private readonly Type _entryType;
+        private readonly IServiceCollection _services;
+        private readonly bool _needNewScopeed;
 
         private Action<IMiCakeApplication, IServiceCollection> _configureAction;
 

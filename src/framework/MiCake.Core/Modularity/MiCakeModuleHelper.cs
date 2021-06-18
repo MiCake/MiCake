@@ -58,7 +58,7 @@ namespace MiCake.Core.Modularity
             IMiCakeModuleCollection miCakeModules = new MiCakeModuleCollection();
             var assignFeatureModules = AssignFeatureModules(featureModules);
 
-            Queue<IMiCakeModuleCollection> moduleQueue = new Queue<IMiCakeModuleCollection>();
+            Queue<IMiCakeModuleCollection> moduleQueue = new();
             moduleQueue.Enqueue(assignFeatureModules.before);
             moduleQueue.Enqueue(normalModules);
             moduleQueue.Enqueue(assignFeatureModules.after);

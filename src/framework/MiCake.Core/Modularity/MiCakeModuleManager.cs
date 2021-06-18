@@ -15,8 +15,8 @@ namespace MiCake.Core.Modularity
         private bool _isPopulate;
         public bool IsPopulated => _isPopulate;
 
-        private List<Type> _featureModulesTypes = new List<Type>();
-        private List<Type> _normalModulesTypes = new List<Type>();
+        private readonly List<Type> _featureModulesTypes = new();
+        private readonly List<Type> _normalModulesTypes = new();
 
         public void PopulateModules(Type entryType)
         {
@@ -64,7 +64,7 @@ namespace MiCake.Core.Modularity
         // Get the description information (including dependency and order) of the module according to its type
         private IEnumerable<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
         {
-            List<MiCakeModuleDescriptor> miCakeModuleDescriptors = new List<MiCakeModuleDescriptor>();
+            List<MiCakeModuleDescriptor> miCakeModuleDescriptors = new();
 
             foreach (var moduleTye in moduleTypes)
             {
@@ -97,7 +97,7 @@ namespace MiCake.Core.Modularity
             List<MiCakeModuleDescriptor> modules,
             MiCakeModuleDescriptor moduleDescriptor)
         {
-            List<MiCakeModuleDescriptor> descriptors = new List<MiCakeModuleDescriptor>();
+            List<MiCakeModuleDescriptor> descriptors = new();
 
             var depencyTypes = MiCakeModuleHelper.FindDependedModuleTypes(moduleDescriptor.ModuleType);
 

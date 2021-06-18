@@ -205,7 +205,7 @@ namespace MiCake.Uow.Internal
         {
             CheckSaved();
 
-            List<Exception> exceptions = new List<Exception>();
+            List<Exception> exceptions = new();
 
             foreach (var @transaction in CreatedTransactions)
             {
@@ -233,7 +233,7 @@ namespace MiCake.Uow.Internal
         {
             CheckSaved();
 
-            List<Exception> exceptions = new List<Exception>();
+            List<Exception> exceptions = new();
 
             foreach (var @transaction in CreatedTransactions)
             {

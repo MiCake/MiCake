@@ -32,7 +32,7 @@ namespace MiCake.Core.Util.Reflection
 
         private class MemberInfoComparer : IEqualityComparer<MemberInfo>
         {
-            public static readonly MemberInfoComparer Instance = new MemberInfoComparer();
+            public static readonly MemberInfoComparer Instance = new();
 
             public bool Equals(MemberInfo x, MemberInfo y)
                 => x.IsSameAs(y);

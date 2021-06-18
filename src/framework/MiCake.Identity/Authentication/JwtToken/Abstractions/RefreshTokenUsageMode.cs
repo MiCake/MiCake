@@ -16,6 +16,6 @@
         /// Recreate a new refresh-token before old token overdue.
         /// Use this mode,need set RecreateRefreshTokenBeforeOverdueMinutes
         /// </summary>
-        RecreateBeforeOverdue =2
+        RecreateBeforeOverdue = 2
     }
 }

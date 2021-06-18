@@ -6,7 +6,7 @@ namespace MiCake.MessageBus.Tests.InMemoryBus
 {
     internal class InMemoryQueue
     {
-        private ConcurrentDictionary<string, SubscribeRecord> clientDic;
+        private readonly ConcurrentDictionary<string, SubscribeRecord> clientDic;
 
         public InMemoryQueue()
         {

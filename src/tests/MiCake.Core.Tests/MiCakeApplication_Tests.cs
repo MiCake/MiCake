@@ -20,12 +20,12 @@ namespace MiCake.Core.Tests
         public void ApplicationOptions_AppointOptions_ShouldNotNull()
         {
             Assembly[] assemblies = { GetType().Assembly };
-            MiCakeApplicationOptions options = new MiCakeApplicationOptions()
+            MiCakeApplicationOptions options = new()
             {
                 DomainLayerAssemblies = assemblies
             };
 
-            MiCakeApplication miCakeApplication = new MiCakeApplication(Services, options, false);
+            MiCakeApplication miCakeApplication = new(Services, options, false);
             Services.AddSingleton<IMiCakeApplication>(miCakeApplication);
             miCakeApplication.SetEntry(typeof(MiCakeCoreTestModule));
             miCakeApplication.Initialize();

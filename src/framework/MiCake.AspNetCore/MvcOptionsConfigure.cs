@@ -11,7 +11,7 @@ namespace MiCake.AspNetCore
     /// </summary>
     internal class MvcOptionsConfigure : IConfigureOptions<MvcOptions>
     {
-        private MiCakeAspNetOptions _micakeAspNetOptions;
+        private readonly MiCakeAspNetOptions _micakeAspNetOptions;
 
         public MvcOptionsConfigure(IOptions<MiCakeAspNetOptions> micakeAspNetOptions)
         {
@@ -27,13 +27,11 @@ namespace MiCake.AspNetCore
             {
                 options.Filters.Add(typeof(DataWrapperFilter));
                 options.Filters.Add(typeof(ExceptionDataWrapperFilter));
-
-
             }
 
             //Security : auto verify 
             if (_micakeAspNetOptions.UseAutoVerifyUserId)
-                options.Filters.Add(new VerifyCurrentUserFilter());   //not required some services,use instance directly.
+                options.Filters.Add(typeof(VerifyCurrentUserFilter));
         }
     }
 }

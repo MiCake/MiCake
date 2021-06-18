@@ -8,8 +8,8 @@ namespace MiCake.Uow.Tests
 {
     public class MiCake_UowManager_Test : UnitOfWorkTestBase
     {
-        private UnitOfWorkOptions RequiredNewOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.RequiresNew);
-        private UnitOfWorkOptions SuppressOptions = new UnitOfWorkOptions(null, null, UnitOfWorkScope.Suppress);
+        private readonly UnitOfWorkOptions RequiredNewOptions = new(null, null, UnitOfWorkScope.RequiresNew);
+        private readonly UnitOfWorkOptions SuppressOptions = new(null, null, UnitOfWorkScope.Suppress);
 
         private IServiceProvider ServiceProvider { get; }
 
@@ -30,7 +30,7 @@ namespace MiCake.Uow.Tests
         [Fact]
         public void UowManager_CreateUowWithOptions()
         {
-            UnitOfWorkOptions options = new UnitOfWorkOptions(System.Data.IsolationLevel.ReadCommitted);
+            UnitOfWorkOptions options = new(System.Data.IsolationLevel.ReadCommitted);
 
             var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
             var uow = manager.Create(options);
@@ -41,7 +41,7 @@ namespace MiCake.Uow.Tests
         [Fact]
         public void UowManager_CreateMoreUow()
         {
-            UnitOfWorkOptions options = new UnitOfWorkOptions(System.Data.IsolationLevel.ReadCommitted);
+            UnitOfWorkOptions options = new(System.Data.IsolationLevel.ReadCommitted);
 
             var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
 
@@ -61,7 +61,7 @@ namespace MiCake.Uow.Tests
         [Fact]
         public void UowManager_CreateChildUnitOfWork()
         {
-            UnitOfWorkOptions options = new UnitOfWorkOptions(System.Data.IsolationLevel.ReadCommitted);
+            UnitOfWorkOptions options = new(System.Data.IsolationLevel.ReadCommitted);
 
             var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
 

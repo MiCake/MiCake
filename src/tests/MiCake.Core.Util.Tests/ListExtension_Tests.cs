@@ -16,7 +16,7 @@ namespace MiCake.Core.Tests.Util
         [Fact]
         public void ListExchangeOrderUsePredicate_ShouldRightOrder()
         {
-            List<string> strList = new List<string>() { "A", "B", "C" };
+            List<string> strList = new() { "A", "B", "C" };
 
             strList.ExchangeOrder(s => s.Equals("B"), strList.Count - 1);
 
@@ -26,7 +26,7 @@ namespace MiCake.Core.Tests.Util
         [Fact]
         public void ListExchangeOrder_ShouldRightOrder()
         {
-            List<string> strList = new List<string>() { "A", "B", "C" };
+            List<string> strList = new() { "A", "B", "C" };
 
             strList.ExchangeOrder("B", strList.Count - 1);
 
@@ -36,7 +36,7 @@ namespace MiCake.Core.Tests.Util
         [Fact]
         public void ListExchangeOrder_WrongPredictShoudError()
         {
-            List<string> strList = new List<string>() { "A", "B", "C" };
+            List<string> strList = new() { "A", "B", "C" };
 
             Assert.Throws<ArgumentException>(() =>
             {

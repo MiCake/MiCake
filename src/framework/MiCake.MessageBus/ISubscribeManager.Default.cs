@@ -13,7 +13,7 @@ namespace MiCake.MessageBus
     /// </summary>
     internal class DefaultSubscribeManager : ISubscribeManager
     {
-        private ConcurrentDictionary<IMessageSubscriber, MessageSubscriberOptions> _subscriberDic;
+        private readonly ConcurrentDictionary<IMessageSubscriber, MessageSubscriberOptions> _subscriberDic;
         private readonly IMessageSubscribeFactory _subscribeFactory;
         private readonly ILogger<ISubscribeManager> _logger;
 

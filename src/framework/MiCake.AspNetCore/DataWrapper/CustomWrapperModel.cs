@@ -15,7 +15,7 @@ namespace MiCake.AspNetCore.DataWrapper
     [DebuggerDisplay("{ModelName}")]
     public class CustomWrapperModel
     {
-        private Dictionary<string, ConfigWrapperPropertyDelegate> _configProperties;
+        private readonly Dictionary<string, ConfigWrapperPropertyDelegate> _configProperties;
         private string _modelName;
 
         /// <summary>

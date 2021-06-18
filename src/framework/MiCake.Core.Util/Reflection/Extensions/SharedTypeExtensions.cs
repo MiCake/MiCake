@@ -265,7 +265,7 @@ namespace MiCake.Core.Util.Reflection
         public static IEnumerable<MemberInfo> GetMembersInHierarchy(this Type type, string name)
             => type.GetMembersInHierarchy().Where(m => m.Name == name);
 
-        private static readonly Dictionary<Type, object> _commonTypeDictionary = new Dictionary<Type, object>
+        private static readonly Dictionary<Type, object> _commonTypeDictionary = new()
         {
 #pragma warning disable IDE0034 // Simplify 'default' expression - default causes default(object)
             { typeof(int), default(int) },

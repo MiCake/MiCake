@@ -11,7 +11,7 @@ namespace MiCake.Identity.Authentication.JwtToken
     /// </summary>
     public class DefaultRefreshTokenStore : IRefreshTokenStore
     {
-        private readonly ConcurrentDictionary<string, RefreshToken> _store = new ConcurrentDictionary<string, RefreshToken>();
+        private readonly ConcurrentDictionary<string, RefreshToken> _store = new();
 
         private readonly IRefreshTokenHandleGenerator _handleGenerator;
 

@@ -12,11 +12,11 @@ namespace MiCake.DDD.Extensions.Store.Configure
     /// </summary>
     public class StoreProperty : IStoreProperty, IConventionStoreProperty
     {
-        private Type _clrPropertyType;
-        private PropertyInfo _clrPropertyInfo;
-        private MemberInfo _clrMemberInfo;
-        private FieldInfo _clrFieldInfo;
-        private IStoreEntityType _originalEntity;
+        private readonly Type _clrPropertyType;
+        private readonly PropertyInfo _clrPropertyInfo;
+        private readonly MemberInfo _clrMemberInfo;
+        private readonly FieldInfo _clrFieldInfo;
+        private readonly IStoreEntityType _originalEntity;
 
         private bool? _isConcurrency;
         private bool? _isNullable;

@@ -6,7 +6,7 @@
     /// </summary>
     public abstract class CurrentMiCakeUser<TKey> : ICurrentMiCakeUser<TKey>
     {
-        private static object @object = new object();
+        private static readonly object @object = new();
         private bool hasGetUserId = false;
 
         private TKey _userId;

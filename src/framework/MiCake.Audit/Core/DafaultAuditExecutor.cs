@@ -6,7 +6,7 @@ namespace MiCake.Audit.Core
 {
     public class DefaultAuditExecutor : IAuditExecutor
     {
-        private IEnumerable<IAuditProvider> _providers;
+        private readonly IEnumerable<IAuditProvider> _providers;
 
         public DefaultAuditExecutor(IEnumerable<IAuditProvider> providers)
         {
