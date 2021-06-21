@@ -82,8 +82,8 @@ namespace MiCake.Identity.Authentication.JwtToken
             var refreshToken = await ValidateRefreshTokenAsync(refreshTokenHandle, cancellationToken);
             var newHandler = await _refreshTokenService.UpdateRefreshTokenAsync(refreshTokenHandle, refreshToken, cancellationToken);
 
-            var decodeAccessToken = await DecodeJwtToken(accessToken, cancellationToken);
-            var newAccessToken = await GenerateAccessToken(CreateSecurityTokenDescriptorByClaims(decodeAccessToken.Item1.Claims.ToArray(), cancellationToken), cancellationToken);
+            var decodeAccessToken = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+            var newAccessToken = await GenerateAccessToken(CreateSecurityTokenDescriptorByClaims(decodeAccessToken.Claims.ToArray(), cancellationToken), cancellationToken);
 
             return new JwtTokenAuthResult { AccessToken = newAccessToken, RefreshToken = newHandler };
         }
