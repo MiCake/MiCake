@@ -4,7 +4,6 @@ using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity.Audit;
 using MiCake.Identity.Authentication.JwtToken;
-using MiCake.Identity.Authentication.JwtToken.Abstractions;
 using MiCake.Identity.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

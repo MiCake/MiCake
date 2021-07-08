@@ -1,5 +1,4 @@
 ﻿using MiCake.Identity.Authentication.JwtToken;
-using MiCake.Identity.Authentication.JwtToken.Abstractions;
 using MiCake.Identity.Tests.FakeUser;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

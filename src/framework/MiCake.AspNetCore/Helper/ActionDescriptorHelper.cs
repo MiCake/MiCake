@@ -14,9 +14,7 @@ namespace MiCake.AspNetCore.Helper
 
         public static ControllerActionDescriptor AsControllerActionDescriptor(ActionDescriptor actionDescriptor)
         {
-            var controllerActionDescriptor = actionDescriptor as ControllerActionDescriptor;
-
-            if (controllerActionDescriptor == null)
+            if (actionDescriptor is not ControllerActionDescriptor controllerActionDescriptor)
                 throw new InvalidCastException($"{nameof(ActionDescriptor)} cannot convert to {nameof(ControllerActionDescriptor)}," +
                     $"Because of {nameof(ActionDescriptor)} type is : {actionDescriptor.GetType().Name}");
 

@@ -26,8 +26,7 @@ namespace MiCake.Core.Handlers
 
             var service = serviceProvider.GetRequiredService(HandlerType);
 
-            var handler = service as IMiCakeHandler;
-            if (handler == null)
+            if (service is not IMiCakeHandler handler)
             {
                 throw new InvalidOperationException($"The service typpe : [{HandlerType.FullName}] is not in IServiceProvider");
             }

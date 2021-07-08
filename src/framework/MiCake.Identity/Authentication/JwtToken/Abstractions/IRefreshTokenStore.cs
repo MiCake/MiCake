@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Identity.Authentication.JwtToken.Abstractions
+namespace MiCake.Identity.Authentication.JwtToken
 {
     /// <summary>
     /// Defined a store can save jwt refresh-token.Used for JWT token to refresh.

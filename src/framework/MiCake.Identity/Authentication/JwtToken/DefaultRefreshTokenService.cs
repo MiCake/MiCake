@@ -1,5 +1,4 @@
-﻿using MiCake.Identity.Authentication.JwtToken.Abstractions;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -7,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiCake.Identity.Authentication.JwtToken
 {
-    public class DefaultRefreshTokenService : IRefreshTokenService
+    internal class DefaultRefreshTokenService : IRefreshTokenService
     {
         private readonly MiCakeJwtOptions _options;
         private readonly IRefreshTokenStore _tokenStore;

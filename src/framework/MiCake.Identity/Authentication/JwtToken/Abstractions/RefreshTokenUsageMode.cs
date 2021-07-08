@@ -1,4 +1,4 @@
-﻿namespace MiCake.Identity.Authentication.JwtToken.Abstractions
+﻿namespace MiCake.Identity.Authentication.JwtToken
 {
     public enum RefreshTokenUsageMode
     {

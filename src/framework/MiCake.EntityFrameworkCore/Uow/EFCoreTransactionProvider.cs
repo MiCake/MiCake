@@ -45,8 +45,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             ITransactionObject optimalTransaction = null;
 
-            IEFCoreDbExecutor eFCoreDbExecutor = dbExecutor as IEFCoreDbExecutor;
-            if (eFCoreDbExecutor == null)
+            if (dbExecutor is not IEFCoreDbExecutor eFCoreDbExecutor)
                 return null;
 
             //DbContext only can receive DbTransaction.
@@ -58,9 +57,8 @@ namespace MiCake.EntityFrameworkCore.Uow
                     var dbContext = eFCoreDbExecutor.EFCoreDbContext;
                     //Get EF Core DbConnection.
                     //Only detail relational transaction.
-                    var relationDatabase = (dbContext.Database as IDatabaseFacadeDependenciesAccessor)?.Dependencies as IRelationalDatabaseFacadeDependencies;
 
-                    if (relationDatabase == null)
+                    if ((dbContext.Database as IDatabaseFacadeDependenciesAccessor)?.Dependencies is not IRelationalDatabaseFacadeDependencies relationDatabase)
                         return false;
 
                     //It's mean they use same database.
