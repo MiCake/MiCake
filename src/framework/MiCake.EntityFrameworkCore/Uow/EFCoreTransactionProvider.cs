@@ -1,10 +1,8 @@
 ﻿using MiCake.Core.Util;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,22 +47,13 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return null;
 
             //DbContext only can receive DbTransaction.
-            //Todo:If there has more DbTransaction,How to compare?
             optimalTransaction = existedTrasactions.FirstOrDefault(s =>
             {
-                if (!s.IsCommit && s.TransactionInstance is DbTransaction dbTransaction)
-                {
-                    var dbContext = eFCoreDbExecutor.EFCoreDbContext;
-                    //Get EF Core DbConnection.
-                    //Only detail relational transaction.
+                /*
+                 * todo:how to reuse same transation.
+                 * .....
+                 */
 
-                    if ((dbContext.Database as IDatabaseFacadeDependenciesAccessor)?.Dependencies is not IRelationalDatabaseFacadeDependencies relationDatabase)
-                        return false;
-
-                    //It's mean they use same database.
-
-                    return relationDatabase.RelationalConnection.DbConnection.ConnectionString.Equals(dbTransaction.Connection.ConnectionString);
-                }
                 return false;
             });
 

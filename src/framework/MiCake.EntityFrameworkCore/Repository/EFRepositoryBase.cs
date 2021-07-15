@@ -21,17 +21,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// Current DbContext.
         /// </summary>
-        protected virtual TDbContext DbContext
-        {
-            get
-            {
-                if (_currentDbContext != null)
-                    return _currentDbContext;
-
-                _currentDbContext = _dbContextProvider.GetDbContext();
-                return _currentDbContext;
-            }
-        }
+        protected virtual TDbContext DbContext => _currentDbContext;
 
         /// <summary>
         /// The DbSet for current aggregate root.
@@ -62,6 +52,8 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             _dbContextProvider = ServiceProvider.GetService<IDbContextProvider<TDbContext>>() ??
                 throw new ArgumentNullException($"Cannot get {nameof(IDbContextProvider)},current repository initialization failed.");
+
+            _currentDbContext = _dbContextProvider.GetDbContext();
         }
     }
 }
