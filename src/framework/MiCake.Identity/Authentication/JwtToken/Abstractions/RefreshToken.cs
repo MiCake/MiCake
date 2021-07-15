@@ -2,7 +2,7 @@
 using System;
 using System.Security.Claims;
 
-namespace MiCake.Identity.Authentication.JwtToken.Abstractions
+namespace MiCake.Identity.Authentication.JwtToken
 {
     /// <summary>
     /// Defined a refresh token

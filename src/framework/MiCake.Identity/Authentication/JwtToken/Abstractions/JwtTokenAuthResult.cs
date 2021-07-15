@@ -1,4 +1,4 @@
-﻿namespace MiCake.Identity.Authentication.JwtToken.Abstractions
+﻿namespace MiCake.Identity.Authentication.JwtToken
 {
     /// <summary>
     /// A result for <see cref="IJwtAuthManager"/> create or refresh.

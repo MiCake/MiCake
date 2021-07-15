@@ -8,11 +8,11 @@ namespace MessageBus.ConsoleDemo
     {
         static void Main(string[] args)
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationTokenSource cts = new();
 
             _ = Task.Factory.StartNew(() =>
               {
-                  RabbitMQMessageBusTest testCase = new RabbitMQMessageBusTest();
+                  RabbitMQMessageBusTest testCase = new();
                   _ = testCase.TestWithMoreSubscriber(cts.Token, 5, 3);
               });
 

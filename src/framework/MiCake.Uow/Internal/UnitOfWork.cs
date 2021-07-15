@@ -21,9 +21,9 @@ namespace MiCake.Uow.Internal
         private readonly IEnumerable<ITransactionProvider> _transactions;
 
         protected UnitOfWorkEvents Events => UnitOfWorkOptions?.Events;
-        protected List<ITransactionObject> ErrorTransactions { get; private set; } = new List<ITransactionObject>();
-        protected List<ITransactionObject> CreatedTransactions { get; private set; } = new List<ITransactionObject>();
-        protected List<IDbExecutor> AddedExecutors { get; private set; } = new List<IDbExecutor>();
+        protected List<ITransactionObject> ErrorTransactions { get; private set; } = new();
+        protected List<ITransactionObject> CreatedTransactions { get; private set; } = new();
+        protected List<IDbExecutor> AddedExecutors { get; private set; } = new();
         protected Action<IUnitOfWork> DisposeHandler { get; private set; }
 
         private bool _isSaved = false;

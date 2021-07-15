@@ -1,5 +1,4 @@
-﻿using MiCake.Identity.Authentication.JwtToken.Abstractions;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;

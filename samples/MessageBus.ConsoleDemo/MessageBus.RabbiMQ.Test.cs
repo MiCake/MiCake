@@ -11,7 +11,7 @@ namespace MessageBus.ConsoleDemo
 {
     public class RabbitMQMessageBusTest
     {
-        private List<IMessageSubscriber> subscribers = new List<IMessageSubscriber>();
+        private readonly List<IMessageSubscriber> subscribers = new();
         public RabbitMQMessageBusTest()
         {
 

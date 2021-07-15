@@ -1,5 +1,4 @@
-﻿using MiCake.Identity.Authentication.JwtToken.Abstractions;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,7 +8,7 @@ namespace MiCake.Identity.Authentication.JwtToken
     /// <summary>
     /// A default implement for <see cref="IRefreshTokenStore"/>.Use in memory cache.
     /// </summary>
-    public class DefaultRefreshTokenStore : IRefreshTokenStore
+    internal class DefaultRefreshTokenStore : IRefreshTokenStore
     {
         private readonly ConcurrentDictionary<string, RefreshToken> _store = new();
 

@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Identity.Authentication.JwtToken.Abstractions
+namespace MiCake.Identity.Authentication.JwtToken
 {
     public interface IRefreshTokenService
     {
