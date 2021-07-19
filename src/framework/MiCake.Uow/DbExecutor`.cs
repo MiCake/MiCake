@@ -52,17 +52,6 @@ namespace MiCake.Uow
             DbOjectInstance = instance;
         }
 
-        public void UseTransaction(ITransactionObject transactionObject)
-        {
-            if (HasTransaction)
-                return;
-
-            CheckValue.NotNull(transactionObject, nameof(transactionObject));
-
-            if (SetTransaction(transactionObject))
-                CurrentTransaction = transactionObject;
-        }
-
         public async Task UseTransactionAsync(ITransactionObject transactionObject, CancellationToken cancellationToken = default)
         {
             if (HasTransaction)
@@ -73,12 +62,6 @@ namespace MiCake.Uow
             if (await SetTransactionAsync(transactionObject, cancellationToken))
                 CurrentTransaction = transactionObject;
         }
-
-        /// <summary>
-        /// Give transaction to current <see cref="DbOjectInstance"/>
-        /// </summary>
-        /// <param name="transaction"><see cref="ITransactionObject"/></param>
-        protected abstract bool SetTransaction(ITransactionObject transaction);
 
         /// <summary>
         /// Give transaction to current <see cref="DbOjectInstance"/>

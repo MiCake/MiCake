@@ -59,10 +59,7 @@ namespace MiCake.MessageBus.Tests
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
 
             await subscriber1.SubscribeAsync();
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result = d.Body.ToString();
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result = d.Body.ToString(); });
             _ = subscriber1.ListenAsync();
 
             await MessageBus.PublishAsync("hello");
@@ -78,10 +75,7 @@ namespace MiCake.MessageBus.Tests
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
 
             await subscriber1.SubscribeAsync();
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result += int.Parse(d.Body.ToString());
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result += int.Parse(d.Body.ToString()); });
             _ = subscriber1.ListenAsync();
 
             await MessageBus.PublishAsync(1);
@@ -101,15 +95,9 @@ namespace MiCake.MessageBus.Tests
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
 
             await subscriber1.SubscribeAsync();
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result.Append(d.Body.ToString());
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result.Append(d.Body.ToString()); });
 
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result.Append(d.Body.ToString());
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result.Append(d.Body.ToString()); });
 
 
             _ = subscriber1.ListenAsync();
@@ -126,18 +114,12 @@ namespace MiCake.MessageBus.Tests
 
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
             await subscriber1.SubscribeAsync();
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result.Append(d.Body.ToString());
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result.Append(d.Body.ToString()); });
             _ = subscriber1.ListenAsync();
 
             var subscriber2 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
             await subscriber2.SubscribeAsync();
-            subscriber2.AddReceivedHandler((s, d) =>
-            {
-                result.Append(d.Body.ToString());
-            });
+            await subscriber2.AddReceivedHandlerAsync((s, d) => { result.Append(d.Body.ToString()); });
             _ = subscriber2.ListenAsync();
 
             await MessageBus.PublishAsync("hello");
@@ -152,18 +134,15 @@ namespace MiCake.MessageBus.Tests
 
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
             await subscriber1.SubscribeAsync(new MessageDeliveryOptions() { Topics = new List<string>() { "topic1" } });
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result.Append(d.Body.ToString());
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result.Append(d.Body.ToString()); });
             _ = subscriber1.ListenAsync();
 
             var subscriber2 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
             await subscriber2.SubscribeAsync(new MessageDeliveryOptions() { Topics = new List<string>() { "topic2" } });
-            subscriber2.AddReceivedHandler((s, d) =>
-            {
-                result.Append(d.Body.ToString());
-            });
+            await subscriber2.AddReceivedHandlerAsync((s, d) =>
+             {
+                 result.Append(d.Body.ToString());
+             });
             _ = subscriber2.ListenAsync();
 
             await MessageBus.PublishAsync("hello", new Dictionary<string, string>(), new MessageDeliveryOptions() { Topics = new List<string>() { "topic1" } });
@@ -181,10 +160,7 @@ namespace MiCake.MessageBus.Tests
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
 
             await subscriber1.SubscribeAsync();
-            subscriber1.AddReceivedHandler((s, d) =>
-            {
-                result = d.Body.ToString();
-            });
+            await subscriber1.AddReceivedHandlerAsync((s, d) => { result = d.Body.ToString(); });
             _ = subscriber1.ListenAsync();
             await MessageBus.CancelSubscribeAsync(subscriber1);
 
@@ -201,7 +177,7 @@ namespace MiCake.MessageBus.Tests
             var subscriber1 = await MessageBus.CreateSubscriberAsync(new MessageSubscriberOptions());
 
             await subscriber1.SubscribeAsync();
-            subscriber1.AddReceivedHandler((s, d) =>
+            await subscriber1.AddReceivedHandlerAsync((s, d) =>
             {
                 result = d.Body.ToString();
             });
@@ -214,7 +190,7 @@ namespace MiCake.MessageBus.Tests
             await Assert.ThrowsAnyAsync<Exception>(async () =>
             {
                 await subscriber1.SubscribeAsync();
-                subscriber1.AddReceivedHandler((s, d) =>
+                await subscriber1.AddReceivedHandlerAsync((s, d) =>
                 {
                     result = d.Body.ToString();
                 });

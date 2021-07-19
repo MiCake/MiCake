@@ -48,24 +48,21 @@ namespace MiCake.MessageBus
         /// <summary>
         /// Cancel the subscriber's listening and remove it from the dictionary so that GC can reclaim the resources it occupies
         /// </summary>
-        public Task RemoveAsync(IMessageSubscriber messageSubscriber)
+        public async Task RemoveAsync(IMessageSubscriber messageSubscriber)
         {
             CheckValue.NotNull(messageSubscriber, nameof(messageSubscriber));
 
             //if no result,return completed directly.
             if (!_subscriberDic.TryGetValue(messageSubscriber, out _))
             {
-                messageSubscriber.Dispose();
-                return Task.CompletedTask;
+                await messageSubscriber.DisposeAsync();
             }
 
             _subscriberDic.TryRemove(messageSubscriber, out _);
-            messageSubscriber.Dispose();
-
-            return Task.CompletedTask;
+            await messageSubscriber.DisposeAsync();
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             if (isDisposed)
                 return;
@@ -75,7 +72,7 @@ namespace MiCake.MessageBus
             //release all subscriber
             foreach (var kvp in _subscriberDic)
             {
-                RemoveAsync(kvp.Key).GetAwaiter().GetResult();
+                await RemoveAsync(kvp.Key);
             }
             _subscriberDic.Clear();
         }

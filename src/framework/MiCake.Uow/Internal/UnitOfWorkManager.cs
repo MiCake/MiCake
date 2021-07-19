@@ -24,11 +24,9 @@ namespace MiCake.Uow.Internal
         /// Used to save existing units of work as stack structure.
         /// </summary>
         private readonly UnitOfWorkCallContext _callContext = new();
+        internal UnitOfWorkCallContext CallContext => _callContext;
 
         private bool _isDisposed = false;
-
-        //Only for test.
-        internal UnitOfWorkCallContext CallContext => _callContext;
 
         public UnitOfWorkManager(IServiceProvider serviceProvider, IOptions<UnitOfWorkOptions> defaultOptions)
         {
@@ -104,13 +102,13 @@ namespace MiCake.Uow.Internal
 
         //Determine whether a new unit of work needs to be created
         private bool NeedCreateNewUnitOfWork(UnitOfWorkOptions options)
-        => options.Scope switch
-        {
-            UnitOfWorkScope.Required => _callContext.GetCurrentUow() == null,
-            UnitOfWorkScope.RequiresNew => true,
-            UnitOfWorkScope.Suppress => true,
-            _ => throw new ArgumentException($"{options.Scope} is not supported.")
-        };
+            => options.Scope switch
+            {
+                UnitOfWorkScope.Required => _callContext.GetCurrentUow() == null,
+                UnitOfWorkScope.RequiresNew => true,
+                UnitOfWorkScope.Suppress => true,
+                _ => throw new ArgumentException($"{options.Scope} is not supported.")
+            };
 
         //Create a new unit of work with options. 
         private IUnitOfWork CreateNewUnitOfWork(UnitOfWorkOptions options)

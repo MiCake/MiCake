@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Modularity;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Freedom;
 using MiCake.DDD.Domain.Modules;
 using MiCake.DDD.Extensions.Internal;
 using MiCake.DDD.Extensions.Lifetime;
@@ -30,9 +29,6 @@ namespace MiCake.DDD.Extensions.Modules
             services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
             services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
             services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
-            services.AddScoped(typeof(IFreeRepository<,>), typeof(ProxyFreeRepository<,>));
-            services.AddScoped(typeof(IReadOnlyFreeRepository<,>), typeof(ProxyReadOnlyFreeRepository<,>));
-            services.AddScoped(typeof(IFreeRepositoryFactory<,>), typeof(DefaultFreeRepositoryFactory<,>));
 
             //LifeTime
             services.AddTransient<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();

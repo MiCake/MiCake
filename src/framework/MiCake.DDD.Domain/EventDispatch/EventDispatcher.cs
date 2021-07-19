@@ -17,12 +17,6 @@ namespace MiCake.DDD.Domain.EventDispatch
             _serviceProvider = serviceProvider;
         }
 
-        public void Dispatch<TDomainEvent>(TDomainEvent domainEvent)
-            where TDomainEvent : IDomainEvent
-        {
-            DispatchAsync(domainEvent).GetAwaiter().GetResult();
-        }
-
         public Task DispatchAsync<TDomainEvent>(TDomainEvent domainEvent, CancellationToken cancellationToken = default)
             where TDomainEvent : IDomainEvent
         {

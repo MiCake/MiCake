@@ -58,77 +58,8 @@ namespace MiCake.Uow.Internal
                 transaction.Dispose();
             }
 
-            Events?.Dispose(this);
-
             //pop this unit of work to stack.
             DisposeHandler?.Invoke(this);
-        }
-
-        public bool TryAddDbExecutor(IDbExecutor dbExecutor)
-        {
-            CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
-
-            //added executor.Guarantee that it will eventually be released
-            AddedExecutors.AddIfNotContains(dbExecutor);
-
-            if (!EnsureToOpenTransaction())
-                return true;
-
-            if (dbExecutor.HasTransaction)
-                return true;
-
-            bool result = false;
-            var transactionObj = OpenTransactionAndGiveExecutor(_transactions, dbExecutor);
-
-            if (transactionObj != null)
-            {
-                //reused or new?
-                if (!CreatedTransactions.Any(s => s.ID == transactionObj.ID))
-                    CreatedTransactions.Add(transactionObj);
-
-                result = true;
-            }
-
-            return result;
-        }
-
-        protected virtual ITransactionObject OpenTransactionAndGiveExecutor(IEnumerable<ITransactionProvider> transactionProviders, IDbExecutor dbExecutor)
-        {
-            //if not any provider,reutrn false.
-            if (transactionProviders.Count() == 0)
-                return null;
-
-            ITransactionObject exceptedTransaction = null;
-
-            foreach (var transactionProvider in transactionProviders)
-            {
-                if (!transactionProvider.CanCreate(dbExecutor))
-                    continue;
-
-                //already has transaction,can reused?
-                if (CreatedTransactions.Count > 0)
-                {
-                    var reusedTransaction = transactionProvider.Reused(CreatedTransactions, dbExecutor);
-
-                    if (reusedTransaction != null)
-                    {
-                        //reused this transaction,and back.
-                        dbExecutor.UseTransaction(reusedTransaction);
-                        return reusedTransaction;
-                    }
-                }
-
-                //create new transaction.
-                exceptedTransaction = transactionProvider.GetTransactionObject(new CreateTransactionContext(this, dbExecutor));
-                if (exceptedTransaction != null)
-                {
-                    dbExecutor.UseTransaction(exceptedTransaction);
-                    break;
-                }
-                //if exceptedTransaction is null,let the next provider create.
-            }
-
-            return exceptedTransaction;
         }
 
         public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
@@ -201,34 +132,6 @@ namespace MiCake.Uow.Internal
             return exceptedTransaction;
         }
 
-        public virtual void SaveChanges()
-        {
-            CheckSaved();
-
-            List<Exception> exceptions = new();
-
-            foreach (var @transaction in CreatedTransactions)
-            {
-                try
-                {
-                    @transaction.Commit();
-                }
-                catch (Exception ex)
-                {
-                    ErrorTransactions.Add(@transaction);
-                    exceptions.Add(ex);
-
-                    _logger.LogError(ex, "unit of work SaveChanges failed.");
-                }
-            }
-
-            if (exceptions.Count > 0)
-                ReThrow(exceptions);
-
-            _isSaved = true;
-            Events?.Completed(this);
-        }
-
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             CheckSaved();
@@ -254,29 +157,8 @@ namespace MiCake.Uow.Internal
                 ReThrow(exceptions);
 
             _isSaved = true;
-            Events?.Completed(this);
-        }
 
-        public virtual void Rollback()
-        {
-            CheckRollback();
-
-            //error transaction have priority.
-            foreach (var errorTransaction in ErrorTransactions)
-            {
-                errorTransaction.Rollback();
-            }
-
-            foreach (var createTransaction in CreatedTransactions)
-            {
-                if (!createTransaction.IsCommit)
-                    createTransaction.Rollback();
-            }
-
-            //if rollback has error, throw exception to developer.
-
-            _isRollback = true;
-            Events?.Rollbacked(this);
+            await Events?.Completed(this);
         }
 
         public virtual async Task RollbackAsync(CancellationToken cancellationToken = default)
@@ -298,7 +180,8 @@ namespace MiCake.Uow.Internal
             //if rollback has error, throw exception to developer.
 
             _isRollback = true;
-            Events?.Rollbacked(this);
+
+            await Events?.Rollbacked(this);
         }
 
         #region Private Method

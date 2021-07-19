@@ -39,7 +39,9 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public int SavedChanges(SaveChangesCompletedEventData eventData, int result)
         {
-            _saveChangesLifetime.AfterSaveChanges(_efcoreEntries);
+            //be careful ,this will risks a deadlock.
+            //when save data in aspnet core ,shuold use DbContext.SaveChangesAsync().
+            SavedChangesAsync(eventData, result).GetAwaiter().GetResult();
             return result;
         }
 
@@ -51,7 +53,9 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
         {
-            _saveChangesLifetime.BeforeSaveChanges(GetChangeEntities(eventData.Context));
+            //be careful ,this will risks a deadlock.
+            //when save data in aspnet core ,shuold use DbContext.SaveChangesAsync().
+            SavingChangesAsync(eventData, result).GetAwaiter().GetResult();
             return result;
         }
 

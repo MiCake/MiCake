@@ -21,27 +21,6 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         DbContext IEFCoreDbExecutor.EFCoreDbContext => DbOjectInstance;
 
-        protected override bool SetTransaction(ITransactionObject transaction)
-        {
-            CheckValue.NotNull(transaction, nameof(transaction));
-
-            bool result = false; ;
-            //Only receive DbTransaction.
-            if (transaction.TransactionInstance is DbTransaction dbTransaction)
-            {
-                try
-                {
-                    DbOjectInstance.Database.UseTransaction(dbTransaction);
-                    result = true;
-                }
-                catch
-                {
-                    result = false;
-                }
-            }
-            return result;
-        }
-
         protected override async Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken)
         {
             CheckValue.NotNull(transaction, nameof(transaction));

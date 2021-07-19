@@ -34,7 +34,6 @@ namespace MiCake.Uow.Internal
 
             IsDisposed = true;
 
-            Events?.Dispose(this);
             //pop this unit of work to stack.
             DisposeHandler?.Invoke(this);
         }
@@ -94,9 +93,6 @@ namespace MiCake.Uow.Internal
             UnitOfWorkOptions = parts.Options;
             DisposeHandler = parts.DisposeHandler;
         }
-
-        public bool TryAddDbExecutor(IDbExecutor dbExecutor)
-            => ParentUow.TryAddDbExecutor(dbExecutor);
 
         public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
             => await ParentUow.TryAddDbExecutorAsync(dbExecutor, cancellationToken);

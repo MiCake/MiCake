@@ -11,24 +11,12 @@ namespace MiCake.EntityFrameworkCore
     public interface IEFSaveChangesLifetime
     {
         /// <summary>
-        /// Before EFCore SaveChanges().
-        /// </summary>
-        /// <param name="entityEntries">current change tracking entites</param>
-        void BeforeSaveChanges(IEnumerable<EntityEntry> entityEntries);
-
-        /// <summary>
         /// Before EFCore SaveChangesAsync().
         /// </summary>
         /// <param name="entityEntries">current change tracking entites</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task BeforeSaveChangesAsync(IEnumerable<EntityEntry> entityEntries, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// After EFCore SaveChanges().
-        /// </summary>
-        /// <param name="entityEntries">current change tracking entites</param>
-        void AfterSaveChanges(IEnumerable<EntityEntry> entityEntries);
 
         /// <summary>
         /// After EFCore SaveChanges().

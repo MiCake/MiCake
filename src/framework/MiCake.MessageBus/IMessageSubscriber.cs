@@ -7,7 +7,7 @@ namespace MiCake.MessageBus
     /// <summary>
     /// Define a message subscriber that can receive message from <see cref="IMessageBus"/>.
     /// </summary>
-    public interface IMessageSubscriber : IDisposable
+    public interface IMessageSubscriber : IAsyncDisposable
     {
         /// <summary>
         /// Subscribe to the message queue by global config.
@@ -41,6 +41,7 @@ namespace MiCake.MessageBus
         /// Add a handler to receive message form subscriber.
         /// </summary>
         /// <param name="handler"><see cref="SubscriberMessageReceived"/>A delegate for receive message.</param>
-        void AddReceivedHandler(SubscriberMessageReceived handler);
+        /// <param name="cancellationToken"></param>
+        Task AddReceivedHandlerAsync(SubscriberMessageReceived handler, CancellationToken cancellationToken = default);
     }
 }

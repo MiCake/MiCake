@@ -1,5 +1,4 @@
-﻿using MiCake.Uow.Internal;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace MiCake.Uow
@@ -21,15 +20,8 @@ namespace MiCake.Uow
         /// </summary>
         public Func<IUnitOfWork, Task> OnRollbacked { get; set; } = context => Task.CompletedTask;
 
-        /// <summary>
-        /// Invoked when <see cref="UnitOfWork "/> dispose.
-        /// </summary>
-        public Func<IUnitOfWork, Task> OnDispose { get; set; } = context => Task.CompletedTask;
-
         public virtual Task Completed(IUnitOfWork context) => OnCompleted?.Invoke(context);
 
         public virtual Task Rollbacked(IUnitOfWork context) => OnRollbacked?.Invoke(context);
-
-        public virtual Task Dispose(IUnitOfWork context) => OnDispose?.Invoke(context);
     }
 }

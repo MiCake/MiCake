@@ -19,12 +19,6 @@ namespace MiCake.Uow
         /// Set transaction for current executor.
         /// </summary>
         /// <param name="transactionObject"><see cref="ITransactionObject"/></param>
-        void UseTransaction(ITransactionObject transactionObject);
-
-        /// <summary>
-        /// Set transaction for current executor.
-        /// </summary>
-        /// <param name="transactionObject"><see cref="ITransactionObject"/></param>
         /// <param name="cancellationToken"></param>
         Task UseTransactionAsync(ITransactionObject transactionObject, CancellationToken cancellationToken = default);
     }

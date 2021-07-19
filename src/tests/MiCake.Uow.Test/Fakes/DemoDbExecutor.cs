@@ -18,21 +18,15 @@ namespace MiCake.Uow.Tests.Fakes
         {
         }
 
-        protected override bool SetTransaction(ITransactionObject transaction)
+        protected override Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken)
         {
+            var result = false;
             if (transaction.TransactionInstance is int)
             {
                 TransactionObject = transaction;
                 DbOjectInstance.SetTransaction(transaction.TransactionInstance);
-                return true;
+                result = true;
             }
-
-            return false;
-        }
-
-        protected override Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken)
-        {
-            var result = SetTransaction(transaction);
 
             return Task.FromResult(result);
         }

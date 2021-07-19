@@ -14,13 +14,6 @@ namespace MiCake.Uow.Tests.Fakes
         {
         }
 
-        protected override bool SetTransaction(ITransactionObject transaction)
-        {
-            TransactionObject = transaction;
-            DbOjectInstance.SetTransaction(transaction.TransactionInstance);
-            return true;
-        }
-
         protected override Task<bool> SetTransactionAsync(ITransactionObject transaction, CancellationToken cancellationToken)
         {
             TransactionObject = transaction;

@@ -15,7 +15,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void UnitOfWork_OnlyOneProvider_CanCreate()
+        public async Task UnitOfWork_OnlyOneProvider_CanCreate()
         {
             var provider = GetServiceProvider(AddScopeTransactionProvider);
 
@@ -24,14 +24,14 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
                 //Provider接受了当前Executor,并且开启了事务
                 Assert.True(currentDbExecutor.HasTransaction);
                 //使用TransactionScope时，将会开启一个当前事务
                 Assert.NotNull(Transaction.Current);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             Thread.Sleep(100);
@@ -64,7 +64,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void UnitOfWork_NoAnyProvider()
+        public async Task UnitOfWork_NoAnyProvider()
         {
             //没有事务支持程序
             var provider = GetServiceProvider();
@@ -75,8 +75,8 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
-                uow.SaveChanges();
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
+                await uow.SaveChangesAsync();
 
                 Assert.False(currentDbExecutor.HasTransaction);
             }
@@ -110,7 +110,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void UnitOfWork_NoAnyProvider_DbContextManualDispose()
+        public async Task UnitOfWork_NoAnyProvider_DbContextManualDispose()
         {
             //没有事务支持程序
             var provider = GetServiceProvider();
@@ -126,8 +126,8 @@ namespace MiCake.Uow.Tests
 
                     fakeDbExecutor = new ScopeDbExecutor(dbContext);
 
-                    uow.TryAddDbExecutor(fakeDbExecutor);
-                    uow.SaveChanges();
+                    await uow.TryAddDbExecutorAsync(fakeDbExecutor);
+                    await uow.SaveChangesAsync();
 
                     Assert.False(fakeDbExecutor.HasTransaction);
                     Assert.False(fakeDbContext.IsDispose);
@@ -170,7 +170,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void MoreProvider_UseSuitableProvider()
+        public async Task MoreProvider_UseSuitableProvider()
         {
             var provider = GetServiceProvider(AddTwoDifferentTypeProvider);
 
@@ -179,13 +179,13 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
                 //具有多个Provider，但是它只会接受TestScopeTransactionProvider
                 Assert.True(currentDbExecutor.HasTransaction);
                 Assert.IsType<TransactionScope>(currentDbExecutor.DbOjectInstance.Trsansaction);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             Assert.True(currentDbExecutor.IsDispose);
@@ -216,7 +216,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void MoreSuitableProvider_UseOrderLowest()
+        public async Task MoreSuitableProvider_UseOrderLowest()
         {
             var provider = GetServiceProvider(AddTwoSameTypeProvider);
 
@@ -225,7 +225,7 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
                 //具有多个同类型的Provider，但是它只会接受TestScopeTransactionProvider
                 var transactionObj = currentDbExecutor.TransactionObject as TestScopeTransactionObject;
@@ -233,7 +233,7 @@ namespace MiCake.Uow.Tests
                 Assert.NotNull(transactionObj);
                 Assert.Equal("TestScope", transactionObj.Source);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             Assert.True(currentDbExecutor.IsDispose);
@@ -266,7 +266,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void MoreProvider_ButNoSuitable_ShouldNoTransaction()
+        public async Task MoreProvider_ButNoSuitable_ShouldNoTransaction()
         {
             var provider = GetServiceProvider(AddTwoSameTypeProvider);
 
@@ -276,11 +276,11 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
                 //没有事务提供程序为它提供事务
                 Assert.False(currentDbExecutor.HasTransaction);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             //但是会被添加到工作单元，最后于工作单元一同释放
@@ -310,7 +310,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void MoreProvider_CannotReused()
+        public async Task MoreProvider_CannotReused()
         {
             var provider = GetServiceProvider(AddTwoSameTypeProvider);
 
@@ -320,14 +320,14 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
                 //此时工作单元中已经有一个事务，但是由于类型不同currentDbExecutor2不能复用
-                uow.TryAddDbExecutor(currentDbExecutor2);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor2);
 
                 Assert.True(currentDbExecutor.HasTransaction);
                 Assert.False(currentDbExecutor2.HasTransaction);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             //但是会被添加到工作单元，最后于工作单元一同释放
@@ -348,7 +348,7 @@ namespace MiCake.Uow.Tests
             {
                 await uow.TryAddDbExecutorAsync(currentDbExecutor);
                 //此时工作单元中已经有一个事务，但是由于类型不同currentDbExecutor2不能复用
-                uow.TryAddDbExecutor(currentDbExecutor2);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor2);
 
                 Assert.True(currentDbExecutor.HasTransaction);
                 Assert.False(currentDbExecutor2.HasTransaction);
@@ -362,7 +362,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void MoreProvider_CanReused()
+        public async Task MoreProvider_CanReused()
         {
             var provider = GetServiceProvider(AddTwoSameTypeProvider);
 
@@ -372,9 +372,9 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
                 //此时工作单元中已经有一个事务，同一类型的执行对象可以复用已有事务
-                uow.TryAddDbExecutor(currentDbExecutor2);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor2);
 
                 Assert.True(currentDbExecutor.HasTransaction);
                 Assert.True(currentDbExecutor2.HasTransaction);
@@ -385,7 +385,7 @@ namespace MiCake.Uow.Tests
                 Assert.NotNull(transactionObj);
                 Assert.Equal("TestScope", transactionObj.Source);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             //但是会被添加到工作单元，最后于工作单元一同释放
@@ -427,7 +427,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void SuppressOption_ExecutorBeEntrusted_AndNotOpenTransaction()
+        public async Task SuppressOption_ExecutorBeEntrusted_AndNotOpenTransaction()
         {
             var provider = GetServiceProvider(AddScopeTransactionProvider);
 
@@ -436,12 +436,12 @@ namespace MiCake.Uow.Tests
 
             using (var uow = uowManager.Create(UnitOfWorkScope.Suppress))
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
                 //Provider接受了当前Executor,但是由于Suppress配置，所以不会为该对象开启事务
                 Assert.False(currentDbExecutor.HasTransaction);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             Assert.True(currentDbExecutor.IsDispose);
@@ -469,7 +469,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void ChildUow_TransactionOperationWillDelayedtoParent()
+        public async Task ChildUow_TransactionOperationWillDelayedtoParent()
         {
             var provider = GetServiceProvider(AddScopeTransactionProvider);
 
@@ -480,18 +480,18 @@ namespace MiCake.Uow.Tests
             {
                 using (var uow2 = uowManager.Create())
                 {
-                    uow2.TryAddDbExecutor(currentDbExecutor);
+                    await uow2.TryAddDbExecutorAsync(currentDbExecutor);
 
                     //当前会具有外围的事务
                     Assert.True(currentDbExecutor.HasTransaction);
 
-                    uow2.SaveChanges();
+                    await uow2.SaveChangesAsync();
                 }
 
                 //虽然在uow2之外，但是由于使用了子uow，所以此时也不会被uow2释放
                 Assert.False(currentDbExecutor.IsDispose);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             //uow结束，则uow2包含的操作也将释放
@@ -529,7 +529,7 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void UnitOfWorkEvent_WillTrigger()
+        public async Task UnitOfWorkEvent_WillTrigger()
         {
             var provider = GetServiceProvider(AddScopeTransactionProvider);
 
@@ -538,7 +538,6 @@ namespace MiCake.Uow.Tests
 
             string saveChangedInfo = "";
             string rollbackInfo = "";
-            string disposeInfo = "";
 
             var options = new UnitOfWorkOptions();
             options.Events.OnCompleted += s =>
@@ -551,24 +550,18 @@ namespace MiCake.Uow.Tests
                 rollbackInfo = "over";
                 return Task.CompletedTask;
             };
-            options.Events.OnDispose += s =>
-            {
-                disposeInfo = "over";
-                return Task.CompletedTask;
-            };
 
             using (var uow = uowManager.Create(options))
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
 
-                uow.Rollback();
+                await uow.RollbackAsync();
             }
 
             Assert.Equal("over", saveChangedInfo);
             Assert.Equal("over", rollbackInfo);
-            Assert.Equal("over", disposeInfo);
 
             //uow结束，则uow2包含的操作也将释放
             Assert.True(currentDbExecutor.IsDispose);
@@ -584,7 +577,6 @@ namespace MiCake.Uow.Tests
 
             string saveChangedInfo = "";
             string rollbackInfo = "";
-            string disposeInfo = "";
 
             var options = new UnitOfWorkOptions();
             options.Events.OnCompleted += s =>
@@ -595,11 +587,6 @@ namespace MiCake.Uow.Tests
             options.Events.OnRollbacked += s =>
             {
                 rollbackInfo = "over";
-                return Task.CompletedTask;
-            };
-            options.Events.OnDispose += s =>
-            {
-                disposeInfo = "over";
                 return Task.CompletedTask;
             };
 
@@ -614,14 +601,13 @@ namespace MiCake.Uow.Tests
 
             Assert.Equal("over", saveChangedInfo);
             Assert.Equal("over", rollbackInfo);
-            Assert.Equal("over", disposeInfo);
 
             //uow结束，则uow2包含的操作也将释放
             Assert.True(currentDbExecutor.IsDispose);
         }
 
         [Fact]
-        public void ChildUnitOfWorkEvent_WillTrigger()
+        public async Task ChildUnitOfWorkEvent_WillTrigger()
         {
             var provider = GetServiceProvider(AddScopeTransactionProvider);
 
@@ -630,7 +616,6 @@ namespace MiCake.Uow.Tests
 
             string saveChangedInfo = "";
             string rollbackInfo = "";
-            string disposeInfo = "";
 
             var options = new UnitOfWorkOptions();
             options.Events.OnCompleted += s =>
@@ -641,60 +626,6 @@ namespace MiCake.Uow.Tests
             options.Events.OnRollbacked += s =>
             {
                 rollbackInfo = "over";
-                return Task.CompletedTask;
-            };
-            options.Events.OnDispose += s =>
-            {
-                disposeInfo = "over";
-                return Task.CompletedTask;
-            };
-
-            using (var uow = uowManager.Create())
-            {
-                using (var uow2 = uowManager.Create(options))
-                {
-                    uow2.TryAddDbExecutor(currentDbExecutor);
-
-                    uow2.SaveChanges();
-
-                    uow2.Rollback();
-                }
-            }
-
-            Assert.Equal("over", saveChangedInfo);
-            Assert.Equal("over", rollbackInfo);
-            Assert.Equal("over", disposeInfo);
-
-            //uow结束，则uow2包含的操作也将释放
-            Assert.True(currentDbExecutor.IsDispose);
-        }
-
-        [Fact]
-        public async Task ChildUnitOfWorkEvent_WillTrigger_Async()
-        {
-            var provider = GetServiceProvider(AddScopeTransactionProvider);
-
-            var uowManager = provider.GetService<IUnitOfWorkManager>();
-            var currentDbExecutor = new ScopeDbExecutor(new FakeDbContext());
-
-            string saveChangedInfo = "";
-            string rollbackInfo = "";
-            string disposeInfo = "";
-
-            var options = new UnitOfWorkOptions();
-            options.Events.OnCompleted += s =>
-            {
-                saveChangedInfo = "over";
-                return Task.CompletedTask;
-            };
-            options.Events.OnRollbacked += s =>
-            {
-                rollbackInfo = "over";
-                return Task.CompletedTask;
-            };
-            options.Events.OnDispose += s =>
-            {
-                disposeInfo = "over";
                 return Task.CompletedTask;
             };
 
@@ -712,14 +643,55 @@ namespace MiCake.Uow.Tests
 
             Assert.Equal("over", saveChangedInfo);
             Assert.Equal("over", rollbackInfo);
-            Assert.Equal("over", disposeInfo);
 
             //uow结束，则uow2包含的操作也将释放
             Assert.True(currentDbExecutor.IsDispose);
         }
 
         [Fact]
-        public void AlreadyHasTransactionExecutor_ShouldNotCreateNewTrsansation()
+        public async Task ChildUnitOfWorkEvent_WillTrigger_Async()
+        {
+            var provider = GetServiceProvider(AddScopeTransactionProvider);
+
+            var uowManager = provider.GetService<IUnitOfWorkManager>();
+            var currentDbExecutor = new ScopeDbExecutor(new FakeDbContext());
+
+            string saveChangedInfo = "";
+            string rollbackInfo = "";
+
+            var options = new UnitOfWorkOptions();
+            options.Events.OnCompleted += s =>
+            {
+                saveChangedInfo = "over";
+                return Task.CompletedTask;
+            };
+            options.Events.OnRollbacked += s =>
+            {
+                rollbackInfo = "over";
+                return Task.CompletedTask;
+            };
+
+            using (var uow = uowManager.Create())
+            {
+                using (var uow2 = uowManager.Create(options))
+                {
+                    await uow2.TryAddDbExecutorAsync(currentDbExecutor);
+
+                    await uow2.SaveChangesAsync();
+
+                    await uow2.RollbackAsync();
+                }
+            }
+
+            Assert.Equal("over", saveChangedInfo);
+            Assert.Equal("over", rollbackInfo);
+
+            //uow结束，则uow2包含的操作也将释放
+            Assert.True(currentDbExecutor.IsDispose);
+        }
+
+        [Fact]
+        public async Task AlreadyHasTransactionExecutor_ShouldNotCreateNewTrsansation()
         {
             var provider = GetServiceProvider(AddScopeTransactionProvider);
 
@@ -727,13 +699,13 @@ namespace MiCake.Uow.Tests
             var currentDbExecutor = new ScopeDbExecutor(new FakeDbContext());
             //在托管给uow之前就已经具有了事务
             var transaScope = new TransactionScope();
-            currentDbExecutor.UseTransaction(new TestScopeTransactionObject(transaScope));
+            await currentDbExecutor.UseTransactionAsync(new TestScopeTransactionObject(transaScope));
 
             using (var uow = uowManager.Create())
             {
-                uow.TryAddDbExecutor(currentDbExecutor);
+                await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
-                uow.SaveChanges();
+                await uow.SaveChangesAsync();
             }
 
             transaScope.Dispose();//由于是外界的事务，所以uow不会托管该事务，需要手动释放
@@ -750,7 +722,7 @@ namespace MiCake.Uow.Tests
             var currentDbExecutor = new ScopeDbExecutor(new FakeDbContext());
             //在托管给uow之前就已经具有了事务
             var transaScope = new TransactionScope();
-            currentDbExecutor.UseTransaction(new TestScopeTransactionObject(transaScope));
+            await currentDbExecutor.UseTransactionAsync(new TestScopeTransactionObject(transaScope));
 
             using (var uow = uowManager.Create())
             {

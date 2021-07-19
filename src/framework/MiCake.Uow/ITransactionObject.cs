@@ -30,19 +30,9 @@ namespace MiCake.Uow
         public object TransactionInstance { get; }
 
         /// <summary>
-        /// Commits all changes made to the database in the current transaction.
-        /// </summary>
-        void Commit();
-
-        /// <summary>
         /// Commits all changes made to the database in the current transaction asynchronously.
         /// </summary>
         Task CommitAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
-        ///  Discards all changes made to the database in the current transaction.
-        /// </summary>
-        void Rollback();
 
         /// <summary>
         ///  Discards all changes made to the database in the current transaction asynchronously.

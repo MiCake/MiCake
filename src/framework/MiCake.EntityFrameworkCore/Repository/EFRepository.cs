@@ -16,56 +16,41 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
         }
 
-        public virtual void Add(TAggregateRoot aggregateRoot)
-            => DbContext.Add(aggregateRoot);
-
-        public virtual TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute = false)
-        {
-            var entity = DbContext.Add(aggregateRoot);
-
-            if (autoExecute)
-            {
-                DbContext.SaveChanges();
-            }
-
-            return entity.Entity;
-        }
         public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = false, CancellationToken cancellationToken = default)
         {
-            var entityInfo = await DbContext.AddAsync(aggregateRoot, cancellationToken);
+            var dbcontext = await GetDbContextAsync(cancellationToken);
+            var entityInfo = await dbcontext.Set<TAggregateRoot>().AddAsync(aggregateRoot, cancellationToken);
 
             if (autoExecute)
-                await DbContext.SaveChangesAsync(cancellationToken);
+                await dbcontext.SaveChangesAsync(cancellationToken);
 
             return entityInfo.Entity;
         }
 
         public virtual async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
-            => await DbContext.AddAsync(aggregateRoot, cancellationToken);
-
-        public virtual void Delete(TAggregateRoot aggregateRoot)
-            => DbContext.Remove(aggregateRoot);
-
-        public virtual Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbContext.Remove(aggregateRoot);
-            return Task.CompletedTask;
+            var dbset = await GetDbSetAsync(cancellationToken);
+            await dbset.AddAsync(aggregateRoot, cancellationToken);
+        }
+
+        public virtual async Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken);
+            dbset.Remove(aggregateRoot);
         }
 
         public virtual async Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
         {
-            var item = await DbSet.FindAsync(new object[] { ID }, cancellationToken);
+            var dbset = await GetDbSetAsync(cancellationToken);
+            var item = await dbset.FindAsync(new object[] { ID }, cancellationToken);
             if (item != null)
-                DbSet.Remove(item);
+                dbset.Remove(item);
         }
 
-        public virtual void Update(TAggregateRoot aggregateRoot)
-            => DbContext.Update(aggregateRoot);
-
-        public virtual Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        public virtual async Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            DbContext.Update(aggregateRoot);
-            return Task.CompletedTask;
+            var dbset = await GetDbSetAsync(cancellationToken);
+            dbset.Update(aggregateRoot);
         }
     }
 }
