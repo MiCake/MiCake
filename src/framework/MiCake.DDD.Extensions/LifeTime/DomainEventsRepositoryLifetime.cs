@@ -20,38 +20,6 @@ namespace MiCake.DDD.Extensions.Lifetime
 
         public int Order { get; set; } = -1000;
 
-        public RepositoryEntityState PreSaveChanges(RepositoryEntityState entityState, object entity)
-        {
-            if (entity is IDomainEventProvider domainEventProvider)
-            {
-                var entityEvents = domainEventProvider.GetDomainEvents();
-                var completedEventCount = 0;
-
-                if (entityEvents == null || entityEvents.Count == 0)
-                    return entityState;
-
-                foreach (var @event in entityEvents)
-                {
-                    try
-                    {
-                        _eventDispatcher.Dispatch(@event);
-                        completedEventCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "There has a error when dispatch domain event.");
-                    }
-                }
-
-                if (completedEventCount != entityEvents.Count)
-                {
-                    //count is not equal. prove the existence of failed events
-                }
-            }
-
-            return entityState;
-        }
-
         public async ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
             if (entity is IDomainEventProvider domainEventProvider)

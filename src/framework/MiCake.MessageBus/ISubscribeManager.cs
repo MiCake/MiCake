@@ -8,7 +8,7 @@ namespace MiCake.MessageBus
     /// <summary>
     /// Define a manager to manange <see cref="IMessageSubscriber"/>
     /// </summary>
-    public interface ISubscribeManager : IDisposable
+    public interface ISubscribeManager : IAsyncDisposable
     {
         /// <summary>
         /// Get all registered <see cref="IMessageSubscriber"/>(s).

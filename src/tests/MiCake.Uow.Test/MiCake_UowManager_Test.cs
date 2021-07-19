@@ -180,16 +180,14 @@ namespace MiCake.Uow.Tests
         }
 
         [Fact]
-        public void ChildUow_UseItSelfEvents()
+        public async Task ChildUow_UseItSelfEvents()
         {
             var manager = ServiceProvider.GetService<IUnitOfWorkManager>() as UnitOfWorkManager;
             string saveInfo = "";
             string rollbackInfo = "";
-            string disposeInfo = "";
 
             string saveInfo2 = "";
             string rollbackInfo2 = "";
-            string disposeInfo2 = "";
 
             var options1 = new UnitOfWorkOptions();
             options1.Events.OnCompleted += s =>
@@ -200,11 +198,6 @@ namespace MiCake.Uow.Tests
             options1.Events.OnRollbacked += s =>
             {
                 rollbackInfo = "1";
-                return Task.CompletedTask;
-            };
-            options1.Events.OnDispose += s =>
-            {
-                disposeInfo = "1";
                 return Task.CompletedTask;
             };
 
@@ -219,32 +212,25 @@ namespace MiCake.Uow.Tests
                 rollbackInfo2 = "2";
                 return Task.CompletedTask;
             };
-            options2.Events.OnDispose += s =>
-            {
-                disposeInfo2 = "2";
-                return Task.CompletedTask;
-            };
+
 
             using (var uow1 = manager.Create(options1))
             {
                 using (var uow2 = manager.Create(options2))
                 {
-                    uow2.SaveChanges();
-                    uow2.Rollback();
+                    await uow2.SaveChangesAsync();
+                    await uow2.RollbackAsync();
                 }
-                uow1.SaveChanges();
-                uow1.Rollback();
+                await uow1.SaveChangesAsync();
+                await uow1.RollbackAsync();
             }
 
             Assert.Equal("1", saveInfo);
             Assert.Equal("1", rollbackInfo);
-            Assert.Equal("1", disposeInfo);
 
             Assert.Equal("2", saveInfo2);
             Assert.Equal("2", rollbackInfo2);
-            Assert.Equal("2", disposeInfo2);
         }
-
 
         #region 多线程下无法控制
         //[Fact(DisplayName = "多线程条件下获取工作单元")]

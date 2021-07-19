@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
@@ -15,7 +17,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _currentUnitOfWork = currentUnitOfWork;
         }
 
-        public TDbContext GetDbContext()
+        public async Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
         {
             if (_currentUnitOfWork?.Value == null)
                 throw new ArgumentNullException($"There has no any unit of work in this service scoped!");
@@ -27,7 +29,7 @@ namespace MiCake.EntityFrameworkCore.Uow
                 throw new ArgumentNullException($"Can not resolve a {typeof(TDbContext).FullName} form this serve scoped,please check has added dbcontext in DI!");
 
             //Add this dbContext to current uow.
-            uow.TryAddDbExecutor(CreateDbContextExecutor(dbContext));
+            await uow.TryAddDbExecutorAsync(CreateDbContextExecutor(dbContext));
 
             return dbContext;
         }
@@ -38,7 +40,9 @@ namespace MiCake.EntityFrameworkCore.Uow
             return (IDbExecutor)Activator.CreateInstance(dbExecutorType, dbContext);
         }
 
-        DbContext IDbContextProvider.GetDbContext()
-            => GetDbContext();
+        async Task<DbContext> IDbContextProvider.GetDbContextAsync(CancellationToken cancellationToken)
+        {
+            return await GetDbContextAsync(cancellationToken);
+        }
     }
 }

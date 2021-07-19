@@ -3,6 +3,8 @@ using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
@@ -14,22 +16,12 @@ namespace MiCake.EntityFrameworkCore.Repository
          where TDbContext : DbContext
     {
         /// <summary>
-        /// Use to get need services.For example:DbContextProvider,POManager,etcs.
+        /// Use to get need services.
         /// </summary>
         protected IServiceProvider ServiceProvider { get; }
-
-        /// <summary>
-        /// Current DbContext.
-        /// </summary>
-        protected virtual TDbContext DbContext => _currentDbContext;
-
-        /// <summary>
-        /// The DbSet for current aggregate root.
-        /// </summary>
-        protected virtual DbSet<TEntity> DbSet => DbContext.Set<TEntity>();
+        protected IDbContextProvider<TDbContext> DbContextProvider;
 
         private TDbContext _currentDbContext;
-        private IDbContextProvider<TDbContext> _dbContextProvider;
 
         /// <summary>
         /// 
@@ -50,10 +42,23 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         protected virtual void InitComponents()
         {
-            _dbContextProvider = ServiceProvider.GetService<IDbContextProvider<TDbContext>>() ??
+            DbContextProvider = ServiceProvider.GetService<IDbContextProvider<TDbContext>>() ??
                 throw new ArgumentNullException($"Cannot get {nameof(IDbContextProvider)},current repository initialization failed.");
+        }
 
-            _currentDbContext = _dbContextProvider.GetDbContext();
+        protected virtual async Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            if (_currentDbContext == null)
+            {
+                _currentDbContext = await DbContextProvider.GetDbContextAsync(cancellationToken);
+            }
+
+            return _currentDbContext;
+        }
+
+        protected virtual async Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
+        {
+            return (await GetDbContextAsync(cancellationToken)).Set<TEntity>();
         }
     }
 }

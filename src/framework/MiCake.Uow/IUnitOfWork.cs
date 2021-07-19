@@ -32,14 +32,6 @@ namespace MiCake.Uow
         IServiceScope ServiceScope { get; }
 
         /// <summary>
-        /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/>.
-        /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
-        /// </summary>
-        /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
-        /// <returns>Result.</returns>
-        bool TryAddDbExecutor(IDbExecutor dbExecutor);
-
-        /// <summary>
         /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/> asynchronously. 
         /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
         /// </summary>
@@ -48,21 +40,11 @@ namespace MiCake.Uow
         Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Commits all changes made to the database in the current unit of work.
-        /// </summary>
-        void SaveChanges();
-
-        /// <summary>
         /// Commits all changes made to the database in the current unit of work asynchronously.
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
-        ///  Discards all changes made to the database in the current unit of work.
-        /// </summary>
-        void Rollback();
 
         /// <summary>
         /// Discards all changes made to the database in the current unit of work asynchronously.

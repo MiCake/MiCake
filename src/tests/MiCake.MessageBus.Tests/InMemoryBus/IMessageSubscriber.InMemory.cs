@@ -20,23 +20,24 @@ namespace MiCake.MessageBus.Tests.InMemoryBus
             _serializer = serializer;
         }
 
-        public void AddReceivedHandler(SubscriberMessageReceived handler)
+        public Task AddReceivedHandlerAsync(SubscriberMessageReceived handler, CancellationToken cancellationToken = default)
         {
             handlers += handler;
+            return Task.CompletedTask;
         }
 
         public Task CommitAsync(object sender, CancellationToken cancellationToken = default)
         {
-            return _receiver.CompleteAsync(sender);
+            return _receiver.CompleteAsync(sender, cancellationToken);
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             if (isDispose)
                 return;
 
             isDispose = true;
-            _receiver.CloseAsync().GetAwaiter().GetResult();
+            await _receiver.CloseAsync();
             _receiver = null;
         }
 

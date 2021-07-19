@@ -29,12 +29,6 @@ namespace MiCake.Uow
         ITransactionObject Reused(IEnumerable<ITransactionObject> existedTrasactions, IDbExecutor dbExecutor);
 
         /// <summary>
-        /// Get a <see cref="ITransactionObject"/>
-        /// </summary>
-        /// <param name="context"><see cref="CreateTransactionContext"/></param>
-        ITransactionObject GetTransactionObject(CreateTransactionContext context);
-
-        /// <summary>
         /// Get a <see cref="ITransactionObject"/> asynchronous.
         /// </summary>
         /// <param name="context"><see cref="CreateTransactionContext"/></param>

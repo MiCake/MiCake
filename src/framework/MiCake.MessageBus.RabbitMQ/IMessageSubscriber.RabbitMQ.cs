@@ -33,22 +33,25 @@ namespace MiCake.MessageBus.RabbitMQ
             _logger = loggerFactory.CreateLogger<RabbitMQMessageSubscriber>();
         }
 
-        public void AddReceivedHandler(SubscriberMessageReceived handler)
-            => receivedHandlers += handler;
+        public Task AddReceivedHandlerAsync(SubscriberMessageReceived handler, CancellationToken cancellationToken = default)
+        {
+            receivedHandlers += handler;
+            return Task.CompletedTask;
+        }
 
         public Task CommitAsync(object sender, CancellationToken cancellationToken = default)
         {
             return _transportReceiver.CompleteAsync(sender, cancellationToken);
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             if (isDisposed)
                 return;
 
             isDisposed = true;
 
-            _transportReceiver.CloseAsync().GetAwaiter().GetResult();
+            await _transportReceiver.CloseAsync();
             _transportReceiver = null;
         }
 

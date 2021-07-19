@@ -19,20 +19,11 @@ namespace MiCake.DDD.Extensions.Internal
             _inner = factory.CreateRepository();
         }
 
-        public void Add(TAggregateRoot aggregateRoot)
-            => _inner.Add(aggregateRoot);
-
-        public TAggregateRoot AddAndReturn(TAggregateRoot aggregateRoot, bool autoExecute)
-            => _inner.AddAndReturn(aggregateRoot, autoExecute);
-
         public Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute, CancellationToken cancellationToken = default)
             => _inner.AddAndReturnAsync(aggregateRoot, autoExecute, cancellationToken);
 
         public Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.AddAsync(aggregateRoot, cancellationToken);
-
-        public void Delete(TAggregateRoot aggregateRoot)
-            => _inner.Delete(aggregateRoot);
 
         public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.DeleteAsync(aggregateRoot, cancellationToken);
@@ -40,17 +31,11 @@ namespace MiCake.DDD.Extensions.Internal
         public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
          => _inner.DeleteByIdAsync(ID, cancellationToken);
 
-        public TAggregateRoot Find(TKey ID)
-            => _inner.Find(ID);
-
         public Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
             => _inner.FindAsync(ID, cancellationToken);
 
-        public long GetCount()
-            => _inner.GetCount();
-
-        public void Update(TAggregateRoot aggregateRoot)
-            => _inner.Update(aggregateRoot);
+        public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
+            => _inner.GetCountAsync(cancellationToken);
 
         public Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.UpdateAsync(aggregateRoot, cancellationToken);

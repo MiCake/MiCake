@@ -29,18 +29,6 @@ namespace MiCake.EntityFrameworkCore.Uow
             _dbContext = dbContext;
         }
 
-        public void Commit()
-        {
-            //Only called once.
-            if (IsCommit)
-                return;
-
-            IsCommit = true;
-
-            _dbContext.SaveChanges();
-            _efCoreTransaction.Commit();
-        }
-
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
             //Only called once.
@@ -56,11 +44,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         public void Dispose()
         {
             _efCoreTransaction.Dispose();
-        }
-
-        public void Rollback()
-        {
-            _efCoreTransaction.Rollback();
         }
 
         public async Task RollbackAsync(CancellationToken cancellationToken = default)

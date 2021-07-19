@@ -21,19 +21,6 @@ namespace MiCake.EntityFrameworkCore.Internal
             _repositoryPostSaveChanges = repositoryPostSaveChanges.OrderBy(p => p.Order);
         }
 
-        public void AfterSaveChanges(IEnumerable<EntityEntry> entityEntries)
-        {
-            var cloneEntries = entityEntries.ToList();
-            foreach (var postSaveChange in _repositoryPostSaveChanges)
-            {
-                foreach (var entity in cloneEntries)
-                {
-                    var state = entity.State.ToRepositoryState();
-                    postSaveChange.PostSaveChanges(state, entity.Entity);
-                }
-            }
-        }
-
         public async Task AfterSaveChangesAsync(IEnumerable<EntityEntry> entityEntries, CancellationToken cancellationToken = default)
         {
             var cloneEntries = entityEntries.ToList();
@@ -43,23 +30,6 @@ namespace MiCake.EntityFrameworkCore.Internal
                 {
                     var state = entity.State.ToRepositoryState();
                     await postSaveChange.PostSaveChangesAsync(state, entity.Entity, cancellationToken);
-                }
-            }
-        }
-
-        public void BeforeSaveChanges(IEnumerable<EntityEntry> entityEntries)
-        {
-            var cloneEntries = entityEntries.ToList();
-            foreach (var preSaveChange in _repositoryPreSaveChanges)
-            {
-                foreach (var entity in cloneEntries)
-                {
-                    var originalEFState = entity.State;
-
-                    var state = entity.State.ToRepositoryState();
-                    state = preSaveChange.PreSaveChanges(state, entity.Entity);
-
-                    if (state.ToEFState() != originalEFState) entity.State = state.ToEFState();
                 }
             }
         }

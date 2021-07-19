@@ -19,26 +19,31 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
 
-        public Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync(PagingQueryModel queryModel, CancellationToken cancellationToken = default)
+        public async Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync(PagingQueryModel queryModel, CancellationToken cancellationToken = default)
         {
-            var result = DbSet.Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum);
+            var dbset = await GetDbSetAsync(cancellationToken);
+            var result = await dbset.Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum).ToListAsync();
+            var count = await GetCountAsync(cancellationToken);
 
-            return Task.FromResult(new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, GetCount(), result.ToList()));
+            return new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, count, result);
         }
 
-        public Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
+        public async Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
         {
+            var dbset = await GetDbSetAsync(cancellationToken);
+
             IEnumerable<TAggregateRoot> result;
             if (asc)
             {
-                result = DbSet.OrderBy(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum);
+                result = await dbset.OrderBy(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum).ToListAsync();
             }
             else
             {
-                result = DbSet.OrderByDescending(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum);
+                result = await dbset.OrderByDescending(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum).ToListAsync();
             }
+            var count = await GetCountAsync(cancellationToken);
 
-            return Task.FromResult(new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, GetCount(), result.ToList()));
+            return new PagingQueryResult<IEnumerable<TAggregateRoot>>(queryModel.PageIndex, count, result);
         }
     }
 }
