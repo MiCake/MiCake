@@ -19,14 +19,14 @@ namespace BaseMiCakeApplication.Controllers
     public class LoginController : ControllerBase
     {
         private readonly IJwtAuthManager _jwtManager;
-        private IHttpContextAccessor _httpContextAccessor;
-        private readonly IRepository<User, Guid> _userRepo;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRepository<User, long> _userRepo;
 
 
         public LoginController(
             IJwtAuthManager jwtSupporter,
             IHttpContextAccessor httpContextAccessor,
-            IRepository<User, Guid> userRepository)
+            IRepository<User, long> userRepository)
         {
             _jwtManager = jwtSupporter;
             _httpContextAccessor = httpContextAccessor;
@@ -37,9 +37,9 @@ namespace BaseMiCakeApplication.Controllers
         public async Task<LoginResultDto> Register(RegisterUserDto registerInfo)
         {
             var user = MiCakeApp.User.Create(registerInfo.Phone, registerInfo.Password, registerInfo.Name, registerInfo.Age);
-            await _userRepo.AddAsync(user);
+            var userInfo = await _userRepo.AddAndReturnAsync(user);
 
-            var token = await _jwtManager.CreateToken(user);
+            var token = await _jwtManager.CreateToken(userInfo);
 
             return new LoginResultDto() { AccessToken = token.AccessToken, HasUser = true, UserInfo = null };
         }

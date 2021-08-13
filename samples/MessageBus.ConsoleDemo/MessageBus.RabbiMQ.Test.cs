@@ -71,11 +71,11 @@ namespace MessageBus.ConsoleDemo
             //create subscriber
             var subscriber = await bus.CreateSubscriberAsync(new MessageSubscriberOptions() { SubscriptionName = "micake.test" });
             await subscriber.SubscribeAsync();
-            subscriber.AddReceivedHandler(async (sender, msg) =>
-            {
-                Console.WriteLine($"{name} --- Received msg:{msg.Body}.");
-                await subscriber.CommitAsync(sender);
-            });
+            await subscriber.AddReceivedHandlerAsync(async (sender, msg) =>
+             {
+                 Console.WriteLine($"{name} --- Received msg:{msg.Body}.");
+                 await subscriber.CommitAsync(sender);
+             });
             await subscriber.ListenAsync();
 
             subscribers.Add(subscriber);

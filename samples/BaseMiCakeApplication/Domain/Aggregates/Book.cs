@@ -1,16 +1,18 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates.Events;
 using BaseMiCakeApplication.Domain.Events;
+using MiCake.Audit;
 using MiCake.Core;
 using MiCake.DDD.Domain;
 using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
-    public class Book : AggregateRoot<Guid>
+    public class Book : AggregateRoot<Guid>, IMayHasCreator<long>
     {
         public string BookName { get; private set; }
 
         public BookAuthor Author { get; private set; }
+        public long? CreatorID { get; set; }
 
         public Book()
         {
