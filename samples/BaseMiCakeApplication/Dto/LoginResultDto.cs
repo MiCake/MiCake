@@ -8,6 +8,6 @@
 
         public UserDto UserInfo { get; set; }
 
-        public static LoginResultDto NoUser() => new LoginResultDto() { HasUser = false };
+        public static LoginResultDto NoUser() => new() { HasUser = false };
     }
 }

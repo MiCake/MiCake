@@ -5,9 +5,8 @@ using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
-    public class User : MiCakeUser<Guid>, IHasCreationTime, IHasModificationTime
+    public class User : MiCakeUser<long>, IHasCreationTime, IHasModificationTime
     {
-        [JwtClaim]
         public string Name { get; private set; }
 
         public string Avatar { get; private set; }
@@ -22,6 +21,15 @@ namespace BaseMiCakeApplication.Domain.Aggregates
 
         public DateTime? ModificationTime { get; set; }
 
+        [JwtClaim(ClaimName = "userId")]
+        private long UserIdClaim
+        {
+            get
+            {
+                return Id;
+            }
+        }
+
         public User()
         {
         }
@@ -30,7 +38,6 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         {
             //some check rule...
 
-            Id = Guid.NewGuid();
             Password = pwd;
             Phone = phone;
             Name = name;
