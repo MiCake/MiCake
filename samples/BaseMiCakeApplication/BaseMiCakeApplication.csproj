@@ -18,12 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\framework\MiCake.AspNetCore.Start\MiCake.AspNetCore.Start.csproj" />
-    <ProjectReference Include="..\..\src\framework\MiCake.DDD.CQS\MiCake.DDD.CQS.csproj" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Migrations\" />
+    <ProjectReference Include="..\..\src\framework\core\MiCake.AspNetCore.Start\MiCake.AspNetCore.Start.csproj" />
+    <ProjectReference Include="..\..\src\framework\support\MiCake.DDD.CQS\MiCake.DDD.CQS.csproj" />
   </ItemGroup>
 
 </Project>

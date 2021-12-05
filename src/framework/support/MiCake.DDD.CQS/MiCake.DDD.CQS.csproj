@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MiCake's implementation support for CQS with DDD.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\MiCake.DDD.Domain\MiCake.DDD.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

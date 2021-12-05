@@ -1,5 +1,5 @@
-﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions.Internal;
+﻿using MiCake.DDD.Connector.Internal;
+using MiCake.DDD.Domain;
 using MiCake.DDD.Tests.Fakes.Aggregates;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;

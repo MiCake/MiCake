@@ -1,6 +1,6 @@
 ﻿using MiCake.Core;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Extensions.Metadata;
+using MiCake.DDD.Connector.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 

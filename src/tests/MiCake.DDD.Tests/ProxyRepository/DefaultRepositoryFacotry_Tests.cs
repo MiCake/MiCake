@@ -1,8 +1,8 @@
 ﻿using MiCake.Core;
+using MiCake.DDD.Connector;
+using MiCake.DDD.Connector.Internal;
+using MiCake.DDD.Connector.Metadata;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Internal;
-using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Tests.Fakes.Aggregates;
 using Microsoft.Extensions.DependencyInjection;
 using System;

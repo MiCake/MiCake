@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\framework\MiCake.DDD.Extensions\MiCake.DDD.Extensions.csproj" />
+    <ProjectReference Include="..\..\framework\core\MiCake.DDD.Connector\MiCake.DDD.Connector.csproj" />
   </ItemGroup>
 
   <ItemGroup>

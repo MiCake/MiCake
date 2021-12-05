@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\framework\MiCake.Audit\MiCake.Audit.csproj" />
+    <ProjectReference Include="..\..\framework\core\MiCake.Audit\MiCake.Audit.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\framework\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\framework\core\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

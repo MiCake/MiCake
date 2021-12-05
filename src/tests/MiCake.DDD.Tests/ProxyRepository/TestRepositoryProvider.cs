@@ -1,5 +1,5 @@
-﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions;
+﻿using MiCake.DDD.Connector;
+using MiCake.DDD.Domain;
 using System;
 
 namespace MiCake.DDD.Tests.ProxyRepository

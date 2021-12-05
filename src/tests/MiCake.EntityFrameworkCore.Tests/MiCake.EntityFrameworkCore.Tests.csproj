@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\framework\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\framework\core\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

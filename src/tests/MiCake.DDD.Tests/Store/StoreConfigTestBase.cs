@@ -1,4 +1,4 @@
-﻿using MiCake.DDD.Extensions.Store.Configure;
+﻿using MiCake.DDD.Connector.Store.Configure;
 
 namespace MiCake.DDD.Tests.Store
 {

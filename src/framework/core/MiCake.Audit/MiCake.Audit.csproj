@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MiCake audit components.Contains soft deletion,create information,and more.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiCake.DDD.Connector\MiCake.DDD.Connector.csproj" />
+  </ItemGroup>
+
+</Project>

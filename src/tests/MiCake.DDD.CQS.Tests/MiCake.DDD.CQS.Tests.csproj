@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\framework\MiCake.DDD.CQS\MiCake.DDD.CQS.csproj" />
+    <ProjectReference Include="..\..\framework\support\MiCake.DDD.CQS\MiCake.DDD.CQS.csproj" />
   </ItemGroup>
 
 </Project>

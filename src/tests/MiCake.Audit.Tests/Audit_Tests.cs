@@ -1,6 +1,7 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.Audit.SoftDeletion;
 using MiCake.Audit.Tests.Fakes;
+using MiCake.DDD.Connector;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using Xunit;
@@ -22,7 +23,7 @@ namespace MiCake.Audit.Tests
             HasCreationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Added);
 
             Assert.Equal(default, entity.CreationTime);
         }
@@ -36,7 +37,7 @@ namespace MiCake.Audit.Tests
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveTime = DateTime.Now;
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Added);
 
             var result = entity.CreationTime >= beforeGiveTime;
             Assert.True(result);
@@ -50,9 +51,9 @@ namespace MiCake.Audit.Tests
             HasCreationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Modified);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Unchanged);
+            executor.Execute(entity, RepositoryEntityState.Deleted);
+            executor.Execute(entity, RepositoryEntityState.Modified);
+            executor.Execute(entity, RepositoryEntityState.Unchanged);
 
             Assert.Equal(default, entity.CreationTime);
         }
@@ -66,7 +67,7 @@ namespace MiCake.Audit.Tests
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveTime = DateTime.Now;
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Modified);
+            executor.Execute(entity, RepositoryEntityState.Modified);
 
             var result = entity.ModificationTime >= beforeGiveTime;
             Assert.True(result);
@@ -80,9 +81,9 @@ namespace MiCake.Audit.Tests
             HasModificationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Unchanged);
+            executor.Execute(entity, RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Deleted);
+            executor.Execute(entity, RepositoryEntityState.Unchanged);
 
             Assert.Null(entity.ModificationTime);
         }
@@ -96,14 +97,14 @@ namespace MiCake.Audit.Tests
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveCreationTime = DateTime.Now;
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Added);
 
             var result = entity.CreationTime >= beforeGiveCreationTime;
             Assert.True(result);
             Assert.Null(entity.ModificationTime);
 
             var beforeGiveModificationTime = DateTime.Now;
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Modified);
+            executor.Execute(entity, RepositoryEntityState.Modified);
 
             var modificationResult = entity.ModificationTime.Value >= beforeGiveModificationTime;
             Assert.True(modificationResult);
@@ -117,7 +118,7 @@ namespace MiCake.Audit.Tests
             HasCreationTimeButNotEntity entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Added);
 
             Assert.Equal(default, entity.CreationTime);
         }
@@ -130,7 +131,7 @@ namespace MiCake.Audit.Tests
             SoftDeletionModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
+            executor.Execute(entity, RepositoryEntityState.Deleted);
 
             Assert.True(entity.IsDeleted);
         }
@@ -143,9 +144,9 @@ namespace MiCake.Audit.Tests
             SoftDeletionModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Modified);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Unchanged);
+            executor.Execute(entity, RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Modified);
+            executor.Execute(entity, RepositoryEntityState.Unchanged);
 
             Assert.False(entity.IsDeleted);
         }
@@ -159,7 +160,7 @@ namespace MiCake.Audit.Tests
             var executor = provider.GetService<IAuditExecutor>();
 
             var beforeGiveDeletionTime = DateTime.Now;
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
+            executor.Execute(entity, RepositoryEntityState.Deleted);
 
             var result = entity.DeletionTime.Value >= beforeGiveDeletionTime;
 
@@ -175,9 +176,9 @@ namespace MiCake.Audit.Tests
             HasDeletionTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Added);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Modified);
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Unchanged);
+            executor.Execute(entity, RepositoryEntityState.Added);
+            executor.Execute(entity, RepositoryEntityState.Modified);
+            executor.Execute(entity, RepositoryEntityState.Unchanged);
 
             Assert.False(entity.IsDeleted);
             Assert.Null(entity.DeletionTime);
@@ -191,7 +192,7 @@ namespace MiCake.Audit.Tests
             HasDeletionTimeModel_NoSoftDeletion entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            executor.Execute(entity, DDD.Extensions.RepositoryEntityState.Deleted);
+            executor.Execute(entity, RepositoryEntityState.Deleted);
 
             Assert.Null(entity.DeletionTime);
         }
