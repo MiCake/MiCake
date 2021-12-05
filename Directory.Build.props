@@ -1,9 +1,13 @@
 ﻿<Project>
-  <PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+	</PropertyGroup>
+	
+	<PropertyGroup>
     <Product>MiCake</Product>
     <Authors>MiCake</Authors>
     <owners>MiCake</owners>
-    <Version>0.6.0-preview1</Version>
+    <Version>0.7.0-preview1</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/MiCake/MiCake</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MiCake/MiCake</RepositoryUrl>

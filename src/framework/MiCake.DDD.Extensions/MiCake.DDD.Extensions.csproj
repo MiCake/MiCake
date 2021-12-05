@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
     <Description>Extensions used by MiCake to implement the DDD.Contains dynamic repository,repository lifetime,domain metadata,and more.</Description>
   </PropertyGroup>
 

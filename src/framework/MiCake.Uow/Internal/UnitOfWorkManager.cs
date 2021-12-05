@@ -139,10 +139,10 @@ namespace MiCake.Uow.Internal
                 };
                 (result as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
             }
-            catch (Exception ex)
+            catch
             {
                 uowScope.Dispose();
-                throw ex;
+                throw;
             }
 
             return result;

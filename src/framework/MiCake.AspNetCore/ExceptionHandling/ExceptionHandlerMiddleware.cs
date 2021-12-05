@@ -96,7 +96,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                IgnoreNullValues = true,
+                DefaultIgnoreCondition =  System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
             };
             var resultJsonData = JsonSerializer.Serialize(wrapDataResult, options);
 
@@ -116,7 +116,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                IgnoreNullValues = true,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
             };
             var resultJsonData = JsonSerializer.Serialize(wrapDataResult, options);
 

@@ -5,10 +5,10 @@ namespace MiCake.Core.Data
 {
     /// <summary>
     ///     <para>
-    ///         Extension methods for <see cref="IHashKeyCollection{TKey}" />.
+    ///         Extension methods for <see cref="IHasAccessor{TKey}" />.
     ///     </para>
     ///     <para>
-    ///         <see cref="IHashKeyCollection{T}" /> is used to hide properties that are not intended to be used in
+    ///         <see cref="IHasAccessor{T}" /> is used to hide properties that are not intended to be used in
     ///         application code.
     ///     </para>
     /// </summary>
