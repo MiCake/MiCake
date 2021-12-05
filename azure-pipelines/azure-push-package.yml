@@ -18,7 +18,7 @@ steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: 'pack'
-    packagesToPack: '**/*.csproj'
+    packagesToPack: '$(package_project)'
     versioningScheme: 'byPrereleaseNumber'
     majorVersion: '$(nuget_version_major)'
     minorVersion: '$(nuget_version_minor)'
