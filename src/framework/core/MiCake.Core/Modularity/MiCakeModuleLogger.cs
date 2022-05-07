@@ -1,5 +1,6 @@
 ﻿using MiCake.Core.Util;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace MiCake.Core.Modularity
 {
@@ -15,20 +16,11 @@ namespace MiCake.Core.Modularity
             _logger = logger;
         }
 
-        public void LogModuleInfo(MiCakeModuleDescriptor moduleDescriptor, string preInfo = "")
+        public void LogModuleInfo(string phaseStr, IMiCakeModuleCollection phaseModules)
         {
-            if (moduleDescriptor.Instance.IsFrameworkLevel && !DebugEnvironment.IsDebug)
-                return;
-
-            _logger.LogInformation(preInfo + GetModuleInfoString(moduleDescriptor));
-        }
-
-        private string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
-        {
-            var moduleType = moduleDesciptor.ModuleType;
-
-            var featerTag = (typeof(IFeatureModule).IsAssignableFrom(moduleType)) ? "[Feature] - " : string.Empty;
-            return featerTag + moduleType.Name;
+            var moduleStr = string.Join("->", phaseModules.ToList().Where(s => !s.IsCoreModule));
+           
+            _logger.LogInformation($"MiCake Phase - {phaseStr} : {moduleStr}" );
         }
     }
 }

@@ -4,13 +4,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace MiCake.Core.DependencyInjection
 {
     internal abstract class MiCakeServiceRegistrarBase : IMiCakeServiceRegistrar
     {
         private readonly IServiceCollection _services;
-        private FindAutoServiceTypesDelegate _serviceTypesFinder;
+        private FindAutoServiceTypesDelegate? _serviceTypesFinder;
 
         protected FindAutoServiceTypesDelegate CurrentFinder => _serviceTypesFinder ?? DefaultFindServiceTypes.Finder;
 
@@ -24,8 +25,7 @@ namespace MiCake.Core.DependencyInjection
             var injectServices = new List<InjectServiceInfo>();
 
             //filter need register modules
-            var needRegitsterModules = miCakeModules.Where(s => s.Instance.IsAutoRegisterServices)
-                                                    .ToMiCakeModuleCollection();
+            var needRegitsterModules = miCakeModules.Where(s => s.ModuleType.GetCustomAttribute<AutoDIAttribute>() != null).ToMiCakeModuleCollection();
 
             var assemblies = needRegitsterModules.GetAssemblies();
             foreach (var assembly in assemblies)

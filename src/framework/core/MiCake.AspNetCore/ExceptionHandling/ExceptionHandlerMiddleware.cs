@@ -72,9 +72,9 @@ namespace MiCake.AspNetCore.ExceptionHandling
             if (!_useWrapper)
                 return;
 
-            if (exception is SoftlyMiCakeException)
+            if (exception is PureException)
             {
-                await WriteSoftExceptionResponse(context, exception as SoftlyMiCakeException);
+                await WriteSoftExceptionResponse(context, exception as PureException);
             }
             else
             {
@@ -82,7 +82,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             }
         }
 
-        private async Task WriteSoftExceptionResponse(HttpContext context, SoftlyMiCakeException softMiCakeException)
+        private async Task WriteSoftExceptionResponse(HttpContext context, PureException softMiCakeException)
         {
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status200OK;

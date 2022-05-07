@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace MiCake.Uow.Internal
 {
-    internal class UnitOfWork : IUnitOfWork, INeedParts<UnitOfWorkNeedParts>
+    internal class UnitOfWork : IUnitOfWork, IHasSupplement<UnitOfWorkNeedParts>
     {
         public Guid ID { get; }
         public bool IsDisposed { get; private set; }
@@ -208,7 +208,7 @@ namespace MiCake.Uow.Internal
             => UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress;
         #endregion
 
-        public void SetParts(UnitOfWorkNeedParts parts)
+        public void SetData(UnitOfWorkNeedParts parts)
         {
             UnitOfWorkOptions = parts.Options;
             ServiceScope = parts.ServiceScope;

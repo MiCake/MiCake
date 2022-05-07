@@ -13,10 +13,10 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public BookAuthor(string firstName, string lastName)
         {
             if (string.IsNullOrEmpty(firstName))
-                throw new SoftlyMiCakeException("作者信息的姓不能为空");
+                throw new PureException("作者信息的姓不能为空");
 
             if (string.IsNullOrEmpty(lastName))
-                throw new SoftlyMiCakeException("作者信息的名不能为空");
+                throw new PureException("作者信息的名不能为空");
 
             FirstName = firstName;
             LastName = lastName;

@@ -18,29 +18,17 @@ namespace MiCake.Core.Modularity
         bool IsPopulated { get; }
 
         /// <summary>
-        /// Add <see cref="IMiCakeModule"/> to collection.
-        /// It's will be populated when call <see cref="PopulateModules(Type)"/>
-        /// </summary>
-        /// <param name="moduleType"><see cref="IMiCakeModule"/> to be added</param>
-        void AddMiCakeModule(Type moduleType);
-
-        /// <summary>
-        /// Add third-party extension module for micake
-        /// It's will be populated when call <see cref="PopulateModules(Type)"/>
-        /// </summary>
-        void AddFeatureModule(Type featureModule);
-
-        /// <summary>
         /// Populate modules.
         /// </summary>
         /// <param name="entryType"></param>
-        void PopulateModules(Type entryType);
+        /// <param name="customSorter"><see cref="IMiCakeModuleSorter"/></param>
+        void PopulateModules(Type entryType, IMiCakeModuleSorter? customSorter = null);
 
         /// <summary>
         /// Get a micake module info from manager.
         /// </summary>
         /// <param name="moduleType">micake module type</param>
         /// <returns><see cref="MiCakeModuleDescriptor"/></returns>
-        MiCakeModuleDescriptor GetMiCakeModule(Type moduleType);
+        MiCakeModuleDescriptor? GetMiCakeModule(Type moduleType);
     }
 }

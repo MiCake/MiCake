@@ -2,17 +2,6 @@
 {
     public abstract class MiCakeModule : IMiCakeModule
     {
-        /// <summary>
-        /// Tag this module is farmework level.
-        /// Framework level modules do not need to be traversed.
-        /// </summary>
-        public virtual bool IsFrameworkLevel => false;
-
-        /// <summary>
-        /// Auto register service to dependency injection framework.
-        /// </summary>
-        public virtual bool IsAutoRegisterServices => true;
-
         public MiCakeModule()
         {
         }

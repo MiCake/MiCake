@@ -47,14 +47,8 @@ namespace MiCake.Core.Modularity
 
         public Assembly[] GetAssemblies(bool includeFrameworkModule = true)
         {
-            Assembly[] assemblies = { };
-            assemblies = _descriptors.Where(s =>
-                                            includeFrameworkModule ?
-                                            true :
-                                            s.Instance.IsFrameworkLevel == includeFrameworkModule)
-                                        .Select(s => s.Assembly).Distinct().ToArray();
+            return _descriptors.Select(s => s.Assembly).Distinct().ToArray();
 
-            return assemblies;
         }
 
         public IEnumerator<MiCakeModuleDescriptor> GetEnumerator()

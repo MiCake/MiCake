@@ -1,7 +1,7 @@
 ﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
-    /// mark a singleton service
+    /// Mark a singleton service
     /// </summary>
     public interface ISingletonService : IAutoInjectService
     {

@@ -1,7 +1,7 @@
 ﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
-    /// mark a transient service
+    /// Mark a transient service
     /// </summary>
     public interface ITransientService : IAutoInjectService
     {

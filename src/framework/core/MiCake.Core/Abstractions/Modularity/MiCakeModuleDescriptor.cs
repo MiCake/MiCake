@@ -29,7 +29,12 @@ namespace MiCake.Core.Modularity
         public Assembly Assembly { get; }
 
         /// <summary>
-        /// Other modules that this module depends on
+        /// Indicate this module has <see cref="CoreModuleAttribute"/> tag.
+        /// </summary>
+        public bool IsCoreModule { get; }
+
+        /// <summary>
+        /// Other modules that this module depends on.
         /// </summary>
         public IReadOnlyList<MiCakeModuleDescriptor> RelyOnModules => _relyOnModules.ToImmutableList();
         private readonly List<MiCakeModuleDescriptor> _relyOnModules;
@@ -40,6 +45,7 @@ namespace MiCake.Core.Modularity
             ModuleType = type;
             Assembly = type.Assembly;
             _relyOnModules = new List<MiCakeModuleDescriptor>();
+            IsCoreModule = type.GetCustomAttribute<CoreModuleAttribute>() != null;
         }
 
         public void AddDependency(MiCakeModuleDescriptor descriptor)

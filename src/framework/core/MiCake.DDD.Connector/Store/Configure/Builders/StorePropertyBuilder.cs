@@ -5,7 +5,7 @@ namespace MiCake.DDD.Connector.Store.Configure
 {
     public class StorePropertyBuilder : IHasAccessor<InternalStorePropertyBuilder>
     {
-        InternalStorePropertyBuilder IHasAccessor<InternalStorePropertyBuilder>.Instance => _builer;
+        InternalStorePropertyBuilder IHasAccessor<InternalStorePropertyBuilder>.AccessibleData => _builer;
 
         private readonly InternalStorePropertyBuilder _builer;
 

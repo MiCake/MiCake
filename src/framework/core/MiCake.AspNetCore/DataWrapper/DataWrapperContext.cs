@@ -39,17 +39,17 @@ namespace MiCake.AspNetCore.DataWrapper
         public DataWrapperOptions WrapperOptions { get; set; }
 
         /// <summary>
-        /// <see cref="SoftlyMiCakeException"/> will not be handled as 500 errors and will be wrapped with successful results.
+        /// <see cref="PureException"/> will not be handled as 500 errors and will be wrapped with successful results.
         /// It's maybe null.
         /// </summary>
-        public SoftlyMiCakeException SoftlyException { get; set; }
+        public PureException SoftlyException { get; set; }
 
         public DataWrapperContext(IActionResult resultData,
                                   HttpContext httpContext,
                                   DataWrapperOptions options,
                                   ActionDescriptor actionDescriptor = null,
                                   ModelStateDictionary modelstate = null,
-                                  SoftlyMiCakeException softlyMiCakeException = null)
+                                  PureException softlyMiCakeException = null)
         {
             ResultData = resultData;
             WrapperOptions = options;

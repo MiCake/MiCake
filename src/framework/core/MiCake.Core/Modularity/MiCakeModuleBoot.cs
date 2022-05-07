@@ -11,26 +11,24 @@ namespace MiCake.Core.Modularity
     internal class MiCakeModuleBoot : IMiCakeModuleBoot
     {
         private readonly ILogger _logger;
-
-        private readonly IMiCakeModuleCollection _modules;
         private readonly MiCakeModuleLogger _moduleLogger;
+        private readonly IMiCakeModuleCollection _modules;
 
-        private Action<ModuleConfigServiceContext> _configServiceActions;
-        private Action<ModuleLoadContext> _initializationActions;
+        private Action<ModuleConfigServiceContext>? _configServiceActions;
+        private Action<ModuleLoadContext>? _initializationActions;
 
         public MiCakeModuleBoot(
             ILoggerFactory loggerFactory,
             IMiCakeModuleCollection modules)
         {
-            _logger = loggerFactory.CreateLogger("MiCake.Core.Modularity.MiCakeModuleBoot");
+            _logger = loggerFactory.CreateLogger<MiCakeModuleBoot>();
             _moduleLogger = new MiCakeModuleLogger(_logger);
             _modules = modules;
         }
 
         public void ConfigServices(ModuleConfigServiceContext context)
         {
-            var services = context.Services ??
-                throw new ArgumentNullException(nameof(context.Services));
+            var services = context.Services ?? throw new ArgumentNullException(nameof(context.Services));
 
             _logger.LogInformation("MiCake:ActivateServices......");
 
@@ -78,15 +76,15 @@ namespace MiCake.Core.Modularity
             {
                 foreach (var module in modules)
                 {
-                    //logging current module info.
-                    _moduleLogger.LogModuleInfo(module, $"MiCake {lifetimeInfo.Description}: ");
                     //execute current module lifetime.
-                    lifetimeInfo.StartAction(module.Instance, contextInfo);
+                    lifetimeInfo.StartAction?.Invoke(module.Instance, contextInfo);
                 }
+
+                _moduleLogger.LogModuleInfo(lifetimeInfo.Description, modules);
             }
         }
 
-        #region LifeTimes
+        #region Lifetimes
         private readonly List<ModuleBootInfo> bootInfos = new()
         {
             new ModuleBootInfo()
@@ -143,9 +141,9 @@ namespace MiCake.Core.Modularity
         {
             public ModuleBootType Type { get; set; }
 
-            public Action<IMiCakeModule, object> StartAction { get; set; }
+            public Action<IMiCakeModule, object>? StartAction { get; set; }
 
-            public string Description { get; set; }
+            public string Description { get; set; } = string.Empty;
         }
 
         enum ModuleBootType

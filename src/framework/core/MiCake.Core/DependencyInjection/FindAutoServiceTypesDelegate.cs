@@ -3,6 +3,21 @@ using System.Collections.Generic;
 
 namespace MiCake.Core.DependencyInjection
 {
+    /// <summary>
+    /// 
+    /// <para>
+    /// 
+    /// When a class that implements an <see cref="ITransientService"/> or <see cref="ISingletonService"/>
+    /// or <see cref="IScopedService"/> interface will be injected automatically.
+    /// 
+    /// </para>
+    /// </summary>
+    /// <param name="type">the class type</param>
+    /// <param name="inheritInterfaces">All interfaces inherited by this class</param>
+    /// <returns>service types</returns>
+    public delegate List<Type> FindAutoServiceTypesDelegate(Type type, List<Type> inheritInterfaces);
+
+
     internal static class DefaultFindServiceTypes
     {
         public static FindAutoServiceTypesDelegate Finder = (type, interfaces) =>

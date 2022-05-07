@@ -9,7 +9,7 @@ namespace MiCake.DDD.Connector.Store.Configure
     {
         protected InternalStoreEntityBuilder _builer;
 
-        InternalStoreEntityBuilder IHasAccessor<InternalStoreEntityBuilder>.Instance => _builer;
+        InternalStoreEntityBuilder IHasAccessor<InternalStoreEntityBuilder>.AccessibleData => _builer;
 
         public StoreEntityBuilder(IStoreEntityType storeEntity)
         {

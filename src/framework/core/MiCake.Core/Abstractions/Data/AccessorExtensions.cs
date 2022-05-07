@@ -14,6 +14,6 @@ namespace MiCake.Core.Data
     public static class AccessorExtensions
     {
         public static T GetAccessor<T>(this IHasAccessor<T> accessor)
-            => CheckValue.NotNull(accessor, nameof(accessor)).Instance;
+            => CheckValue.NotNull(accessor, nameof(accessor)).AccessibleData;
     }
 }

@@ -1,6 +1,5 @@
-﻿using MiCake.Core.Data;
-using MiCake.Core.DependencyInjection;
-using MiCake.Core.Handlers;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Modularity;
 using System.Reflection;
 
 namespace MiCake.Core
@@ -10,6 +9,11 @@ namespace MiCake.Core
     /// </summary>
     public class MiCakeApplicationOptions
     {
+        /// <summary>
+        /// Specifies a custom module sorter that can change the startup order of MiCake application modules.
+        /// </summary>
+        public IMiCakeModuleSorter? ModuleSorter { get; set; }
+
         /// <summary>
         /// Configuration items for auto injection service
         /// 
@@ -27,16 +31,6 @@ namespace MiCake.Core
         /// </summary>
         public Assembly[] DomainLayerAssemblies { get; set; }
 
-        /// <summary>
-        /// The collection for <see cref="IMiCakeHandler"/>.
-        /// </summary>
-        public MiCakeHandlerCollection Handlers { get; set; } = new MiCakeHandlerCollection();
-
-        /// <summary>
-        /// Some additional information.
-        /// Be careful:These data will be released after the app is started
-        /// </summary>
-        public DataDepositPool AdditionalInfo { get; set; } = new DataDepositPool();
 
         /// <summary>
         /// Use given option value.
@@ -46,8 +40,7 @@ namespace MiCake.Core
         {
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
             DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
-            Handlers = applicationOptions.Handlers;
-            AdditionalInfo = applicationOptions.AdditionalInfo;
+            ModuleSorter = applicationOptions.ModuleSorter;
         }
     }
 }

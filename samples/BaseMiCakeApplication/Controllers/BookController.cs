@@ -41,7 +41,7 @@ namespace BaseMiCakeApplication.Controllers
         public List<int> GetListResult() => new() { 1, 3, 4 };
 
         [HttpGet]
-        public IActionResult GetSoftlyMiCakeException() => throw new SoftlyMiCakeException("This is MiCake softly exception. http code is 200.");
+        public IActionResult GetSoftlyMiCakeException() => throw new PureException("This is MiCake softly exception. http code is 200.");
 
         [HttpGet]
         public IActionResult GetUnauthorized()
@@ -62,7 +62,7 @@ namespace BaseMiCakeApplication.Controllers
         public async Task<bool> ChangeAuthor([FromBody] ChangeBookAuthorDto bookDto)
         {
             var _bookInfo = await _bookRepository.FindAsync(bookDto.BookID)
-                                ?? throw new SoftlyMiCakeException("未找到对应书籍信息");
+                                ?? throw new PureException("未找到对应书籍信息");
 
             _bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
 

@@ -14,7 +14,7 @@ namespace MiCake
             MiCakeSqlReaderOptions options = new();
             optionsAction?.Invoke(options);
 
-            var providers = (options as IHasAccessor<IEnumerable<ISqlDataProvider>>).Instance;
+            var providers = (options as IHasAccessor<IEnumerable<ISqlDataProvider>>).AccessibleData;
 
             var manager = new SqlDataManager();
             foreach (var provider in providers)

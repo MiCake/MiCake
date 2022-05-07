@@ -8,7 +8,7 @@ namespace MiCake.DDD.Connector.Store.Configure
     {
         private readonly IStoreModel _storeModel;
 
-        IStoreModel IHasAccessor<IStoreModel>.Instance => _storeModel;
+        IStoreModel IHasAccessor<IStoreModel>.AccessibleData => _storeModel;
 
         public StoreModelBuilder(IStoreModel storeModel)
         {

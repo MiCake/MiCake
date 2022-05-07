@@ -4,15 +4,14 @@ using System.Collections.Concurrent;
 namespace MiCake.Core.Data
 {
     /// <summary>
-    /// Type used to store transient data.
-    /// Can release data by <see cref="Release"/> method.
+    /// Use to store transient data.
     /// </summary>
-    public class DataDepositPool : IDisposable
+    public class MiCakeTransientData : IDisposable
     {
         private bool _isDispose = false;
         private readonly ConcurrentDictionary<string, object> _cachePool = new();
 
-        public DataDepositPool()
+        public MiCakeTransientData()
         {
         }
 
@@ -21,7 +20,7 @@ namespace MiCake.Core.Data
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public object TakeOut(string key)
+        public object? TakeOut(string key)
         {
             if (!_cachePool.TryGetValue(key, out var reslut))
                 return default;
@@ -38,7 +37,7 @@ namespace MiCake.Core.Data
         {
             if (_cachePool.TryGetValue(key, out var reslut))
             {
-                throw new InvalidOperationException($"The key:{key} has already add in {nameof(DataDepositPool)},result is :{reslut.ToString()}");
+                throw new InvalidOperationException($"The key:{key} has already add in {nameof(MiCakeTransientData)},result is :{reslut}");
             }
 
             _cachePool.TryAdd(key, dataInfo);
@@ -49,13 +48,12 @@ namespace MiCake.Core.Data
             _cachePool.Clear();
         }
 
-        void IDisposable.Dispose()
+        public void Dispose()
         {
             if (_isDispose)
-                throw new InvalidOperationException($"{nameof(DataDepositPool)} has already dispose.");
+                throw new InvalidOperationException($"{nameof(MiCakeTransientData)} has already dispose.");
 
             _isDispose = true;
-
             Release();
         }
     }

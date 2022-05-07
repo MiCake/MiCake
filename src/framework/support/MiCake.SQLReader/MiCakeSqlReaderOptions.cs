@@ -11,7 +11,7 @@ namespace MiCake.SqlReader
     {
         private readonly List<ISqlDataProvider> sqlDataProviders = new();
 
-        IEnumerable<ISqlDataProvider> IHasAccessor<IEnumerable<ISqlDataProvider>>.Instance => sqlDataProviders;
+        IEnumerable<ISqlDataProvider> IHasAccessor<IEnumerable<ISqlDataProvider>>.AccessibleData => sqlDataProviders;
 
         public void AddProvider(ISqlDataProvider sqlDataProvider)
         {

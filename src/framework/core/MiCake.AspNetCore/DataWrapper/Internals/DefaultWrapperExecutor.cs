@@ -34,12 +34,12 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             CheckValue.NotNull(httpContext, nameof(HttpContext));
             CheckValue.NotNull(options, nameof(DataWrapperOptions));
 
-            if (exception is ISoftlyMiCakeException)
+            if (exception is IPureException)
             {
                 //Given Ok Code for this exception.
                 httpContext.Response.StatusCode = StatusCodes.Status200OK;
                 //Given this exception to context.
-                wrapperContext.SoftlyException = exception as SoftlyMiCakeException;
+                wrapperContext.SoftlyException = exception as PureException;
 
                 return WrapSuccesfullysResult(originalData ?? exception.Message, wrapperContext, true);
             }

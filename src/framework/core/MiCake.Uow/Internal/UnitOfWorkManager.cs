@@ -66,7 +66,7 @@ namespace MiCake.Uow.Internal
                 }
 
                 UnitOfWorkNeedParts uowNeedParts = new() { Options = options, DisposeHandler = handler };
-                (resultUow as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
+                (resultUow as IHasSupplement<UnitOfWorkNeedParts>)?.SetData(uowNeedParts);
             }
             _callContext.PushUnitOfWork(resultUow);
 
@@ -137,7 +137,7 @@ namespace MiCake.Uow.Internal
                     ServiceScope = uowScope,
                     DisposeHandler = handler
                 };
-                (result as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
+                (result as IHasSupplement<UnitOfWorkNeedParts>)?.SetData(uowNeedParts);
             }
             catch
             {

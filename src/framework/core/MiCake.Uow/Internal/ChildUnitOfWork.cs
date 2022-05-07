@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiCake.Uow.Internal
 {
-    internal class ChildUnitOfWork : IChildUnitOfWork, INeedParts<UnitOfWorkNeedParts>
+    internal class ChildUnitOfWork : IChildUnitOfWork, IHasSupplement<UnitOfWorkNeedParts>
     {
         public Guid ID { get; private set; }
         public bool IsDisposed { get; private set; }
@@ -86,7 +86,7 @@ namespace MiCake.Uow.Internal
         public IUnitOfWork GetParentUnitOfWork()
             => ParentUow;
 
-        public void SetParts(UnitOfWorkNeedParts parts)
+        public void SetData(UnitOfWorkNeedParts parts)
         {
             //Although the options is set, the options of the parent unit of work is still used.
             //Just to get Events and disposeHandler.
