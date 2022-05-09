@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     public interface IModuleSlot
     {

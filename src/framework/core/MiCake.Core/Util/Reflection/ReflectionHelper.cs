@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MiCake.Core.Util.Reflection
 {
@@ -77,7 +74,7 @@ namespace MiCake.Core.Util.Reflection
         /// <param name="memberInfo">MemberInfo</param>
         /// <param name="defaultValue">Default value (null as default)</param>
         /// <param name="inherit">Inherit attribute from base classes</param>
-        public static TAttribute GetSingleAttributeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute defaultValue = default, bool inherit = true)
+        public static TAttribute? GetSingleAttributeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute? defaultValue = default, bool inherit = true)
             where TAttribute : Attribute
         {
             //Get attribute on the member
@@ -96,8 +93,7 @@ namespace MiCake.Core.Util.Reflection
         /// <typeparam name="TAttribute">Type of the attribute</typeparam>
         /// <param name="memberInfo">MemberInfo</param>
         /// <param name="defaultValue">Default value (null as default)</param>
-        /// <param name="inherit">Inherit attribute from base classes</param>
-        public static TAttribute GetSingleAttributeOfMemberOrDeclaringTypeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute defaultValue = default, bool inherit = true)
+        public static TAttribute? GetSingleAttributeOfMemberOrDeclaringTypeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute? defaultValue = default)
             where TAttribute : class
         {
             return memberInfo.GetCustomAttributes(true).OfType<TAttribute>().FirstOrDefault()
@@ -112,6 +108,8 @@ namespace MiCake.Core.Util.Reflection
         {
             var value = obj;
             var currentType = objectType;
+
+            ArgumentNullException.ThrowIfNull(currentType.FullName);
             var objectPath = currentType.FullName;
             var absolutePropertyPath = propertyPath;
             if (absolutePropertyPath.StartsWith(objectPath))
@@ -122,6 +120,10 @@ namespace MiCake.Core.Util.Reflection
             foreach (var propertyName in absolutePropertyPath.Split('.'))
             {
                 var property = currentType.GetProperty(propertyName);
+                if (property == null)
+                {
+                    continue;
+                }
                 value = property.GetValue(value, null);
                 currentType = property.PropertyType;
             }
@@ -136,8 +138,9 @@ namespace MiCake.Core.Util.Reflection
         {
             var currentType = objectType;
             PropertyInfo property;
-            var objectPath = currentType.FullName;
+            var objectPath = currentType.FullName ?? throw new ArgumentNullException(nameof(objectType));
             var absolutePropertyPath = propertyPath;
+
             if (absolutePropertyPath.StartsWith(objectPath))
             {
                 absolutePropertyPath = absolutePropertyPath.Replace(objectPath + ".", "");
@@ -147,56 +150,20 @@ namespace MiCake.Core.Util.Reflection
 
             if (properties.Length == 1)
             {
-                property = objectType.GetProperty(properties.First());
+                property = objectType.GetProperty(properties.First()) ?? throw new ArgumentNullException(nameof(propertyPath));
                 property.SetValue(obj, value);
                 return;
             }
 
             for (int i = 0; i < properties.Length - 1; i++)
             {
-                property = currentType.GetProperty(properties[i]);
-                obj = property.GetValue(obj, null);
+                property = currentType.GetProperty(properties[i]) ?? throw new ArgumentNullException(nameof(propertyPath));
+                obj = property.GetValue(obj, null)!;
                 currentType = property.PropertyType;
             }
 
-            property = currentType.GetProperty(properties.Last());
+            property = currentType.GetProperty(properties.Last()) ?? throw new ArgumentNullException(nameof(propertyPath));
             property.SetValue(obj, value);
-        }
-
-
-        /// <summary>
-        /// Get all the constant values in the specified type (including the base type).
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public static string[] GetPublicConstantsRecursively(Type type)
-        {
-            const int maxRecursiveParameterValidationDepth = 8;
-
-            var publicConstants = new List<string>();
-
-            void Recursively(List<string> constants, Type targetType, int currentDepth)
-            {
-                if (currentDepth > maxRecursiveParameterValidationDepth)
-                {
-                    return;
-                }
-
-                constants.AddRange(targetType.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
-                    .Where(x => x.IsLiteral && !x.IsInitOnly)
-                    .Select(x => x.GetValue(null).ToString()));
-
-                var nestedTypes = targetType.GetNestedTypes(BindingFlags.Public);
-
-                foreach (var nestedType in nestedTypes)
-                {
-                    Recursively(constants, nestedType, currentDepth + 1);
-                }
-            }
-
-            Recursively(publicConstants, type, 1);
-
-            return publicConstants.ToArray();
         }
 
         /// <summary>

@@ -39,7 +39,7 @@ namespace MiCake.AspNetCore.Uow
                 var currentScope = context.HttpContext.RequestServices as IServiceScope;
                 options = new UnitOfWorkOptions()
                 {
-                    Scope = UnitOfWorkScope.Required,
+                    Scope = UnitOfWorkCreateType.Required,
                     ServiceScope = currentScope
                 };
             }
@@ -53,7 +53,7 @@ namespace MiCake.AspNetCore.Uow
             var hasMatchKeyWord = _miCakeAspNetUowOption.KeyWordToCloseTransaction.Any(keyWord =>
             controllerActionDes.ActionName.ToUpper().StartsWith(keyWord.ToUpper()));
 
-            options.Scope = hasDisableAttribute || hasMatchKeyWord ? UnitOfWorkScope.Suppress : options.Scope;
+            options.Scope = hasDisableAttribute || hasMatchKeyWord ? UnitOfWorkCreateType.Suppress : options.Scope;
 
             using var unitOfWork = _unitOfWorkManager.Create(options);
             var result = await next();

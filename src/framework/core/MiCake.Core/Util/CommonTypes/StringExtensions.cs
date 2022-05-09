@@ -1,10 +1,9 @@
 ﻿using MiCake.Core.Util.Collections;
-using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MiCake.Core.Util.CommonTypes
+namespace MiCake.Core.Util
 {
     public static class StringExtensions
     {
@@ -68,7 +67,7 @@ namespace MiCake.Core.Util.CommonTypes
                 throw new ArgumentException("len argument can not be bigger than given string's length!");
             }
 
-            return str.Substring(0, len);
+            return str[..len];
         }
 
         /// <summary>
@@ -112,7 +111,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <param name="str">The string.</param>
         /// <param name="postFixes">one or more postfix.</param>
         /// <returns>Modified string or the same string if it has not any of given postfixes</returns>
-        public static string RemovePostFix(this string str, params string[] postFixes)
+        public static string? RemovePostFix(this string str, params string[] postFixes)
         {
             return str.RemovePostFix(StringComparison.Ordinal, postFixes);
         }
@@ -124,7 +123,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <param name="comparisonType">String comparison type</param>
         /// <param name="postFixes">one or more postfix.</param>
         /// <returns>Modified string or the same string if it has not any of given postfixes</returns>
-        public static string RemovePostFix(this string str, StringComparison comparisonType, params string[] postFixes)
+        public static string? RemovePostFix(this string str, StringComparison comparisonType, params string[] postFixes)
         {
             if (str.IsNullOrEmpty())
             {
@@ -153,7 +152,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <param name="str">The string.</param>
         /// <param name="preFixes">one or more prefix.</param>
         /// <returns>Modified string or the same string if it has not any of given prefixes</returns>
-        public static string RemovePreFix(this string str, params string[] preFixes)
+        public static string? RemovePreFix(this string str, params string[] preFixes)
         {
             return str.RemovePreFix(StringComparison.Ordinal, preFixes);
         }
@@ -165,7 +164,7 @@ namespace MiCake.Core.Util.CommonTypes
         /// <param name="comparisonType">String comparison type</param>
         /// <param name="preFixes">one or more prefix.</param>
         /// <returns>Modified string or the same string if it has not any of given prefixes</returns>
-        public static string RemovePreFix(this string str, StringComparison comparisonType, params string[] preFixes)
+        public static string? RemovePreFix(this string str, StringComparison comparisonType, params string[] preFixes)
         {
             if (str.IsNullOrEmpty())
             {
@@ -198,7 +197,7 @@ namespace MiCake.Core.Util.CommonTypes
                 return str;
             }
 
-            return str.Substring(0, pos) + replace + str.Substring(pos + search.Length);
+            return str[..pos] + replace + str[(pos + search.Length)..];
         }
 
         /// <summary>
@@ -268,7 +267,7 @@ namespace MiCake.Core.Util.CommonTypes
                 return useCurrentCulture ? str.ToLower() : str.ToLowerInvariant();
             }
 
-            return (useCurrentCulture ? char.ToLower(str[0]) : char.ToLowerInvariant(str[0])) + str.Substring(1);
+            return (useCurrentCulture ? char.ToLower(str[0]) : char.ToLowerInvariant(str[0])) + str[1..];
         }
 
         /// <summary>
@@ -318,19 +317,17 @@ namespace MiCake.Core.Util.CommonTypes
 
         public static string ToMd5(this string str)
         {
-            using (var md5 = MD5.Create())
+            using var md5 = MD5.Create();
+            var inputBytes = Encoding.UTF8.GetBytes(str);
+            var hashBytes = md5.ComputeHash(inputBytes);
+
+            var sb = new StringBuilder();
+            foreach (var hashByte in hashBytes)
             {
-                var inputBytes = Encoding.UTF8.GetBytes(str);
-                var hashBytes = md5.ComputeHash(inputBytes);
-
-                var sb = new StringBuilder();
-                foreach (var hashByte in hashBytes)
-                {
-                    sb.Append(hashByte.ToString("X2"));
-                }
-
-                return sb.ToString();
+                sb.Append(hashByte.ToString("X2"));
             }
+
+            return sb.ToString();
         }
 
         /// <summary>
@@ -351,7 +348,7 @@ namespace MiCake.Core.Util.CommonTypes
                 return useCurrentCulture ? str.ToUpper() : str.ToUpperInvariant();
             }
 
-            return (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str.Substring(1);
+            return (useCurrentCulture ? char.ToUpper(str[0]) : char.ToUpperInvariant(str[0])) + str[1..];
         }
 
         /// <summary>
@@ -360,11 +357,6 @@ namespace MiCake.Core.Util.CommonTypes
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="str"/> is null</exception>
         public static string Truncate(this string str, int maxLength)
         {
-            if (str == null)
-            {
-                return null;
-            }
-
             if (str.Length <= maxLength)
             {
                 return str;
@@ -379,11 +371,6 @@ namespace MiCake.Core.Util.CommonTypes
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="str"/> is null</exception>
         public static string TruncateFromBeginning(this string str, int maxLength)
         {
-            if (str == null)
-            {
-                return null;
-            }
-
             if (str.Length <= maxLength)
             {
                 return str;
@@ -411,11 +398,6 @@ namespace MiCake.Core.Util.CommonTypes
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="str"/> is null</exception>
         public static string TruncateWithPostfix(this string str, int maxLength, string postfix)
         {
-            if (str == null)
-            {
-                return null;
-            }
-
             if (str == string.Empty || maxLength == 0)
             {
                 return string.Empty;

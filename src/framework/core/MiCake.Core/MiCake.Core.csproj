@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<Description>MiCake core components.Contains micake modules,micake builder,service registrar,and more.</Description>
-		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>

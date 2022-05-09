@@ -4,10 +4,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Uow.Modules
 {
+    [CoreModule]
     public class MiCakeUowModule : MiCakeModule
     {
-        public override bool IsFrameworkLevel => true;
-
         public MiCakeUowModule()
         {
         }
@@ -15,12 +14,7 @@ namespace MiCake.Uow.Modules
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            context.Services.TryAddScoped<ICurrentUnitOfWork, CurrentUnitOfWork>();
-            context.Services.TryAddTransient<IUnitOfWork, UnitOfWork>();
-        }
-
-        public override void Initialization(ModuleLoadContext context)
-        {
+            context.Services.TryAddTransient<UnitOfWork, UnitOfWork>();
         }
     }
 }

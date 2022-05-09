@@ -8,17 +8,6 @@ namespace MiCake.EntityFrameworkCore.Uow
     {
         public static IServiceCollection AddUowCoreServices(this IServiceCollection services, Type dbContextType)
         {
-            //DbContext Provider.
-            var dbContextProviderServiceType = typeof(IDbContextProvider<>).MakeGenericType(dbContextType);
-            var dbContextProvider = typeof(DbContextProvider<>).MakeGenericType(dbContextType);
-
-            services.AddScoped(typeof(IDbContextProvider), dbContextProvider);
-            services.AddScoped(dbContextProviderServiceType, dbContextProvider);
-
-            //IDbExecutor
-            var dbExecutor = typeof(DbContextExecutor<>).MakeGenericType(dbContextType);
-            services.AddTransient(typeof(IDbExecutor), dbExecutor);
-
             //TransactionProvider
             services.AddTransient<ITransactionProvider, EFCoreTransactionProvider>();
 

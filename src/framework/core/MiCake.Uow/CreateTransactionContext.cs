@@ -10,15 +10,9 @@
         /// </summary>
         public IUnitOfWork CurrentUnitOfWork { get; private set; }
 
-        /// <summary>
-        /// Current <see cref="IDbExecutor"/>.
-        /// </summary>
-        public IDbExecutor CurrentDbExecutor { get; private set; }
-
-        public CreateTransactionContext(IUnitOfWork unitOfWork, IDbExecutor dbExecutor)
+        public CreateTransactionContext(IUnitOfWork unitOfWork)
         {
             CurrentUnitOfWork = unitOfWork;
-            CurrentDbExecutor = dbExecutor;
         }
     }
 }

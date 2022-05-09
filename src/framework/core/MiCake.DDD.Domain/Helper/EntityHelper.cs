@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MiCake.DDD.Domain.Helper
 {
@@ -26,13 +24,13 @@ namespace MiCake.DDD.Domain.Helper
             return false;
         }
 
-        public static Type FindPrimaryKeyType<TEntity>()
+        public static Type? FindPrimaryKeyType<TEntity>()
             where TEntity : IEntity
         {
             return FindPrimaryKeyType(typeof(TEntity));
         }
 
-        public static Type FindPrimaryKeyType(Type entityType)
+        public static Type? FindPrimaryKeyType(Type entityType)
         {
             if (!typeof(IEntity).IsAssignableFrom(entityType))
             {

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Reflection.Emit;
 
-namespace MiCake.Core.Util.Reflection.Emit
+namespace MiCake.Core.Util.Reflection
 {
     public static class ILGeneratorExtension
     {

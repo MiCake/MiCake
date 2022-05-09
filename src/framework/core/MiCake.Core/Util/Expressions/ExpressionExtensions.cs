@@ -4,7 +4,7 @@ namespace MiCake.Core.Util.Expressions
 {
     public static class ExpressionExtensions
     {
-        public static Expression Replace(this Expression expression, Expression searchEx, Expression replaceEx)
+        public static Expression? Replace(this Expression expression, Expression searchEx, Expression replaceEx)
         {
             return new ReplaceVisitor(searchEx, replaceEx).Visit(expression);
         }
@@ -19,7 +19,7 @@ namespace MiCake.Core.Util.Expressions
                 this.to = to;
             }
 
-            public override Expression Visit(Expression node)
+            public override Expression? Visit(Expression? node)
             {
                 return node == from ? to : base.Visit(node);
             }

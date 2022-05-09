@@ -1,6 +1,4 @@
-﻿using MiCake.Core.Modularity;
-
-namespace MiCake.Core.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// Manage the services that need to be injected automatically in MiCake

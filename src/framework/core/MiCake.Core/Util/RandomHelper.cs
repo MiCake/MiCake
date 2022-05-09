@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace MiCake.Core.Util
+﻿namespace MiCake.Core.Util
 {
     public class RandomHelper
     {

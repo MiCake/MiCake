@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class RelyOnAttribute : Attribute

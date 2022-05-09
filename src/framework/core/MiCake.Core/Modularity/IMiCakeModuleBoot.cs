@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Micake module boot.use to initialization module and shutdown module.

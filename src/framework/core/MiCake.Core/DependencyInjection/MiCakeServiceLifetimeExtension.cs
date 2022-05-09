@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace MiCake.Core.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// Extension for <see cref="MiCakeServiceLifetime"/>

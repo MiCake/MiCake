@@ -8,8 +8,8 @@ namespace MiCake.Uow.Tests
 {
     public class MiCake_UowManager_Test : UnitOfWorkTestBase
     {
-        private readonly UnitOfWorkOptions RequiredNewOptions = new(null, null, UnitOfWorkScope.RequiresNew);
-        private readonly UnitOfWorkOptions SuppressOptions = new(null, null, UnitOfWorkScope.Suppress);
+        private readonly UnitOfWorkOptions RequiredNewOptions = new(null, null, UnitOfWorkCreateType.RequiresNew);
+        private readonly UnitOfWorkOptions SuppressOptions = new(null, null, UnitOfWorkCreateType.Suppress);
 
         private IServiceProvider ServiceProvider { get; }
 
@@ -84,7 +84,7 @@ namespace MiCake.Uow.Tests
 
             using (var uow1 = manager.Create())
             {
-                using (var uow2 = manager.Create(UnitOfWorkScope.RequiresNew))
+                using (var uow2 = manager.Create(UnitOfWorkCreateType.RequiresNew))
                 {
                     //RequiresNew,则重新创建一个独立的工作单元
                     Assert.Null(uow2 as IChildUnitOfWork);
@@ -99,13 +99,13 @@ namespace MiCake.Uow.Tests
 
             using (var uow1 = manager.Create())
             {
-                using (var uow2 = manager.Create(UnitOfWorkScope.RequiresNew))
+                using (var uow2 = manager.Create(UnitOfWorkCreateType.RequiresNew))
                 {
                     //Suppress,则重新创建一个独立的工作单元
                     Assert.Null(uow2 as IChildUnitOfWork);
-                    Assert.Equal(UnitOfWorkScope.RequiresNew, uow2.UnitOfWorkOptions.Scope);
+                    Assert.Equal(UnitOfWorkCreateType.RequiresNew, uow2.UnitOfWorkOptions.Scope);
                 }
-                Assert.Equal(UnitOfWorkScope.Required, uow1.UnitOfWorkOptions.Scope);
+                Assert.Equal(UnitOfWorkCreateType.Required, uow1.UnitOfWorkOptions.Scope);
             }
         }
 
@@ -116,12 +116,12 @@ namespace MiCake.Uow.Tests
 
             using (var uow1 = manager.Create())
             {
-                using (var uow2 = manager.Create(UnitOfWorkScope.RequiresNew))
+                using (var uow2 = manager.Create(UnitOfWorkCreateType.RequiresNew))
                 {
                     Assert.Null(uow2 as IChildUnitOfWork);
                     Assert.Equal(uow2, manager.GetCurrentUnitOfWork());
 
-                    using (var uow3 = manager.Create(UnitOfWorkScope.Suppress))
+                    using (var uow3 = manager.Create(UnitOfWorkCreateType.Suppress))
                     {
                         Assert.Null(uow3 as IChildUnitOfWork);
                         Assert.Equal(uow3, manager.GetCurrentUnitOfWork());

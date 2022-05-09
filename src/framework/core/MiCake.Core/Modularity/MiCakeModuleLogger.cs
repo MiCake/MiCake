@@ -1,6 +1,4 @@
-﻿using MiCake.Core.Util;
-using Microsoft.Extensions.Logging;
-using System.Linq;
+﻿using Microsoft.Extensions.Logging;
 
 namespace MiCake.Core.Modularity
 {
@@ -19,8 +17,8 @@ namespace MiCake.Core.Modularity
         public void LogModuleInfo(string phaseStr, IMiCakeModuleCollection phaseModules)
         {
             var moduleStr = string.Join("->", phaseModules.ToList().Where(s => !s.IsCoreModule));
-           
-            _logger.LogInformation($"MiCake Phase - {phaseStr} : {moduleStr}" );
+
+            _logger.LogInformation($"MiCake Phase - {phaseStr} : {moduleStr}");
         }
     }
 }

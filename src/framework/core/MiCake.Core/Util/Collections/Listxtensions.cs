@@ -1,9 +1,4 @@
-﻿using MiCake.Core.Util.CommonTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace MiCake.Core.Util.Collections
+﻿namespace MiCake.Core.Util.Collections
 {
     /// <summary>
     /// Extension methods for <see cref="IList{T}"/>.
@@ -227,7 +222,7 @@ namespace MiCake.Core.Util.Collections
         /// <param name="source">A list of objects to sort</param>
         /// <param name="getDependencies">Function to resolve the dependencies</param>
         /// <returns></returns>
-        public static List<T> SortByDependencies<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies)
+        public static List<T> SortByDependencies<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies) where T : notnull
         {
             /* See: http://www.codeproject.com/Articles/869059/Topological-sorting-in-Csharp
              *      http://en.wikipedia.org/wiki/Topological_sorting
@@ -252,10 +247,9 @@ namespace MiCake.Core.Util.Collections
         /// <param name="getDependencies">Function to resolve the dependencies</param>
         /// <param name="sorted">List with the sortet items</param>
         /// <param name="visited">Dictionary with the visited items</param>
-        private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
+        private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited) where T : notnull
         {
-            bool inProcess;
-            var alreadyVisited = visited.TryGetValue(item, out inProcess);
+            var alreadyVisited = visited.TryGetValue(item, out bool inProcess);
 
             if (alreadyVisited)
             {

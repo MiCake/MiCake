@@ -434,7 +434,7 @@ namespace MiCake.Uow.Tests
             var uowManager = provider.GetService<IUnitOfWorkManager>();
             var currentDbExecutor = new ScopeDbExecutor(new FakeDbContext());
 
-            using (var uow = uowManager.Create(UnitOfWorkScope.Suppress))
+            using (var uow = uowManager.Create(UnitOfWorkCreateType.Suppress))
             {
                 await uow.TryAddDbExecutorAsync(currentDbExecutor);
 
@@ -455,7 +455,7 @@ namespace MiCake.Uow.Tests
             var uowManager = provider.GetService<IUnitOfWorkManager>();
             var currentDbExecutor = new ScopeDbExecutor(new FakeDbContext());
 
-            using (var uow = uowManager.Create(UnitOfWorkScope.Suppress))
+            using (var uow = uowManager.Create(UnitOfWorkCreateType.Suppress))
             {
                 await uow.TryAddDbExecutorAsync(currentDbExecutor);
 

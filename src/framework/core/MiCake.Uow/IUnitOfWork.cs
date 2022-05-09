@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.Uow
 {
@@ -26,18 +23,15 @@ namespace MiCake.Uow
         UnitOfWorkOptions UnitOfWorkOptions { get; }
 
         /// <summary>
+        /// The interceptors for current uow.
+        /// </summary>
+        List<IUnitOfWorkInterceptor> Interceptors { get; }
+
+        /// <summary>
         /// The <see cref="IServiceScope"/> the unit of work depends on.
         /// The services created through this ServicScope are released together with the unit of work.
         /// </summary>
         IServiceScope ServiceScope { get; }
-
-        /// <summary>
-        /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/> asynchronously. 
-        /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
-        /// </summary>
-        /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
-        /// <param name="cancellationToken"></param>
-        Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Commits all changes made to the database in the current unit of work asynchronously.

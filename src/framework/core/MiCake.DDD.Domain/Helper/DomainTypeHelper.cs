@@ -1,13 +1,8 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace MiCake.DDD.Domain.Helper
+﻿namespace MiCake.DDD.Domain.Helper
 {
     public static class DomainTypeHelper
     {
-        public static List<Type> DomainTypes = new()
+        public readonly static List<Type> DomainTypes = new()
         {
             typeof(IRepository),
             typeof(IEntity),

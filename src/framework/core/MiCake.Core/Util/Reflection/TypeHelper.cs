@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MiCake.Core.Util.Reflection
 {
@@ -44,7 +42,7 @@ namespace MiCake.Core.Util.Reflection
             return false;
         }
 
-        public static Type GetFirstGenericArgumentIfNullable(this Type t)
+        public static Type? GetFirstGenericArgumentIfNullable(this Type t)
         {
             if (t.GetGenericArguments().Length > 0 && t.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
@@ -77,7 +75,7 @@ namespace MiCake.Core.Util.Reflection
         /// <param name="type">Inherited types</param>
         /// <param name="genericType">generic interface type</param>
         /// <returns>Generic interface information for specific types</returns>
-        public static Type GetGenericInterface(Type type, Type genericType)
+        public static Type? GetGenericInterface(Type type, Type genericType)
         {
             return type.GetInterfaces()
                             .Where(i => IsGenericType(i))

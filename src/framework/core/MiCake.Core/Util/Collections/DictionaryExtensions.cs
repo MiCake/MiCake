@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace MiCake.Core.Util.Collections
+﻿namespace MiCake.Core.Util.Collections
 {
     public static class DictionaryExtensions
     {
         public static bool HasValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
         {
-            return dic.Values.Any(v => v.Equals(value));
+            return dic.Values.Any(v => v!.Equals(value));
         }
 
         public static List<TKey> GetKeyByValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
@@ -15,9 +12,9 @@ namespace MiCake.Core.Util.Collections
             return dic.Where(v => v.Equals(value)).Select(k => k.Key).ToList();
         }
 
-        public static TKey GetFirstKeyByValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
+        public static TKey? GetFirstKeyByValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
         {
-            return dic.Where(v => v.Equals(value)).Select(k => k.Key).FirstOrDefault();
+            return dic.Where(v => v!.Equals(value)).Select(k => k!.Key).FirstOrDefault();
         }
     }
 }

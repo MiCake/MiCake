@@ -1,9 +1,4 @@
-﻿using MiCake.Core.Modularity;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
 
 namespace MiCake.Core.DependencyInjection
@@ -25,7 +20,8 @@ namespace MiCake.Core.DependencyInjection
             var injectServices = new List<InjectServiceInfo>();
 
             //filter need register modules
-            var needRegitsterModules = miCakeModules.Where(s => s.ModuleType.GetCustomAttribute<AutoDIAttribute>() != null).ToMiCakeModuleCollection();
+            var needRegitsterModules = miCakeModules.Where(s => s.ModuleType.GetCustomAttribute<AutoDIAttribute>() != null && s.ModuleType.GetCustomAttribute<DisableAutoDIAttribute>() == null)
+                                                    .ToMiCakeModuleCollection();
 
             var assemblies = needRegitsterModules.GetAssemblies();
             foreach (var assembly in assemblies)
@@ -45,6 +41,9 @@ namespace MiCake.Core.DependencyInjection
                 var serviceLifetime = serviceInfo.Lifetime.HasValue ?
                                             serviceInfo.Lifetime.Value.ConvertToMSLifetime() :
                                             ServiceLifetime.Transient;
+
+                if (serviceInfo.Type == null || serviceInfo.ImplementationType == null)
+                    continue;
 
                 var serviceDescriptor = new ServiceDescriptor(serviceInfo.Type, serviceInfo.ImplementationType, serviceLifetime);
 
@@ -93,9 +92,9 @@ namespace MiCake.Core.DependencyInjection
         #region InjectServiceInfo
         protected class InjectServiceInfo
         {
-            public Type Type { get; set; }
+            public Type? Type { get; set; }
 
-            public Type ImplementationType { get; set; }
+            public Type? ImplementationType { get; set; }
 
             public MiCakeServiceLifetime? Lifetime { get; set; }
 

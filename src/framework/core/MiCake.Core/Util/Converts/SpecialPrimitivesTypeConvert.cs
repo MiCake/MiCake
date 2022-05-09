@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace MiCake.Core.Util.Converts
+﻿namespace MiCake.Core.Util.Converts
 {
-    internal class GuidValueConvert<TSource> : BaseConvert<TSource, Guid>
+    internal class GuidValueConvert<TSource> : BaseConvert<TSource, Guid> where TSource : notnull
     {
         public override bool CanConvert(TSource value)
         {
@@ -22,22 +20,22 @@ namespace MiCake.Core.Util.Converts
 
             if (value is string strValue)
             {
-                Guid.TryParse(strValue, out result);
+                _ = Guid.TryParse(strValue, out result);
             }
             return result;
         }
     }
 
-    internal class VersionValueConvert<TSource> : BaseConvert<TSource, Version>
+    internal class VersionValueConvert<TSource> : BaseConvert<TSource, Version> where TSource : notnull
     {
         public override bool CanConvert(TSource value)
         {
             return typeof(TSource) == typeof(string) || value is Version;
         }
 
-        public override Version Convert(TSource value)
+        public override Version? Convert(TSource value)
         {
-            Version result = default;
+            Version? result = default;
 
             if (value is Version version)
             {
@@ -46,7 +44,7 @@ namespace MiCake.Core.Util.Converts
 
             if (value is string strValue)
             {
-                Version.TryParse(strValue, out result);
+                _ = Version.TryParse(strValue, out result);
             }
             return result;
         }

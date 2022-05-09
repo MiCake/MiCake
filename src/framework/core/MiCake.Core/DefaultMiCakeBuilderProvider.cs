@@ -1,8 +1,4 @@
-﻿
-using Microsoft.Extensions.DependencyInjection;
-using System;
-
-namespace MiCake.Core
+﻿namespace MiCake.Core
 {
     public sealed class DefaultMiCakeBuilderProvider : IMiCakeBuilderProvider
     {

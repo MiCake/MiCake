@@ -1,6 +1,4 @@
 ﻿using MiCake.DDD.Domain.Helper;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace MiCake.DDD.Domain
@@ -11,9 +9,11 @@ namespace MiCake.DDD.Domain
     }
 
     [Serializable]
-    public abstract class Entity<TKey> : IEntity<TKey>
+    public abstract class Entity<TKey> : IEntity<TKey> where TKey : notnull
     {
+#pragma warning disable CS8618 
         public virtual TKey Id { get; set; }
+#pragma warning restore CS8618 
 
         protected List<IDomainEvent> _domainEvents = new();
 
@@ -26,9 +26,9 @@ namespace MiCake.DDD.Domain
         public List<IDomainEvent> GetDomainEvents()
           => _domainEvents;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is Entity<TKey>))
+            if (obj == null || obj is not Entity<TKey>)
             {
                 return false;
             }

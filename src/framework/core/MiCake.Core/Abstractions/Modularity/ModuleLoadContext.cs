@@ -1,22 +1,20 @@
-﻿using System;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     public class ModuleLoadContext
     {
         public IServiceProvider ServiceProvider { get; private set; }
         public IMiCakeModuleCollection MiCakeModules { get; private set; }
-        public MiCakeApplicationOptions MiCakeApplicationOptions { get; set; }
+        public IMiCakeApplication MiCakeApplication { get; private set; }
 
         public ModuleLoadContext(
             IServiceProvider serviceProvider,
             IMiCakeModuleCollection miCakeModules,
-            MiCakeApplicationOptions applicationOptions
+            IMiCakeApplication application
             )
         {
             ServiceProvider = serviceProvider;
             MiCakeModules = miCakeModules;
-            MiCakeApplicationOptions = applicationOptions;
+            MiCakeApplication = application;
         }
     }
 }

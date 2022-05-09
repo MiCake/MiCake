@@ -1,7 +1,4 @@
-﻿using MiCake.Core.Modularity;
-using System;
-
-namespace MiCake.Core
+﻿namespace MiCake.Core
 {
     /// <summary>
     /// Represents a micake application.

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.DDD.Domain.Internal
+﻿namespace MiCake.DDD.Domain.Internal
 {
     public interface IDomainEventProvider
     {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace MiCake.Core.Util.Collections
+﻿namespace MiCake.Core.Util.Collections
 {
     public static class CollectionExtensions
     {

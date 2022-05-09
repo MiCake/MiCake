@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Xunit;
 
 namespace MiCake.Core.Tests.Util
 {

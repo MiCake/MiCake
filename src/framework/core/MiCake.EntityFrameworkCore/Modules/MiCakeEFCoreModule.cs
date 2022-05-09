@@ -11,7 +11,7 @@ namespace MiCake.EntityFrameworkCore.Modules
 {
     [RelyOn(
         typeof(MiCakeUowModule),
-        typeof(MiCakeDDDExtensionsModule))]
+        typeof(MiCakeDDDModule))]
     public class MiCakeEFCoreModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;

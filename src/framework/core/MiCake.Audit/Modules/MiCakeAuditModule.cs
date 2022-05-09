@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.Audit.Modules
 {
-    [RelyOn(typeof(MiCakeDDDExtensionsModule))]
+    [RelyOn(typeof(MiCakeDDDModule))]
     public class MiCakeAuditModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;

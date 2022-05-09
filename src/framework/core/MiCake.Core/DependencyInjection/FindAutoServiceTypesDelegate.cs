@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MiCake.Core.DependencyInjection
+﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
     /// 
     /// <para>
     /// 
     /// When a class that implements an <see cref="ITransientService"/> or <see cref="ISingletonService"/>
-    /// or <see cref="IScopedService"/> interface will be injected automatically.
+    /// or <see cref="IScopedService"/> interface can be injected automatically.
+    /// But you need to specify the logic of which interfaces can be registered.
     /// 
     /// </para>
     /// </summary>

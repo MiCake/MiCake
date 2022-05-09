@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Manages the modules of an MiCake application.

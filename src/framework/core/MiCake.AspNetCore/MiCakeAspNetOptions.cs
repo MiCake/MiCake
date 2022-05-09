@@ -55,8 +55,8 @@ namespace MiCake.AspNetCore
         /// Match controller action name start key work to close unit of work transaction.
         /// default is : [Find],[Get],[Query],[Search]
         /// 
-        /// it taks effect at <see cref="UnitOfWorkScope"/> is not Suppress 
-        /// and has no <see cref="DisableTransactionAttribute"/>
+        /// it taks effect at <see cref="UnitOfWorkCreateType"/> is not Suppress 
+        /// and has no <see cref="DisableUnitOfWorkAttribute"/>
         /// </summary>
         public List<string> KeyWordToCloseTransaction { get; set; }
             = new List<string>() { "Find", "Get", "Query", "Search" };

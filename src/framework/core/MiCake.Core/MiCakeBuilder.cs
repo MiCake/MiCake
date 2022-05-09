@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-
-namespace MiCake.Core
+﻿namespace MiCake.Core
 {
     /// <summary>
     /// A build for <see cref="IMiCakeApplication"/>
@@ -13,7 +10,7 @@ namespace MiCake.Core
         private readonly IServiceCollection _services;
         private readonly bool _needNewScopeed;
 
-        private Action<IMiCakeApplication, IServiceCollection> _configureAction;
+        private Action<IMiCakeApplication, IServiceCollection>? _configureAction;
 
         public MiCakeBuilder(IServiceCollection services,
                              Type entryType,
@@ -25,8 +22,6 @@ namespace MiCake.Core
             _options = options ?? new MiCakeApplicationOptions();
 
             _needNewScopeed = needNewScope;
-
-            AddEnvironment();
         }
 
         public IMiCakeApplication Build()
@@ -49,13 +44,6 @@ namespace MiCake.Core
         {
             _configureAction += configureApp;
             return this;
-        }
-
-        private void AddEnvironment()
-        {
-            var environment = new MiCakeEnvironment { EntryType = _entryType };
-
-            _services.AddSingleton<IMiCakeEnvironment>(environment);
         }
     }
 }

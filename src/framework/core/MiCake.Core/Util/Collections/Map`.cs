@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.Core.Util.Collections
+﻿namespace MiCake.Core.Util.Collections
 {
     /// <summary>
     /// A bidirectional key value pair mapping class.
@@ -13,7 +11,7 @@ namespace MiCake.Core.Util.Collections
     /// </summary>
     /// <typeparam name="T1"></typeparam>
     /// <typeparam name="T2"></typeparam>
-    public class Map<T1, T2>
+    public class Map<T1, T2> where T1 : notnull where T2 : notnull
     {
         private readonly Dictionary<T1, T2> _forward = new();
         private readonly Dictionary<T2, T1> _reverse = new();
@@ -39,7 +37,7 @@ namespace MiCake.Core.Util.Collections
         public Indexer<T1, T2> Forward { get; private set; }
         public Indexer<T2, T1> Reverse { get; private set; }
 
-        public class Indexer<T3, T4>
+        public class Indexer<T3, T4> where T3 : notnull where T4 : notnull
         {
             private readonly Dictionary<T3, T4> _dictionary;
             public Indexer(Dictionary<T3, T4> dictionary)
@@ -55,7 +53,7 @@ namespace MiCake.Core.Util.Collections
 
             public bool TryGetValue(T3 key, out T4 value)
             {
-                return _dictionary.TryGetValue(key, out value);
+                return _dictionary.TryGetValue(key, out value!);
             }
         }
     }

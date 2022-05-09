@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
 
 namespace MiCake.Core.Util.Reflection
@@ -31,7 +27,7 @@ namespace MiCake.Core.Util.Reflection
             }
             catch (ReflectionTypeLoadException ex)
             {
-                return ex.Types;
+                return ex.Types.Where(s => s != null).Select(s => s!).ToList();
             }
         }
     }

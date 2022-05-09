@@ -1,18 +1,27 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MiCake.Uow.Helper
 {
     public static class MiCakeUowHelper
     {
-        public static bool IsDisableTransaction(Type markedClassType)
+        public static bool IsDisableAutoUow(Type markedClassType)
         {
-            return markedClassType.GetCustomAttribute<DisableTransactionAttribute>() != null;
+            return markedClassType.GetCustomAttribute<DisableAutoUnitOfWorkAttribute>() != null;
         }
 
-        public static bool IsDisableTransaction(MethodInfo markedMethodInfo)
+        public static bool IsDisableAutoUow(MethodInfo markedMethodInfo)
         {
-            return markedMethodInfo.GetCustomAttribute<DisableTransactionAttribute>() != null;
+            return markedMethodInfo.GetCustomAttribute<DisableAutoUnitOfWorkAttribute>() != null;
+        }
+
+        public static bool IsEnableAutoUow(Type markedClassType)
+        {
+            return markedClassType.GetCustomAttribute<AutoUnitOfWorkAttribute>() != null;
+        }
+
+        public static bool IsEnableAutoUow(MethodInfo markedMethodInfo)
+        {
+            return markedMethodInfo.GetCustomAttribute<AutoUnitOfWorkAttribute>() != null;
         }
 
         public static bool IsMiCakeUnitOfWork(Type type)

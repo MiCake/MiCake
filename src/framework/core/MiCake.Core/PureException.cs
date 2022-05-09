@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Core
+﻿namespace MiCake.Core
 {
     /// <summary>
     /// Indicates a non critical error message

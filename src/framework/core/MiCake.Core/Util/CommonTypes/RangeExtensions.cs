@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Core.Util.CommonTypes
+﻿namespace MiCake.Core.Util
 {
     public static class RangeExtensions
     {

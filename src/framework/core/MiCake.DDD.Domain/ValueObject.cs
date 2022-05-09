@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace MiCake.DDD.Domain
+﻿namespace MiCake.DDD.Domain
 {
     //Inspired from https://docs.microsoft.com/en-us/dotnet/standard/microservices-architecture/microservice-ddd-cqrs-patterns/implement-value-objects
 
@@ -13,7 +10,7 @@ namespace MiCake.DDD.Domain
             {
                 return false;
             }
-            return ReferenceEquals(left, null) || left.Equals(right);
+            return left is null || left.Equals(right);
         }
 
         protected static bool NotEqualOperator(ValueObject left, ValueObject right)
@@ -23,7 +20,7 @@ namespace MiCake.DDD.Domain
 
         protected abstract IEnumerable<object> GetEqualityComponents();
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || obj.GetType() != GetType())
             {
@@ -32,7 +29,7 @@ namespace MiCake.DDD.Domain
 
             var other = (ValueObject)obj;
 
-            return GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
+            return this.GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
         }
 
         public override int GetHashCode()

@@ -1,7 +1,4 @@
 ﻿using MiCake.Core.Util.Collections;
-using MiCake.Core.Util.CommonTypes;
-using System;
-using System.Collections.Generic;
 
 namespace MiCake.Core.Util
 {
@@ -23,7 +20,7 @@ namespace MiCake.Core.Util
 
         public static string NotEmpty(string value, string parameterName)
         {
-            Exception e = null;
+            Exception? e = null;
             if (value is null)
             {
                 e = new ArgumentNullException(parameterName);
@@ -40,7 +37,7 @@ namespace MiCake.Core.Util
                 throw e;
             }
 
-            return value;
+            return value!;
         }
 
         public static T NotNull<T>(T value, string parameterName)
@@ -153,7 +150,7 @@ namespace MiCake.Core.Util
                 throw new ArgumentException($"{parameterName} length must be equal to or lower than {maxLength}!", parameterName);
             }
 
-            return value;
+            return value!;
         }
     }
 }

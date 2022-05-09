@@ -1,42 +1,91 @@
 using MiCake.Core.Data;
-using MiCake.Core.Util;
-using MiCake.Core.Util.Collections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.Uow.Internal
 {
-    internal class UnitOfWork : IUnitOfWork, IHasSupplement<UnitOfWorkNeedParts>
+    internal abstract class BaseUnitOfWork : IUnitOfWorkNode, IHasSupplement<Action<IUnitOfWorkNode>>
+    {
+        protected bool _isSaved = false;
+        protected bool _isRollback = false;
+        protected Action<IUnitOfWorkNode>? _coreNodeDisposeHandler;
+
+        public IUnitOfWorkNode? Parent { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public void SetData(Action<IUnitOfWorkNode> parts)
+        {
+            _coreNodeDisposeHandler = parts;
+        }
+
+        protected void CheckSaved()
+        {
+            if (_isSaved)
+                throw new InvalidOperationException($"This unit of work has been saved!");
+        }
+
+        protected void CheckRollback()
+        {
+            if (_isRollback)
+                throw new InvalidOperationException($"This unit of work has been rollback!");
+        }
+
+        protected static void ReThrow(IEnumerable<Exception> exceptions)
+        {
+            if (exceptions.Any())
+                throw new AggregateException(exceptions);
+        }
+    }
+
+    internal class UnitOfWork : BaseUnitOfWork, IUnitOfWork
     {
         public Guid ID { get; }
         public bool IsDisposed { get; private set; }
-        public UnitOfWorkOptions UnitOfWorkOptions { get; private set; }
+        public UnitOfWorkOptions UnitOfWorkOptions { get; set; } = new();
         public IServiceScope ServiceScope { get; private set; }
 
-        private readonly IEnumerable<ITransactionProvider> _transactions;
+        private readonly IEnumerable<ITransactionProvider> _transactionProviders;
 
-        protected UnitOfWorkEvents Events => UnitOfWorkOptions?.Events;
         protected List<ITransactionObject> ErrorTransactions { get; private set; } = new();
         protected List<ITransactionObject> CreatedTransactions { get; private set; } = new();
-        protected List<IDbExecutor> AddedExecutors { get; private set; } = new();
-        protected Action<IUnitOfWork> DisposeHandler { get; private set; }
 
-        private bool _isSaved = false;
-        private bool _isRollback = false;
+        public List<IUnitOfWorkInterceptor> Interceptors { get; } = new();
+
+        private List<IUnitOfWorkCompletedInterceptor> CompletedInterceptors => Interceptors.OfType<IUnitOfWorkCompletedInterceptor>().ToList();
+        private List<IUnitOfWorkRollbackedInterceptor> RollbackedInterceptors => Interceptors.OfType<IUnitOfWorkRollbackedInterceptor>().ToList();
 
         private readonly ILogger<UnitOfWork> _logger;
 
-        public UnitOfWork(IEnumerable<ITransactionProvider> transactions, ILoggerFactory loggerFactory)
+        public UnitOfWork(IServiceScope scope, IEnumerable<ITransactionProvider> transactionProviders, ILoggerFactory loggerFactory)
         {
-            _transactions = transactions.OrderBy(s => s.Order);
-
             ID = Guid.NewGuid();
+            ServiceScope = scope;
+
+            _transactionProviders = transactionProviders.OrderBy(s => s.Order);
             _logger = loggerFactory.CreateLogger<UnitOfWork>();
+        }
+
+        public async Task TryOpenTransaction(CancellationToken cancellationToken = default)
+        {
+            List<Exception> _errors = new();
+
+            foreach (var transactionProvider in _transactionProviders)
+            {
+                try
+                {
+                    var currentTransaction = await transactionProvider.GetTransactionObjectAsync(cancellationToken);
+                    CreatedTransactions.Add(currentTransaction);
+                }
+                catch (Exception ex)
+                {
+                    _errors.Add(ex);
+                }
+            }
+
+            if (_errors.Count > 0)
+            {
+                CreatedTransactions.Clear();
+                ReThrow(_errors);
+            }
         }
 
         public void Dispose()
@@ -46,90 +95,17 @@ namespace MiCake.Uow.Internal
 
             IsDisposed = true;
 
-            //release db executor.
-            foreach (var dbExecutor in AddedExecutors)
-            {
-                dbExecutor.Dispose();
-            }
-
             //release transaction.
             foreach (var transaction in CreatedTransactions)
             {
                 transaction.Dispose();
             }
 
-            //pop this unit of work to stack.
-            DisposeHandler?.Invoke(this);
-        }
-
-        public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
-        {
-            CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
-
-            //added executor.Guarantee that it will eventually be released
-            AddedExecutors.AddIfNotContains(dbExecutor);
-
-            if (!EnsureToOpenTransaction())
-                return true;
-
-            if (dbExecutor.HasTransaction)
-                return true;
-
-            bool result = false;
-            var transactionObj = await OpenTransactionAndGiveExecutorAsync(_transactions, dbExecutor, cancellationToken);
-
-            if (transactionObj != null)
+            if (_coreNodeDisposeHandler == null)
             {
-                //reused or new?
-                if (!CreatedTransactions.Any(s => s.ID == transactionObj.ID))
-                    CreatedTransactions.Add(transactionObj);
-
-                result = true;
+                throw new InvalidOperationException($"there is no core dispose handler for unit of work {ID}. please check your unit of work configuration.");
             }
-
-            return result;
-        }
-
-        protected virtual async Task<ITransactionObject> OpenTransactionAndGiveExecutorAsync(
-            IEnumerable<ITransactionProvider> transactionProviders,
-            IDbExecutor dbExecutor,
-            CancellationToken cancellationToken)
-        {
-            //if not any provider,reutrn false.
-            if (transactionProviders.Count() == 0)
-                return null;
-
-            ITransactionObject exceptedTransaction = null;
-
-            foreach (var transactionProvider in transactionProviders)
-            {
-                if (!transactionProvider.CanCreate(dbExecutor))
-                    continue;
-
-                //already has transaction,can reused?
-                if (CreatedTransactions.Count > 0)
-                {
-                    var reusedTransaction = transactionProvider.Reused(CreatedTransactions, dbExecutor);
-
-                    if (reusedTransaction != null)
-                    {
-                        //reused this transaction,and back.
-                        await dbExecutor.UseTransactionAsync(reusedTransaction, cancellationToken);
-                        return reusedTransaction;
-                    }
-                }
-
-                //create new transaction.
-                exceptedTransaction = await transactionProvider.GetTransactionObjectAsync(new CreateTransactionContext(this, dbExecutor), cancellationToken);
-                if (exceptedTransaction != null)
-                {
-                    await dbExecutor.UseTransactionAsync(exceptedTransaction, cancellationToken);
-                    break;
-                }
-                //if exceptedTransaction is null,let the next provider create.
-            }
-
-            return exceptedTransaction;
+            _coreNodeDisposeHandler.Invoke(this);
         }
 
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -156,9 +132,12 @@ namespace MiCake.Uow.Internal
             if (exceptions.Count > 0)
                 ReThrow(exceptions);
 
-            _isSaved = true;
+            foreach (var item in CompletedInterceptors)
+            {
+                await item.Completed(this, cancellationToken);
+            }
 
-            await Events?.Completed(this);
+            _isSaved = true;
         }
 
         public virtual async Task RollbackAsync(CancellationToken cancellationToken = default)
@@ -177,42 +156,14 @@ namespace MiCake.Uow.Internal
                     await createTransaction.RollbackAsync(cancellationToken);
             }
 
-            //if rollback has error, throw exception to developer.
+            //if rollback has error, throw exception directly.
+
+            foreach (var item in RollbackedInterceptors)
+            {
+                await item.Rollbacked(this, cancellationToken);
+            }
 
             _isRollback = true;
-
-            await Events?.Rollbacked(this);
-        }
-
-        #region Private Method
-        private void CheckSaved()
-        {
-            if (_isSaved)
-                throw new InvalidOperationException($"This unit of work has been saved!");
-        }
-
-        private void CheckRollback()
-        {
-            if (_isRollback)
-                throw new InvalidOperationException($"This unit of work has been rollback!");
-        }
-
-        private void ReThrow(IEnumerable<Exception> exceptions)
-        {
-            if (exceptions.Count() > 0)
-                throw new AggregateException(exceptions);
-        }
-
-        //If config scope is Suppress,Transaction will not be opened
-        private bool EnsureToOpenTransaction()
-            => UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress;
-        #endregion
-
-        public void SetData(UnitOfWorkNeedParts parts)
-        {
-            UnitOfWorkOptions = parts.Options;
-            ServiceScope = parts.ServiceScope;
-            DisposeHandler = parts.DisposeHandler;
         }
     }
 }

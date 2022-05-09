@@ -1,7 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.DDD.Domain.EventDispatch
+﻿namespace MiCake.DDD.Domain.EventDispatch
 {
     public interface IEventDispatcher
     {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.Uow
+﻿namespace MiCake.Uow
 {
     /// <summary>
     /// Defining a transaction object will be used in the <see cref="IUnitOfWork"/>

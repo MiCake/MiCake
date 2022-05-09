@@ -1,9 +1,6 @@
 ﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace MiCake.DDD.Domain.Internal
@@ -79,7 +76,7 @@ namespace MiCake.DDD.Domain.Internal
             }
         }
 
-        private static bool IsMatchingWithInterface(Type handlerType, Type handlerInterface)
+        private static bool IsMatchingWithInterface(Type? handlerType, Type handlerInterface)
         {
             if (handlerType == null || handlerInterface == null)
             {
@@ -160,15 +157,15 @@ namespace MiCake.DDD.Domain.Internal
                     yield return interfaceType;
                 }
             }
-            else if (pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType &&
-                     (pluggedType.GetTypeInfo().BaseType.GetGenericTypeDefinition() == templateType))
+            else if (pluggedType.GetTypeInfo().BaseType!.GetTypeInfo().IsGenericType &&
+                     (pluggedType.GetTypeInfo().BaseType!.GetGenericTypeDefinition() == templateType))
             {
-                yield return pluggedType.GetTypeInfo().BaseType;
+                yield return pluggedType.GetTypeInfo().BaseType!;
             }
 
             if (pluggedType.GetTypeInfo().BaseType == typeof(object)) yield break;
 
-            foreach (var interfaceType in FindInterfacesThatClosesCore(pluggedType.GetTypeInfo().BaseType, templateType))
+            foreach (var interfaceType in FindInterfacesThatClosesCore(pluggedType.GetTypeInfo().BaseType!, templateType))
             {
                 yield return interfaceType;
             }

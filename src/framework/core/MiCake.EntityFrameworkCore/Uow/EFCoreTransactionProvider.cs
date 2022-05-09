@@ -1,76 +1,32 @@
 ﻿using MiCake.Core.Util;
 using MiCake.Uow;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
     internal class EFCoreTransactionProvider : ITransactionProvider
     {
-        /// <summary>
-        /// EF transaction has a low  priority.
-        /// When there are transactions of trasactionscope or ADO.NET in the outside world, ensure that they can be shared
-        /// </summary>
         public int Order => 100;
 
-        public bool CanCreate(IDbExecutor dbExecutor)
-            => dbExecutor is IEFCoreDbExecutor;
+        private readonly Type _dbContextType;
+        private readonly DbContext _dbContext;
 
-        public ITransactionObject GetTransactionObject(CreateTransactionContext context)
+        public EFCoreTransactionProvider(IServiceProvider service, IOptions<MiCakeEFCoreOptions> efCoreOptions)
         {
-            var dbContext = CheckContextAndGetDbContext(context);
+            Type? dbContextType = efCoreOptions.Value?.DbContextType;
+            CheckValue.NotNull(dbContextType, "DbContext Type");
 
-            var dbContextTransaction = dbContext.Database.BeginTransaction();
-            return new EFCoreTransactionObject(dbContextTransaction, dbContext);
+            var dbContext = service.GetService(dbContextType!);
+            CheckValue.NotNull(dbContext, nameof(dbContext), $"Can not resolve {dbContextType!.Name}");
+
+            _dbContextType = dbContextType;
+            _dbContext = (dbContext as DbContext)!;
         }
 
-        public async Task<ITransactionObject> GetTransactionObjectAsync(CreateTransactionContext context, CancellationToken cancellationToken = default)
+        public Task<ITransactionObject> GetTransactionObjectAsync(CancellationToken cancellationToken = default)
         {
-            var dbContext = CheckContextAndGetDbContext(context);
-
-            var dbContextTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            return new EFCoreTransactionObject(dbContextTransaction, dbContext);
-        }
-
-        public ITransactionObject Reused(IEnumerable<ITransactionObject> existedTrasactions, IDbExecutor dbExecutor)
-        {
-            if (existedTrasactions.Count() == 0)
-                return null;
-
-            ITransactionObject optimalTransaction = null;
-
-            if (dbExecutor is not IEFCoreDbExecutor eFCoreDbExecutor)
-                return null;
-
-            //DbContext only can receive DbTransaction.
-            optimalTransaction = existedTrasactions.FirstOrDefault(s =>
-            {
-                /*
-                 * todo:how to reuse same transation.
-                 * .....
-                 */
-
-                return false;
-            });
-
-            return optimalTransaction;
-        }
-
-        private DbContext CheckContextAndGetDbContext(CreateTransactionContext context)
-        {
-            CheckValue.NotNull(context.CurrentUnitOfWork, nameof(context.CurrentUnitOfWork));
-            CheckValue.NotNull(context.CurrentDbExecutor, nameof(context.CurrentDbExecutor));
-
-            var efDbExecutor = context.CurrentDbExecutor as IEFCoreDbExecutor ??
-                                throw new ArgumentException($"Current DbExecutor can not assignable from {nameof(IEFCoreDbExecutor)}");
-
-            CheckValue.NotNull(efDbExecutor.EFCoreDbContext, nameof(efDbExecutor.EFCoreDbContext));
-
-            return efDbExecutor.EFCoreDbContext;
+            return Task.FromResult(new EFCoreTransactionObject(_dbContext, _dbContextType) as ITransactionObject);
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     public static class MiCakeModuleCollectionExtension
     {
