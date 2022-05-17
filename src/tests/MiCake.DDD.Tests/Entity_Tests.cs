@@ -1,9 +1,9 @@
-﻿using MiCake.DDD.Tests.Fakes.DomainEvents;
-using MiCake.DDD.Tests.Fakes.Entities;
+﻿using MiCake.Cord.Tests.Fakes.DomainEvents;
+using MiCake.Cord.Tests.Fakes.Entities;
 using System;
 using Xunit;
 
-namespace MiCake.DDD.Tests
+namespace MiCake.Cord.Tests
 {
     public class Entity_Tests
     {
@@ -22,11 +22,11 @@ namespace MiCake.DDD.Tests
             var entityA = new EntityA() { Id = 1 };
             var inheritEntity = new ClassAInheritEnityA() { Id = 1 };
 
-            var compareResult = (entityA == inheritEntity);
+            var compareResult = entityA == inheritEntity;
             Assert.True(compareResult);
 
             var inheritEntity2 = new ClassAInheritEnityA() { Id = 2 };
-            var compareIsFalse = (entityA != inheritEntity2);
+            var compareIsFalse = entityA != inheritEntity2;
             Assert.True(compareIsFalse);
         }
 

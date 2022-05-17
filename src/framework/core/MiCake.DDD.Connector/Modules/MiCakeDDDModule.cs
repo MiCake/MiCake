@@ -1,31 +1,27 @@
-﻿using MiCake.Core.Modularity;
-using MiCake.DDD.Connector.Internal;
-using MiCake.DDD.Connector.Lifetime;
-using MiCake.DDD.Domain;
+﻿using MiCake.Cord.Lifetime;
+using MiCake.Cord.Storage;
+using MiCake.Core.Modularity;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MiCake.DDD.Connector.Modules
+namespace MiCake.Cord.Modules;
+
+[CoreModule]
+public class MiCakeDDDModule : MiCakeModule
 {
-    [CoreModule]
-    public class MiCakeDDDModule : MiCakeModule
+    public StoreConfig DomainModelStoreConfig { get; } = new StoreConfig();
+
+    public override void PreConfigServices(ModuleConfigServiceContext context)
     {
-        public override void PreConfigServices(ModuleConfigServiceContext context)
-        {
-            var services = context.Services;
+        var services = context.Services;
 
-            //regiter all domain event handler to services
-            services.ResigterDomainEventHandler(context.MiCakeModules);
+        //regiter all domain event handler to services
+        services.ResigterDomainEventHandler(context.MiCakeModules);
 
-            services.AddScoped<IEventDispatcher, EventDispatcher>();
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
-            services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
-            services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
-            services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
-
-            //LifeTime
-            services.AddTransient<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
-        }
+        //LifeTime
+        services.AddTransient<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
     }
 }

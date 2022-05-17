@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Modularity;
+﻿using MiCake.Cord.Register;
+using MiCake.Core.Modularity;
 
 namespace BaseMiCakeApplication
 {

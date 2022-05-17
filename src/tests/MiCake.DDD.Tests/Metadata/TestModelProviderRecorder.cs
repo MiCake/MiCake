@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MiCake.DDD.Tests.Metadata
+namespace MiCake.Cord.Tests.Metadata
 {
     public class TestModelProviderRecorder
     {

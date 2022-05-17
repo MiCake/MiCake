@@ -2,24 +2,19 @@
 using MiCake.Uow;
 using MiCake.Uow.Helper;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.Uow
 {
     public class UnitOfWorkFilter : IAsyncActionFilter
     {
         private readonly IUnitOfWorkManager _unitOfWorkManager;
-        private readonly MiCakeAspNetUowOption _miCakeAspNetUowOption;
+        private readonly MiCakeAspNetOptions _options;
 
-        public UnitOfWorkFilter(
-            IUnitOfWorkManager unitOfWorkManager,
-            IOptions<MiCakeAspNetOptions> aspnetUowOptions)
+        public UnitOfWorkFilter(IUnitOfWorkManager unitOfWorkManager, IOptions<MiCakeAspNetOptions> options)
         {
             _unitOfWorkManager = unitOfWorkManager;
-            _miCakeAspNetUowOption = aspnetUowOptions.Value.UnitOfWork;
+            _options = options.Value;
         }
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -30,36 +25,27 @@ namespace MiCake.AspNetCore.Uow
                 return;
             }
 
-            var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
-            UnitOfWorkOptions options = _miCakeAspNetUowOption.RootUowOptions;
-
-            if (options == null)
-            {
-                // create default uow options.
-                var currentScope = context.HttpContext.RequestServices as IServiceScope;
-                options = new UnitOfWorkOptions()
-                {
-                    Scope = UnitOfWorkCreateType.Required,
-                    ServiceScope = currentScope
-                };
-            }
-
             //has disableTransactionAttribute
             var actionMehtod = ActionDescriptorHelper.GetActionMethodInfo(context.ActionDescriptor);
-            var hasDisableAttribute = MiCakeUowHelper.IsDisableTransaction(context.Controller.GetType()) ||
-                   MiCakeUowHelper.IsDisableTransaction(actionMehtod);
+            var hasDisableAttribute = MiCakeUowHelper.IsDisableAutoUow(context.Controller.GetType()) || MiCakeUowHelper.IsDisableAutoUow(actionMehtod);
+            var hasAutoUowAttirbute = MiCakeUowHelper.IsEnableAutoUow(context.Controller.GetType()) || MiCakeUowHelper.IsEnableAutoUow(actionMehtod) || _options.GlobalAutoUowInController;
 
-            //has match action key word 
-            var hasMatchKeyWord = _miCakeAspNetUowOption.KeyWordToCloseTransaction.Any(keyWord =>
-            controllerActionDes.ActionName.ToUpper().StartsWith(keyWord.ToUpper()));
+            var needOpenUow = hasAutoUowAttirbute && !hasDisableAttribute;
+            if (needOpenUow)
+            {
+                using var unitOfWork = _unitOfWorkManager.Create();
 
-            options.Scope = hasDisableAttribute || hasMatchKeyWord ? UnitOfWorkCreateType.Suppress : options.Scope;
+                var result = await next();
 
-            using var unitOfWork = _unitOfWorkManager.Create(options);
-            var result = await next();
-
-            if (Succeed(result))
-                await unitOfWork.SaveChangesAsync();
+                if (Succeed(result))
+                {
+                    await unitOfWork.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                await next();
+            }
         }
 
         private static bool Succeed(ActionExecutedContext result)

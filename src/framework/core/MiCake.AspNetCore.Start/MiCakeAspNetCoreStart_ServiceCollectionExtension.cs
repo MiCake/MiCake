@@ -1,8 +1,9 @@
 ﻿using MiCake.AspNetCore;
-using MiCake.Audit;
+using MiCake.Audit.Modules;
 using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore;
+using MiCake.EntityFrameworkCore.Modules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;

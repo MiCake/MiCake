@@ -1,11 +1,11 @@
-﻿using MiCake.DDD.Connector.Store.Configure;
+﻿using MiCake.Cord.Storage.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreEntityType_Tests : StoreConfigTestBase
     {

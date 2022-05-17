@@ -9,11 +9,11 @@
         private static readonly object @object = new();
         private bool hasGetUserId = false;
 
-        private TKey _userId;
+        private TKey? _userId;
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public virtual TKey UserId
+        public virtual TKey? UserId
         {
             get
             {
@@ -37,12 +37,14 @@
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        object ICurrentMiCakeUser.UserId => UserId;
+        object? ICurrentMiCakeUser.UserId => UserId;
+
+        public bool IsLogin => UserId != null && !UserId.Equals(default);
 
         public CurrentMiCakeUser()
         {
         }
 
-        public abstract TKey GetUserID();
+        public abstract TKey? GetUserID();
     }
 }

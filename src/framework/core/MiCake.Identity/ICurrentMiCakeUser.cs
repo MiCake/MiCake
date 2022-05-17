@@ -8,7 +8,9 @@
         /// <summary>
         /// The id of current user.
         /// </summary>
-        public object UserId { get; }
+        public object? UserId { get; }
+
+        public bool IsLogin { get; }
     }
 
     /// <summary>
@@ -20,6 +22,6 @@
         /// <summary>
         /// The id of current user.
         /// </summary>
-        public new TKey UserId { get; }
+        public new TKey? UserId { get; }
     }
 }

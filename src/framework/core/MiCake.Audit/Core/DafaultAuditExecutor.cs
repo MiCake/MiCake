@@ -1,6 +1,5 @@
-﻿using MiCake.DDD.Connector;
+﻿using MiCake.Cord;
 using MiCake.DDD.Domain.Helper;
-using System.Collections.Generic;
 
 namespace MiCake.Audit.Core
 {

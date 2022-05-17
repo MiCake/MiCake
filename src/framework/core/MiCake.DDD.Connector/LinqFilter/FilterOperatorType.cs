@@ -1,4 +1,4 @@
-﻿namespace MiCake.DDD.Connector.LinqFilter
+﻿namespace MiCake.Cord.LinqFilter
 {
     public enum FilterOperatorType
     {

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System.ComponentModel;
-using System.Linq;
 using System.Security.Claims;
 
 namespace MiCake.AspNetCore.Identity
@@ -12,7 +11,7 @@ namespace MiCake.AspNetCore.Identity
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly MiCakeIdentityOptions _options;
 
-        public ClaimsPrincipal User => _httpContextAccessor.HttpContext.User;
+        public ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
 
         public AspNetCoreMiCakeUser(IHttpContextAccessor httpContextAccessor, IOptions<MiCakeIdentityOptions> options) : base()
         {
@@ -20,16 +19,17 @@ namespace MiCake.AspNetCore.Identity
             _options = options.Value;
         }
 
-        public override TKey GetUserID()
+        public override TKey? GetUserID()
         {
-            var userIDClaim = _httpContextAccessor.HttpContext.User?.Claims
+            var userIDClaim = _httpContextAccessor.HttpContext?.User?.Claims
                                                   .FirstOrDefault(s => s.Type.Equals(_options.UserIdClaimName));
 
             if (userIDClaim == null)
                 return default;
 
             //convert string to TKey type.
-            var userId = (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(userIDClaim.Value);
+            var userId = (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(userIDClaim.Value)!;
+
             return userId;
         }
     }

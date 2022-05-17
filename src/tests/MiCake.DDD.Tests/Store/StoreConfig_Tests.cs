@@ -1,8 +1,9 @@
-﻿using MiCake.DDD.Connector.Store.Configure;
+﻿using MiCake.Cord.Storage;
+using MiCake.Cord.Storage.Internal;
 using System.Linq;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreConfig_Tests : StoreConfigTestBase
     {

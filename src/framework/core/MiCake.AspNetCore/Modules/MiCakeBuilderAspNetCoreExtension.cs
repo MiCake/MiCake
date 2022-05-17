@@ -1,7 +1,6 @@
 ﻿using MiCake.AspNetCore.Modules;
 using MiCake.Core;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace MiCake.AspNetCore
 {
@@ -30,7 +29,8 @@ namespace MiCake.AspNetCore
         {
             builder.ConfigureApplication((app, services) =>
             {
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeAspNetCoreModule));
+                app.SlotModule<MiCakeAspNetCoreModule>();
+
                 services.Configure<MiCakeAspNetOptions>(options =>
                 {
                     optionsBulder?.Invoke(options);

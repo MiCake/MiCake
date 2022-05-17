@@ -1,44 +1,31 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MiCake.Core;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Options;
-using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
     internal class ExceptionDataWrapperFilter : IAsyncExceptionFilter
     {
         private readonly IDataWrapperExecutor _wrapperExecutor;
-        private readonly DataWrapperOptions _options;
 
-        public ExceptionDataWrapperFilter(
-            IOptions<MiCakeAspNetOptions> options,
-            IDataWrapperExecutor wrapperExecutor)
+        public ExceptionDataWrapperFilter(IDataWrapperExecutor wrapperExecutor)
         {
             _wrapperExecutor = wrapperExecutor;
-            _options = options.Value?.DataWrapperOptions;
         }
 
         public Task OnExceptionAsync(ExceptionContext context)
         {
-            if (context.ExceptionHandled)
+            if (context.ExceptionHandled || context.Exception is not PureException)
                 return Task.CompletedTask;
 
-            //httpContext status code is always be 0.
-
-            var wrapContext = new DataWrapperContext(context.Result,
+            var wrapContext = new DataWrapperContext(context.Result!,
                                                      context.HttpContext,
-                                                     _options,
                                                      context.ActionDescriptor);
 
-            var wrappedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrapContext);
-            if (!(wrappedData is ApiError))
-            {
-                context.ExceptionHandled = true;
-                context.Result = new ObjectResult(wrappedData);
-            }
+            var wrappedData = _wrapperExecutor.WrapPureException((context.Exception as PureException)!, wrapContext);
 
-            //exceptionContext.Result != null || exceptionContext.Exception == null || exceptionContext.ExceptionHandled
-            //Therefore, the exceptionContext.Result is not assigned here and is handled by middleware
+            context.ExceptionHandled = true;
+            context.Result = new ObjectResult(wrappedData);
 
             return Task.CompletedTask;
         }

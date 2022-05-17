@@ -1,11 +1,11 @@
 ﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Modularity;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
 
-namespace MiCake.Core.Modularity
+namespace MiCake.Cord.Register
 {
     public static class RegisterDomainServiceExtension
     {
@@ -43,7 +43,7 @@ namespace MiCake.Core.Modularity
             this ModuleConfigServiceContext context,
             MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
         {
-            RegisterDomainService(context, typeof(TService), typeof(TImpl), miCakeServiceLifeTime);
+            context.RegisterDomainService(typeof(TService), typeof(TImpl), miCakeServiceLifeTime);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace MiCake.Core.Modularity
             this ModuleConfigServiceContext context,
             MiCakeServiceLifetime miCakeServiceLifeTime = MiCakeServiceLifetime.Transient)
         {
-            RegisterDomainService(context, typeof(TService), typeof(TService), miCakeServiceLifeTime);
+            context.RegisterDomainService(typeof(TService), typeof(TService), miCakeServiceLifeTime);
         }
     }
 }

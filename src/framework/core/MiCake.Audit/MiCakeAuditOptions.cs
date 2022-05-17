@@ -3,21 +3,16 @@
     public class MiCakeAuditOptions
     {
         /// <summary>
-        /// Whether to use soft delete function
-        /// If is false,Data will not be verified for soft deletion when it is saved.
-        /// Defalut value is true.
+        ///  Specified sql is used to generate CreateTime And ModifyTime value.
+        /// <para>
+        /// You can get some preset vaules from <see cref="PresetAuditConstants"/>.
+        /// </para> 
         /// </summary>
-        public bool UseSoftDeletion { get; set; } = true;
+        public string? TimeGenerateSql { get; set; }
 
         /// <summary>
-        /// Whether to use audit function.
-        /// If is false,Data will not be verified for audit(create time,modify time,etc) when it is saved.
-        /// Defalut value is true.
+        /// Open soft deletion and soft deletion audit.
         /// </summary>
-        public bool UseAudit { get; set; } = true;
-
-        public MiCakeAuditOptions()
-        {
-        }
+        public bool UseSoftDeletion { get; set; } = true;
     }
 }

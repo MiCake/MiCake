@@ -1,7 +1,6 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.Security;
+using MiCake.Core;
 using MiCake.Uow;
-using System.Collections.Generic;
 
 namespace MiCake.AspNetCore
 {
@@ -11,54 +10,26 @@ namespace MiCake.AspNetCore
     public class MiCakeAspNetOptions
     {
         /// <summary>
-        /// The unit of work config for micake in asp net core.
+        /// Indicate need open <see cref="AutoUnitOfWorkAttribute"/> in all controller.
+        /// if value is true, all controller will be influenced by <see cref="AutoUnitOfWorkAttribute"/>.
+        /// 
+        /// <para>
+        ///     default value is true. It's mean each Actions will savechanges automatically.
+        /// </para>
         /// </summary>
-        public MiCakeAspNetUowOption UnitOfWork { get; set; }
+        public bool GlobalAutoUowInController { get; set; } = true;
 
         /// <summary>
-        /// Whether it is need to format the returned data.
-        /// When you choose true, you can also customize the configuration by <see cref="DataWrapperOptions"/>
+        /// Indicate need wrap API response data and <see cref="PureException"/>(or any exception inherit from <see cref="PureException"/>) to <see cref="ApiResponse"/>.
+        /// 
+        /// <para>
+        ///     defalut value is true.
+        /// </para>
         /// </summary>
-        public bool UseDataWrapper { get; set; } = true;
-
-        /// <summary>
-        /// The data wrap config for micake in asp net core.
-        /// </summary>
-        public DataWrapperOptions DataWrapperOptions { get; set; }
-
-        /// <summary>
-        /// Whether it is need to verify user id automic.
-        /// When you open this option,<see cref="CurrentUserAttribute"/> will take effect.
-        /// </summary>
-        public bool UseAutoVerifyUserId { get; set; } = true;
+        public bool WrapResponseAndPureExceptionData { get; set; } = true;
 
         public MiCakeAspNetOptions()
         {
-            UnitOfWork = new MiCakeAspNetUowOption();
-            DataWrapperOptions = new DataWrapperOptions();
         }
-    }
-
-    /// <summary>
-    /// Provides configuration for the MiCake UnitOfWork.
-    /// </summary>
-    public class MiCakeAspNetUowOption
-    {
-        /// <summary>
-        /// <see cref="UnitOfWorkOptions"/> for root <see cref="IUnitOfWork"/>
-        /// MiCake always has a Root UnitOfWork. It provider your db transaction object.
-        /// if you dont want to open transaction default,set this options or use other ways.
-        /// </summary>
-        public UnitOfWorkOptions? RootUowOptions { get; set; }
-
-        /// <summary>
-        /// Match controller action name start key work to close unit of work transaction.
-        /// default is : [Find],[Get],[Query],[Search]
-        /// 
-        /// it taks effect at <see cref="UnitOfWorkCreateType"/> is not Suppress 
-        /// and has no <see cref="DisableUnitOfWorkAttribute"/>
-        /// </summary>
-        public List<string> KeyWordToCloseTransaction { get; set; }
-            = new List<string>() { "Find", "Get", "Query", "Search" };
     }
 }

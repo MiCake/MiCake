@@ -1,7 +1,7 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.Audit.SoftDeletion;
 using MiCake.Audit.Tests.Fakes;
-using MiCake.DDD.Connector;
+using MiCake.Cord;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using Xunit;

@@ -1,12 +1,8 @@
-﻿using Calliope.Dream.Infrastructure.LinqFilter;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.ComponentModel;
-using System.Linq;
 using System.Linq.Expressions;
 
-namespace MiCake.DDD.Connector.LinqFilter.Extensions
+namespace MiCake.Cord.LinqFilter.Extensions
 {
     public static class LinqFilterExtensions
     {
@@ -38,7 +34,7 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
                 return query;
             }
 
-            Expression exp = null;
+            Expression? exp = null;
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
             foreach (var filterGroup in filterGroupsHolder.FilterGroups)
@@ -67,7 +63,7 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
                "Where",
                new Type[] { query.ElementType },
                query.Expression,
-               Expression.Lambda<Func<T, bool>>(exp, new ParameterExpression[] { pe }));
+               Expression.Lambda<Func<T, bool>>(exp!, new ParameterExpression[] { pe }));
 
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
@@ -87,10 +83,10 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
 
         private static Expression CreateFilterExpression<T>(List<Filter> filters, ParameterExpression pe, FilterJoinType filterGroupJoinType = FilterJoinType.And)
         {
-            Expression exp = null;
+            Expression? exp = null;
             foreach (var filter in filters)
             {
-                Expression left = ExpressionHelpers.BuildNestedPropertyExpression(pe, filter.PropertyName);
+                Expression left = ExpressionHelpers.BuildNestedPropertyExpression(pe, filter.PropertyName!);
                 Expression builded = BuildFilterValuesExpression(left, filter.Value, filter.FilterValueJoinType);
 
                 if (exp == null)
@@ -103,7 +99,7 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
                 }
             }
 
-            return exp;
+            return exp!;
         }
 
         private static bool IsNullable(Type type) => Nullable.GetUnderlyingType(type) != null;
@@ -113,13 +109,13 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
             var listType = typeof(List<>);
             Type[] typeArgs = { newItemType };
             var genericListType = listType.MakeGenericType(typeArgs);
-            var typedList = (IList)Activator.CreateInstance(genericListType);
+            var typedList = (IList)Activator.CreateInstance(genericListType)!;
             foreach (var item in source)
             {
                 if (IsNullable(newItemType))
                 {
                     var underlyingType = Nullable.GetUnderlyingType(newItemType);
-                    typedList.Add(Convert.ChangeType(item, underlyingType));
+                    typedList.Add(Convert.ChangeType(item, underlyingType!));
                 }
                 else
                 {
@@ -131,15 +127,15 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
 
         private static Expression BuildFilterValuesExpression(Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
         {
-            Expression exp = null;
+            Expression? exp = null;
 
             foreach (var filterValue in filterValues)
             {
-                var valueType = filterValue.Value.GetType();
-                Expression right = null;
+                Type valueType = filterValue.Value?.GetType() ?? throw new ArgumentException("FilterValue.Value is null");
+                Expression? right = null;
                 if (valueType.IsGenericType && filterValue.Value is IList)
                 {
-                    IList list = RemakeStaticListWithNewType(left.Type, filterValue.Value as IList);
+                    IList list = RemakeStaticListWithNewType(left.Type, (filterValue.Value as IList)!);
                     right = Expression.Constant(list);
                 }
                 else
@@ -147,15 +143,15 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
                     if (IsNullable(left.Type))
                     {
                         var underlyingType = Nullable.GetUnderlyingType(left.Type);
-                        Type type = typeof(Nullable<>).MakeGenericType(underlyingType);
-                        right = Expression.Convert(Expression.Constant(Convert.ChangeType(filterValue.Value, underlyingType)), type);
+                        Type type = typeof(Nullable<>).MakeGenericType(underlyingType!);
+                        right = Expression.Convert(Expression.Constant(Convert.ChangeType(filterValue.Value, underlyingType!)), type);
                     }
                     else
                     {
                         object exceptValue;
                         if (valueType == typeof(string))
                         {
-                            exceptValue = TypeDescriptor.GetConverter(left.Type).ConvertFromString(filterValue.Value.ToString());
+                            exceptValue = TypeDescriptor.GetConverter(left.Type).ConvertFromString(filterValue.Value.ToString()!)!;
                         }
                         else
                         {
@@ -176,7 +172,7 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
                 }
             }
 
-            return exp;
+            return exp!;
         }
     }
 }

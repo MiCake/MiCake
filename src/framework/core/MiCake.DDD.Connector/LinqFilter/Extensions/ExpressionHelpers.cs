@@ -1,8 +1,7 @@
-﻿using Calliope.Dream.Infrastructure.LinqFilter;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 
-namespace MiCake.DDD.Connector.LinqFilter.Extensions
+namespace MiCake.Cord.LinqFilter.Extensions
 {
     public static class ExpressionHelpers
     {
@@ -34,22 +33,22 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
                     return Expression.GreaterThanOrEqual(left, right);
                 case FilterOperatorType.In:
                     {
-                        MethodInfo method = right.Type.GetMethod("Contains", new[] { typeof(int) });
+                        MethodInfo method = right.Type.GetMethod("Contains", new[] { typeof(int) }) ?? throw new Exception("Not found method Contains");
                         return Expression.Call(right, method, left);
                     }
                 case FilterOperatorType.Contains:
                     {
-                        MethodInfo method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+                        MethodInfo method = typeof(string).GetMethod("Contains", new[] { typeof(string) }) ?? throw new Exception("Not found method Contains");
                         return Expression.Call(left, method, right);
                     }
                 case FilterOperatorType.StartsWith:
                     {
-                        MethodInfo method = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
+                        MethodInfo method = typeof(string).GetMethod("StartsWith", new[] { typeof(string) }) ?? throw new Exception("Not found method StartsWith");
                         return Expression.Call(left, method, right);
                     }
                 case FilterOperatorType.EndsWith:
                     {
-                        MethodInfo method = typeof(string).GetMethod("EndsWith", new[] { typeof(string) });
+                        MethodInfo method = typeof(string).GetMethod("EndsWith", new[] { typeof(string) }) ?? throw new Exception("Not found method EndsWith");
                         return Expression.Call(left, method, right);
                     }
                 default:
@@ -73,7 +72,7 @@ namespace MiCake.DDD.Connector.LinqFilter.Extensions
         private static MemberExpression FixReflectedType(MemberExpression expr)
         {
             var member = expr.Member;
-            var declaringType = member.DeclaringType;
+            var declaringType = member.DeclaringType ?? throw new Exception("Not found declaring type");
 
             if (member.ReflectedType != declaringType)
             {

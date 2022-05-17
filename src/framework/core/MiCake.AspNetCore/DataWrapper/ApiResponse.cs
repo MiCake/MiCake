@@ -1,15 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using System;
-
-namespace MiCake.AspNetCore.DataWrapper
+﻿namespace MiCake.AspNetCore.DataWrapper
 {
     [Serializable]
     public class ApiResponse : IResultDataWrapper
     {
-        /// <summary>
-        /// <see cref="StatusCodes"/>
-        /// </summary>
-        public int StatusCode { get; set; }
+        public string? Code { get; set; }
 
         /// <summary>
         /// Is there any error in this request
@@ -17,35 +11,68 @@ namespace MiCake.AspNetCore.DataWrapper
         public bool IsError { get; set; }
 
         /// <summary>
-        /// Indication code of business operation error
-        /// </summary>
-        public string ErrorCode { get; set; }
-
-        /// <summary>
         /// Response message.
         /// </summary>
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
         /// <summary>
         /// The result data of this request.
         /// </summary>
-        public object Result { get; set; }
+        public object? Result { get; set; }
 
-        public ApiResponse() { }
-
-        public ApiResponse(string message, int statusCode = 200)
+        /// <summary>
+        /// Response success data.
+        /// </summary>
+        public static ApiResponse Success(object result, string? code = null)
         {
-            StatusCode = statusCode;
-            Message = message;
-            IsError = false;
+            return new ApiResponse
+            {
+                Result = result,
+                Code = code,
+                IsError = false
+            };
         }
 
-        public ApiResponse(string message, object result)
+        /// <summary>
+        /// Response error data.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        public static ApiResponse Failure(string message, string? code = null)
         {
-            Result = result;
-            StatusCode = 200;
-            Message = message;
-            IsError = false;
+            return new ApiResponse
+            {
+                Message = message,
+                Code = code,
+                IsError = true
+            };
+        }
+    }
+
+    [Serializable]
+    public class ApiResponse<TData> : ApiResponse where TData : notnull
+    {
+        public new TData? Result { get; set; }
+
+        public static ApiResponse<TData> Success(TData result, string? code = null)
+        {
+            return new ApiResponse<TData>
+            {
+                Result = result,
+                Code = code,
+                IsError = false
+            };
+        }
+
+        public new static ApiResponse<TData> Failure(string message, string? code = null)
+        {
+            return new ApiResponse<TData>
+            {
+                Message = message,
+                Code = code,
+                IsError = true
+            };
         }
     }
 }

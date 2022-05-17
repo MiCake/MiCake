@@ -29,11 +29,11 @@ namespace MiCake.Identity.Authentication.JwtToken
 
         public Task RemoveRefreshTokenAsync(string refreshTokenHandle, CancellationToken cancellationToken = default)
         {
-            _store.TryRemove(refreshTokenHandle, out var value);
+            _store.TryRemove(refreshTokenHandle, out _);
             return Task.CompletedTask;
         }
 
-        public Task<RefreshToken> GetRefreshTokenAsync(string refreshTokenHandle, CancellationToken cancellationToken = default)
+        public Task<RefreshToken?> GetRefreshTokenAsync(string refreshTokenHandle, CancellationToken cancellationToken = default)
         {
             _store.TryGetValue(refreshTokenHandle, out var value);
             return Task.FromResult(value);

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.DDD.Connector
+﻿namespace MiCake.Cord
 {
     /// <summary>
     /// The state in which the domain object is about to be changed in the repository

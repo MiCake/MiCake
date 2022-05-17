@@ -7,6 +7,6 @@ namespace MiCake.AspNetCore.Identity
     /// </summary>
     public interface IAspNetCoreMiCakeUser
     {
-        public ClaimsPrincipal User { get; }
+        public ClaimsPrincipal? User { get; }
     }
 }

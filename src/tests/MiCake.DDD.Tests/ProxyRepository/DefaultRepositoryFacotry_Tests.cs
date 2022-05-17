@@ -1,15 +1,16 @@
-﻿using MiCake.Core;
+﻿using MiCake.Cord.Tests;
+using MiCake.Cord.Tests.Fakes.Aggregates;
+using MiCake.Core;
 using MiCake.DDD.Connector;
 using MiCake.DDD.Connector.Internal;
 using MiCake.DDD.Connector.Metadata;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Tests.Fakes.Aggregates;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
 using Xunit;
 
-namespace MiCake.DDD.Tests.ProxyRepository
+namespace MiCake.Cord.Tests.ProxyRepository
 {
     public class DefaultRepositoryFacotry_Tests : MiCakeDDDTestsBase
     {

@@ -25,7 +25,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             DataWrapperOptions options = new();
             DataWrapperContext context = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.NotNull(result);
             Assert.IsType<ApiResponse>(result);
@@ -50,7 +50,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 CustomModelConfig = costomConfigs
             };
             DataWrapperContext context = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.NotNull(result);
             Assert.IsAssignableFrom<IResultDataWrapper>(result);
@@ -75,7 +75,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 CustomModelConfig = costomConfigs
             };
             DataWrapperContext context = new(new OkObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.Same(originalData, result);
         }
@@ -103,12 +103,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 CustomModelConfig = costomConfigs
             };
             DataWrapperContext context = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.NotNull(result.GetType().GetProperty("Name").Name);
 
             DataWrapperContext context2 = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 300), options);
-            var result2 = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context2);
+            var result2 = _dataWrapperExecutor.WrapApiResponse(originalData, context2);
 
             Assert.NotNull(result2.GetType().GetProperty("DiDiDi").Name);
         }
@@ -136,12 +136,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 CustomModelConfig = costomConfigs
             };
             DataWrapperContext context = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.NotNull(result.GetType().GetProperty("Name").Name);
 
             DataWrapperContext context2 = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 300), options);
-            var result2 = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context2);
+            var result2 = _dataWrapperExecutor.WrapApiResponse(originalData, context2);
 
             Assert.NotNull(result2.GetType().GetProperty("Name").Name);
         }
@@ -157,7 +157,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 CustomModelConfig = null
             };
             DataWrapperContext context = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.Same(originalData, result);
         }
@@ -169,7 +169,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
             DataWrapperOptions options = new();
             DataWrapperContext context = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalData, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalData, context);
 
             Assert.NotNull(result);
             Assert.Same(originalData, result);
@@ -181,10 +181,10 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var originalData = new ObjectResult(123);
 
             DataWrapperContext optionsNullContext = new(new ObjectResult(originalData), CreateFakeHttpContext("Get", 200), null);
-            Assert.Throws<ArgumentNullException>(() => _dataWrapperExecutor.WrapSuccesfullysResult(originalData, optionsNullContext));
+            Assert.Throws<ArgumentNullException>(() => _dataWrapperExecutor.WrapApiResponse(originalData, optionsNullContext));
 
             DataWrapperContext httpContextNullContext = new(new ObjectResult(originalData), null, new DataWrapperOptions());
-            Assert.Throws<ArgumentNullException>(() => _dataWrapperExecutor.WrapSuccesfullysResult(originalData, httpContextNullContext));
+            Assert.Throws<ArgumentNullException>(() => _dataWrapperExecutor.WrapApiResponse(originalData, httpContextNullContext));
         }
 
         [Fact]
@@ -194,7 +194,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
             var originalProblemDetail = new BadRequestObjectResult(new ProblemDetails() { Title = "This is ProblemDetail" });
             DataWrapperContext context = new(originalProblemDetail, CreateFakeHttpContext("Get", 400), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalProblemDetail.Value, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalProblemDetail.Value, context);
 
             Assert.NotNull(result);
             Assert.Same(originalProblemDetail.Value, result);
@@ -210,7 +210,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
             var originalProblemDetail = new BadRequestObjectResult(new ProblemDetails() { Title = "This is ProblemDetail" });
             DataWrapperContext context = new(originalProblemDetail, CreateFakeHttpContext("Get", 400), options);
-            var result = _dataWrapperExecutor.WrapSuccesfullysResult(originalProblemDetail.Value, context);
+            var result = _dataWrapperExecutor.WrapApiResponse(originalProblemDetail.Value, context);
 
             Assert.NotNull(result);
             Assert.IsAssignableFrom<ApiResponse>(result);

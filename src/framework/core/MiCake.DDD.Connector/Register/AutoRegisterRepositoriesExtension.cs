@@ -1,11 +1,9 @@
-﻿using MiCake.Core.Util.Reflection;
+﻿using MiCake.Core.Modularity;
+using MiCake.Core.Util.Reflection;
 using MiCake.DDD.Domain;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
-namespace MiCake.Core.Modularity
+namespace MiCake.Cord.Register
 {
     /// <summary>
     /// A selector used to filter custom warehouse interfaces,Used to <see cref="AutoRegisterRepositoriesExtension"/>.
@@ -14,7 +12,7 @@ namespace MiCake.Core.Modularity
     /// <param name="repoInterfaceType">Interface type inherited by current repository.</param>
     /// <param name="currentIndex">Current index for interface.(usually,the higher the level of the interface, the greater the value)</param>
     /// <returns></returns>
-    public delegate bool CustomerRepositorySelector(Type repoType, Type repoInterfaceType, int currentIndex);
+    public delegate bool CustomRepositorySelector(Type repoType, Type repoInterfaceType, int currentIndex);
 
     public static class AutoRegisterRepositoriesExtension
     {
@@ -25,7 +23,7 @@ namespace MiCake.Core.Modularity
         /// <param name="assembly">The assembly in which the custom repository resides</param>
         public static void AutoRegisterRepositories(this ModuleConfigServiceContext context, Assembly assembly)
         {
-            AutoRegisterRepositories(context, assembly, (repo, repoInterface, index) =>
+            context.AutoRegisterRepositories(assembly, (repo, repoInterface, index) =>
             {
                 return repoInterface.Name.Contains(repo.Name);
             });
@@ -36,8 +34,8 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="context"></param>
         /// <param name="assembly">The assembly in which the custom repository resides</param>
-        /// <param name="selector">a selector,see <see cref="CustomerRepositorySelector"/>.</param>
-        public static void AutoRegisterRepositories(this ModuleConfigServiceContext context, Assembly assembly, CustomerRepositorySelector selector)
+        /// <param name="selector">a selector,see <see cref="CustomRepositorySelector"/>.</param>
+        public static void AutoRegisterRepositories(this ModuleConfigServiceContext context, Assembly assembly, CustomRepositorySelector selector)
         {
             var allRepoTypes = assembly.GetTypes().Where(s => TypeHelper.IsConcrete(s) && typeof(IRepository).IsAssignableFrom(s));
 

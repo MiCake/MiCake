@@ -22,12 +22,12 @@
         /// <param name="ID">Primary key of the aggrageteRoot to get</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default);
+        ValueTask<TAggregateRoot?> FindAsync(TKey ID, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets total count of all aggrageteroot.
         /// </summary>
-        Task<long> GetCountAsync(CancellationToken cancellationToken = default);
+        ValueTask<long> GetCountAsync(CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@
         Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Add a new aggregateRoot.and return this aggregate.sometimes can use this way to get primary key.
+        /// Add a new aggregateRoot and return this aggregate.sometimes can use this way to get primary key.
         /// 
         /// <para>
         /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.
@@ -54,7 +54,7 @@
         /// <param name="aggregateRoot">The aggregate root to be added.</param>
         /// <param name="autoExecute">Auto execute save method(sql).Default value:true</param>
         /// <param name="cancellationToken"></param>
-        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default);
+        ValueTask<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.

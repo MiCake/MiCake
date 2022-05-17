@@ -70,7 +70,8 @@ namespace MiCake.Identity.Authentication.JwtToken
                     },
                     out var validatedToken);
 
-            return Task.FromResult((principal, validatedToken as JwtSecurityToken));
+            var securityToken = (validatedToken as JwtSecurityToken)!;
+            return Task.FromResult((principal, securityToken));
         }
 
         public async Task<JwtTokenAuthResult> Refresh(string refreshTokenHandle, string accessToken, CancellationToken cancellationToken = default)
@@ -148,7 +149,7 @@ namespace MiCake.Identity.Authentication.JwtToken
 
         protected virtual SecurityTokenDescriptor CreateSecurityTokenDescriptorByMiCakeUser(IMiCakeUser miCakeUser, CancellationToken cancellationToken = default)
         {
-            IDictionary<string, object> claimCollection = null;
+            IDictionary<string, object> claimCollection = new Dictionary<string, object>();
 
             var userProperties = miCakeUser.GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
             foreach (var userProperty in userProperties)
@@ -156,8 +157,7 @@ namespace MiCake.Identity.Authentication.JwtToken
                 var jwtProperty = userProperty.GetCustomAttribute<JwtClaimAttribute>();
                 if (jwtProperty != null)
                 {
-                    claimCollection ??= new Dictionary<string, object>();
-                    claimCollection.Add(jwtProperty.ClaimName == null ? userProperty.Name.ToLower() : jwtProperty.ClaimName.ToLower(), userProperty.GetValue(miCakeUser).ToString());
+                    claimCollection.Add(jwtProperty.ClaimName == null ? userProperty.Name.ToLower() : jwtProperty.ClaimName.ToLower(), userProperty.GetValue(miCakeUser)?.ToString() ?? "");
                 }
             }
 

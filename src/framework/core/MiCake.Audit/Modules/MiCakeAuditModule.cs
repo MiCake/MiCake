@@ -1,46 +1,53 @@
 ﻿using MiCake.Audit.Core;
-using MiCake.Audit.Lifetime;
+using MiCake.Audit.RepoLifetime;
 using MiCake.Audit.SoftDeletion;
-using MiCake.Audit.Store;
+using MiCake.Audit.Storage;
+using MiCake.Cord.Lifetime;
+using MiCake.Cord.Modules;
+using MiCake.Core.Data;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Connector.Lifetime;
-using MiCake.DDD.Connector.Modules;
-using MiCake.DDD.Connector.Store.Configure;
+using MiCake.Identity.Modules;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.Audit.Modules
 {
-    [RelyOn(typeof(MiCakeDDDModule))]
+    [RelyOn(typeof(MiCakeIdentityModule))]
+    [CoreModule]
     public class MiCakeAuditModule : MiCakeModule
     {
-        public override bool IsFrameworkLevel => true;
+        internal const string ConfigTransientDataKey = "MiCake.Audit.Options";
 
         public override void PreConfigServices(ModuleConfigServiceContext context)
         {
-            StoreConfig.Instance.AddModelProvider(new SoftDeletionStoreEntityConfig());
-        }
+            // config store entity.
+            var appTransientData = (context.MiCakeApplication as IHasAccessor<MiCakeTransientData>)?.AccessibleData ?? throw new InvalidOperationException($"Can not get application {nameof(MiCakeTransientData)}.");
 
-        public override void ConfigServices(ModuleConfigServiceContext context)
-        {
-            var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.AdditionalInfo.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
+            var auditOptions = appTransientData.TakeOut(ConfigTransientDataKey) as MiCakeAuditOptions;
+
+            var storeConfig = DDDModuleHelper.MustGetStoreConfig(context.MiCakeApplication);
+            storeConfig.AddModelProvider(new AuditStoreEntityConfig(auditOptions!));
+
+
             var services = context.Services;
+            //Audit Executor
+            services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
+            //RepositoryLifeTime
+            services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 
-            if (auditOptions?.UseAudit != false)
+            if (auditOptions!.UseSoftDeletion)
             {
-                //Audit Executor
-                services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
-                //Audit CreationTime and ModifationTime
-                services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
-                //RepositoryLifeTime
-                services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
+                services.AddTransient<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
+                //Audit Deletion Time
+                services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
+            }
 
-                if (auditOptions?.UseSoftDeletion != false)
-                {
-                    //Audit Deletion Time
-                    services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
-                    //RepositoryLifeTime
-                    services.AddTransient<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
-                }
+            // register identity audit
+            var userKeyType = appTransientData.TakeOut(MiCakeIdentityModule.CurrentIdentityUserKeyType);
+            // if no retrieve user key type, It's mean user not AddIdentity, so we needn't register identity audit.
+            if (userKeyType != null && userKeyType is Type)
+            {
+                var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType((userKeyType as Type)!);
+                services.AddScoped(typeof(IAuditProvider), auditProviderType);
             }
         }
     }

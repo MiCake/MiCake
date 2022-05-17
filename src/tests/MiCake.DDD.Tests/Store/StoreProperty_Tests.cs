@@ -1,7 +1,7 @@
-﻿using MiCake.DDD.Connector.Store.Configure;
+﻿using MiCake.Cord.Storage.Internal;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreProperty_Tests : StoreConfigTestBase
     {

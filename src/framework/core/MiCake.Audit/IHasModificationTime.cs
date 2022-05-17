@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.Audit
+﻿namespace MiCake.Audit
 {
     /// <summary>
     /// Define a class has modification time.

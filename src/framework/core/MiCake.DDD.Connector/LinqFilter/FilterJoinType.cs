@@ -1,4 +1,4 @@
-﻿namespace Calliope.Dream.Infrastructure.LinqFilter
+﻿namespace MiCake.Cord.LinqFilter
 {
     public enum FilterJoinType
     {

@@ -6,7 +6,6 @@ using MiCake.Identity.Authentication.JwtToken;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
 
 namespace MiCake
 {

@@ -48,7 +48,7 @@ namespace MiCake.Identity.Authentication.JwtToken
         /// Gets or sets the <see cref="EncryptingCredentials"/> used to create a encrypted security token.
         /// This value can be null.
         /// </summary>
-        public EncryptingCredentials EncryptingCredentials { get; set; }
+        public EncryptingCredentials? EncryptingCredentials { get; set; }
 
         /// <summary>
         /// Whether the refresh token scheme is needed

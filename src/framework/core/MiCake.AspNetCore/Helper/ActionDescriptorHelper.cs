@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using System;
 using System.Reflection;
 
 namespace MiCake.AspNetCore.Helper

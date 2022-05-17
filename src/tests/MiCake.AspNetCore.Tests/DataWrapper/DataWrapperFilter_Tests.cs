@@ -105,7 +105,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             //assert
             var resultInfo = resultExecutingContext.Result as ObjectResult;
             Assert.NotNull(resultInfo);
-            Assert.Equal(200, (resultInfo.Value as ApiResponse).StatusCode);
+            Assert.Equal(200, (resultInfo.Value as ApiResponse).Code);
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             //assert
             var resultInfo = resultExecutingContext.Result as ObjectResult;
             Assert.NotNull(resultInfo);
-            Assert.Equal(203, (resultInfo.Value as ApiResponse).StatusCode);
+            Assert.Equal(203, (resultInfo.Value as ApiResponse).Code);
         }
 
         private ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult result)

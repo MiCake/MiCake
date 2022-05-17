@@ -14,7 +14,7 @@ namespace MiCake.Identity.Authentication.JwtToken
         /// </summary>
         public string SubjectId { get; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public int Version { get; set; }
 

@@ -1,7 +1,7 @@
-﻿using MiCake.DDD.Tests.Fakes.ValueObjects;
+﻿using MiCake.Cord.Tests.Fakes.ValueObjects;
 using Xunit;
 
-namespace MiCake.DDD.Tests
+namespace MiCake.Cord.Tests
 {
     public class ValueObject_Tests
     {

@@ -1,9 +1,9 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Core.Modularity;
+using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
-namespace MiCake.Core.Modularity
+namespace MiCake.Cord.Register
 {
     public static class RegisterRepositoryExtension
     {
@@ -32,7 +32,7 @@ namespace MiCake.Core.Modularity
         /// <typeparam name="TImpl">Implementation type of repository</typeparam>
         public static void RegisterRepository<TService, TImpl>(this ModuleConfigServiceContext context)
         {
-            RegisterRepository(context, typeof(TService), typeof(TImpl));
+            context.RegisterRepository(typeof(TService), typeof(TImpl));
         }
     }
 }

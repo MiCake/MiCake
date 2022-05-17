@@ -1,7 +1,4 @@
-﻿using Calliope.Dream.Infrastructure.LinqFilter;
-using System.Collections.Generic;
-
-namespace MiCake.DDD.Connector.LinqFilter
+﻿namespace MiCake.Cord.LinqFilter
 {
     public class FilterGroup
     {

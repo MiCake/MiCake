@@ -18,7 +18,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Audit.Tests", "src\t
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Core.Tests", "src\tests\MiCake.Core.Tests\MiCake.Core.Tests.csproj", "{8935A16D-F3FE-4B21-AC7D-2546C561F8A3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Tests", "src\tests\MiCake.DDD.Tests\MiCake.DDD.Tests.csproj", "{E3B6CE90-BB8A-4E5D-A5AE-223F681204DF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Cord.Tests", "src\tests\MiCake.DDD.Tests\MiCake.Cord.Tests.csproj", "{E3B6CE90-BB8A-4E5D-A5AE-223F681204DF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore.Tests", "src\tests\MiCake.EntityFrameworkCore.Tests\MiCake.EntityFrameworkCore.Tests.csproj", "{82FE8335-6674-48FB-859D-27309E706DDD}"
 EndProject
@@ -53,8 +53,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Audit", "src\framewo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Core", "src\framework\core\MiCake.Core\MiCake.Core.csproj", "{4D212CF8-782A-47CE-982D-7B6A5690B5C0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Application", "src\framework\core\MiCake.DDD.Application\MiCake.DDD.Application.csproj", "{661B00B5-E481-47C9-AF59-344124DB17D8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Domain", "src\framework\core\MiCake.DDD.Domain\MiCake.DDD.Domain.csproj", "{630734D8-DAC7-4F82-9C31-DCE8D17139B2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.EntityFrameworkCore", "src\framework\core\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj", "{04327FAC-D0AF-4096-974C-8C0006A105B1}"
@@ -71,7 +69,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.MessageBus", "src\fr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.SqlReader", "src\framework\support\MiCake.SQLReader\MiCake.SqlReader.csproj", "{805222ED-DAC7-4317-99D8-281539E5F2D2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.DDD.Connector", "src\framework\core\MiCake.DDD.Connector\MiCake.DDD.Connector.csproj", "{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Cord", "src\framework\core\MiCake.DDD.Connector\MiCake.Cord.csproj", "{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -139,10 +137,6 @@ Global
 		{4D212CF8-782A-47CE-982D-7B6A5690B5C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D212CF8-782A-47CE-982D-7B6A5690B5C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D212CF8-782A-47CE-982D-7B6A5690B5C0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{661B00B5-E481-47C9-AF59-344124DB17D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{661B00B5-E481-47C9-AF59-344124DB17D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{661B00B5-E481-47C9-AF59-344124DB17D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{661B00B5-E481-47C9-AF59-344124DB17D8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{630734D8-DAC7-4F82-9C31-DCE8D17139B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{630734D8-DAC7-4F82-9C31-DCE8D17139B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{630734D8-DAC7-4F82-9C31-DCE8D17139B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -201,7 +195,6 @@ Global
 		{B039A6D2-909C-49E2-9FCE-6FCDDA7C2CFD} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
 		{1C50A1EA-A95A-4E92-A261-59326571B6DA} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
 		{4D212CF8-782A-47CE-982D-7B6A5690B5C0} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
-		{661B00B5-E481-47C9-AF59-344124DB17D8} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
 		{630734D8-DAC7-4F82-9C31-DCE8D17139B2} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
 		{04327FAC-D0AF-4096-974C-8C0006A105B1} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
 		{BE40AE70-5038-45FF-9AC1-59A918E11FBF} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}

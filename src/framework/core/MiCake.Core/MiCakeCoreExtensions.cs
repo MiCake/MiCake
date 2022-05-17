@@ -6,9 +6,14 @@ namespace MiCake.Core
     {
         public static IMiCakeApplication SlotModule<T>(this IMiCakeApplication application) where T : IMiCakeModule
         {
+            return SlotModule(application, typeof(T));
+        }
+
+        public static IMiCakeApplication SlotModule(this IMiCakeApplication application, Type moduleType)
+        {
             if (application.ModuleManager is IModuleSlot slotModuleMg)
             {
-                slotModuleMg.Slot<T>();
+                slotModuleMg.Slot(moduleType);
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using MiCake.Core;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
@@ -8,21 +8,19 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     public interface IDataWrapperExecutor
     {
         /// <summary>
-        /// Wrap successfully returned data
+        /// Wrap normal API response data.
         /// </summary>
         /// <param name="orignalData">Original data.</param>
-        /// <param name="isSoftException">orignal data is soft exception</param>
         /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
         /// <returns>wrapped data</returns>
-        object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext, bool isSoftException = false);
+        object WrapApiResponse(object orignalData, DataWrapperContext wrapperContext);
 
         /// <summary>
-        /// Wrap the data returned by the error
+        /// Wrap some exception inherit from <see cref="PureException"/>.
         /// </summary>
-        /// <param name="originalData">Original data.</param>
         /// <param name="exception">exception info</param>
         /// <param name="wrapperContext"><see cref="DataWrapperContext"/></param>
         /// <returns>wrapped data</returns>
-        object WrapFailedResult(object originalData, Exception exception, DataWrapperContext wrapperContext);
+        object WrapPureException(PureException exception, DataWrapperContext wrapperContext);
     }
 }

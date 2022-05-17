@@ -1,6 +1,7 @@
-﻿using MiCake.DDD.Connector.Store.Configure;
+﻿using MiCake.Cord.Storage;
+using MiCake.DDD.Connector.Store.Configure;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public abstract class StoreConfigTestBase
     {

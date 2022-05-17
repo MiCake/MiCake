@@ -3,7 +3,7 @@ using System;
 using System.Linq.Expressions;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class InternalStoreEntityBuilder_Tests : StoreConfigTestBase
     {

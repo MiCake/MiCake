@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.DDD.Tests.ProxyRepository
+namespace MiCake.Cord.Tests.ProxyRepository
 {
     public class TestRepository<TAggregateRoot, TKey> : TestReadOnlyRepository<TAggregateRoot, TKey>, IRepository<TAggregateRoot, TKey>
            where TAggregateRoot : class, IAggregateRoot<TKey>

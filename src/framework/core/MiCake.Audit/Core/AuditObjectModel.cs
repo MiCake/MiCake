@@ -1,5 +1,4 @@
-﻿using MiCake.DDD.Connector;
-using System.Collections.Generic;
+﻿using MiCake.Cord;
 
 namespace MiCake.Audit.Core
 {

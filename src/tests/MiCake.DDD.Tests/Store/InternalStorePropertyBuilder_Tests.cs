@@ -2,7 +2,7 @@
 using System;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class InternalStorePropertyBuilder_Tests : StoreConfigTestBase
     {

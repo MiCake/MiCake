@@ -1,9 +1,9 @@
-﻿using MiCake.DDD.Connector.Metadata;
-using MiCake.DDD.Tests.Fakes.Entities;
+﻿using MiCake.Cord.Tests.Fakes.Entities;
+using MiCake.DDD.Connector.Metadata;
 using System;
 using System.Linq;
 
-namespace MiCake.DDD.Tests.Metadata
+namespace MiCake.Cord.Tests.Metadata
 {
     public class TestDomainObjectModelProvider_2 : IDomainObjectModelProvider
     {

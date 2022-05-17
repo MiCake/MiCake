@@ -44,5 +44,11 @@ namespace MiCake.Uow
         /// Discards all changes made to the database in the current unit of work asynchronously.
         /// </summary>
         Task RollbackAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get current unit of work includes all transaction objects.
+        /// </summary>
+        /// <returns></returns>
+        List<ITransactionObject> GetTransactionObjects();
     }
 }

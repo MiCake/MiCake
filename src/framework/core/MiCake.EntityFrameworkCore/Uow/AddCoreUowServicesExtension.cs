@@ -1,6 +1,5 @@
 ﻿using MiCake.Uow;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {

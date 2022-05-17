@@ -1,4 +1,4 @@
-﻿namespace MiCake.DDD.Connector.Paging
+﻿namespace MiCake.Cord.Paging
 {
     /// <summary>
     /// A model for paging query result.
@@ -7,11 +7,11 @@
     {
         public long TotalCount { get; set; }
 
-        public int CurrentIndex { get; set; }
+        public int CurrentPageNumber { get; set; }
 
-        public PagingQueryResult(int currentIndex, long total)
+        public PagingQueryResult(int currentPageNumber, long total)
         {
-            CurrentIndex = currentIndex;
+            CurrentPageNumber = currentPageNumber;
             TotalCount = total;
         }
     }
@@ -23,7 +23,7 @@
     {
         public T Data { get; set; }
 
-        public PagingQueryResult(int currentIndex, long total, T data) : base(currentIndex, total)
+        public PagingQueryResult(int currentPageNumber, long total, T data) : base(currentPageNumber, total)
         {
             Data = data;
         }

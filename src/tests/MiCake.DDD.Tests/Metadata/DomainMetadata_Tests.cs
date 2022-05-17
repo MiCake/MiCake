@@ -1,11 +1,12 @@
-﻿using MiCake.Core;
+﻿using MiCake.Cord.Tests;
+using MiCake.Core;
 using MiCake.DDD.Connector.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Reflection;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Metadata
+namespace MiCake.Cord.Tests.Metadata
 {
     //Do not add domain objects in the assembly at will this operation will affect all assertions
     public class DomainMetadata_Tests : MiCakeDDDTestsBase

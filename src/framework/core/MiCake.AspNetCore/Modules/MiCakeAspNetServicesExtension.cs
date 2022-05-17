@@ -1,12 +1,10 @@
 ﻿using MiCake.AspNetCore;
-using MiCake.AspNetCore.ExceptionHandling;
 using MiCake.Core;
 using MiCake.Core.Data;
 using MiCake.Core.Modularity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System;
 
 namespace MiCake
 {
@@ -92,8 +90,6 @@ namespace MiCake
 
             var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;
 
-            AddMiCakeCoreMiddleware(applicationBuilder);
-
             micakeApp.Start();
         }
 
@@ -108,16 +104,6 @@ namespace MiCake
                                     $"Please Check your has already AddMiCake() in ConfigureServices method");
 
             micakeApp.ShutDown();
-        }
-
-        /// <summary>
-        /// Add Core Middleware.
-        /// </summary>
-        public static IApplicationBuilder AddMiCakeCoreMiddleware(IApplicationBuilder applicationBuilder)
-        {
-            applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
-
-            return applicationBuilder;
         }
     }
 }

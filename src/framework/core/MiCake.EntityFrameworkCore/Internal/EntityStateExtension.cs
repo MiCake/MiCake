@@ -1,7 +1,7 @@
-﻿using MiCake.DDD.Connector;
+﻿using MiCake.Cord;
 using Microsoft.EntityFrameworkCore;
 
-namespace MiCake.EntityFrameworkCore
+namespace MiCake.EntityFrameworkCore.Internal
 {
     internal static class EntityStateExtension
     {

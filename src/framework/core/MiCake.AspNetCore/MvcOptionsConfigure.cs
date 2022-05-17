@@ -1,5 +1,4 @@
 ﻿using MiCake.AspNetCore.DataWrapper.Internals;
-using MiCake.AspNetCore.Security;
 using MiCake.AspNetCore.Uow;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -13,6 +12,7 @@ namespace MiCake.AspNetCore
     {
         private readonly MiCakeAspNetOptions _micakeAspNetOptions;
 
+
         public MvcOptionsConfigure(IOptions<MiCakeAspNetOptions> micakeAspNetOptions)
         {
             _micakeAspNetOptions = micakeAspNetOptions.Value;
@@ -22,16 +22,12 @@ namespace MiCake.AspNetCore
         {
             options.Filters.Add(typeof(UnitOfWorkFilter));
 
-            //Add Data wrapper filters
-            if (_micakeAspNetOptions.UseDataWrapper)
+            //Add wrap data filters.
+            if (_micakeAspNetOptions.WrapResponseAndPureExceptionData)
             {
                 options.Filters.Add(typeof(DataWrapperFilter));
                 options.Filters.Add(typeof(ExceptionDataWrapperFilter));
             }
-
-            //Security : auto verify 
-            if (_micakeAspNetOptions.UseAutoVerifyUserId)
-                options.Filters.Add(typeof(VerifyCurrentUserFilter));
         }
     }
 }

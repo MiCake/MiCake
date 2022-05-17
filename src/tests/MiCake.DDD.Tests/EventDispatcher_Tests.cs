@@ -1,12 +1,12 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Cord.Tests.Fakes.Aggregates;
+using MiCake.Cord.Tests.Fakes.DomainEvents;
+using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
-using MiCake.DDD.Tests.Fakes.Aggregates;
-using MiCake.DDD.Tests.Fakes.DomainEvents;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using Xunit;
 
-namespace MiCake.DDD.Tests
+namespace MiCake.Cord.Tests
 {
     public class EventDispatcher_Tests
     {
@@ -16,7 +16,7 @@ namespace MiCake.DDD.Tests
         {
             Services = new ServiceCollection();
 
-            Services.AddSingleton<IEventDispatcher, EventDispatcher>();
+            Services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
         }
 
         [Fact]
@@ -37,7 +37,7 @@ namespace MiCake.DDD.Tests
             var expectedResult = OrderCreatedHandler.HanlderChangedValue;
             Services.AddTransient<IDomainEventHandler<CreateOrderEvents>, OrderCreatedHandler>();
 
-            var disptcher = Services.BuildServiceProvider().GetService<IEventDispatcher>();
+            var disptcher = Services.BuildServiceProvider().GetService<IDomainEventDispatcher>();
 
             HasEventsAggregate aggregate = new();
             aggregate.OneAddEventCase();

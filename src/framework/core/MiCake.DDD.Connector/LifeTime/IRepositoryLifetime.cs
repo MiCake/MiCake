@@ -1,4 +1,4 @@
-﻿namespace MiCake.DDD.Connector.Lifetime
+﻿namespace MiCake.Cord.Lifetime
 {
     /// <summary>
     /// Provide a life cycle interface of repository operation process

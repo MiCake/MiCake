@@ -9,7 +9,7 @@
         /// <summary>
         /// The AccessToken for JWT
         /// </summary>
-        public string AccessToken { get; set; }
+        public string? AccessToken { get; set; }
 
         /// <summary>
         /// The RefreshToken for JWT

@@ -29,7 +29,7 @@ namespace MiCake.Identity.Authentication.JwtToken
         /// <param name="refreshTokenHandle">The refresh token handle.</param>
         /// <param name="cancellationToken"></param>
         /// <returns><see cref="RefreshToken"/></returns>
-        Task<RefreshToken> GetRefreshTokenAsync(string refreshTokenHandle, CancellationToken cancellationToken = default);
+        Task<RefreshToken?> GetRefreshTokenAsync(string refreshTokenHandle, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update the refresh token.

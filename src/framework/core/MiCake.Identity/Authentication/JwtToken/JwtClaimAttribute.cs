@@ -13,7 +13,7 @@ namespace MiCake.Identity.Authentication.JwtToken
         /// 
         /// If this parameter is not specified,use property name directly.
         /// </summary>
-        public string ClaimName { get; set; }
+        public string? ClaimName { get; set; }
 
         public JwtClaimAttribute()
         {

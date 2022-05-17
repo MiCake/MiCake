@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace MiCake.DDD.Connector.LinqFilter.Extensions
+﻿namespace MiCake.Cord.LinqFilter.Extensions
 {
     public static class PagingExtensions
     {

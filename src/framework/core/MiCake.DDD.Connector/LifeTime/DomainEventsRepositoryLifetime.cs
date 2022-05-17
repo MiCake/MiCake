@@ -1,18 +1,15 @@
 ﻿using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace MiCake.DDD.Connector.Lifetime
+namespace MiCake.Cord.Lifetime
 {
     internal class DomainEventsRepositoryLifetime : IRepositoryPreSaveChanges
     {
-        private readonly IEventDispatcher _eventDispatcher;
+        private readonly IDomainEventDispatcher _eventDispatcher;
         private readonly ILogger<DomainEventsRepositoryLifetime> _logger;
 
-        public DomainEventsRepositoryLifetime(IEventDispatcher eventDispatcher, ILoggerFactory loggerFactory)
+        public DomainEventsRepositoryLifetime(IDomainEventDispatcher eventDispatcher, ILoggerFactory loggerFactory)
         {
             _eventDispatcher = eventDispatcher;
             _logger = loggerFactory.CreateLogger<DomainEventsRepositoryLifetime>();
@@ -30,22 +27,25 @@ namespace MiCake.DDD.Connector.Lifetime
                 if (entityEvents == null || entityEvents.Count == 0)
                     return entityState;
 
+                List<Exception> errors = new();
+
                 foreach (var @event in entityEvents)
                 {
                     try
                     {
-                        await _eventDispatcher.DispatchAsync(@event);
+                        await _eventDispatcher.DispatchAsync(@event, cancellationToken);
                         completedEventCount++;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "There has a error when dispatch domain event.");
+                        errors.Add(ex);
                     }
                 }
 
-                if (completedEventCount != entityEvents.Count)
+                if (errors.Count > 0)
                 {
-                    //count is not equal. prove the existence of failed events
+                    _logger.LogError("Failed to dispatch {eventCount} events.", errors.Count);
+                    throw new AggregateException(errors);
                 }
             }
             return entityState;

@@ -165,5 +165,10 @@ namespace MiCake.Uow.Internal
 
             _isRollback = true;
         }
+
+        public List<ITransactionObject> GetTransactionObjects()
+        {
+            return CreatedTransactions.Select(s => s).ToList();
+        }
     }
 }

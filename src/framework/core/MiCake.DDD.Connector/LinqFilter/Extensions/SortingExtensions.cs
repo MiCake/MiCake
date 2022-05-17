@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
-namespace MiCake.DDD.Connector.LinqFilter.Extensions
+namespace MiCake.Cord.LinqFilter.Extensions
 {
     public static class SortingExtensions
     {

@@ -1,6 +1,6 @@
 ﻿using MiCake.Core.Modularity;
 
-namespace MiCake.DDD.Tests
+namespace MiCake.Cord.Tests
 {
     class MiCakeDDDTestModule : MiCakeModule
     {

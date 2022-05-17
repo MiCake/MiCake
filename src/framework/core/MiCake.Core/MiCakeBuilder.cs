@@ -8,7 +8,7 @@
         private readonly MiCakeApplicationOptions _options;
         private readonly Type _entryType;
         private readonly IServiceCollection _services;
-        private readonly bool _needNewScopeed;
+        private readonly IMiCakeApplication _app;
 
         private Action<IMiCakeApplication, IServiceCollection>? _configureAction;
 
@@ -21,18 +21,16 @@
             _entryType = entryType;
             _options = options ?? new MiCakeApplicationOptions();
 
-            _needNewScopeed = needNewScope;
+            _app = new MiCakeApplication(_services, _options, needNewScope);
+            _app.SetEntry(_entryType);
         }
 
         public IMiCakeApplication Build()
         {
-            var app = new MiCakeApplication(_services, _options, _needNewScopeed);
+            _configureAction?.Invoke(_app, _services);
+            _app.Initialize();
 
-            _configureAction?.Invoke(app, _services);
-            app.SetEntry(_entryType);
-            app.Initialize();
-
-            return app;
+            return _app;
         }
 
         public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp)

@@ -1,6 +1,5 @@
 ﻿using MiCake.Audit.Core;
-using MiCake.DDD.Connector;
-using System;
+using MiCake.Cord;
 
 namespace MiCake.Audit.SoftDeletion
 {

@@ -1,11 +1,8 @@
-﻿using Calliope.Dream.Infrastructure.LinqFilter;
-using System.Collections.Generic;
-
-namespace MiCake.DDD.Connector.LinqFilter
+﻿namespace MiCake.Cord.LinqFilter
 {
     public class Filter
     {
-        public string PropertyName { get; set; }
+        public string? PropertyName { get; set; }
 
         public List<FilterValue> Value { get; set; } = new List<FilterValue>();
 

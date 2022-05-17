@@ -1,13 +1,10 @@
-﻿using MiCake.Audit.Core;
-using MiCake.Core;
+﻿using MiCake.Core;
 using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
-using MiCake.Identity.Audit;
 using MiCake.Identity.Authentication.JwtToken;
 using MiCake.Identity.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
 
 namespace MiCake.Identity
 {
@@ -37,26 +34,16 @@ namespace MiCake.Identity
             if (!typeof(IMiCakeUser).IsAssignableFrom(miCakeUserType))
                 throw new ArgumentException($"Wrong user type,must use {nameof(IMiCakeUser)} to register your micake user.");
 
+            var userKeyType = TypeHelper.GetGenericArguments(miCakeUserType, typeof(IMiCakeUser<>));
+            if (userKeyType == null || userKeyType[0] == null)
+                throw new ArgumentException($"Can not get the primary key type of IMiCakeUser,Please check your config when AddIdentity().");
+
             builder.ConfigureApplication((app, services) =>
             {
                 //Add identity module.
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeIdentityModule));
+                app.SlotModule<MiCakeIdentityModule>();
 
-                //Early registration IdentityAuditProvider.
-                var userKeyType = TypeHelper.GetGenericArguments(miCakeUserType, typeof(IMiCakeUser<>));
-
-                if (userKeyType == null || userKeyType[0] == null)
-                    throw new ArgumentException($"Can not get the primary key type of IMiCakeUser,Please check your config when AddIdentity().");
-
-                var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType(userKeyType[0]);
-                services.AddScoped(typeof(IAuditProvider), auditProviderType);
-
-                // if user key is struce CLR type
-                if (userKeyType[0].IsValueType && !userKeyType[0].IsEnum)
-                {
-                    var structAuditProviderType = typeof(IdentityAuditProviderForStruct<>).MakeGenericType(userKeyType[0]);
-                    services.AddScoped(typeof(IAuditProvider), structAuditProviderType);
-                }
+                app.AddStartupTransientData(MiCakeIdentityModule.CurrentIdentityUserKeyType, userKeyType[0]);
             });
 
             return builder;

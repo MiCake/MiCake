@@ -1,12 +1,8 @@
 ﻿using MiCake.Core;
-using MiCake.Core.DependencyInjection;
-using MiCake.EntityFrameworkCore.Modules;
-using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
-namespace MiCake.EntityFrameworkCore
+namespace MiCake.EntityFrameworkCore.Modules
 {
     public static class MiCakeBuilderEFCoreExtension
     {
@@ -19,7 +15,7 @@ namespace MiCake.EntityFrameworkCore
         public static IMiCakeBuilder UseEFCore<TDbContext>(this IMiCakeBuilder builder)
             where TDbContext : DbContext
         {
-            UseEFCore<TDbContext>(builder, null);
+            builder.UseEFCore<TDbContext>(null);
             return builder;
         }
 
@@ -32,10 +28,10 @@ namespace MiCake.EntityFrameworkCore
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseEFCore<TDbContext>(
             this IMiCakeBuilder builder,
-            Action<MiCakeEFCoreOptions> optionsBuilder)
+            Action<MiCakeEFCoreOptions>? optionsBuilder)
             where TDbContext : DbContext
         {
-            return UseEFCore(builder, typeof(TDbContext), optionsBuilder);
+            return builder.UseEFCore(typeof(TDbContext), optionsBuilder);
         }
 
         /// <summary>
@@ -48,20 +44,16 @@ namespace MiCake.EntityFrameworkCore
         public static IMiCakeBuilder UseEFCore(
             this IMiCakeBuilder builder,
             Type miCakeDbContextType,
-            Action<MiCakeEFCoreOptions> optionsBulder)
+            Action<MiCakeEFCoreOptions>? optionsBulder)
         {
-            MiCakeEFCoreOptions options = new(miCakeDbContextType);
+            MiCakeEFCoreOptions options = new() { DbContextType = miCakeDbContextType };
             optionsBulder?.Invoke(options);
 
             builder.ConfigureApplication((app, services) =>
             {
-                //register ef module to micake module collection
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeEFCoreModule));
+                app.SlotModule(typeof(MiCakeEFCoreModule));
 
-                services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
-
-                //add efcore uow services.
-                services.AddUowCoreServices(miCakeDbContextType);
+                services.ConfigureOptions(options);
             });
 
             return builder;

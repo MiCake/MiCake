@@ -1,8 +1,6 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Core.Util;
+using MiCake.DDD.Domain;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
@@ -20,16 +18,16 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
 
-        public virtual async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
+        public virtual async ValueTask<TAggregateRoot?> FindAsync(TKey ID, CancellationToken cancellationToken = default)
         {
-            var dbset = await GetDbSetAsync(cancellationToken);
-            return await dbset.FindAsync(new object[] { ID }, cancellationToken);
+            CheckValue.NotNull(ID, nameof(ID));
+
+            return await DbSet.FindAsync(new object[] { ID! }, cancellationToken);
         }
 
-        public async Task<long> GetCountAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<long> GetCountAsync(CancellationToken cancellationToken = default)
         {
-            var dbset = await GetDbSetAsync(cancellationToken);
-            return await dbset.LongCountAsync(cancellationToken);
+            return await DbSet.LongCountAsync(cancellationToken);
         }
     }
 }

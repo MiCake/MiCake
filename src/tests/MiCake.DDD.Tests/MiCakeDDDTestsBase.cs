@@ -4,7 +4,7 @@ using MiCake.DDD.Connector.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.DDD.Tests
+namespace MiCake.Cord.Tests
 {
     public abstract class MiCakeDDDTestsBase
     {

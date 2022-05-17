@@ -1,6 +1,6 @@
 ﻿using MiCake.Audit.Core;
+using MiCake.Cord;
 using MiCake.Core.Util.Reflection;
-using MiCake.DDD.Connector;
 using MiCake.Identity.Audit;
 using MiCake.Identity.Tests.FakeUser;
 using Microsoft.Extensions.DependencyInjection;

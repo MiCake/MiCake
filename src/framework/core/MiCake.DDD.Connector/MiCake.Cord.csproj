@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>An intermediate layer that connects DDD module and other modules.Contains dynamic repository,repository lifetime,etc.</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MiCake.DDD.Domain\MiCake.DDD.Domain.csproj" />
+
+		<!--In order to unit test-->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>MiCake.Cord.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+</Project>

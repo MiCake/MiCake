@@ -2,7 +2,7 @@
 using MiCake.DDD.Domain;
 using System;
 
-namespace MiCake.DDD.Tests.ProxyRepository
+namespace MiCake.Cord.Tests.ProxyRepository
 {
     public class TestRepositoryProvider<TAggregateRoot, TKey> : IRepositoryProvider<TAggregateRoot, TKey>
          where TAggregateRoot : class, IAggregateRoot<TKey>
