@@ -7,7 +7,7 @@
         /// <summary>
         /// The folder path to the sql xml file.
         /// </summary>
-        public string FolderPath { get; set; }
+        public string FolderPath { get; set; } = string.Empty;
 
         /// <summary>
         /// Indicate which file suffix can be loaded

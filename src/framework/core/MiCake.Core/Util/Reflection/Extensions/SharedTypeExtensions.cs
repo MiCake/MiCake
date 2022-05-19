@@ -189,7 +189,7 @@ namespace MiCake.Core.Util.Reflection
 
         public static IEnumerable<Type> GetBaseTypes(this Type type)
         {
-            type = type.GetTypeInfo().BaseType ?? throw new ArgumentNullException(nameof(type));
+            type = type.GetTypeInfo().BaseType!;
 
             while (type != null)
             {
@@ -205,7 +205,7 @@ namespace MiCake.Core.Util.Reflection
             {
                 yield return type;
 
-                type = type.GetTypeInfo().BaseType ?? throw new ArgumentNullException(nameof(type));
+                type = type.GetTypeInfo().BaseType!;
             }
         }
 
@@ -233,7 +233,7 @@ namespace MiCake.Core.Util.Reflection
                     }
                 }
 
-                type = typeInfo.BaseType ?? throw new ArgumentNullException(nameof(type));
+                type = typeInfo.BaseType!;
             }
             while (type != null);
         }
@@ -254,7 +254,7 @@ namespace MiCake.Core.Util.Reflection
                     yield return fieldInfo;
                 }
 
-                type = type.BaseType ?? throw new ArgumentNullException(nameof(type));
+                type = type.BaseType!;
             }
             while (type != null);
         }

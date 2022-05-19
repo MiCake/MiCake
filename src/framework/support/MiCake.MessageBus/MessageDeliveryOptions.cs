@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.MessageBus
+﻿namespace MiCake.MessageBus
 {
     /// <summary>
     /// Describes the configuration where messages are delivered.
@@ -10,6 +8,6 @@ namespace MiCake.MessageBus
         /// <summary>
         /// A set of topic name.
         /// </summary>
-        public IEnumerable<string> Topics { get; set; }
+        public IEnumerable<string> Topics { get; set; } = new List<string>();
     }
 }

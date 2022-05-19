@@ -7,7 +7,7 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// <summary>
     /// A read-only EF Core Repository base class.
     /// </summary>
-    public class EFReadOnlyRepository<TDbContext, TAggregateRoot, TKey> :
+    public abstract class EFReadOnlyRepository<TDbContext, TAggregateRoot, TKey> :
         EFRepositoryBase<TDbContext, TAggregateRoot, TKey>,
         IReadOnlyRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>

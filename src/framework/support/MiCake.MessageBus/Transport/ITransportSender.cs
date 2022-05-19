@@ -1,6 +1,4 @@
 ﻿using MiCake.MessageBus.Messages;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.MessageBus.Transport
 {

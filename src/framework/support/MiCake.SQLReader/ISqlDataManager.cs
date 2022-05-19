@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.SqlReader
+﻿namespace MiCake.SqlReader
 {
     /// <summary>
     /// The manager of all SQL data.

@@ -2,12 +2,11 @@
 using MiCake.Core;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity;
-using MiCake.Identity.Authentication.JwtToken;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MiCake
+namespace MiCake.AspNetCore
 {
     public static class MiCakeAspNetCoreIdenityBuilderExtension
     {
@@ -17,7 +16,7 @@ namespace MiCake
         /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="identityOptionsConfig"></param>
-        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeIdentityOptions> identityOptionsConfig = null)
+        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeIdentityOptions>? identityOptionsConfig = null)
             where TMiCakeUser : IMiCakeUser
         {
             return UseIdentity(builder, typeof(TMiCakeUser), identityOptionsConfig);
@@ -29,7 +28,7 @@ namespace MiCake
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>
         /// <param name="identityOptionsConfig"></param>
-        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeIdentityOptions> identityOptionsConfig = null)
+        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeIdentityOptions>? identityOptionsConfig = null)
         {
             //Add identity core.
             builder.AddIdentityCore(miCakeUserType);
@@ -37,7 +36,7 @@ namespace MiCake
             //register user services
             var userKeyType = TypeHelper.GetGenericArguments(miCakeUserType, typeof(IMiCakeUser<>));
             if (userKeyType == null || userKeyType[0] == null)
-                throw new ArgumentException($"Can not get the primary key type of IMiCakeUser,Please check your config when AddIdentity().");
+                throw new ArgumentException($"Can not get the primary key type of IMiCakeUser,Please check your config when {nameof(UseIdentity)}.");
 
             builder.ConfigureApplication((app, services) =>
             {
@@ -55,16 +54,6 @@ namespace MiCake
             });
 
             return builder;
-        }
-
-        /// <summary>
-        /// Add Jwt support.
-        /// </summary>
-        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        /// <param name="jwtSupportOptionsConfig">config <see cref="MiCakeJwtOptions"/>.This optios will be used by <see cref="IJwtAuthManager"/></param>
-        public static IMiCakeBuilder UseJwt(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> jwtSupportOptionsConfig)
-        {
-            return builder.AddJwt(jwtSupportOptionsConfig);
         }
     }
 }

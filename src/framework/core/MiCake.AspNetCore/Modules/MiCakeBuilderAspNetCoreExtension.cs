@@ -25,7 +25,7 @@ namespace MiCake.AspNetCore
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseAspNetCore(
             this IMiCakeBuilder builder,
-            Action<MiCakeAspNetOptions> optionsBulder)
+            Action<MiCakeAspNetOptions>? optionsBulder)
         {
             builder.ConfigureApplication((app, services) =>
             {

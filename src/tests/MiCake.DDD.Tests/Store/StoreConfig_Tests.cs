@@ -12,13 +12,6 @@ namespace MiCake.Cord.Tests.Store
         }
 
         [Fact]
-        public void Create_Model_With_Instance()
-        {
-            Assert.Same(StoreConfig.Instance, StoreConfig.Instance);
-            Assert.NotNull(StoreConfig.Instance.GetStoreModel());
-        }
-
-        [Fact]
         public void Create_Model_With_OneProvider()
         {
             var config = new StoreConfig().AddModelProvider(new FakeStoreModelProvider());

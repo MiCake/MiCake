@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.Identity.Authentication.JwtToken
+﻿namespace MiCake.Identity.Authentication.JwtToken
 {
     internal class DefaultRefreshTokenHandleGenerator : IRefreshTokenHandleGenerator
     {

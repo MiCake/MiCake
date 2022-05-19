@@ -1,127 +1,72 @@
 ﻿using MiCake.AspNetCore;
-using MiCake.Audit.Modules;
+using MiCake.Audit;
 using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore;
-using MiCake.EntityFrameworkCore.Modules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace MiCake
 {
     public static class MiCakeAspNetCoreStart_ServiceCollectionExtension
     {
         /// <summary>
-        /// Using MiCake's default configuration for aspnetcore
+        /// Add MiCake services with whole characters, including auto audit,auto uow save,auto wrap data,etc.
         /// </summary>
         /// <typeparam name="TEntryModule">Entry point module</typeparam>
         /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="services"><see cref="IServiceCollection"/></param>
-        /// <param name="miCakeConfig">The config for MiCake application</param>
-        /// <param name="miCakeEFConfig">The config for MiCake EFCore extension</param>
-        /// <param name="miCakeAspNetConfig">The config for MiCake AspNetCore extension</param>
-        public static IMiCakeBuilder AddMiCakeWithDefault<TEntryModule, TDbContext>(
+        /// <param name="options"></param>
+        public static IMiCakeBuilder AddMiCakeServices<TEntryModule, TDbContext>(
                 this IServiceCollection services,
-                Action<MiCakeApplicationOptions> miCakeConfig = null,
-                Action<MiCakeEFCoreOptions> miCakeEFConfig = null,
-                Action<MiCakeAspNetOptions> miCakeAspNetConfig = null)
+                Action<MiCakeStartupOptions>? options = null)
             where TDbContext : DbContext
             where TEntryModule : MiCakeModule
         {
-            return AddMiCakeWithDefault(services, typeof(TEntryModule), typeof(TDbContext), miCakeConfig, miCakeEFConfig, miCakeAspNetConfig);
+            return AddMiCakeServices(services, typeof(TEntryModule), typeof(TDbContext), options);
         }
 
         /// <summary>
-        /// Using MiCake's default configuration for aspnetcore
+        /// Add MiCake services with whole characters, including auto audit,auto uow save,auto wrap data,etc.
         /// </summary>
         /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="entryModule">Entry point module</param>
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(
+        public static IMiCakeBuilder AddMiCakeServices<TDbContext>(
             this IServiceCollection services,
             Type entryModule)
             where TDbContext : DbContext
         {
-            return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), null);
+            return AddMiCakeServices(services, entryModule, typeof(TDbContext), null);
         }
 
-        /// <summary>
-        /// Using MiCake's default configuration for aspnetcore
-        /// </summary>
-        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
-        /// <param name="services"><see cref="IServiceCollection"/></param>
-        /// <param name="entryModule">Entry point module</param>
-        /// <param name="miCakeConfig">The config for MiCake application</param>
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(
-            this IServiceCollection services,
-            Type entryModule,
-            Action<MiCakeApplicationOptions> miCakeConfig)
-            where TDbContext : DbContext
-        {
-            return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), miCakeConfig, null);
-        }
 
         /// <summary>
-        /// Using MiCake's default configuration for aspnetcore
-        /// </summary>
-        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
-        /// <param name="services"><see cref="IServiceCollection"/></param>
-        /// <param name="entryModule">Entry point module</param>
-        /// <param name="miCakeConfig">The config for MiCake application</param>
-        /// <param name="miCakeEFConfig">The config for MiCake EFCore extension</param>
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(
-            this IServiceCollection services,
-            Type entryModule,
-            Action<MiCakeApplicationOptions> miCakeConfig,
-            Action<MiCakeEFCoreOptions> miCakeEFConfig)
-            where TDbContext : DbContext
-        {
-            return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), miCakeConfig, miCakeEFConfig, null);
-        }
-
-        /// <summary>
-        /// Using MiCake's default configuration for aspnetcore
-        /// </summary>
-        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
-        /// <param name="services"><see cref="IServiceCollection"/></param>
-        /// <param name="entryModule">Entry point module</param>
-        /// <param name="miCakeConfig">The config for MiCake application</param>
-        /// <param name="miCakeEFConfig">The config for MiCake EFCore extension</param>
-        /// <param name="miCakeAspNetConfig">The config for MiCake AspNetCore extension</param>
-        public static IMiCakeBuilder AddMiCakeWithDefault<TDbContext>(
-            this IServiceCollection services,
-            Type entryModule,
-            Action<MiCakeApplicationOptions> miCakeConfig,
-            Action<MiCakeEFCoreOptions> miCakeEFConfig,
-            Action<MiCakeAspNetOptions> miCakeAspNetConfig)
-            where TDbContext : DbContext
-        {
-            return AddMiCakeWithDefault(services, entryModule, typeof(TDbContext), miCakeConfig, miCakeEFConfig, miCakeAspNetConfig);
-        }
-
-        /// <summary>
-        /// Using MiCake's default configuration for aspnetcore
+        /// Add MiCake services with whole characters, including auto audit,auto uow save,auto wrap data,etc.
         /// </summary>
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="EntryModule">Entry point module</param>
         /// <param name="miCakeDbContextType"><see cref="MiCakeDbContext"/></param>
-        /// <param name="miCakeConfig">The config for MiCake application</param>
-        /// <param name="miCakeEFConfig">The config for MiCake EFCore extension</param>
-        /// <param name="miCakeAspNetConfig">The config for MiCake AspNetCore extension</param>
+        /// <param name="options"></param>
         /// <returns></returns>
-        public static IMiCakeBuilder AddMiCakeWithDefault(
+        public static IMiCakeBuilder AddMiCakeServices(
             this IServiceCollection services,
             Type EntryModule,
             Type miCakeDbContextType,
-            Action<MiCakeApplicationOptions> miCakeConfig = null,
-            Action<MiCakeEFCoreOptions> miCakeEFConfig = null,
-            Action<MiCakeAspNetOptions> miCakeAspNetConfig = null)
+            Action<MiCakeStartupOptions>? options = null)
         {
-            return services.AddMiCake(EntryModule, miCakeConfig)
-                           .UseAudit()
-                           .UseEFCore(miCakeDbContextType, miCakeEFConfig)
-                           .UseAspNetCore(miCakeAspNetConfig);
+            var startUpOptions = new MiCakeStartupOptions();
+            options?.Invoke(startUpOptions);
+
+            var appOptions = startUpOptions.ApplicationOptions;
+            var efcoreOptions = startUpOptions.EFCoreOptions;
+            var auditOptions = startUpOptions.AuditOptions;
+            var aspnetCoreOptions = startUpOptions.AspNetOptions;
+
+            return services.AddMiCake(EntryModule, s => s = appOptions)
+                           .UseAudit(s => s = auditOptions)
+                           .UseEFCore(miCakeDbContextType, s => s = efcoreOptions)
+                           .UseAspNetCore(s => s = aspnetCoreOptions);
         }
     }
 }

@@ -1,13 +1,16 @@
 ﻿using MiCake.Cord.Storage.Internal;
+using MiCake.Core.Data;
 using MiCake.Core.Util;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace MiCake.Cord.Storage.Builder
 {
-    public class StoreEntityBuilder
+    public class StoreEntityBuilder : IHasAccessor<StoreEntityType>
     {
         protected readonly StoreEntityType _entitySource;
+
+        StoreEntityType IHasAccessor<StoreEntityType>.AccessibleData => _entitySource;
 
         public StoreEntityBuilder(IStoreEntityType storeEntity)
         {

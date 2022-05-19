@@ -8,6 +8,6 @@
         /// <summary>
         /// A topic name.
         /// </summary>
-        public string Topic { get; set; }
+        public string Topic { get; set; } = string.Empty;
     }
 }

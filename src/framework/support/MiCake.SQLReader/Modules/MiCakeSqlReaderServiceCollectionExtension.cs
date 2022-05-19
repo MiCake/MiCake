@@ -2,14 +2,12 @@
 using MiCake.SqlReader;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System;
-using System.Collections.Generic;
 
 namespace MiCake
 {
     public static class MiCakeSqlReaderServiceCollectionExtension
     {
-        public static IServiceCollection AddSqlReader(this IServiceCollection services, Action<MiCakeSqlReaderOptions> optionsAction = null)
+        public static IServiceCollection AddSqlReader(this IServiceCollection services, Action<MiCakeSqlReaderOptions>? optionsAction = null)
         {
             MiCakeSqlReaderOptions options = new();
             optionsAction?.Invoke(options);

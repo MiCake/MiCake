@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
-    public class EFRepository<TDbContext, TAggregateRoot, TKey> :
+    public abstract class EFRepository<TDbContext, TAggregateRoot, TKey> :
         EFReadOnlyRepository<TDbContext, TAggregateRoot, TKey>,
         IRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>
@@ -39,7 +39,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             CheckValue.NotNull(ID, nameof(ID));
 
-            var item = await DbSet.FindAsync(new object[] { ID }, cancellationToken);
+            var item = await DbSet.FindAsync(new object[] { ID! }, cancellationToken);
             if (item != null)
                 DbSet.Remove(item);
         }

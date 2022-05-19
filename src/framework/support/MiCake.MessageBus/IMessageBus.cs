@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.MessageBus
+﻿namespace MiCake.MessageBus
 {
     /// <summary>
     /// A message bus that responsible for sending messages and creating subscriptions.

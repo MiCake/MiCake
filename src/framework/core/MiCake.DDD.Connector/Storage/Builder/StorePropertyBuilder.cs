@@ -1,11 +1,14 @@
 ﻿using MiCake.Cord.Storage.Internal;
+using MiCake.Core.Data;
 using MiCake.Core.Util;
 
 namespace MiCake.Cord.Storage.Builder
 {
-    public class StorePropertyBuilder
+    public class StorePropertyBuilder : IHasAccessor<StoreProperty>
     {
         protected readonly StoreProperty _propertySource;
+
+        StoreProperty IHasAccessor<StoreProperty>.AccessibleData => _propertySource;
 
         public StorePropertyBuilder(IStoreProperty storeProperty)
         {

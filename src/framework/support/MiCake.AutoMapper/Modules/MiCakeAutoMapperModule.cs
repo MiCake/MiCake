@@ -1,14 +1,12 @@
 ﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
 using System.Reflection;
 
 namespace MiCake.AutoMapper
 {
-    public class MiCakeAutoMapperModule : MiCakeModule, IFeatureModule
+    [CoreModule]
+    public class MiCakeAutoMapperModule : MiCakeModule
     {
-        public FeatureModuleLoadOrder Order => FeatureModuleLoadOrder.AfterCommonModule;
-
         public override void ConfigServices(ModuleConfigServiceContext context)
         {
         }

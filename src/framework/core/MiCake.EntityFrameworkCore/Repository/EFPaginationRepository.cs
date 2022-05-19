@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
-    public class EFPaginationRepository<TDbContext, TAggregateRoot, TKey> : EFRepository<DbContext, TAggregateRoot, TKey>, IPaginationRepository<TAggregateRoot, TKey>
+    public abstract class EFPaginationRepository<TDbContext, TAggregateRoot, TKey> : EFRepository<DbContext, TAggregateRoot, TKey>, IPaginationRepository<TAggregateRoot, TKey>
             where TAggregateRoot : class, IAggregateRoot<TKey>
             where TDbContext : DbContext
     {

@@ -1,7 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.Identity.Authentication.JwtToken
+﻿namespace MiCake.Identity.Authentication.JwtToken
 {
     /// <summary>
     /// Use to generate a store key for jwt refresh-token.

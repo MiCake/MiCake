@@ -2,8 +2,6 @@
 using MiCake.MessageBus.Messages;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.MessageBus.Serialization
 {
@@ -17,7 +15,7 @@ namespace MiCake.MessageBus.Serialization
             CheckValue.NotNull(transportMessage, nameof(transportMessage));
 
             var bodyObject = JsonSerializer.Deserialize<object>(Encoding.UTF8.GetString(transportMessage.Body));
-            return Task.FromResult(new Message(transportMessage.Headers, bodyObject));
+            return Task.FromResult(new Message(transportMessage.Headers, bodyObject!));
         }
 
         public Task<TransportMessage> SerializeAsync(Message message, CancellationToken cancellationToken = default)

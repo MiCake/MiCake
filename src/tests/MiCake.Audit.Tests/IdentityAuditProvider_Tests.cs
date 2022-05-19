@@ -1,13 +1,13 @@
 ﻿using MiCake.Audit.Core;
+using MiCake.Audit.Tests.Fakes.User;
 using MiCake.Cord;
 using MiCake.Core.Util.Reflection;
-using MiCake.Identity.Audit;
-using MiCake.Identity.Tests.FakeUser;
+using MiCake.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using Xunit;
 
-namespace MiCake.Identity.Tests.Audit
+namespace MiCake.Audit.Tests
 {
     public class IdentityAuditProvider_Tests
     {

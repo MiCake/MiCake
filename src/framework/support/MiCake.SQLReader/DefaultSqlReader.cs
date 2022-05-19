@@ -9,17 +9,17 @@
             _manager = manager;
         }
 
-        public SqlValue Get(string sqlKey)
+        public SqlValue? Get(string sqlKey)
         {
             return Get<SqlValue>(sqlKey);
         }
 
-        public SqlValue Get(string sqlKey, string sectionName)
+        public SqlValue? Get(string sqlKey, string sectionName)
         {
             return Get<SqlValue>(sqlKey, sectionName);
         }
 
-        public T Get<T>(string sqlKey) where T : SqlValue
+        public T? Get<T>(string sqlKey) where T : SqlValue
         {
             foreach (var provider in _manager.DataProviders)
             {
@@ -32,7 +32,7 @@
             return null;
         }
 
-        public T Get<T>(string sqlKey, string sectionName) where T : SqlValue
+        public T? Get<T>(string sqlKey, string sectionName) where T : SqlValue
         {
             foreach (var provider in _manager.DataProviders)
             {

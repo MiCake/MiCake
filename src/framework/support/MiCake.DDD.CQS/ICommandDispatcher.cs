@@ -1,7 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.DDD.CQS
+﻿namespace MiCake.DDD.CQS
 {
     /// <summary>
     /// Indicate a dispatcher that dispatch a <see cref="ICommandModel"/> to a <see cref="ICommandHandler{T}"/>

@@ -3,7 +3,6 @@ using MiCake.Core.Util.Reflection;
 using MiCake.DDD.CQS;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Linq;
 using System.Reflection;
 
 namespace MiCake
@@ -21,7 +20,7 @@ namespace MiCake
             builder.ConfigureApplication((app, services) =>
             {
                 //Add CQS module.
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeCQSModule));
+                app.SlotModule(typeof(MiCakeCQSModule));
 
                 ResgisterAllCQSHandler(services, CQSAssemblies);
 

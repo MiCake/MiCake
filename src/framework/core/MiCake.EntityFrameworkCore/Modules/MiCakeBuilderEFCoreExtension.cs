@@ -1,8 +1,9 @@
 ﻿using MiCake.Core;
+using MiCake.EntityFrameworkCore.Modules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MiCake.EntityFrameworkCore.Modules
+namespace MiCake.EntityFrameworkCore
 {
     public static class MiCakeBuilderEFCoreExtension
     {

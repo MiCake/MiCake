@@ -1,5 +1,4 @@
 ﻿using MiCake.Cord.Storage;
-using MiCake.DDD.Connector.Store.Configure;
 
 namespace MiCake.Cord.Tests.Store
 {

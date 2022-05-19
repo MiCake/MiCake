@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8E61693E
 		src\tests\Directory.Build.props = src\tests\Directory.Build.props
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BaseMiCakeApplication", "samples\BaseMiCakeApplication\BaseMiCakeApplication.csproj", "{D42E309E-3D4B-411C-A469-73641116D010}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Audit.Tests", "src\tests\MiCake.Audit.Tests\MiCake.Audit.Tests.csproj", "{1F1478FA-F725-44A2-882F-A6F6657EC90F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Core.Tests", "src\tests\MiCake.Core.Tests\MiCake.Core.Tests.csproj", "{8935A16D-F3FE-4B21-AC7D-2546C561F8A3}"
@@ -71,16 +69,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.SqlReader", "src\fra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Cord", "src\framework\core\MiCake.DDD.Connector\MiCake.Cord.csproj", "{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.Dapper", "src\framework\support\MiCake.Dapper\MiCake.Dapper.csproj", "{ACEF24EB-E163-456C-AC1C-4159D81547B3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D42E309E-3D4B-411C-A469-73641116D010}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D42E309E-3D4B-411C-A469-73641116D010}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D42E309E-3D4B-411C-A469-73641116D010}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D42E309E-3D4B-411C-A469-73641116D010}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1F1478FA-F725-44A2-882F-A6F6657EC90F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1F1478FA-F725-44A2-882F-A6F6657EC90F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F1478FA-F725-44A2-882F-A6F6657EC90F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -173,12 +169,15 @@ Global
 		{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{D42E309E-3D4B-411C-A469-73641116D010} = {8436B979-6C9B-4CF7-B020-548E84408B77}
 		{1F1478FA-F725-44A2-882F-A6F6657EC90F} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
 		{8935A16D-F3FE-4B21-AC7D-2546C561F8A3} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
 		{E3B6CE90-BB8A-4E5D-A5AE-223F681204DF} = {8E61693E-3165-470C-99F4-E0A9BAB8BCC3}
@@ -204,6 +203,7 @@ Global
 		{06DBDA3E-B544-4360-B726-DF2BAD79FE04} = {B2A15D60-5BE7-4BF4-82DC-314046E83357}
 		{805222ED-DAC7-4317-99D8-281539E5F2D2} = {B2A15D60-5BE7-4BF4-82DC-314046E83357}
 		{5D3BA056-E922-4B37-8E2A-4753A3CF9E25} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
+		{ACEF24EB-E163-456C-AC1C-4159D81547B3} = {B2A15D60-5BE7-4BF4-82DC-314046E83357}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C31E5600-E4DC-4009-A5F6-E5250C8085F4}

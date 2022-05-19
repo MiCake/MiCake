@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.DDD.CQS
 {
@@ -16,7 +13,7 @@ namespace MiCake.DDD.CQS
 
         public Task Dispatch<TCommand>(TCommand command, CancellationToken cancellationToken = default) where TCommand : ICommandModel
         {
-            var handlerInstance = _handerFactory.GetService<ICommandHandler<TCommand>>();
+            var handlerInstance = _handerFactory.GetService<ICommandHandler<TCommand>>() ?? throw new Exception($"Command handler not found for command {typeof(TCommand).FullName}");
 
             return handlerInstance.Handle(command, cancellationToken);
         }

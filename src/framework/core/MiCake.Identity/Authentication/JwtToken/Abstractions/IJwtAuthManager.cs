@@ -1,7 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
 // Expose namespace withou abstractons.
 namespace MiCake.Identity.Authentication.JwtToken

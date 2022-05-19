@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.DDD.CQS
 {
@@ -16,7 +13,7 @@ namespace MiCake.DDD.CQS
 
         public virtual Task<TResult> Dispatch<TQuery, TResult>(TQuery queryModel, CancellationToken cancellationToken = default) where TQuery : IQueryModel
         {
-            var handlerInstance = _handerFactory.GetService<IQueryHandler<TQuery, TResult>>();
+            var handlerInstance = _handerFactory.GetService<IQueryHandler<TQuery, TResult>>() ?? throw new InvalidOperationException($"No handler found for query type {typeof(TQuery).Name}");
 
             return handlerInstance.Handle(queryModel, cancellationToken);
         }

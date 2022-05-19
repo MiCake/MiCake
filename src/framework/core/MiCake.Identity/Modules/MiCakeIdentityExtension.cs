@@ -55,7 +55,7 @@ namespace MiCake.Identity
         /// <param name="builder"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public static IMiCakeBuilder AddJwt(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> options)
+        public static IMiCakeBuilder UseJwt(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> options)
         {
             builder.ConfigureApplication((app, services) =>
             {

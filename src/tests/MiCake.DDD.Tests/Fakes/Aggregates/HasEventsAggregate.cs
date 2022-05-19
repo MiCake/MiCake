@@ -1,5 +1,5 @@
-﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Tests.Fakes.DomainEvents;
+﻿using MiCake.Cord.Tests.Fakes.DomainEvents;
+using MiCake.DDD.Domain;
 
 namespace MiCake.Cord.Tests.Fakes.Aggregates
 {

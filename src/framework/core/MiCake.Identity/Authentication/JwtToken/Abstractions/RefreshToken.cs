@@ -1,5 +1,4 @@
 ﻿using MiCake.Core.Util;
-using System;
 using System.Security.Claims;
 
 namespace MiCake.Identity.Authentication.JwtToken

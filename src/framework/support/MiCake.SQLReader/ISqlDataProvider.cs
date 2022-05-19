@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiCake.SqlReader
+﻿namespace MiCake.SqlReader
 {
     /// <summary>
     /// The provider that reads SQL data from the file
@@ -31,7 +29,7 @@ namespace MiCake.SqlReader
         /// </summary>
         /// <param name="sqlKey"></param>
         /// <returns></returns>
-        SqlValue Get(string sqlKey);
+        SqlValue? Get(string sqlKey);
 
         /// <summary>
         /// Get the <see cref="SqlValue"/> by sqlkey.
@@ -43,7 +41,7 @@ namespace MiCake.SqlReader
         /// <param name="sqlKey"></param>
         /// <param name="sectionName"></param>
         /// <returns></returns>
-        SqlValue Get(string sqlKey, string sectionName);
+        SqlValue? Get(string sqlKey, string sectionName);
 
         /// <summary>
         /// Get the <see cref="SqlValue"/> by sqlkey.
@@ -51,7 +49,7 @@ namespace MiCake.SqlReader
         /// <typeparam name="T"></typeparam>
         /// <param name="sqlKey"></param>
         /// <returns></returns>
-        T Get<T>(string sqlKey) where T : SqlValue;
+        T? Get<T>(string sqlKey) where T : SqlValue;
 
         /// <summary>
         /// Get the <see cref="SqlValue"/> by sqlkey.
@@ -60,6 +58,6 @@ namespace MiCake.SqlReader
         /// <param name="sqlKey"></param>
         /// <param name="sectionName"></param>
         /// <returns></returns>
-        T Get<T>(string sqlKey, string sectionName) where T : SqlValue;
+        T? Get<T>(string sqlKey, string sectionName) where T : SqlValue;
     }
 }

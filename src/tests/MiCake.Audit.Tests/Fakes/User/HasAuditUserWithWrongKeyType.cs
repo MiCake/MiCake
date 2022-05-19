@@ -1,8 +1,8 @@
-﻿using MiCake.Audit;
-using MiCake.DDD.Domain;
+﻿using MiCake.DDD.Domain;
+using MiCake.Identity;
 using System;
 
-namespace MiCake.Identity.Tests.FakeUser
+namespace MiCake.Audit.Tests.Fakes.User
 {
     /// <summary>
     /// Will be worng,creator key type is different from user key type.

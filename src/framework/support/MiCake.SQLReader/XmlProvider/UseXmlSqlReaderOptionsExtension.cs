@@ -1,10 +1,8 @@
-﻿using System;
-
-namespace MiCake.SqlReader.XmlProvider
+﻿namespace MiCake.SqlReader.XmlProvider
 {
     public static class UseXmlSqlReaderOptionsExtension
     {
-        public static void UseXmlFileProvider(this MiCakeSqlReaderOptions sqlReaderOptions, Action<XmlFileSqlReaderOptions> optionsAction = null)
+        public static void UseXmlFileProvider(this MiCakeSqlReaderOptions sqlReaderOptions, Action<XmlFileSqlReaderOptions>? optionsAction = null)
         {
             var options = new XmlFileSqlReaderOptions();
             optionsAction?.Invoke(options);

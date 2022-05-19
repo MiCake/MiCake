@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using MiCake.Core.Modularity;
-using System;
 
 namespace MiCake.AutoMapper
 {

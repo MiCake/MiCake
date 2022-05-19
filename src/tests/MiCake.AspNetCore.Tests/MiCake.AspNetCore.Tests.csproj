@@ -19,4 +19,8 @@
     <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DataWrapper\" />
+  </ItemGroup>
+
 </Project>

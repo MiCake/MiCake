@@ -1,22 +1,20 @@
-﻿using System.Collections.Generic;
-
-namespace MiCake.SqlReader
+﻿namespace MiCake.SqlReader
 {
     public abstract class BaseSqlDataProvider : ISqlDataProvider
     {
         public Dictionary<string, Dictionary<string, SqlValue>> SqlValueData { get; protected set; } = new Dictionary<string, Dictionary<string, SqlValue>>();
 
-        public SqlValue Get(string sqlKey)
+        public SqlValue? Get(string sqlKey)
         {
             return Get<SqlValue>(sqlKey);
         }
 
-        public SqlValue Get(string sqlKey, string sectionName)
+        public SqlValue? Get(string sqlKey, string sectionName)
         {
             return GetData(sqlKey, sectionName);
         }
 
-        public T Get<T>(string sqlKey) where T : SqlValue
+        public T? Get<T>(string sqlKey) where T : SqlValue
         {
             foreach (var sectionName in SqlValueData.Keys)
             {
@@ -28,7 +26,7 @@ namespace MiCake.SqlReader
             return null;
         }
 
-        public T Get<T>(string sqlKey, string sectionName) where T : SqlValue
+        public T? Get<T>(string sqlKey, string sectionName) where T : SqlValue
         {
             return Get(sqlKey, sectionName) as T;
         }
@@ -38,7 +36,7 @@ namespace MiCake.SqlReader
             return Get(sqlKey) != null;
         }
 
-        private SqlValue GetData(string sqlKey, string sectionName)
+        private SqlValue? GetData(string sqlKey, string sectionName)
         {
             if (!SqlValueData.TryGetValue(sectionName, out var sectionData))
                 return null;

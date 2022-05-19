@@ -1,7 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.MessageBus
+﻿namespace MiCake.MessageBus
 {
     /// <summary>
     /// A provider for <see cref="IMessageSubscriber"/>.

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Xml.Serialization;
+﻿using System.Xml.Serialization;
 
 namespace MiCake.SqlReader
 {
@@ -8,15 +6,18 @@ namespace MiCake.SqlReader
     [Serializable]
     public class SqlConfig
     {
-        [XmlArrayItem(nameof(SqlValue))] public List<SqlValue> SqlValues { get; set; }
+        [XmlArrayItem(nameof(SqlValue))]
+        public List<SqlValue> SqlValues { get; set; } = new();
     }
 
     [Serializable]
     public class SqlValue
     {
-        [XmlAttribute] public string SqlKey { get; set; }
+        [XmlAttribute]
+        public string SqlKey { get; set; } = string.Empty;
 
-        [XmlElement] public string CommandText { get; set; }
+        [XmlElement]
+        public string CommandText { get; set; } = string.Empty;
 
         public bool IsEmpty()
         {

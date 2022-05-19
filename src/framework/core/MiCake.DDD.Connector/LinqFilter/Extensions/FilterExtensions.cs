@@ -68,7 +68,7 @@ namespace MiCake.Cord.LinqFilter.Extensions
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
 
-        public static Expression<Func<T, bool>> GetFilterExpression<T>(this List<Filter> filters)
+        public static Expression<Func<T, bool>>? GetFilterExpression<T>(this List<Filter> filters)
         {
             if (filters.Count == 0)
             {

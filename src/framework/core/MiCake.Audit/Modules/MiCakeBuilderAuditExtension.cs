@@ -1,6 +1,7 @@
-﻿using MiCake.Core;
+﻿using MiCake.Audit.Modules;
+using MiCake.Core;
 
-namespace MiCake.Audit.Modules
+namespace MiCake.Audit
 {
     public static class MiCakeBuilderAuditCoreExtension
     {

@@ -80,9 +80,9 @@ namespace MiCake.Core.Util
             return value;
         }
 
-        public static string NotNullOrWhiteSpace(string value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
+        public static string NotNullOrWhiteSpace(string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
         {
-            if (value.IsNullOrWhiteSpace())
+            if (value == null || value.IsNullOrWhiteSpace())
             {
                 throw new ArgumentException($"{parameterName} can not be null, empty or white space!", parameterName);
             }
@@ -100,9 +100,9 @@ namespace MiCake.Core.Util
             return value;
         }
 
-        public static string NotNullOrEmpty(string value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
+        public static string NotNullOrEmpty(string? value, string parameterName, int maxLength = int.MaxValue, int minLength = 0)
         {
-            if (value.IsNullOrEmpty())
+            if (value == null || value.IsNullOrEmpty())
             {
                 throw new ArgumentException($"{parameterName} can not be null or empty!", parameterName);
             }

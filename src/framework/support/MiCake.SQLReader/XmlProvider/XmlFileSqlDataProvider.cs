@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Xml.Serialization;
 
 namespace MiCake.SqlReader.XmlProvider
@@ -17,7 +15,6 @@ namespace MiCake.SqlReader.XmlProvider
         public override void Dispose()
         {
             SqlValueData.Clear();
-            SqlValueData = null;
         }
 
         public override void PopulateSql()
@@ -32,19 +29,19 @@ namespace MiCake.SqlReader.XmlProvider
                 if (string.IsNullOrWhiteSpace(text))
                     continue;
 
-                var sqlConfig = XmlToObject<SqlConfig>(text);
+                var sqlConfig = XmlToObject<SqlConfig>(text) ?? throw new InvalidOperationException($"Can not convert xml file to SqlConfig object. File: {currentXmlFile.FullName}");
 
                 SqlValueData.Add(currentXmlFile.Name.Replace(_options.FileSuffix, ""), sqlConfig.SqlValues.ToDictionary(s => s.SqlKey));
             }
         }
 
 
-        protected T XmlToObject<T>(string xml) where T : class
+        protected T? XmlToObject<T>(string xml) where T : class
         {
             var serializer = new XmlSerializer(typeof(T));
             using var ms = new MemoryStream(Encoding.UTF8.GetBytes(xml));
 
-            return (T)serializer.Deserialize(ms);
+            return serializer.Deserialize(ms) as T;
         }
     }
 }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.MessageBus
+﻿namespace MiCake.MessageBus
 {
     /// <summary>
     /// Define a manager to manange <see cref="IMessageSubscriber"/>

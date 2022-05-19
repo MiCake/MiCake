@@ -1,14 +1,9 @@
 ﻿using MiCake.Core.Util;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.Identity.Authentication.JwtToken
 {

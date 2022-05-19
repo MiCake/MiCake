@@ -15,7 +15,7 @@ namespace MiCake.Cord.LinqFilter.Extensions
 
         public static IQueryable<T> Sort<T>(this IQueryable<T> query, Sort order)
         {
-            if (order == null)
+            if (order == null || order.PropertyName == null)
             {
                 return query;
             }

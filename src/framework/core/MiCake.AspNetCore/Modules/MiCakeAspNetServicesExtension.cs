@@ -1,10 +1,9 @@
-﻿using MiCake.AspNetCore;
-using MiCake.Core;
+﻿using MiCake.Core;
 using MiCake.Core.Data;
+using MiCake.Core.DependencyInjection;
 using MiCake.Core.Modularity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace MiCake
 {
@@ -29,19 +28,27 @@ namespace MiCake
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="entryModule">Entry point module</param>
         /// <param name="configOptions">The config for MiCake application</param>
-        /// <param name="needNewScope">New use new service scope to resolve micake core service</param>
+        /// <param name="needNewServiceScope">New use new service scope to resolve micake core service</param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder AddMiCake(
             this IServiceCollection services,
             Type entryModule,
-            Action<MiCakeApplicationOptions> configOptions,
-            bool needNewScope = false)
+            Action<MiCakeApplicationOptions>? configOptions,
+            bool needNewServiceScope = false)
         {
             MiCakeApplicationOptions options = new();
 
             configOptions?.Invoke(options);
 
-            return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder();
+            var builder = new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewServiceScope).GetMiCakeBuilder();
+
+            // add Core module.
+            builder.ConfigureApplication((s) =>
+            {
+                s.SlotModule<MiCakeDIModule>();
+            });
+
+            return builder;
         }
 
         /// <summary>
@@ -62,15 +69,15 @@ namespace MiCake
         /// <typeparam name="TEntryModule">Entry point module</typeparam>
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="configOptions">The config for MiCake application</param>
-        /// <param name="needNewScope">New use new service scope to resolve micake core service</param>
+        /// <param name="needNewServiceScope">New use new service scope to resolve micake core service</param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder AddMiCake<TEntryModule>(
             this IServiceCollection services,
             Action<MiCakeApplicationOptions> configOptions,
-            bool needNewScope = false)
+            bool needNewServiceScope = false)
              where TEntryModule : MiCakeModule
         {
-            return AddMiCake(services, typeof(TEntryModule), configOptions, needNewScope);
+            return AddMiCake(services, typeof(TEntryModule), configOptions, needNewServiceScope);
         }
 
         /// <summary>
@@ -87,8 +94,6 @@ namespace MiCake
             {
                 needServiceProvider.SetData(applicationBuilder.ApplicationServices);
             }
-
-            var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;
 
             micakeApp.Start();
         }

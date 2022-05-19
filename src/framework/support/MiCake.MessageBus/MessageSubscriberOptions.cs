@@ -8,6 +8,6 @@
         /// <summary>
         /// Name of the subscription.(for rabbit mq it's mean queue name.)
         /// </summary>
-        public string SubscriptionName { get; set; }
+        public string SubscriptionName { get; set; } = string.Empty;
     }
 }

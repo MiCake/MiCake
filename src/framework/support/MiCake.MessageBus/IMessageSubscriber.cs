@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MiCake.MessageBus
+﻿namespace MiCake.MessageBus
 {
     /// <summary>
     /// Define a message subscriber that can receive message from <see cref="IMessageBus"/>.
