@@ -34,8 +34,7 @@ namespace MiCake.Dapper
             {
                 app.SlotModule<MiCakeDapperModule>();
 
-                Action<MiCakeDapperOptions> config = s => s = options;
-                services.ConfigureOptions(config);
+                services.Configure<MiCakeDapperOptions>(s => s = options);
             });
 
             return builder;

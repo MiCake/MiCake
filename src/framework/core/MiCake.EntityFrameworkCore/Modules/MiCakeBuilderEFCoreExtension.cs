@@ -54,7 +54,7 @@ namespace MiCake.EntityFrameworkCore
             {
                 app.SlotModule(typeof(MiCakeEFCoreModule));
 
-                services.ConfigureOptions(options);
+                services.Configure<MiCakeEFCoreOptions>(s => s = options);
             });
 
             return builder;

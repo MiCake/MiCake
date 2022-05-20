@@ -1,5 +1,4 @@
 using MiCake.Core.Data;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace MiCake.Uow.Internal
@@ -10,7 +9,7 @@ namespace MiCake.Uow.Internal
         protected bool _isRollback = false;
         protected Action<IUnitOfWorkNode>? _coreNodeDisposeHandler;
 
-        public IUnitOfWorkNode? Parent { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public IUnitOfWorkNode? Parent { get; set; }
 
         public void SetData(Action<IUnitOfWorkNode> parts)
         {
@@ -41,7 +40,7 @@ namespace MiCake.Uow.Internal
         public Guid ID { get; }
         public bool IsDisposed { get; private set; }
         public UnitOfWorkOptions UnitOfWorkOptions { get; set; } = new();
-        public IServiceScope ServiceScope { get; private set; }
+        public IServiceProvider ServiceProvider { get; private set; }
 
         private readonly IEnumerable<ITransactionProvider> _transactionProviders;
 
@@ -55,10 +54,10 @@ namespace MiCake.Uow.Internal
 
         private readonly ILogger<UnitOfWork> _logger;
 
-        public UnitOfWork(IServiceScope scope, IEnumerable<ITransactionProvider> transactionProviders, ILoggerFactory loggerFactory)
+        public UnitOfWork(IServiceProvider serviceProvider, IEnumerable<ITransactionProvider> transactionProviders, ILoggerFactory loggerFactory)
         {
             ID = Guid.NewGuid();
-            ServiceScope = scope;
+            ServiceProvider = serviceProvider;
 
             _transactionProviders = transactionProviders.OrderBy(s => s.Order);
             _logger = loggerFactory.CreateLogger<UnitOfWork>();

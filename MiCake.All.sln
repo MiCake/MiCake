@@ -69,7 +69,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.SqlReader", "src\fra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Cord", "src\framework\core\MiCake.DDD.Connector\MiCake.Cord.csproj", "{5D3BA056-E922-4B37-8E2A-4753A3CF9E25}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiCake.Dapper", "src\framework\support\MiCake.Dapper\MiCake.Dapper.csproj", "{ACEF24EB-E163-456C-AC1C-4159D81547B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiCake.Dapper", "src\framework\support\MiCake.Dapper\MiCake.Dapper.csproj", "{ACEF24EB-E163-456C-AC1C-4159D81547B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodoApp", "samples\TodoApp\TodoApp.csproj", "{1D99D08D-AC31-4301-AAD6-5FEC8819B5FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -173,6 +175,10 @@ Global
 		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACEF24EB-E163-456C-AC1C-4159D81547B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D99D08D-AC31-4301-AAD6-5FEC8819B5FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D99D08D-AC31-4301-AAD6-5FEC8819B5FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D99D08D-AC31-4301-AAD6-5FEC8819B5FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D99D08D-AC31-4301-AAD6-5FEC8819B5FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -204,6 +210,7 @@ Global
 		{805222ED-DAC7-4317-99D8-281539E5F2D2} = {B2A15D60-5BE7-4BF4-82DC-314046E83357}
 		{5D3BA056-E922-4B37-8E2A-4753A3CF9E25} = {6EC5B8D1-5D5D-476C-9C91-1FB2AC8EAF43}
 		{ACEF24EB-E163-456C-AC1C-4159D81547B3} = {B2A15D60-5BE7-4BF4-82DC-314046E83357}
+		{1D99D08D-AC31-4301-AAD6-5FEC8819B5FA} = {8436B979-6C9B-4CF7-B020-548E84408B77}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C31E5600-E4DC-4009-A5F6-E5250C8085F4}

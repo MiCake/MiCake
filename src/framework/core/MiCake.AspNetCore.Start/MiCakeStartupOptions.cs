@@ -25,6 +25,6 @@ namespace MiCake
         /// <summary>
         /// Some options for configure MiCake AspNet Core web.
         /// </summary>
-        public MiCakeAspNetOptions AspNetOptions { get; set; } = new();
+        public MiCakeAspNetCoreOptions AspNetOptions { get; set; } = new();
     }
 }

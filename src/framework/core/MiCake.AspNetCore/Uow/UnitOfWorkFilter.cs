@@ -9,9 +9,9 @@ namespace MiCake.AspNetCore.Uow
     public class UnitOfWorkFilter : IAsyncActionFilter
     {
         private readonly IUnitOfWorkManager _unitOfWorkManager;
-        private readonly MiCakeAspNetOptions _options;
+        private readonly MiCakeAspNetCoreOptions _options;
 
-        public UnitOfWorkFilter(IUnitOfWorkManager unitOfWorkManager, IOptions<MiCakeAspNetOptions> options)
+        public UnitOfWorkFilter(IUnitOfWorkManager unitOfWorkManager, IOptions<MiCakeAspNetCoreOptions> options)
         {
             _unitOfWorkManager = unitOfWorkManager;
             _options = options.Value;

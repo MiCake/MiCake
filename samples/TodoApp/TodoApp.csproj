@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.4" />
+    <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Domain\Aggregates\" />
+    <Folder Include="Domain\Repositories\" />
+    <Folder Include="EFConfiguretion\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\framework\core\MiCake.AspNetCore.Start\MiCake.AspNetCore.Start.csproj" />
+    <ProjectReference Include="..\..\src\framework\support\MiCake.AutoMapper\MiCake.AutoMapper.csproj" />
+    <ProjectReference Include="..\..\src\framework\support\MiCake.Dapper\MiCake.Dapper.csproj" />
+  </ItemGroup>
+
+</Project>

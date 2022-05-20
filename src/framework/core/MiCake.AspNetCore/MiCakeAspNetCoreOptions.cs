@@ -1,5 +1,6 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
 using MiCake.Core;
+using MiCake.Core.Data;
 using MiCake.Uow;
 
 namespace MiCake.AspNetCore
@@ -7,7 +8,7 @@ namespace MiCake.AspNetCore
     /// <summary>
     /// The options for micake asp net core.
     /// </summary>
-    public class MiCakeAspNetOptions
+    public class MiCakeAspNetCoreOptions : ICanApplyData<MiCakeAspNetCoreOptions>
     {
         /// <summary>
         /// Indicate need open <see cref="AutoUnitOfWorkAttribute"/> in all controller.
@@ -28,8 +29,14 @@ namespace MiCake.AspNetCore
         /// </summary>
         public bool WrapResponseAndPureExceptionData { get; set; } = true;
 
-        public MiCakeAspNetOptions()
+        public MiCakeAspNetCoreOptions()
         {
+        }
+
+        public void Apply(MiCakeAspNetCoreOptions options)
+        {
+            GlobalAutoUowInController = options.GlobalAutoUowInController;
+            WrapResponseAndPureExceptionData = options.WrapResponseAndPureExceptionData;
         }
     }
 }

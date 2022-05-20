@@ -1,9 +1,11 @@
-﻿namespace MiCake.Core
+﻿using MiCake.Core.Data;
+
+namespace MiCake.Core
 {
     /// <summary>
     /// The configuration of building the core program of micake
     /// </summary>
-    public class MiCakeApplicationOptions
+    public class MiCakeApplicationOptions : ICanApplyData<MiCakeApplicationOptions>
     {
         /// <summary>
         /// Specifies a custom module sorter that can change the startup order of MiCake application modules.

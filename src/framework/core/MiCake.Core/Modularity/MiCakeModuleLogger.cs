@@ -16,7 +16,7 @@ namespace MiCake.Core.Modularity
 
         public void LogModuleInfo(string phaseStr, IMiCakeModuleCollection phaseModules)
         {
-            var moduleStr = string.Join("->", phaseModules.ToList().Where(s => !s.IsCoreModule));
+            var moduleStr = string.Join("->", phaseModules.ToList().Where(s => !s.IsCoreModule).Select(s => s.ModuleType.Name));
 
             _logger.LogInformation($"MiCake Phase - {phaseStr} : {moduleStr}");
         }

@@ -4,20 +4,20 @@ namespace MiCake.Uow.Internal
 {
     internal class UnitOfWorkManager : IUnitOfWorkManager
     {
-        private readonly IServiceScope _currentScope;
+        private readonly IServiceProvider _currentProvider;
 
         private bool _isDisposed = false;
 
         private IUnitOfWorkNode? _currentUOW;
 
-        public UnitOfWorkManager(IServiceScope serviceScope)
+        public UnitOfWorkManager(IServiceProvider serivceProvider)
         {
-            _currentScope = serviceScope;
+            _currentProvider = serivceProvider;
         }
 
         public IUnitOfWork Create()
         {
-            return CreateNewUnitOfWork(_currentScope, new());
+            return CreateNewUnitOfWork(_currentProvider, new());
         }
 
         public IUnitOfWork Create(UnitOfWorkCreateType createType, UnitOfWorkOptions unitOfWorkOptions)
@@ -52,10 +52,10 @@ namespace MiCake.Uow.Internal
         }
 
         //Create a new unit of work with options. 
-        private IUnitOfWork CreateNewUnitOfWork(IServiceScope serviceScope, UnitOfWorkOptions options)
+        private IUnitOfWork CreateNewUnitOfWork(IServiceProvider serviceProvider, UnitOfWorkOptions options)
         {
             UnitOfWork result;
-            result = serviceScope.ServiceProvider.GetRequiredService<UnitOfWork>();
+            result = serviceProvider.GetRequiredService<UnitOfWork>();
 
             if (result == _currentUOW)
             {

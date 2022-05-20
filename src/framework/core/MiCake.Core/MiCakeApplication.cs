@@ -35,7 +35,7 @@ namespace MiCake.Core
             }
         }
 
-        public MiCakeTransientData AccessibleData => new();
+        public MiCakeTransientData AccessibleData { get; } = new();
 
         private Type? _entryType;
         private IMiCakeModuleBoot? _miCakeModuleBoot;

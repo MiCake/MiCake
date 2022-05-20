@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace MiCake.Uow
+﻿namespace MiCake.Uow
 {
     /// <summary>
     /// Define a unit of work.
@@ -28,10 +26,10 @@ namespace MiCake.Uow
         List<IUnitOfWorkInterceptor> Interceptors { get; }
 
         /// <summary>
-        /// The <see cref="IServiceScope"/> the unit of work depends on.
+        /// The <see cref="IServiceProvider"/> the unit of work depends on.
         /// The services created through this ServicScope are released together with the unit of work.
         /// </summary>
-        IServiceScope ServiceScope { get; }
+        IServiceProvider ServiceProvider { get; }
 
         /// <summary>
         /// Commits all changes made to the database in the current unit of work asynchronously.

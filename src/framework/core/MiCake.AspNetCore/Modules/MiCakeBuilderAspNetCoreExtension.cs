@@ -25,13 +25,13 @@ namespace MiCake.AspNetCore
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseAspNetCore(
             this IMiCakeBuilder builder,
-            Action<MiCakeAspNetOptions>? optionsBulder)
+            Action<MiCakeAspNetCoreOptions>? optionsBulder)
         {
             builder.ConfigureApplication((app, services) =>
             {
                 app.SlotModule<MiCakeAspNetCoreModule>();
 
-                services.Configure<MiCakeAspNetOptions>(options =>
+                services.Configure<MiCakeAspNetCoreOptions>(options =>
                 {
                     optionsBulder?.Invoke(options);
                 });

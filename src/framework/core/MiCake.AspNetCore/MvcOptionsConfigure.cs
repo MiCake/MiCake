@@ -10,10 +10,10 @@ namespace MiCake.AspNetCore
     /// </summary>
     internal class MvcOptionsConfigure : IConfigureOptions<MvcOptions>
     {
-        private readonly MiCakeAspNetOptions _micakeAspNetOptions;
+        private readonly MiCakeAspNetCoreOptions _micakeAspNetOptions;
 
 
-        public MvcOptionsConfigure(IOptions<MiCakeAspNetOptions> micakeAspNetOptions)
+        public MvcOptionsConfigure(IOptions<MiCakeAspNetCoreOptions> micakeAspNetOptions)
         {
             _micakeAspNetOptions = micakeAspNetOptions.Value;
         }
