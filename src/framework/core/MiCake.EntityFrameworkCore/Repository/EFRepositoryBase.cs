@@ -13,23 +13,48 @@ namespace MiCake.EntityFrameworkCore.Repository
          where TEntity : class, IEntity<TKey>
          where TDbContext : DbContext
     {
+        private object lockObj = new object();
+
         /// <summary>
         /// Use to get need services.
         /// </summary>
         protected IServiceProvider ServiceProvider { get; }
 
-        protected TDbContext? CurrentDbContext { get; private set; }
+        private TDbContext? _dbContext;
+        protected TDbContext? CurrentDbContext
+        {
+            get
+            {
+                if (_dbContext != null)
+                {
+                    return _dbContext;
+                }
+                else
+                {
+                    lock (lockObj)
+                    {
+                        _dbContext = GetDbContext();
+
+                        return _dbContext;
+                    }
+                }
+            }
+        }
 
         protected DbSet<TEntity> DbSet => CurrentDbContext!.Set<TEntity>();
 
         public EFRepositoryBase(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
+        }
 
-            var currentTransactionObjs = serviceProvider.GetService<IUnitOfWorkManager>()?.GetCurrentUnitOfWork()?.GetTransactionObjects();
+        private TDbContext GetDbContext()
+        {
+            var currentTransactionObjs = ServiceProvider.GetService<IUnitOfWorkManager>()?.GetCurrentUnitOfWork()?.GetTransactionObjects();
             if (currentTransactionObjs == null || currentTransactionObjs.Count == 0)
             {
-                throw new InvalidOperationException($"Can not get {nameof(TDbContext)} from {nameof(IUnitOfWorkManager)},please check the {nameof(EFRepositoryBase<TDbContext, TEntity, TKey>)} is used in the right way.");
+                // if there is no uow,give dbcontext from service provider directly.
+                return ServiceProvider.GetService<TDbContext>()!;
             }
 
             var currentEfCoreDbContext = currentTransactionObjs.Where(s => s is EFCoreTransactionObject).FirstOrDefault();
@@ -38,7 +63,7 @@ namespace MiCake.EntityFrameworkCore.Repository
                 throw new InvalidOperationException($"Get {currentTransactionObjs!.Count} transaction object,but there have no {nameof(EFCoreTransactionObject)}.");
             }
 
-            CurrentDbContext = (TDbContext)currentEfCoreDbContext!.TransactionInstance;
+            return (TDbContext)currentEfCoreDbContext!.TransactionInstance;
         }
     }
 }

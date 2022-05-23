@@ -8,7 +8,7 @@ namespace MiCake.Cord.Paging
     /// </summary>
     /// <typeparam name="TAggregateRoot"></typeparam>
     /// <typeparam name="TKey"></typeparam>
-    public interface IPaginationRepository<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey>
+    public interface IPaginationRepository<TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey>
     {
         /// <summary>
         /// Paing query data from repository by <see cref="PaginationFilter"/>

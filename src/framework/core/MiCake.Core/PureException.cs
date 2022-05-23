@@ -11,5 +11,9 @@
         public PureException() : base()
         {
         }
+
+        public PureException(string? message) : base(message)
+        {
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
-            if (context.Result is ObjectResult objectResult)
+            if (context.Result is OkObjectResult objectResult)
             {
                 var wrappContext = new DataWrapperContext(context.Result,
                                                           context.HttpContext,
