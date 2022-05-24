@@ -1,5 +1,4 @@
-﻿using MiCake.Cord.Paging;
-using TodoApp.Domain.Aggregates.Todo;
+﻿using TodoApp.Domain.Aggregates.Todo;
 
 namespace TodoApp.Domain.Repositories.Todo
 {

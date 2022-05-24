@@ -10,9 +10,8 @@
         public int Order { get; }
 
         /// <summary>
-        /// Get a <see cref="ITransactionObject"/> asynchronous.
+        /// Get a <see cref="ITransactionObject"/>.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        Task<ITransactionObject> GetTransactionObjectAsync(CancellationToken cancellationToken = default);
+        ITransactionObject GetTransactionObject();
     }
 }

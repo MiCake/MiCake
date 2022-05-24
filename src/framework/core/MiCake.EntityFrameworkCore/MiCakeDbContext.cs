@@ -38,9 +38,7 @@ namespace MiCake.EntityFrameworkCore
 
         public override int SaveChanges()
         {
-            CheckCurrentServiceProvider();
-
-            return EFCoreDbContextExtension.AddMiCakeSaveChangeHandler(() => Task.FromResult(base.SaveChanges()), CurrentScopeServices, this).Result;
+            return SaveChanges(true);
         }
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -59,9 +57,7 @@ namespace MiCake.EntityFrameworkCore
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            CheckCurrentServiceProvider();
-
-            return EFCoreDbContextExtension.AddMiCakeSaveChangeHandler(() => base.SaveChangesAsync(cancellationToken), CurrentScopeServices, this, cancellationToken);
+            return SaveChangesAsync(true, cancellationToken);
         }
 
         protected void CheckCurrentServiceProvider()

@@ -48,5 +48,6 @@
         /// </summary>
         /// <returns></returns>
         List<ITransactionObject> GetTransactionObjects();
+
     }
 }

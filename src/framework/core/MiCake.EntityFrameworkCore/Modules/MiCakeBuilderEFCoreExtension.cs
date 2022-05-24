@@ -47,14 +47,14 @@ namespace MiCake.EntityFrameworkCore
             Type miCakeDbContextType,
             Action<MiCakeEFCoreOptions>? optionsBulder)
         {
-            MiCakeEFCoreOptions options = new() { DbContextType = miCakeDbContextType };
+            MiCakeEFCoreOptions options = new();
             optionsBulder?.Invoke(options);
 
             builder.ConfigureApplication((app, services) =>
             {
                 app.SlotModule(typeof(MiCakeEFCoreModule));
 
-                services.Configure<MiCakeEFCoreOptions>(s => s = options);
+                services.Configure<EFCoreDbContextTypeAccessor>(s => s.DbContextType = miCakeDbContextType);
             });
 
             return builder;

@@ -61,9 +61,11 @@ namespace MiCake.Uow.Internal
 
             _transactionProviders = transactionProviders.OrderBy(s => s.Order);
             _logger = loggerFactory.CreateLogger<UnitOfWork>();
+
+            TryOpenTransaction();
         }
 
-        public async Task TryOpenTransaction(CancellationToken cancellationToken = default)
+        public void TryOpenTransaction()
         {
             List<Exception> _errors = new();
 
@@ -71,7 +73,7 @@ namespace MiCake.Uow.Internal
             {
                 try
                 {
-                    var currentTransaction = await transactionProvider.GetTransactionObjectAsync(cancellationToken);
+                    var currentTransaction = transactionProvider.GetTransactionObject();
                     CreatedTransactions.Add(currentTransaction);
                 }
                 catch (Exception ex)

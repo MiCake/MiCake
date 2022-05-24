@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<SqlConfig>
+	<SqlValues>
+		<SqlValue SqlKey="Count_TodoWithFilter">
+			<CommandText>
+				<![CDATA[
+					select count(*) from "TodoItem" ti
+					/**where**/;
+				]]>
+			</CommandText>
+		</SqlValue>
+		<SqlValue SqlKey="Paging_TodoWithFilter">
+			<CommandText>
+				<![CDATA[
+					select * from "TodoItem" ti
+					/**where**/ /**orderby**/
+					limit @PageSize
+					offset @CurrentStartNo
+				]]>
+			</CommandText>
+		</SqlValue>
+	</SqlValues>
+</SqlConfig>

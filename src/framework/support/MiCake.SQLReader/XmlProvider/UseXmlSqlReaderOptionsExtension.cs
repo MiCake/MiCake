@@ -1,4 +1,6 @@
-﻿namespace MiCake.SqlReader.XmlProvider
+﻿using MiCake.SqlReader.XmlProvider;
+
+namespace MiCake.SqlReader
 {
     public static class UseXmlSqlReaderOptionsExtension
     {

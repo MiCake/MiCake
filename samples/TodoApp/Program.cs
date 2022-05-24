@@ -1,14 +1,18 @@
 using MiCake;
+using MiCake.AspNetCore;
 using MiCake.Audit;
 using MiCake.Dapper;
 using MiCake.Identity;
+using MiCake.SqlReader;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 using TodoApp;
 using TodoApp.Authentication;
+using TodoApp.Domain.Aggregates.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,20 +21,36 @@ builder.Host.UseSerilog((context, services, configuration) =>
 {
     configuration.ReadFrom.Configuration(context.Configuration)
                  .ReadFrom.Services(services)
-                 .Enrich.FromLogContext()
-                 .WriteTo.Console();
+                 .Enrich.FromLogContext();
 });
 
 // Add services to the container.
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+    {
+        Description = "Authorization format : Bearer {token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            new List<string>()
+        }
+    });
+});
 
 // Add EFCore
 builder.Services.AddDbContext<TodoAppContext>(options =>
                 {
                     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres"));
+                    options.LogTo(Console.WriteLine);
                 });
 
 // Get jwt config
@@ -50,6 +70,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Add MiCake,and choose some features.
 builder.Services.AddMiCakeServices<ToDoAppModule, TodoAppContext>(PresetAuditConstants.PostgreSql_GetDateFunc)
+                .UseIdentity<TodoUser>()
+                .UseSqlReader(options => { options.UseXmlFileProvider(xmlOpt => { xmlOpt.FolderPath = "Reader//files"; }); })
                 .UseDapper(builder.Configuration.GetConnectionString("Postgres"))
                 .UseJwt(options =>
                 {

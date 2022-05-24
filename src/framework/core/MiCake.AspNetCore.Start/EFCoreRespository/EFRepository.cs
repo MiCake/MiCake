@@ -37,7 +37,7 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// </summary>
     /// <typeparam name="TDbContext"></typeparam>
     /// <typeparam name="TAggregateRoot"></typeparam>
-    public abstract class EFPaginationRepository<TDbContext, TAggregateRoot> : EFPaginationRepository<DbContext, TAggregateRoot, int>, IPaginationRepository<TAggregateRoot, int>
+    public abstract class EFPaginationRepository<TDbContext, TAggregateRoot> : EFPaginationRepository<TDbContext, TAggregateRoot, int>, IPaginationRepository<TAggregateRoot, int>
             where TAggregateRoot : class, IAggregateRoot<int>
             where TDbContext : DbContext
     {

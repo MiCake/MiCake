@@ -25,7 +25,7 @@ namespace TodoApp.Domain.Aggregates.Todo
 
         public TodoItemStateType State { get; private set; }
 
-        public static TodoItem Create(string title, string detail, int authorId)
+        public static TodoItem Create(string title, string? detail, int authorId)
         {
             if (authorId == default || authorId < 0)
             {
@@ -54,7 +54,7 @@ namespace TodoApp.Domain.Aggregates.Todo
             State = TodoItemStateType.Done;
         }
 
-        public void ChangeDetail(string detail)
+        public void ChangeDetail(string? detail)
         {
             Detail = detail;
         }

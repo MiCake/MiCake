@@ -12,9 +12,9 @@ namespace MiCake.EntityFrameworkCore.Uow
         private readonly Type _dbContextType;
         private readonly DbContext _dbContext;
 
-        public EFCoreTransactionProvider(IServiceProvider service, IOptions<MiCakeEFCoreOptions> efCoreOptions)
+        public EFCoreTransactionProvider(IServiceProvider service, IOptions<EFCoreDbContextTypeAccessor> efCoreDbTypeAccessor)
         {
-            Type? dbContextType = efCoreOptions.Value?.DbContextType;
+            Type? dbContextType = efCoreDbTypeAccessor.Value?.DbContextType;
             CheckValue.NotNull(dbContextType, "DbContext Type");
 
             var dbContext = service.GetService(dbContextType!);
@@ -24,9 +24,9 @@ namespace MiCake.EntityFrameworkCore.Uow
             _dbContext = (dbContext as DbContext)!;
         }
 
-        public Task<ITransactionObject> GetTransactionObjectAsync(CancellationToken cancellationToken = default)
+        public ITransactionObject GetTransactionObject()
         {
-            return Task.FromResult(new EFCoreTransactionObject(_dbContext, _dbContextType) as ITransactionObject);
+            return new EFCoreTransactionObject(_dbContext, _dbContextType);
         }
     }
 }

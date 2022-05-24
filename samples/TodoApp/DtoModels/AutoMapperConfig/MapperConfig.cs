@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using TodoApp.Domain.Aggregates.Identity;
+using TodoApp.Domain.Aggregates.Todo;
 
 namespace TodoApp.DtoModels.AutoMapperConfig
 {
@@ -8,6 +9,8 @@ namespace TodoApp.DtoModels.AutoMapperConfig
         public MapperConfig()
         {
             CreateMap<TodoUser, TodoUserDto>();
+
+            CreateMap<TodoItem, TodoItemDto>();
         }
     }
 }

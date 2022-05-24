@@ -31,6 +31,8 @@ namespace MiCake.Audit.Modules
             var services = context.Services;
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
+            services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
+            
             //RepositoryLifeTime
             services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 

@@ -7,14 +7,9 @@ namespace MiCake.EntityFrameworkCore
     /// </summary>
     public class MiCakeEFCoreOptions : ICanApplyData<MiCakeEFCoreOptions>
     {
-        /// <summary>
-        /// Type of <see cref="MiCakeDbContext"/>.
-        /// </summary>
-        public Type? DbContextType { get; set; }
-
         public void Apply(MiCakeEFCoreOptions options)
         {
-            DbContextType = options.DbContextType;
+
         }
     }
 }

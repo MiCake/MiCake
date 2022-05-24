@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MiCake.Core.DependencyInjection;
+using MiCake.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace TodoApp.Controllers
@@ -7,6 +8,8 @@ namespace TodoApp.Controllers
     public abstract class TodoControllerBase : ControllerBase
     {
         public IMapper Mapper => _infrastructure.Mapper;
+
+        public int? CurrentUserId => _infrastructure.CurrentUserId;
 
         private readonly ControllerInfrastructure _infrastructure;
 
@@ -21,9 +24,14 @@ namespace TodoApp.Controllers
     {
         public IMapper Mapper { get; set; }
 
-        public ControllerInfrastructure(IMapper mapper)
+        public int? CurrentUserId => currentUser.UserId as int?;
+
+        private readonly ICurrentMiCakeUser currentUser;
+
+        public ControllerInfrastructure(IMapper mapper, ICurrentMiCakeUser user)
         {
             Mapper = mapper;
+            currentUser = user;
         }
     }
 }

@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TodoApp.Domain.Aggregates.Todo;
+using TodoApp.Domain.Repositories.Todo;
+using TodoApp.DtoModels;
+using TodoApp.Reader.Queries;
 
 namespace TodoApp.Controllers
 {
@@ -9,16 +13,58 @@ namespace TodoApp.Controllers
     public class TodoController : TodoControllerBase
     {
         private readonly ILogger<TodoController> _logger;
+        private readonly ITodoItemRepository _repo;
+        private readonly ITodoItemQuery _query;
 
-        public TodoController(ILogger<TodoController> logger, ControllerInfrastructure infrastructure) : base(infrastructure)
+        public TodoController(ITodoItemRepository repo, ITodoItemQuery query, ILogger<TodoController> logger, ControllerInfrastructure infrastructure) : base(infrastructure)
         {
+            _repo = repo;
+            _query = query;
             _logger = logger;
         }
 
-        [HttpGet("My/Waiting")]
-        public IActionResult GetMyWaitingTodo()
+        [HttpPost("")]
+        public async Task<IActionResult> Create([FromBody] TodoItemDto item)
         {
-            return Ok("haaha");
+            if (CurrentUserId == null)
+            {
+                return Unauthorized();
+            }
+
+            var result = TodoItem.Create(item.Title!, item.Detail, CurrentUserId.Value);
+            await _repo.AddAsync(result);
+
+            return Ok(result);
+        }
+
+        [HttpGet("My/Waiting")]
+        public async Task<IActionResult> PagingGetMyWaitingTodo(int pageIndex, int pageSize)
+        {
+            var data = await _repo.PagingQueryAsync(new PaginationFilter(pageIndex, pageSize));
+
+            return Ok(data);
+        }
+
+        [HttpGet("/")]
+        public async Task<IActionResult> PagingQueryAllItems(int pageIndex, int pageSize)
+        {
+            var result = await _query.PaginationGetTodo(new PaginationFilter(pageIndex, pageSize));
+            return Ok(result);
+        }
+
+        [HttpPut("{todoId:int}")]
+        public async Task<bool> ChangeTodo(int todoId, [FromBody] TodoItemDto item)
+        {
+            var todoItem = await _repo.FindAsync(todoId);
+            if (todoItem is null)
+            {
+                return false;
+            }
+
+            todoItem.ChangeDetail(item.Detail);
+            todoItem.ChangeTitle(item.Title!);
+
+            return true;
         }
     }
 }
