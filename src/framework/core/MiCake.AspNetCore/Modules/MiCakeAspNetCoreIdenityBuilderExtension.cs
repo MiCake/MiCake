@@ -1,17 +1,16 @@
-﻿using MiCake.AspNetCore.Identity;
-using MiCake.Core;
+﻿using MiCake.Core;
 using MiCake.Core.Util.Reflection;
 using MiCake.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MiCake.AspNetCore
+namespace MiCake.AspNetCore.Identity
 {
     public static class MiCakeAspNetCoreIdenityBuilderExtension
     {
         /// <summary>
-        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// Register <see cref="IMiCakeUser"/> to MiCake application,so that MiCake can identify user info.
         /// </summary>
         /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
@@ -23,7 +22,7 @@ namespace MiCake.AspNetCore
         }
 
         /// <summary>
-        /// Register <see cref="IMiCakeUser"/> to MiCake application, who will be automatically audited and authenticated by MiCake.
+        /// Register <see cref="IMiCakeUser"/> to MiCake application,so that MiCake can identify user info.
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>

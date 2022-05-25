@@ -1,11 +1,11 @@
 ﻿using MiCake.Cord.Modules;
 using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore.Internal;
-using MiCake.Uow.Modules;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Uow;
+using MiCake.Uow.Modules;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {

@@ -1,4 +1,5 @@
-﻿using MiCake.Identity.Authentication.JwtToken;
+﻿using MiCake.AspNetCore.DataWrapper;
+using MiCake.Identity.Authentication.JwtToken;
 using Microsoft.AspNetCore.Mvc;
 using TodoApp.Domain.Aggregates.Identity;
 using TodoApp.Domain.Repositories.Identity;
@@ -20,6 +21,7 @@ namespace TodoApp.Controllers
         }
 
         [HttpPost("create")]
+        [ProducesResponseType(200, Type = typeof(ApiResponse<bool>))]
         public async Task<IActionResult> CreateNewUser([FromBody] CreateUserDto user)
         {
             var todoUser = TodoUser.Create(user.LoginName, user.Password);
@@ -31,6 +33,7 @@ namespace TodoApp.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(200, Type = typeof(ApiResponse<LoginResultDto>))]
         public async Task<IActionResult> Login([FromBody] LoginUserDto user)
         {
             var todoUser = await _repo.GetByLoginName(user.LoginName);

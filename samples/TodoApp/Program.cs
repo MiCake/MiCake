@@ -1,5 +1,5 @@
 using MiCake;
-using MiCake.AspNetCore;
+using MiCake.AspNetCore.Identity;
 using MiCake.Audit;
 using MiCake.Dapper;
 using MiCake.Identity;

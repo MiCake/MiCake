@@ -10,6 +10,7 @@ namespace TodoApp
     {
         public DbSet<TodoItem> TodoItem { get; set; }
         public DbSet<TodoUser> TodoUser { get; set; }
+        public DbSet<ConcernedTodo> ConcernedTodo { get; set; }
 
 #pragma warning disable CS8618
         public TodoAppContext(DbContextOptions options, IServiceProvider serviceProvider) : base(options, serviceProvider)

@@ -1,3 +1,4 @@
+using MiCake.AspNetCore.DataWrapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApp.Domain.Aggregates.Todo;
@@ -38,6 +39,7 @@ namespace TodoApp.Controllers
         }
 
         [HttpGet("My/Waiting")]
+        [ProducesResponseType(200, Type = typeof(ApiResponse<PagingQueryResult<TodoItem>>))]
         public async Task<IActionResult> PagingGetMyWaitingTodo(int pageIndex, int pageSize)
         {
             var data = await _repo.PagingQueryAsync(new PaginationFilter(pageIndex, pageSize));
@@ -46,6 +48,7 @@ namespace TodoApp.Controllers
         }
 
         [HttpGet("/")]
+        [ProducesResponseType(200, Type = typeof(ApiResponse<PagingQueryResult<TodoItemDto>>))]
         public async Task<IActionResult> PagingQueryAllItems(int pageIndex, int pageSize)
         {
             var result = await _query.PaginationGetTodo(new PaginationFilter(pageIndex, pageSize));
@@ -53,6 +56,7 @@ namespace TodoApp.Controllers
         }
 
         [HttpPut("{todoId:int}")]
+        [ProducesResponseType(200, Type = typeof(ApiResponse<bool>))]
         public async Task<bool> ChangeTodo(int todoId, [FromBody] TodoItemDto item)
         {
             var todoItem = await _repo.FindAsync(todoId);

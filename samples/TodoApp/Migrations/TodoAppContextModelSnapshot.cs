@@ -41,6 +41,40 @@ namespace TodoApp.Migrations
                     b.ToTable("TodoUser", (string)null);
                 });
 
+            modelBuilder.Entity("TodoApp.Domain.Aggregates.Todo.ConcernedTodo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("current_timestamp");
+
+                    b.Property<int?>("CreatorID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ModificationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("TodoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TodoId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ConcernedTodo", (string)null);
+                });
+
             modelBuilder.Entity("TodoApp.Domain.Aggregates.Todo.TodoItem", b =>
                 {
                     b.Property<int>("Id")
@@ -61,9 +95,7 @@ namespace TodoApp.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ModificationTime")
-                        .ValueGeneratedOnUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("current_timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("State")
                         .HasColumnType("integer");

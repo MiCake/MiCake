@@ -32,7 +32,7 @@ namespace MiCake.Audit.Modules
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
             services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
-            
+
             //RepositoryLifeTime
             services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 
@@ -46,9 +46,18 @@ namespace MiCake.Audit.Modules
             // register identity audit
             var userKeyType = appTransientData.TakeOut(MiCakeIdentityModule.CurrentIdentityUserKeyType);
             // if no retrieve user key type, It's mean user not AddIdentity, so we needn't register identity audit.
-            if (userKeyType != null && userKeyType is Type)
+            if (userKeyType != null && userKeyType is Type userKeyClearType)
             {
-                var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType((userKeyType as Type)!);
+                Type auditProviderType;
+                if (userKeyClearType.IsValueType)
+                {
+                    auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType((userKeyType as Type)!);
+                }
+                else
+                {
+                    auditProviderType = typeof(IdentityAuditProviderForReferenceKey<>).MakeGenericType((userKeyType as Type)!);
+                }
+
                 services.AddScoped(typeof(IAuditProvider), auditProviderType);
             }
         }

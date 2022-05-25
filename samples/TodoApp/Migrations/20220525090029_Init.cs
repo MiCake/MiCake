@@ -10,6 +10,23 @@ namespace TodoApp.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "ConcernedTodo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TodoId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "current_timestamp"),
+                    ModificationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatorID = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConcernedTodo", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TodoItem",
                 columns: table => new
                 {
@@ -19,7 +36,7 @@ namespace TodoApp.Migrations
                     Title = table.Column<string>(type: "text", nullable: true),
                     Detail = table.Column<string>(type: "text", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "current_timestamp"),
-                    ModificationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "current_timestamp"),
+                    ModificationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     State = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -44,6 +61,16 @@ namespace TodoApp.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ConcernedTodo_TodoId",
+                table: "ConcernedTodo",
+                column: "TodoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConcernedTodo_UserId",
+                table: "ConcernedTodo",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TodoItem_AuthorId",
                 table: "TodoItem",
                 column: "AuthorId");
@@ -51,6 +78,9 @@ namespace TodoApp.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ConcernedTodo");
+
             migrationBuilder.DropTable(
                 name: "TodoItem");
 

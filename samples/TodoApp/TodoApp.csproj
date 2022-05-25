@@ -24,9 +24,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Reader\files\concerned-todo.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Reader\files\todo.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="MigrationSqls\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

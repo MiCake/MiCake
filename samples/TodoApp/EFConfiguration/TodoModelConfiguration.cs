@@ -14,6 +14,10 @@ namespace TodoApp.EFConfiguration
 
             modelBuilder.Entity<TodoUser>().ToTable("TodoUser");
             modelBuilder.Entity<TodoUser>().OwnsOne(s => s.Name);
+
+            modelBuilder.Entity<ConcernedTodo>().ToTable("ConcernedTodo");
+            modelBuilder.Entity<ConcernedTodo>().HasIndex(s => s.TodoId);
+            modelBuilder.Entity<ConcernedTodo>().HasIndex(s => s.UserId);
         }
     }
 }
