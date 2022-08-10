@@ -5,6 +5,6 @@
     /// </summary>
     public interface IHasModificationTime
     {
-        DateTime? ModificationTime { get; set; }
+        DateTime? ModificationTime { get; }
     }
 }

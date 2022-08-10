@@ -9,6 +9,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MiCake.CodeAnalyzer" Version="0.1.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MiCake.DDD.Connector\MiCake.Cord.csproj" />
     <ProjectReference Include="..\MiCake.Identity\MiCake.Identity.csproj" />
     <ProjectReference Include="..\MiCake.Uow\MiCake.Uow.csproj" />

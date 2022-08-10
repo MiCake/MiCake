@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using TodoApp.Domain.Aggregates.Todo;
 using TodoApp.Domain.Repositories.Todo;
 using TodoApp.DtoModels;
-using TodoApp.Reader.Queries;
+using TodoApp.QueryReader.Queries;
 
 namespace TodoApp.Controllers
 {

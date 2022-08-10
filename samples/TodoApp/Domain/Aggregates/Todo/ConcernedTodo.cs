@@ -6,13 +6,19 @@ namespace TodoApp.Domain.Aggregates.Todo
 
     public class ConcernedTodo : AggregateRoot, IHasAudit, IHasCreator<int>
     {
-        public int TodoId { get; set; }
+        public int TodoId { get; protected set; }
 
-        public int UserId { get; set; }
+        public int UserId { get; protected set; }
 
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
-        public int? CreatorID { get; set; }
+        public DateTime CreationTime { get; protected set; }
+        public DateTime? ModificationTime { get; protected set; }
+
+        public int? CreatorID { get; protected set; }
+
+        public ConcernedTodo()
+        {
+
+        }
 
         public static ConcernedTodo Create(int todoId, int userId)
         {
@@ -20,6 +26,12 @@ namespace TodoApp.Domain.Aggregates.Todo
             {
                 throw new System.Exception("todoId or userId is invalid");
             }
+
+            var d = new ConcernedTodo
+            {
+                TodoId = todoId,
+                UserId = userId,
+            };
 
             return new ConcernedTodo
             {

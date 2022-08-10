@@ -134,7 +134,7 @@ namespace MiCake.Core.Util.Reflection
         /// <summary>
         /// Sets value of a property by it's full path on given object
         /// </summary>
-        internal static void SetValueByPath(object obj, Type objectType, string propertyPath, object value)
+        public static void SetValueByPath(object obj, Type objectType, string propertyPath, object value)
         {
             var currentType = objectType;
             PropertyInfo property;

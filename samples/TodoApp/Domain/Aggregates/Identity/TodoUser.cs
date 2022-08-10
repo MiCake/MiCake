@@ -11,7 +11,6 @@ namespace TodoApp.Domain.Aggregates.Identity
 
         public string? Password { get; private set; }
 
-
         public static TodoUser Create(string loginName, string password)
         {
             if (string.IsNullOrWhiteSpace(loginName) || string.IsNullOrWhiteSpace(password))

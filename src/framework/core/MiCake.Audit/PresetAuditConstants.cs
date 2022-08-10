@@ -6,6 +6,6 @@
 
         public const string PostgreSql_GetDateFunc = "current_timestamp";
 
-        public const string Mysql_GetDateFunc = "getdate()";
+        public const string Mysql_GetDateFunc = "now()";
     }
 }

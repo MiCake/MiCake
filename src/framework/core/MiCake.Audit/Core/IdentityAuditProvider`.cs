@@ -1,5 +1,6 @@
 ﻿using MiCake.Audit.SoftDeletion;
 using MiCake.Cord;
+using MiCake.Core.Util.Reflection;
 using MiCake.Identity;
 
 namespace MiCake.Audit.Core
@@ -60,20 +61,26 @@ namespace MiCake.Audit.Core
 
         protected override void SetCreateUser(object entity, object userID)
         {
-            if (entity is IHasCreator<TKey> creatorEntity)
-                creatorEntity.CreatorID = (TKey)userID;
+            if (entity is IHasCreator<TKey>)
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IHasCreator<TKey>), nameof(IHasCreator<TKey>.CreatorID), userID);
+            }
         }
 
         protected override void SetModifyUser(object entity, object userID)
         {
             if (entity is IHasModifyUser<TKey> modifyUser)
-                modifyUser.ModifyUserID = (TKey)userID;
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IHasModifyUser<TKey>), nameof(IHasModifyUser<TKey>.ModifyUserID), userID);
+            }
         }
 
         protected override void SetDeleteUser(object entity, object userID)
         {
-            if (entity is ISoftDeletion && entity is IHasDeleteUser<TKey> deleteUser)
-                deleteUser.DeleteUserID = (TKey)userID;
+            if (entity is ISoftDeletion && entity is IHasDeleteUser<TKey>)
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IHasDeleteUser<TKey>), nameof(IHasDeleteUser<TKey>.DeleteUserID), userID);
+            }
         }
     }
 
@@ -88,20 +95,26 @@ namespace MiCake.Audit.Core
 
         protected override void SetCreateUser(object entity, object userID)
         {
-            if (entity is IMayHasCreator<TKey> creatorEntity)
-                creatorEntity.CreatorID = (TKey)userID;
+            if (entity is IMayHasCreator<TKey>)
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IMayHasCreator<TKey>), nameof(IMayHasCreator<TKey>.CreatorID), userID);
+            }
         }
 
         protected override void SetModifyUser(object entity, object userID)
         {
-            if (entity is IMayHasModifyUser<TKey> modifyUser)
-                modifyUser.ModifyUserID = (TKey)userID;
+            if (entity is IMayHasModifyUser<TKey>)
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IMayHasModifyUser<TKey>), nameof(IMayHasModifyUser<TKey>.ModifyUserID), userID);
+            }
         }
 
         protected override void SetDeleteUser(object entity, object userID)
         {
-            if (entity is ISoftDeletion && entity is IMayHasDeleteUser<TKey> deleteUser)
-                deleteUser.DeleteUserID = (TKey)userID;
+            if (entity is ISoftDeletion && entity is IMayHasDeleteUser<TKey>)
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IMayHasDeleteUser<TKey>), nameof(IMayHasDeleteUser<TKey>.DeleteUserID), userID);
+            }
         }
     }
 }

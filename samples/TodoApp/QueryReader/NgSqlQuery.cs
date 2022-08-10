@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
 
-namespace TodoApp.Reader
+namespace TodoApp.QueryReader
 {
     public abstract class NgSqlQuery : DapperSqlQuery
     {

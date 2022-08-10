@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\support\MiCake.Identity.Authentication.JwtToken\MiCake.Identity.Authentication.JwtToken.csproj" />
     <ProjectReference Include="..\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
     <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
     <ProjectReference Include="..\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />

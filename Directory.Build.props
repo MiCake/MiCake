@@ -24,7 +24,7 @@
 
 	<!--xml notes for all method or property-->
 	<PropertyGroup>
-		<NoWarn>CS1591,CA1822</NoWarn>
+		<NoWarn>CS1591,CA1822,CS8618</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

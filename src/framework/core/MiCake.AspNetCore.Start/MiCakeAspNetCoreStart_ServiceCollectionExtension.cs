@@ -63,8 +63,6 @@ namespace MiCake
             var startUpOptions = new MiCakeStartupOptions();
             options?.Invoke(startUpOptions);
 
-            CheckOptions(startUpOptions);
-
             var appOptions = startUpOptions.ApplicationOptions;
             var efcoreOptions = startUpOptions.EFCoreOptions;
             var auditOptions = startUpOptions.AuditOptions;
@@ -74,14 +72,6 @@ namespace MiCake
                            .UseAudit(s => s.Apply(auditOptions))
                            .UseEFCore(miCakeDbContextType, s => s.Apply(efcoreOptions))
                            .UseAspNetCore(s => s.Apply(aspnetCoreOptions));
-        }
-
-        private static void CheckOptions(MiCakeStartupOptions options)
-        {
-            if (string.IsNullOrWhiteSpace(options.AuditOptions.TimeGenerateSql))
-            {
-                throw new ArgumentException($"You are using MiCake audit module,please config {options.AuditOptions.TimeGenerateSql}. you can get more preset vaule in {nameof(PresetAuditConstants)} class.");
-            }
         }
     }
 }

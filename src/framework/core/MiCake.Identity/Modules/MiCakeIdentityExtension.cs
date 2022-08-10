@@ -1,10 +1,7 @@
 ﻿using MiCake.Core;
 using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
-using MiCake.Identity.Authentication.JwtToken;
 using MiCake.Identity.Modules;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Identity
 {
@@ -44,27 +41,6 @@ namespace MiCake.Identity
                 app.SlotModule<MiCakeIdentityModule>();
 
                 app.AddStartupTransientData(MiCakeIdentityModule.CurrentIdentityUserKeyType, userKeyType[0]);
-            });
-
-            return builder;
-        }
-
-        /// <summary>
-        /// Add Jwt support:can use <see cref="IJwtAuthManager"/> to create jwt token or and refresh-token.
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public static IMiCakeBuilder UseJwt(this IMiCakeBuilder builder, Action<MiCakeJwtOptions> options)
-        {
-            builder.ConfigureApplication((app, services) =>
-            {
-                services.TryAddScoped<IJwtAuthManager, JwtAuthManager>();
-                services.TryAddScoped<IRefreshTokenService, DefaultRefreshTokenService>();
-
-                services.TryAddScoped<IRefreshTokenStore, DefaultRefreshTokenStore>();
-                services.TryAddScoped<IRefreshTokenHandleGenerator, DefaultRefreshTokenHandleGenerator>();
-                services.Configure(options);
             });
 
             return builder;

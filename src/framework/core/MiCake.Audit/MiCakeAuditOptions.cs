@@ -8,7 +8,7 @@ namespace MiCake.Audit
         /// <summary>
         ///  Specified sql is used to generate CreateTime And ModifyTime value.
         /// <para>
-        /// You can get some preset vaules from <see cref="PresetAuditConstants"/>.
+        ///  You can get some preset vaules from <see cref="PresetAuditConstants"/>.
         /// </para> 
         /// </summary>
         public string? TimeGenerateSql { get; set; }

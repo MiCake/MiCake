@@ -9,7 +9,7 @@ namespace MiCake.Audit.Tests.Fakes.User
     /// </summary>
     public class HasAuditUserWithWrongKeyType : Entity<long>, IMiCakeUser<long>, IHasCreator<Guid>
     {
-        public Guid CreatorID { get; set; }
+        public Guid? CreatorID { get; protected set; }
 
         public HasAuditUserWithWrongKeyType()
         {

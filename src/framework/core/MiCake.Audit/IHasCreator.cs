@@ -16,7 +16,7 @@ namespace MiCake.Audit
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey? CreatorID { get; set; }
+        TKey? CreatorID { get; }
     }
 
     public interface IMayHasCreator<TKey> : IHasAuditUser where TKey : class
@@ -24,6 +24,6 @@ namespace MiCake.Audit
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey? CreatorID { get; set; }
+        TKey? CreatorID { get; }
     }
 }

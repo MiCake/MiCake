@@ -32,6 +32,8 @@ namespace MiCake.Audit
             var options = new MiCakeAuditOptions();
             optionsConfig.Invoke(options);
 
+            CheckOptions(options);
+
             builder.ConfigureApplication((app, services) =>
             {
                 //register audit module to micake module collection
@@ -41,6 +43,14 @@ namespace MiCake.Audit
             });
 
             return builder;
+        }
+
+        private static void CheckOptions(MiCakeAuditOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(options.TimeGenerateSql))
+            {
+                throw new ArgumentException($"You are using MiCake audit module, please config {options.TimeGenerateSql}. you can get more preset vaule in {nameof(PresetAuditConstants)} class.");
+            }
         }
     }
 }

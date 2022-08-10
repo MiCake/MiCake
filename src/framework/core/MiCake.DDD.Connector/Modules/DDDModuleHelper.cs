@@ -14,19 +14,8 @@ namespace MiCake.Cord.Modules
         /// <exception cref="InvalidOperationException"></exception>
         public static StoreConfig MustGetStoreConfig(IServiceProvider serivces)
         {
-            var micakeModules = serivces.GetService<IMiCakeApplication>()?.ModuleManager?.ModuleContext;
-            if (micakeModules == null)
-            {
-                throw new InvalidOperationException($"Can not get MiCake module, please check your config is right.");
-            }
-
-            var dddModule = micakeModules.MiCakeModules?.FirstOrDefault(s => s.Instance is MiCakeDDDModule);
-            if (dddModule == null)
-            {
-                throw new InvalidOperationException($"Can not get {nameof(MiCakeDDDModule)}, please check your config is right.");
-            }
-
-            return (dddModule.Instance as MiCakeDDDModule)!.DomainModelStoreConfig!;
+            var micakeApp = serivces.GetService<IMiCakeApplication>() ?? throw new InvalidOperationException($"Can not get {nameof(IMiCakeApplication)}.");
+            return MustGetStoreConfig(micakeApp);
         }
 
         /// <summary>

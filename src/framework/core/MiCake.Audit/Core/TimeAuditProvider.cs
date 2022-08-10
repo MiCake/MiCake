@@ -1,4 +1,5 @@
 ﻿using MiCake.Cord;
+using MiCake.Core.Util.Reflection;
 
 namespace MiCake.Audit.Core
 {
@@ -17,10 +18,10 @@ namespace MiCake.Audit.Core
 
         private void SetModifactionTime(object entity)
         {
-            if (entity is not IHasModificationTime hasModificationTimeObj)
+            if (entity is not IHasModificationTime)
                 return;
 
-            hasModificationTimeObj.ModificationTime = DateTime.UtcNow;
+            ReflectionHelper.SetValueByPath(entity, typeof(IHasModificationTime), nameof(IHasModificationTime.ModificationTime), DateTime.UtcNow);
         }
     }
 }

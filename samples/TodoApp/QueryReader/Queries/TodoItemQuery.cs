@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using TodoApp.Domain.Aggregates.Todo;
 using TodoApp.DtoModels;
 
-namespace TodoApp.Reader.Queries
+namespace TodoApp.QueryReader.Queries
 {
     public interface ITodoItemQuery
     {

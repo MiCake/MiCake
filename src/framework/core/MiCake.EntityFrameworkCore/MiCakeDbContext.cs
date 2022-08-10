@@ -14,9 +14,7 @@ namespace MiCake.EntityFrameworkCore
             CurrentScopeServices = serviceProvider;
         }
 
-#pragma warning disable CS8618
         protected MiCakeDbContext() : base()
-#pragma warning restore CS8618
         {
         }
 

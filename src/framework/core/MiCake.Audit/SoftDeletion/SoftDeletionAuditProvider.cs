@@ -1,5 +1,6 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.Cord;
+using MiCake.Core.Util.Reflection;
 
 namespace MiCake.Audit.SoftDeletion
 {
@@ -11,13 +12,15 @@ namespace MiCake.Audit.SoftDeletion
                 return;
 
             var entity = auditObjectModel.AuditEntity;
-            if (entity is not ISoftDeletion softDeletionObj)
+            if (entity is not ISoftDeletion)
                 return;
 
-            softDeletionObj.IsDeleted = true;
+            ReflectionHelper.SetValueByPath(entity, typeof(ISoftDeletion), nameof(ISoftDeletion.IsDeleted), true);
 
-            if (entity is IHasDeletionTime hasDeletionTimeObj)
-                hasDeletionTimeObj.DeletionTime = DateTime.Now;
+            if (entity is IHasDeletionTime)
+            {
+                ReflectionHelper.SetValueByPath(entity, typeof(IHasDeletionTime), nameof(IHasDeletionTime.DeletionTime), DateTime.Now);
+            }
         }
     }
 }

@@ -15,7 +15,7 @@ namespace MiCake.Audit
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey? DeleteUserID { get; set; }
+        TKey? DeleteUserID { get; }
     }
 
     public interface IMayHasDeleteUser<TKey> : IHasAuditUser where TKey : class
@@ -23,6 +23,6 @@ namespace MiCake.Audit
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey? DeleteUserID { get; set; }
+        TKey? DeleteUserID { get; }
     }
 }

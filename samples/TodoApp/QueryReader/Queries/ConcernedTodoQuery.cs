@@ -5,7 +5,7 @@ using MiCake.SqlReader;
 using Microsoft.Extensions.Options;
 using TodoApp.DtoModels;
 
-namespace TodoApp.Reader.Queries
+namespace TodoApp.QueryReader.Queries
 {
     public interface IConcernedTodoQuery
     {
@@ -26,7 +26,7 @@ namespace TodoApp.Reader.Queries
             await NgConnection!.OpenAsync();
 
             var sqlBuilder = new SqlBuilder().Where($"ct.\"UserId\" = @UserId", new { UserId = userId });
-            var template = sqlBuilder.AddTemplate(GetSql("Count_ConcernedTodoWithFilter"));
+            var template = sqlBuilder.AddTemplate(GetSql(Sql_Count_ConcernedTodoWithFilter));
             var count = await DbConnection.QueryFirstOrDefaultAsync<int>(template.RawSql, template.Parameters);
 
             // no data.
@@ -36,10 +36,14 @@ namespace TodoApp.Reader.Queries
             }
 
             var pagingBuilder = new SqlBuilder().Where($"ct.\"UserId\" = @UserId", new { UserId = userId });
-            var pagingTemplate = pagingBuilder.AddTemplate(GetSql("Paging_ConcernedTodoWithFilter"), new { filter.PageSize, filter.CurrentStartNo });
+            var pagingTemplate = pagingBuilder.AddTemplate(GetSql(Sql_Paging_ConcernedTodoWithFilter), new { filter.PageSize, filter.CurrentStartNo });
             var result = await DbConnection.QueryAsync<TodoItemDto>(pagingTemplate.RawSql, pagingTemplate.Parameters);
 
             return PagingQueryResult<TodoItemDto>.Result(filter, count, result.ToList());
         }
+
+        private const string Sql_Count_ConcernedTodoWithFilter = "Count_ConcernedTodoWithFilter";
+
+        private const string Sql_Paging_ConcernedTodoWithFilter = "Paging_ConcernedTodoWithFilter";
     }
 }
