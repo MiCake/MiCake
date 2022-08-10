@@ -18,10 +18,17 @@ namespace MiCake.Audit
         /// </summary>
         public bool UseSoftDeletion { get; set; } = true;
 
+        /// <summary>
+        /// Use to change audit datetime value.
+        /// The default value is : DataTime.UtcNow.
+        /// </summary>
+        public Func<DateTime>? AuditDateTimeProvider { get; set; }
+
         public void Apply(MiCakeAuditOptions options)
         {
             TimeGenerateSql = options.TimeGenerateSql;
             UseSoftDeletion = options.UseSoftDeletion;
+            AuditDateTimeProvider = options.AuditDateTimeProvider;
         }
     }
 }

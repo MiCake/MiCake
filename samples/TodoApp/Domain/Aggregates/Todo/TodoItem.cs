@@ -19,9 +19,9 @@ namespace TodoApp.Domain.Aggregates.Todo
 
         public string? Detail { get; private set; }
 
-        public DateTime CreationTime { get; set; }
+        public DateTime CreationTime { get; protected set; }
 
-        public DateTime? ModificationTime { get; set; }
+        public DateTime? ModificationTime { get; protected set; }
 
         public TodoItemStateType State { get; private set; }
 

@@ -107,7 +107,7 @@ namespace MiCake.Audit.Tests
             HasDeletionTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            var beforeGiveDeletionTime = DateTime.Now;
+            var beforeGiveDeletionTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Deleted);
 
             var result = entity.DeletionTime.Value >= beforeGiveDeletionTime;
@@ -148,6 +148,7 @@ namespace MiCake.Audit.Tests
         private IServiceCollection BuildServices()
         {
             var services = new ServiceCollection();
+            services.Configure<AuditCoreOptions>(s => { });
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
 
@@ -157,6 +158,7 @@ namespace MiCake.Audit.Tests
         private IServiceCollection BuildServicesWithAuditProvider()
         {
             var services = new ServiceCollection();
+            services.Configure<AuditCoreOptions>(s => { });
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
             //Audit Deletion Time

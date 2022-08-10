@@ -1,5 +1,6 @@
 ﻿using MiCake.Cord;
 using MiCake.Core.Util.Reflection;
+using Microsoft.Extensions.Options;
 
 namespace MiCake.Audit.Core
 {
@@ -8,6 +9,13 @@ namespace MiCake.Audit.Core
     /// </summary>
     internal class DefaultTimeAuditProvider : IAuditProvider
     {
+        private AuditCoreOptions _options;
+
+        public DefaultTimeAuditProvider(IOptions<AuditCoreOptions> options)
+        {
+            _options = options.Value;
+        }
+
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
             if (auditObjectModel.EntityState == RepositoryEntityState.Modified)
@@ -21,7 +29,8 @@ namespace MiCake.Audit.Core
             if (entity is not IHasModificationTime)
                 return;
 
-            ReflectionHelper.SetValueByPath(entity, typeof(IHasModificationTime), nameof(IHasModificationTime.ModificationTime), DateTime.UtcNow);
+            var value = _options.DateTimeValueProvider is null ? DateTime.UtcNow : _options.DateTimeValueProvider();
+            ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasModificationTime.ModificationTime), value);
         }
     }
 }

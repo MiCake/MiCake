@@ -25,7 +25,7 @@ namespace TodoApp.Controllers
         }
 
         [HttpPost("")]
-        public async Task<IActionResult> Create([FromBody] TodoItemDto item)
+        public async Task<IActionResult> Create([FromBody] CreateTodoItemDto item)
         {
             if (CurrentUserId == null)
             {

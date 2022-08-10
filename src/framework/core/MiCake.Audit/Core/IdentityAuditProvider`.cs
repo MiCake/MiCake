@@ -63,15 +63,15 @@ namespace MiCake.Audit.Core
         {
             if (entity is IHasCreator<TKey>)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IHasCreator<TKey>), nameof(IHasCreator<TKey>.CreatorID), userID);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasCreator<TKey>.CreatorID), userID);
             }
         }
 
         protected override void SetModifyUser(object entity, object userID)
         {
-            if (entity is IHasModifyUser<TKey> modifyUser)
+            if (entity is IHasModifyUser<TKey>)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IHasModifyUser<TKey>), nameof(IHasModifyUser<TKey>.ModifyUserID), userID);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasModifyUser<TKey>.ModifyUserID), userID);
             }
         }
 
@@ -79,7 +79,7 @@ namespace MiCake.Audit.Core
         {
             if (entity is ISoftDeletion && entity is IHasDeleteUser<TKey>)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IHasDeleteUser<TKey>), nameof(IHasDeleteUser<TKey>.DeleteUserID), userID);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasDeleteUser<TKey>.DeleteUserID), userID);
             }
         }
     }
@@ -97,7 +97,7 @@ namespace MiCake.Audit.Core
         {
             if (entity is IMayHasCreator<TKey>)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IMayHasCreator<TKey>), nameof(IMayHasCreator<TKey>.CreatorID), userID);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IMayHasCreator<TKey>.CreatorID), userID);
             }
         }
 
@@ -105,7 +105,7 @@ namespace MiCake.Audit.Core
         {
             if (entity is IMayHasModifyUser<TKey>)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IMayHasModifyUser<TKey>), nameof(IMayHasModifyUser<TKey>.ModifyUserID), userID);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IMayHasModifyUser<TKey>.ModifyUserID), userID);
             }
         }
 
@@ -113,7 +113,7 @@ namespace MiCake.Audit.Core
         {
             if (entity is ISoftDeletion && entity is IMayHasDeleteUser<TKey>)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IMayHasDeleteUser<TKey>), nameof(IMayHasDeleteUser<TKey>.DeleteUserID), userID);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IMayHasDeleteUser<TKey>.DeleteUserID), userID);
             }
         }
     }

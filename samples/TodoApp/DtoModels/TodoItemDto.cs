@@ -18,4 +18,11 @@ namespace TodoApp.DtoModels
 
         public TodoItemStateType State { get; set; }
     }
+
+    public class CreateTodoItemDto
+    {
+        public string? Title { get; set; }
+
+        public string? Detail { get; set; }
+    }
 }

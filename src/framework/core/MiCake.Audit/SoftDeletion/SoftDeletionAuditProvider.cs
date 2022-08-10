@@ -1,11 +1,19 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.Cord;
 using MiCake.Core.Util.Reflection;
+using Microsoft.Extensions.Options;
 
 namespace MiCake.Audit.SoftDeletion
 {
     internal class SoftDeletionAuditProvider : IAuditProvider
     {
+        private AuditCoreOptions _options;
+
+        public SoftDeletionAuditProvider(IOptions<AuditCoreOptions> options)
+        {
+            _options = options.Value;
+        }
+
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
             if (auditObjectModel.EntityState != RepositoryEntityState.Deleted)
@@ -15,11 +23,12 @@ namespace MiCake.Audit.SoftDeletion
             if (entity is not ISoftDeletion)
                 return;
 
-            ReflectionHelper.SetValueByPath(entity, typeof(ISoftDeletion), nameof(ISoftDeletion.IsDeleted), true);
+            ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(ISoftDeletion.IsDeleted), true);
 
             if (entity is IHasDeletionTime)
             {
-                ReflectionHelper.SetValueByPath(entity, typeof(IHasDeletionTime), nameof(IHasDeletionTime.DeletionTime), DateTime.Now);
+                var value = _options.DateTimeValueProvider is null ? DateTime.UtcNow : _options.DateTimeValueProvider();
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasDeletionTime.DeletionTime), value);
             }
         }
     }

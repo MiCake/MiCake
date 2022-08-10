@@ -6,12 +6,12 @@ using Microsoft.Extensions.Options;
 
 namespace MiCake.AspNetCore.Uow
 {
-    public class UnitOfWorkFilter : IAsyncActionFilter
+    public class UnitOfWorkAutoSaveFilter : IAsyncActionFilter
     {
         private readonly IUnitOfWorkManager _unitOfWorkManager;
         private readonly MiCakeAspNetCoreOptions _options;
 
-        public UnitOfWorkFilter(IUnitOfWorkManager unitOfWorkManager, IOptions<MiCakeAspNetCoreOptions> options)
+        public UnitOfWorkAutoSaveFilter(IUnitOfWorkManager unitOfWorkManager, IOptions<MiCakeAspNetCoreOptions> options)
         {
             _unitOfWorkManager = unitOfWorkManager;
             _options = options.Value;

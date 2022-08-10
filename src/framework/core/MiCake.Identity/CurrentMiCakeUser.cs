@@ -4,7 +4,7 @@
     /// The abstract class for <see cref="ICurrentMiCakeUser"/>
     /// <typeparam name="TKey">The type used for the primary key for the user.</typeparam>
     /// </summary>
-    public abstract class CurrentMiCakeUser<TKey> : ICurrentMiCakeUser<TKey>
+    public abstract class CurrentMiCakeUser<TKey> : ICurrentMiCakeUser
     {
         private static readonly object @object = new();
         private bool hasGetUserId = false;

@@ -82,6 +82,8 @@ namespace MiCake.Audit.Tests
             where TUser : IMiCakeUser
         {
             var services = new ServiceCollection();
+            services.Configure<AuditCoreOptions>(s => { });
+
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
 
@@ -91,9 +93,7 @@ namespace MiCake.Audit.Tests
 
             var auditProviderType = typeof(IdentityAuditProvider<>).MakeGenericType(userKeyType[0]);
             services.AddScoped(typeof(IAuditProvider), auditProviderType);
-
-            var currentUser = typeof(ICurrentMiCakeUser<>).MakeGenericType(userKeyType[0]);
-            services.AddScoped(currentUser, CurrentUserType);
+            services.AddScoped(typeof(ICurrentMiCakeUser), CurrentUserType);
 
             return services;
         }

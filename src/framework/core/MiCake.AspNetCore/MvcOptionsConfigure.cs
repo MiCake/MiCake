@@ -20,7 +20,7 @@ namespace MiCake.AspNetCore
 
         public void Configure(MvcOptions options)
         {
-            options.Filters.Add(typeof(UnitOfWorkFilter));
+            options.Filters.Add(typeof(UnitOfWorkAutoSaveFilter));
 
             //Add wrap data filters.
             if (_micakeAspNetOptions.WrapResponseAndPureExceptionData)

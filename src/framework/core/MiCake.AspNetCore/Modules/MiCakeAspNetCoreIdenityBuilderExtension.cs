@@ -42,11 +42,9 @@ namespace MiCake.AspNetCore.Identity
                 //make sure has add ihttpcontextaccessor.
                 services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-                var currentMiCakeUserType = typeof(ICurrentMiCakeUser<>).MakeGenericType(userKeyType);
                 var aspnetCoreCurrentUser = typeof(AspNetCoreMiCakeUser<>).MakeGenericType(userKeyType);
                 //add ICurrentMiCakeUser
                 services.Replace(new ServiceDescriptor(typeof(ICurrentMiCakeUser), aspnetCoreCurrentUser, ServiceLifetime.Scoped));
-                services.Replace(new ServiceDescriptor(currentMiCakeUserType, aspnetCoreCurrentUser, ServiceLifetime.Scoped));
 
                 Action<MiCakeIdentityOptions> defaultOptions = (s) => { };
                 services.Configure(identityOptionsConfig ?? defaultOptions);
