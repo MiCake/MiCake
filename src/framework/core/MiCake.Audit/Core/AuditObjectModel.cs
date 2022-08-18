@@ -2,6 +2,9 @@
 
 namespace MiCake.Audit.Core
 {
+    /// <summary>
+    /// the context for an audit object which needs to be dealt with <see href="IAuditProvider"></see>
+    /// </summary>
     public class AuditObjectModel
     {
         /// <summary>

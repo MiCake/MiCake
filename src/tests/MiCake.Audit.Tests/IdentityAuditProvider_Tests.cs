@@ -27,17 +27,17 @@ namespace MiCake.Audit.Tests
             var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
             var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();
 
-            Assert.Equal(default, user.CreatorID);
+            Assert.Equal(default, user.CreatedBy);
             auditProvider.Execute(user, RepositoryEntityState.Added);
-            Assert.Equal(1001, user.CreatorID);
+            Assert.Equal(1001, user.CreatedBy);
 
-            Assert.Equal(default, user.ModifyUserID);
+            Assert.Equal(default, user.UpdatedBy);
             auditProvider.Execute(user, RepositoryEntityState.Modified);
-            Assert.Equal(1001, user.ModifyUserID);
+            Assert.Equal(1001, user.UpdatedBy);
 
-            Assert.Equal(default, user.DeleteUserID);
+            Assert.Equal(default, user.DeletedBy);
             auditProvider.Execute(user, RepositoryEntityState.Deleted);
-            Assert.Equal(1001, user.DeleteUserID);
+            Assert.Equal(1001, user.DeletedBy);
         }
 
         [Fact]
@@ -51,17 +51,17 @@ namespace MiCake.Audit.Tests
             var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
             var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();
 
-            Assert.Equal(default, user.CreatorID);
+            Assert.Equal(default, user.CreatedBy);
             auditProvider.Execute(user, RepositoryEntityState.Added);
-            Assert.Equal(1001, user.CreatorID);
+            Assert.Equal(1001, user.CreatedBy);
 
-            Assert.Equal(default, user.ModifyUserID);
+            Assert.Equal(default, user.UpdatedBy);
             auditProvider.Execute(user, RepositoryEntityState.Modified);
-            Assert.Equal(1001, user.ModifyUserID);
+            Assert.Equal(1001, user.UpdatedBy);
 
-            Assert.Equal(default, user.DeleteUserID);
+            Assert.Equal(default, user.DeletedBy);
             auditProvider.Execute(user, RepositoryEntityState.Deleted);
-            Assert.Equal(default, user.DeleteUserID);
+            Assert.Equal(default, user.DeletedBy);
         }
 
         [Fact]
@@ -72,9 +72,9 @@ namespace MiCake.Audit.Tests
             var serivces = BuildServicesWithAuditProvider(user, typeof(FakeCurrentUser_long));
             var auditProvider = serivces.BuildServiceProvider().GetService<IAuditExecutor>();
 
-            Assert.Equal(default, user.CreatorID);
+            Assert.Equal(default, user.CreatedBy);
             auditProvider.Execute(user, RepositoryEntityState.Added);
-            Assert.Equal(default, user.CreatorID);
+            Assert.Equal(default, user.CreatedBy);
         }
 
 

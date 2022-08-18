@@ -25,7 +25,7 @@ namespace MiCake.Audit.Tests
 
             executor.Execute(entity, RepositoryEntityState.Added);
 
-            Assert.Equal(default, entity.CreationTime);
+            Assert.Equal(default, entity.CreatedTime);
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace MiCake.Audit.Tests
             executor.Execute(entity, RepositoryEntityState.Modified);
             executor.Execute(entity, RepositoryEntityState.Unchanged);
 
-            Assert.Equal(default, entity.CreationTime);
+            Assert.Equal(default, entity.CreatedTime);
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace MiCake.Audit.Tests
             executor.Execute(entity, RepositoryEntityState.Deleted);
             executor.Execute(entity, RepositoryEntityState.Unchanged);
 
-            Assert.Null(entity.ModificationTime);
+            Assert.Null(entity.UpdatedTime);
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace MiCake.Audit.Tests
 
             executor.Execute(entity, RepositoryEntityState.Added);
 
-            Assert.Equal(default, entity.CreationTime);
+            Assert.Equal(default, entity.CreatedTime);
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace MiCake.Audit.Tests
             var beforeGiveDeletionTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Deleted);
 
-            var result = entity.DeletionTime.Value >= beforeGiveDeletionTime;
+            var result = entity.DeletedTime.Value >= beforeGiveDeletionTime;
 
             Assert.True(entity.IsDeleted);
             Assert.True(result);
@@ -129,7 +129,7 @@ namespace MiCake.Audit.Tests
             executor.Execute(entity, RepositoryEntityState.Unchanged);
 
             Assert.False(entity.IsDeleted);
-            Assert.Null(entity.DeletionTime);
+            Assert.Null(entity.DeletedTime);
         }
 
         [Fact]
@@ -142,7 +142,7 @@ namespace MiCake.Audit.Tests
 
             executor.Execute(entity, RepositoryEntityState.Deleted);
 
-            Assert.Null(entity.DeletionTime);
+            Assert.Null(entity.DeletedTime);
         }
 
         private IServiceCollection BuildServices()

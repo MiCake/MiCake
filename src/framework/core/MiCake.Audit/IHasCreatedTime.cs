@@ -3,8 +3,8 @@
     /// <summary>
     /// Define a class has creation time.
     /// </summary>
-    public interface IHasCreationTime
+    public interface IHasCreatedTime
     {
-        DateTime CreationTime { get; }
+        DateTime CreatedTime { get; }
     }
 }

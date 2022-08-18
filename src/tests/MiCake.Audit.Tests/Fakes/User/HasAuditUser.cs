@@ -4,7 +4,7 @@ using MiCake.Identity;
 
 namespace MiCake.Audit.Tests.Fakes.User
 {
-    public class HasAuditUser : Entity<long>, IMiCakeUser<long>, IHasCreator<long>, IHasModifyUser<long>, IHasDeleteUser<long>, ISoftDeletion
+    public class HasAuditUser : Entity<long>, IMiCakeUser<long>, IHasCreatedUser<long>, IHasUpdatedUser<long>, IHasDeletedUser<long>, ISoftDeletion
     {
 
 
@@ -12,20 +12,20 @@ namespace MiCake.Audit.Tests.Fakes.User
         {
         }
 
-        public long? CreatorID { get; set; }
+        public long? CreatedBy { get; set; }
 
-        public long? ModifyUserID { get; set; }
+        public long? UpdatedBy { get; set; }
 
-        public long? DeleteUserID { get; set; }
+        public long? DeletedBy { get; set; }
 
         public bool IsDeleted { get; set; }
     }
 
-    public class HasAuditUserWithNoSoftDeletion : Entity<long>, IMiCakeUser<long>, IHasCreator<long>, IHasModifyUser<long>, IHasDeleteUser<long>
+    public class HasAuditUserWithNoSoftDeletion : Entity<long>, IMiCakeUser<long>, IHasCreatedUser<long>, IHasUpdatedUser<long>, IHasDeletedUser<long>
     {
-        public long? CreatorID { get; set; }
-        public long? ModifyUserID { get; set; }
-        public long? DeleteUserID { get; set; }
+        public long? CreatedBy { get; set; }
+        public long? UpdatedBy { get; set; }
+        public long? DeletedBy { get; set; }
 
         public HasAuditUserWithNoSoftDeletion()
         {

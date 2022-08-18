@@ -1,11 +1,10 @@
 ﻿using MiCake.Core.DependencyInjection;
-using MiCake.Core.Modularity;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MiCake.Cord.Register
+namespace MiCake.Core.Modularity
 {
     public static class RegisterDomainServiceExtension
     {

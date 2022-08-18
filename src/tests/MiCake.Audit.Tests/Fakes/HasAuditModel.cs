@@ -3,9 +3,10 @@ using System;
 
 namespace MiCake.Audit.Tests.Fakes
 {
-    public class HasAuditModel : Entity, IHasAudit
+    public class HasAuditModel : Entity, IHasAuditTime
     {
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
+        public DateTime CreatedTime { get; set; }
+
+        public DateTime? UpdatedTime { get; set; }
     }
 }

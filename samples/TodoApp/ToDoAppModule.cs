@@ -1,6 +1,5 @@
 ﻿using MiCake.AspNetCore.Start;
 using MiCake.AutoMapper;
-using MiCake.Cord.Register;
 using MiCake.Core.Modularity;
 
 namespace TodoApp

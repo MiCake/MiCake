@@ -25,10 +25,10 @@ namespace MiCake.Audit.SoftDeletion
 
             ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(ISoftDeletion.IsDeleted), true);
 
-            if (entity is IHasDeletionTime)
+            if (entity is IHasDeletedTime)
             {
                 var value = _options.DateTimeValueProvider is null ? DateTime.UtcNow : _options.DateTimeValueProvider();
-                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasDeletionTime.DeletionTime), value);
+                ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasDeletedTime.DeletedTime), value);
             }
         }
     }

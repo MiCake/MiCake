@@ -3,8 +3,8 @@
     /// <summary>
     /// Define a class has modification time.
     /// </summary>
-    public interface IHasModificationTime
+    public interface IHasUpdatedTime
     {
-        DateTime? ModificationTime { get; }
+        DateTime? UpdatedTime { get; }
     }
 }

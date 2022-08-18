@@ -3,8 +3,8 @@
     /// <summary>
     /// Define a class has deletion time.
     /// </summary>
-    public interface IHasDeletionTime
+    public interface IHasDeletedTime
     {
-        DateTime? DeletionTime { get; }
+        DateTime? DeletedTime { get; }
     }
 }

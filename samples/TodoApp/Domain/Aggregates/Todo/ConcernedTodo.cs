@@ -4,16 +4,26 @@ using MiCake.DDD.Domain;
 namespace TodoApp.Domain.Aggregates.Todo
 {
 
-    public class ConcernedTodo : AggregateRoot, IHasAudit, IHasCreator<int>
+    public class ConcernedTodo : AggregateRoot, IHasAuditTime, IHasCreatedUser<int>
     {
         public int TodoId { get; protected set; }
 
         public int UserId { get; protected set; }
 
-        public DateTime CreationTime { get; protected set; }
-        public DateTime? ModificationTime { get; protected set; }
+        public DateTime CreatedTime
+        {
+            get; set;
+        }
 
-        public int? CreatorID { get; protected set; }
+        public DateTime? UpdatedTime
+        {
+            get; set;
+        }
+
+        public int? CreatedBy
+        {
+            get; set;
+        }
 
         public ConcernedTodo()
         {

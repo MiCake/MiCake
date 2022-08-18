@@ -1,9 +1,8 @@
-﻿using MiCake.Core.Modularity;
-using MiCake.Core.Util.Reflection;
+﻿using MiCake.Core.Util.Reflection;
 using MiCake.DDD.Domain;
 using System.Reflection;
 
-namespace MiCake.Cord.Register
+namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// A selector used to filter custom warehouse interfaces,Used to <see cref="AutoRegisterRepositoriesExtension"/>.

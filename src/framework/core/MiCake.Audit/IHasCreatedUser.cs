@@ -3,27 +3,27 @@
 namespace MiCake.Audit
 {
     /// <summary>
-    /// Represents has a creator.If audit is enabled, it will be assigned to the audited system later.
+    /// Represents has a created user.If audit is enabled, it will be assigned to the audited system later.
     /// 
     /// <para>
     ///     this interface is limit primary key type must be a struct.
-    ///     if you want to use a non-structure primary key, you can use <see cref="IMayHasCreator{TKey}"/>
+    ///     if you want to use a non-structure primary key, you can use <see cref="IMayHasCreatedUser{TKey}"/>
     /// </para>
     /// </summary>
     /// <typeparam name="TKey">The type used for the primary key for the user.Must be consistent with <see cref="IMiCakeUser"/></typeparam>
-    public interface IHasCreator<TKey> : IHasAuditUser where TKey : struct
+    public interface IHasCreatedUser<TKey> : ICanAuditUser where TKey : struct
     {
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey? CreatorID { get; }
+        TKey? CreatedBy { get; }
     }
 
-    public interface IMayHasCreator<TKey> : IHasAuditUser where TKey : class
+    public interface IMayHasCreatedUser<TKey> : ICanAuditUser where TKey : class
     {
         /// <summary>
         /// The primary key for user.
         /// </summary>
-        TKey? CreatorID { get; }
+        TKey? CreatedBy { get; }
     }
 }

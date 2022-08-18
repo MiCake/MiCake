@@ -3,7 +3,7 @@
     /// <summary>
     /// Mark a class with creation time and modify time.
     /// </summary>
-    public interface IHasAudit : IHasCreationTime, IHasModificationTime
+    public interface IHasAuditTime : IHasCreatedTime, IHasUpdatedTime
     {
     }
 }

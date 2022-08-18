@@ -26,11 +26,11 @@ namespace MiCake.Audit.Core
 
         private void SetModifactionTime(object entity)
         {
-            if (entity is not IHasModificationTime)
+            if (entity is not IHasUpdatedTime)
                 return;
 
             var value = _options.DateTimeValueProvider is null ? DateTime.UtcNow : _options.DateTimeValueProvider();
-            ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasModificationTime.ModificationTime), value);
+            ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasUpdatedTime.UpdatedTime), value);
         }
     }
 }

@@ -4,7 +4,7 @@ using TodoApp.Domain.Aggregates.Identity;
 
 namespace TodoApp.Domain.Aggregates.Todo
 {
-    public class TodoItem : AggregateRoot, IHasAudit
+    public class TodoItem : AggregateRoot, IHasAuditTime
     {
         /// <summary>
         /// <see cref="TodoUser"/>
@@ -19,11 +19,17 @@ namespace TodoApp.Domain.Aggregates.Todo
 
         public string? Detail { get; private set; }
 
-        public DateTime CreationTime { get; protected set; }
-
-        public DateTime? ModificationTime { get; protected set; }
-
         public TodoItemStateType State { get; private set; }
+
+        public DateTime CreatedTime
+        {
+            get; set;
+        }
+
+        public DateTime? UpdatedTime
+        {
+            get; set;
+        }
 
         public static TodoItem Create(string title, string? detail, int authorId)
         {

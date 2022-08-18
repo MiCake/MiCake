@@ -4,9 +4,9 @@ using System;
 
 namespace MiCake.Audit.Tests.Fakes
 {
-    public class HasDeletionTimeModel : Entity, IHasDeletionTime, ISoftDeletion
+    public class HasDeletionTimeModel : Entity, IHasDeletedTime, ISoftDeletion
     {
-        public DateTime? DeletionTime { get; set; }
+        public DateTime? DeletedTime { get; set; }
         public bool IsDeleted { get; set; }
     }
 }

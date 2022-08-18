@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <IsAspNetCore>true</IsAspNetCore>
-    <Description>MiCake's quick start package for novice.Contains EFCore extension,AspNetCore extension,Audit,and more.</Description>
+    <Description>MiCake's quick start package. Contains EFCore extension,AspNetCore extension,Audit,JWT token and more.</Description>
   </PropertyGroup>
 
   <ItemGroup>

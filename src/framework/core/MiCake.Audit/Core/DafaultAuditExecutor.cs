@@ -3,7 +3,7 @@ using MiCake.DDD.Domain.Helper;
 
 namespace MiCake.Audit.Core
 {
-    public class DefaultAuditExecutor : IAuditExecutor
+    internal class DefaultAuditExecutor : IAuditExecutor
     {
         private readonly IEnumerable<IAuditProvider> _providers;
 

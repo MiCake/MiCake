@@ -13,7 +13,7 @@ namespace MiCake.EntityFrameworkCore.Repository
          where TEntity : class, IEntity<TKey>
          where TDbContext : DbContext
     {
-        private object lockObj = new object();
+        private readonly object lockObj = new object();
 
         /// <summary>
         /// Use to get need services.

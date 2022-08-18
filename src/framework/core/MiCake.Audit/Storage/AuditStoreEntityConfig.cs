@@ -24,7 +24,7 @@ namespace MiCake.Audit.Storage
             modelBuilder.Entity<ISoftDeletion>().HasQueryFilter(s => !s.IsDeleted);
 
             // create time and modify time
-            modelBuilder.Entity<IHasCreationTime>().Property(s => s.CreationTime).DefaultValue(_otpions.TimeGenerateSql!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Add);
+            modelBuilder.Entity<IHasCreatedTime>().Property(s => s.CreatedTime).DefaultValue(_otpions.TimeGenerateSql!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Add);
 
             // update modification time in EFCore is need provider support.
             // modelBuilder.Entity<IHasModificationTime>().Property(s => s.ModificationTime).DefaultValue(_otpions.TimeGenerateSql!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Update);
