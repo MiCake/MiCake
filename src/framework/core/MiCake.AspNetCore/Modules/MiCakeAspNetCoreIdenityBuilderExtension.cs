@@ -1,5 +1,5 @@
 ﻿using MiCake.Core;
-using MiCake.Core.Util.Reflection;
+using MiCake.Core.Util;
 using MiCake.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,39 +10,35 @@ namespace MiCake.AspNetCore.Identity
     public static class MiCakeAspNetCoreIdenityBuilderExtension
     {
         /// <summary>
-        /// Register <see cref="IMiCakeUser"/> to MiCake application,so that MiCake can identify user info.
+        /// Register identity info to MiCake,so that MiCake can track user info.
         /// </summary>
-        /// <typeparam name="TMiCakeUser">User inherit from <see cref="IMiCakeUser"/></typeparam>
+        /// <typeparam name="TUserIdType">User id type.</typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="identityOptionsConfig"></param>
-        public static IMiCakeBuilder UseIdentity<TMiCakeUser>(this IMiCakeBuilder builder, Action<MiCakeIdentityOptions>? identityOptionsConfig = null)
-            where TMiCakeUser : IMiCakeUser
+        public static IMiCakeBuilder UseIdentity<TUserIdType>(this IMiCakeBuilder builder, Action<MiCakeIdentityOptions>? identityOptionsConfig = null)
         {
-            return UseIdentity(builder, typeof(TMiCakeUser), identityOptionsConfig);
+            return UseIdentity(builder, typeof(TUserIdType), identityOptionsConfig);
         }
 
         /// <summary>
-        /// Register <see cref="IMiCakeUser"/> to MiCake application,so that MiCake can identify user info.
+        /// Register identity info to MiCake,so that MiCake can track user info.
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        /// <param name="miCakeUserType">User inherit from <see cref="IMiCakeUser"/></param>
+        /// <param name="userIdType">User inherit from <see cref="IMiCakeUser"/></param>
         /// <param name="identityOptionsConfig"></param>
-        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type miCakeUserType, Action<MiCakeIdentityOptions>? identityOptionsConfig = null)
+        public static IMiCakeBuilder UseIdentity(this IMiCakeBuilder builder, Type userIdType, Action<MiCakeIdentityOptions>? identityOptionsConfig = null)
         {
-            //Add identity core.
-            builder.AddIdentityCore(miCakeUserType);
+            CheckValue.NotNull(userIdType, nameof(userIdType));
 
-            //register user services
-            var userKeyType = TypeHelper.GetGenericArguments(miCakeUserType, typeof(IMiCakeUser<>));
-            if (userKeyType == null || userKeyType[0] == null)
-                throw new ArgumentException($"Can not get the primary key type of IMiCakeUser,Please check your config when {nameof(UseIdentity)}.");
+            //Add identity core.
+            builder.AddIdentityCore(userIdType);
 
             builder.ConfigureApplication((app, services) =>
             {
                 //make sure has add ihttpcontextaccessor.
                 services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-                var aspnetCoreCurrentUser = typeof(AspNetCoreMiCakeUser<>).MakeGenericType(userKeyType);
+                var aspnetCoreCurrentUser = typeof(AspNetCoreMiCakeUser<>).MakeGenericType(userIdType);
                 //add ICurrentMiCakeUser
                 services.Replace(new ServiceDescriptor(typeof(ICurrentMiCakeUser), aspnetCoreCurrentUser, ServiceLifetime.Scoped));
 

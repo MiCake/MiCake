@@ -70,7 +70,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Add MiCake,and choose some features.
 builder.Services.AddMiCakeServices<ToDoAppModule, TodoAppContext>(PresetAuditConstants.PostgreSql_GetDateFunc)
-                .UseIdentity<TodoUser>()
+                .UseIdentity<int>()
                 .UseSqlReader(options => { options.UseXmlFileProvider(xmlOpt => { xmlOpt.FolderPath = "QueryReader//files"; }); })
                 .UseDapper(builder.Configuration.GetConnectionString("Postgres"))
                 .UseJwt(options =>

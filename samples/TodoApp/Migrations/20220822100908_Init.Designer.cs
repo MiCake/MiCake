@@ -12,14 +12,14 @@ using TodoApp;
 namespace TodoApp.Migrations
 {
     [DbContext(typeof(TodoAppContext))]
-    [Migration("20220525090029_Init")]
+    [Migration("20220822100908_Init")]
     partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.5")
+                .HasAnnotation("ProductVersion", "6.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -51,19 +51,19 @@ namespace TodoApp.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreationTime")
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("current_timestamp");
 
-                    b.Property<int?>("CreatorID")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ModificationTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("TodoId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -88,7 +88,7 @@ namespace TodoApp.Migrations
                     b.Property<int>("AuthorId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreationTime")
+                    b.Property<DateTime>("CreatedTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("current_timestamp");
@@ -96,14 +96,14 @@ namespace TodoApp.Migrations
                     b.Property<string>("Detail")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("ModificationTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("State")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

@@ -1,6 +1,5 @@
 ﻿using MiCake.Core;
 using MiCake.Core.Util;
-using MiCake.Core.Util.Reflection;
 using MiCake.Identity.Modules;
 
 namespace MiCake.Identity
@@ -10,37 +9,29 @@ namespace MiCake.Identity
         /// <summary>
         /// Add your user information to the MiCake, which will be tracked automatically.
         /// </summary>
-        /// <typeparam name="TMiCakeUser"><see cref="IMiCakeUser{TKey}"/></typeparam>
+        /// <typeparam name="TUserIdType">the user id type.</typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        public static IMiCakeBuilder AddIdentityCore<TMiCakeUser>(this IMiCakeBuilder builder)
-            where TMiCakeUser : IMiCakeUser
+        public static IMiCakeBuilder AddIdentityCore<TUserIdType>(this IMiCakeBuilder builder)
         {
-            return AddIdentityCore(builder, typeof(TMiCakeUser));
+            return AddIdentityCore(builder, typeof(TUserIdType));
         }
 
         /// <summary>
         /// Add your user information to the MiCake, which will be tracked automatically.
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        /// <param name="miCakeUserType"><see cref="IMiCakeUser{TKey}"/></param>
+        /// <param name="userIdType"></param>
         /// <returns></returns>
-        public static IMiCakeBuilder AddIdentityCore(this IMiCakeBuilder builder, Type miCakeUserType)
+        public static IMiCakeBuilder AddIdentityCore(this IMiCakeBuilder builder, Type userIdType)
         {
-            CheckValue.NotNull(miCakeUserType, nameof(miCakeUserType));
-
-            if (!typeof(IMiCakeUser).IsAssignableFrom(miCakeUserType))
-                throw new ArgumentException($"Wrong user type,must use {nameof(IMiCakeUser)} to register your micake user.");
-
-            var userKeyType = TypeHelper.GetGenericArguments(miCakeUserType, typeof(IMiCakeUser<>));
-            if (userKeyType == null || userKeyType[0] == null)
-                throw new ArgumentException($"Can not get the primary key type of IMiCakeUser,Please check your config when AddIdentity().");
+            CheckValue.NotNull(userIdType, nameof(userIdType));
 
             builder.ConfigureApplication((app, services) =>
             {
                 //Add identity module.
                 app.SlotModule<MiCakeIdentityModule>();
 
-                app.AddStartupTransientData(MiCakeIdentityModule.CurrentIdentityUserKeyType, userKeyType[0]);
+                app.AddStartupTransientData(MiCakeIdentityModule.CurrentIdentityUserKeyType, userIdType);
             });
 
             return builder;
