@@ -1,35 +1,28 @@
-﻿using Microsoft.Extensions.Options;
+﻿using MiCake.Core.Time;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace MiCake.Identity.Authentication.JwtToken
 {
     internal class DefaultRefreshTokenService : IRefreshTokenService
     {
+        private readonly IAppClock _clock;
         private readonly MiCakeJwtOptions _options;
         private readonly IRefreshTokenStore _tokenStore;
 
-        public DefaultRefreshTokenService(IOptions<MiCakeJwtOptions> options, IRefreshTokenStore tokenStore)
+        public DefaultRefreshTokenService(IAppClock appClock, IOptions<MiCakeJwtOptions> options, IRefreshTokenStore tokenStore)
         {
+            _clock = appClock;
             _options = options.Value;
             _tokenStore = tokenStore;
         }
 
         public virtual async Task<string> CreateRefreshTokenAsync(ClaimsPrincipal subject, string subjectId, CancellationToken cancellationToken = default)
         {
-            int lifetime;
-            if (_options.RefreshTokenMode == RefreshTokenUsageMode.Reuse)
-            {
-                lifetime = _options.SlidingRefreshTokenLifetime;
-            }
-            else
-            {
-                lifetime = _options.AbsoluteRefreshTokenLifetime;
-            }
-
             var refreshToken = new RefreshToken(subjectId, subject)
             {
-                CreationTime = DateTimeOffset.Now,
-                Lifetime = lifetime,
+                CreationTime = _clock.Now,
+                Lifetime = _options.RefreshTokenLifetime,
             };
 
             var handle = await _tokenStore.StoreRefreshTokenAsync(refreshToken, cancellationToken);
@@ -43,45 +36,49 @@ namespace MiCake.Identity.Authentication.JwtToken
 
             if (_options.RefreshTokenMode == RefreshTokenUsageMode.Recreate)
             {
-                refreshToken.ConsumedTime = DateTimeOffset.UtcNow.DateTime;
-                await _tokenStore.UpdateRefreshTokenAsync(handle, refreshToken);
+                if (_options.DeleteWhenExchangeRefreshToken)
+                {
+                    await _tokenStore.RemoveRefreshTokenAsync(handle, cancellationToken);
+                }
+                else
+                {
+                    refreshToken.ConsumedTime = _clock.Now;
+                    await _tokenStore.UpdateRefreshTokenAsync(handle, refreshToken, cancellationToken);
+                }
 
                 needsCreate = true;
             }
             else if (_options.RefreshTokenMode == RefreshTokenUsageMode.Reuse)
             {
-                var currentLifetime = (int)(refreshToken.CreationTime - DateTimeOffset.UtcNow.UtcDateTime).TotalSeconds;
-                var newLifetime = currentLifetime + _options.SlidingRefreshTokenLifetime;
+                refreshToken.Version++;
+                refreshToken.CreationTime = _clock.Now;
+                refreshToken.Lifetime = _options.RefreshTokenLifetime;
 
-                if (_options.AbsoluteRefreshTokenLifetime > 0 && newLifetime > _options.AbsoluteRefreshTokenLifetime)
-                {
-                    newLifetime = _options.AbsoluteRefreshTokenLifetime;
-                }
-
-                refreshToken.Lifetime = newLifetime;
                 needsUpdate = true;
-            }
-            else if (_options.RefreshTokenMode == RefreshTokenUsageMode.RecreateBeforeOverdue)
-            {
-                var expireTime = refreshToken.CreationTime.AddSeconds(refreshToken.Lifetime);
-                var beforeOverdueTime = expireTime.AddMinutes((_options.RecreateRefreshTokenBeforeOverdueMinutes) * -1);
-                var now = DateTimeOffset.UtcNow.DateTime;
-
-                needsCreate = expireTime >= now && now >= beforeOverdueTime;
             }
 
             if (needsCreate)
             {
                 // set it to null so that we save non-consumed token
-                refreshToken.ConsumedTime = null;
-                handle = await _tokenStore.StoreRefreshTokenAsync(refreshToken);
+                var newToken = CloenRefreshToken(refreshToken);
+                newToken.CreationTime = _clock.Now;
+
+                handle = await _tokenStore.StoreRefreshTokenAsync(newToken, cancellationToken);
             }
             else if (needsUpdate)
             {
-                await _tokenStore.UpdateRefreshTokenAsync(handle, refreshToken);
+                await _tokenStore.UpdateRefreshTokenAsync(handle, refreshToken, cancellationToken);
             }
 
             return handle;
+        }
+
+        private RefreshToken CloenRefreshToken(RefreshToken refreshToken)
+        {
+            return new RefreshToken(refreshToken.SubjectId, refreshToken.Subject)
+            {
+                Lifetime = refreshToken.Lifetime,
+            };
         }
     }
 }

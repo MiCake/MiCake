@@ -1,5 +1,6 @@
 ﻿using MiCake.Audit.Core;
 using MiCake.Cord;
+using MiCake.Core.Time;
 using MiCake.Core.Util.Reflection;
 using Microsoft.Extensions.Options;
 
@@ -7,11 +8,13 @@ namespace MiCake.Audit.SoftDeletion
 {
     internal class SoftDeletionAuditProvider : IAuditProvider
     {
-        private AuditCoreOptions _options;
+        private readonly AuditCoreOptions _options;
+        private readonly IAppClock _clock;
 
-        public SoftDeletionAuditProvider(IOptions<AuditCoreOptions> options)
+        public SoftDeletionAuditProvider(IOptions<AuditCoreOptions> options, IAppClock appClock)
         {
             _options = options.Value;
+            _clock = appClock;
         }
 
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
@@ -27,7 +30,7 @@ namespace MiCake.Audit.SoftDeletion
 
             if (entity is IHasDeletedTime)
             {
-                var value = _options.DateTimeValueProvider is null ? DateTime.UtcNow : _options.DateTimeValueProvider();
+                var value = _options.DateTimeValueProvider is null ? _clock.Now : _options.DateTimeValueProvider();
                 ReflectionHelper.SetValueByPath(entity, entity.GetType(), nameof(IHasDeletedTime.DeletedTime), value);
             }
         }

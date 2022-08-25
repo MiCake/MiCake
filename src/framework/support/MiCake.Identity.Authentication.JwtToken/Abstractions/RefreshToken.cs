@@ -17,11 +17,20 @@ namespace MiCake.Identity.Authentication.JwtToken
 
         public int Version { get; set; }
 
-        public DateTimeOffset? ConsumedTime { get; set; }
+        /// <summary>
+        /// The consumed date time for current refresh token.
+        /// If the <see cref="ConsumedTime"/> has value, then current refresh token is no longer valid.
+        /// Note: this time is Utc.
+        /// </summary>
+        public DateTime? ConsumedTime { get; set; }
 
         public int Lifetime { get; set; }
 
-        public DateTimeOffset CreationTime { get; set; }
+        /// <summary>
+        /// The created date time for current refresh token.
+        /// Note: this time is Utc.
+        /// </summary>
+        public DateTime CreationTime { get; set; }
 
         public ClaimsPrincipal Subject { get; }
 
@@ -31,6 +40,11 @@ namespace MiCake.Identity.Authentication.JwtToken
 
             SubjectId = subjectId;
             Subject = subject;
+        }
+
+        public DateTime GetExpireDateTime()
+        {
+            return CreationTime.AddSeconds(Lifetime);
         }
     }
 }

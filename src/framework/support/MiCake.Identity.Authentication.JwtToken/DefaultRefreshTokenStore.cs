@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using MiCake.Core.Time;
+using System.Collections.Concurrent;
 
 namespace MiCake.Identity.Authentication.JwtToken
 {
@@ -7,12 +8,14 @@ namespace MiCake.Identity.Authentication.JwtToken
     /// </summary>
     internal class DefaultRefreshTokenStore : IRefreshTokenStore
     {
-        private readonly ConcurrentDictionary<string, RefreshToken> _store = new();
+        private static readonly ConcurrentDictionary<string, RefreshToken> _store = new();
 
+        private readonly IAppClock _clock;
         private readonly IRefreshTokenHandleGenerator _handleGenerator;
 
-        public DefaultRefreshTokenStore(IRefreshTokenHandleGenerator handleGenerator)
+        public DefaultRefreshTokenStore(IAppClock clock, IRefreshTokenHandleGenerator handleGenerator)
         {
+            _clock = clock;
             _handleGenerator = handleGenerator;
         }
 
@@ -38,19 +41,18 @@ namespace MiCake.Identity.Authentication.JwtToken
 
         public Task RefreshStoreDataAsync(CancellationToken cancellationToken = default)
         {
-            ScanForExpiredItems(this);
+            ScanForExpiredItems();
             return Task.CompletedTask;
         }
 
-        private static void ScanForExpiredItems(DefaultRefreshTokenStore store)
+        private void ScanForExpiredItems()
         {
-            var now = DateTimeOffset.Now; ;
-            foreach (var (key, entry) in store._store)
+            foreach (var (key, entry) in _store)
             {
-                var refreTokenLifetime = entry.CreationTime.AddSeconds(entry.Lifetime);
-                if (refreTokenLifetime > now)
+                var refreTokenLifetime = entry.GetExpireDateTime();
+                if (refreTokenLifetime > _clock.Now)
                 {
-                    store.RemoveRefreshTokenAsync(key);
+                    RemoveRefreshTokenAsync(key);
                 }
             }
         }

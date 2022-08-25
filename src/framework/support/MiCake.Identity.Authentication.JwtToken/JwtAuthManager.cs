@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Util;
+﻿using MiCake.Core.Time;
+using MiCake.Core.Util;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -9,6 +10,7 @@ namespace MiCake.Identity.Authentication.JwtToken
 {
     internal class JwtAuthManager : IJwtAuthManager
     {
+        private readonly IAppClock _clock;
         private readonly MiCakeJwtOptions _jwtOptions;
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IRefreshTokenStore _refreshTokenStore;
@@ -16,10 +18,12 @@ namespace MiCake.Identity.Authentication.JwtToken
         private const string defaultSubjectId = "default-subject";
 
         public JwtAuthManager(
+            IAppClock appClock,
             IRefreshTokenService refreshTokenService,
             IRefreshTokenStore refreshTokenStore,
             IOptions<MiCakeJwtOptions> jwtOptions)
         {
+            _clock = appClock;
             _refreshTokenService = refreshTokenService;
             _refreshTokenStore = refreshTokenStore;
             _jwtOptions = jwtOptions.Value;
@@ -105,7 +109,7 @@ namespace MiCake.Identity.Authentication.JwtToken
             if (refreshToken == null)
                 throw new SecurityTokenException("Invalid refresh token");
 
-            if (DateTimeOffset.UtcNow.DateTime > refreshToken.CreationTime.AddSeconds(refreshToken.Lifetime))
+            if (_clock.Now > refreshToken.GetExpireDateTime())
                 throw new SecurityTokenExpiredException("Refresh token has expired.");
 
             if (refreshToken.ConsumedTime.HasValue)
@@ -156,7 +160,7 @@ namespace MiCake.Identity.Authentication.JwtToken
                 }
             }
 
-            var expireTime = DateTime.Now.AddSeconds(_jwtOptions.AccessTokenLifetime);
+            var expireTime = _clock.Now.AddSeconds(_jwtOptions.AccessTokenLifetime);
             var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(_jwtOptions.SecurityKey), _jwtOptions.Algorithm);
 
             return new SecurityTokenDescriptor
@@ -172,7 +176,7 @@ namespace MiCake.Identity.Authentication.JwtToken
 
         protected virtual SecurityTokenDescriptor CreateSecurityTokenDescriptorByClaims(Claim[] claims, CancellationToken cancellationToken = default)
         {
-            var expireTime = DateTime.Now.AddSeconds(_jwtOptions.AccessTokenLifetime);
+            var expireTime = _clock.Now.AddSeconds(_jwtOptions.AccessTokenLifetime);
             var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(_jwtOptions.SecurityKey), _jwtOptions.Algorithm);
 
             return new SecurityTokenDescriptor

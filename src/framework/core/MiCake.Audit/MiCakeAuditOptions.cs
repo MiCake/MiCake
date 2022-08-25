@@ -1,5 +1,5 @@
-﻿
-using MiCake.Core.Data;
+﻿using MiCake.Core.Data;
+using MiCake.Core.Time;
 
 namespace MiCake.Audit
 {
@@ -20,7 +20,7 @@ namespace MiCake.Audit
 
         /// <summary>
         /// Use to change audit datetime value.
-        /// The default value is : DataTime.UtcNow.
+        /// The default value is : <see cref="IAppClock.Now"/>
         /// </summary>
         public Func<DateTime>? AuditDateTimeProvider { get; set; }
 

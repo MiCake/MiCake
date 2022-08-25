@@ -61,19 +61,15 @@ namespace MiCake.Identity.Authentication.JwtToken
         public RefreshTokenUsageMode RefreshTokenMode { get; set; } = RefreshTokenUsageMode.Reuse;
 
         /// <summary>
-        /// When use <see cref="RefreshTokenUsageMode.RecreateBeforeOverdue"/>,need set this property.
-        /// </summary>
-        public double RecreateRefreshTokenBeforeOverdueMinutes { get; set; }
-
-        /// <summary>
         /// Maximum lifetime of a refresh token in seconds. Defaults to 2592000 seconds / 30 days.
         /// If value is less than 0,It's mean unlimited.
         /// </summary>
-        public int AbsoluteRefreshTokenLifetime { get; set; } = 2592000;
+        public int RefreshTokenLifetime { get; set; } = 2592000;
 
         /// <summary>
-        ///  Sliding lifetime of a refresh token in seconds. Defaults to 1296000 seconds / 15 days
+        /// Always delete old refresh token record when exchange refresh token.
+        /// Default value is true.
         /// </summary>
-        public int SlidingRefreshTokenLifetime { get; set; } = 1296000;
+        public bool DeleteWhenExchangeRefreshToken { get; set; } = true;
     }
 }

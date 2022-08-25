@@ -11,11 +11,5 @@
         /// Always create a new refresh-token when refresh token.
         /// </summary>
         Recreate = 1,
-
-        /// <summary>
-        /// Recreate a new refresh-token before old token overdue.
-        /// Use this mode,need set RecreateRefreshTokenBeforeOverdueMinutes
-        /// </summary>
-        RecreateBeforeOverdue = 2
     }
 }

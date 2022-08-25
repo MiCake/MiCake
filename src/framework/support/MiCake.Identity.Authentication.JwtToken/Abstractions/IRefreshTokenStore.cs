@@ -38,7 +38,7 @@
         Task UpdateRefreshTokenAsync(string refreshTokenHandle, RefreshToken refreshToken, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Refresh store data,It's mean remove all expired refresh-token.
+        /// Refresh current store data records. This operation will remove all expire refresh-token records.
         /// </summary>
         Task RefreshStoreDataAsync(CancellationToken cancellationToken = default);
     }

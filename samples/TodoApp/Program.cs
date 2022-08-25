@@ -12,7 +12,6 @@ using Serilog;
 using System.Text;
 using TodoApp;
 using TodoApp.Authentication;
-using TodoApp.Domain.Aggregates.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,7 +78,8 @@ builder.Services.AddMiCakeServices<ToDoAppModule, TodoAppContext>(PresetAuditCon
                     options.Issuer = jwtConfig.Issuer!;
                     options.Audience = jwtConfig.Audience!;
                     options.SecurityKey = Encoding.Default.GetBytes(jwtConfig.SecurityKey!);
-                    options.RefreshTokenMode = MiCake.Identity.Authentication.JwtToken.RefreshTokenUsageMode.Reuse;
+                    options.RefreshTokenMode = RefreshTokenUsageMode.Recreate;
+                    options.DeleteWhenExchangeRefreshToken = true;
                 })
                 .Build();
 

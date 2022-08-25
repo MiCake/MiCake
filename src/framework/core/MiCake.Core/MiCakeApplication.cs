@@ -1,4 +1,6 @@
 ﻿using MiCake.Core.Data;
+using MiCake.Core.Time;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -149,6 +151,8 @@ namespace MiCake.Core
         private void AddMiCakeCoreSerivces(IServiceCollection services)
         {
             services.AddSingleton<IMiCakeApplication>(this);
+
+            services.TryAddSingleton<IAppClock, AppClock>();
         }
 
         public virtual void Dispose()

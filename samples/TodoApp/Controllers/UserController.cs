@@ -46,8 +46,21 @@ namespace TodoApp.Controllers
             var jwtToken = await _jwtManager.CreateToken(todoUser);
             return Ok(new LoginResultDto
             {
+                RefreshToken = jwtToken.RefreshToken,
                 AccessToken = jwtToken.AccessToken!,
                 User = Mapper.Map<TodoUserDto>(todoUser)
+            });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshUserToken([FromBody] SimpleDto<string> data)
+        {
+            var bearerToken = this.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var jwtToken = await _jwtManager.Refresh(data.Data!, bearerToken);
+            return Ok(new LoginResultDto
+            {
+                RefreshToken = jwtToken.RefreshToken,
+                AccessToken = jwtToken.AccessToken!
             });
         }
     }

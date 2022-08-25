@@ -2,6 +2,7 @@
 using MiCake.Audit.SoftDeletion;
 using MiCake.Audit.Tests.Fakes;
 using MiCake.Cord;
+using MiCake.Core.Time;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using Xunit;
@@ -158,6 +159,7 @@ namespace MiCake.Audit.Tests
         private IServiceCollection BuildServicesWithAuditProvider()
         {
             var services = new ServiceCollection();
+            services.AddSingleton<IAppClock, AppClock>();
             services.Configure<AuditCoreOptions>(s => { });
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
@@ -165,6 +167,11 @@ namespace MiCake.Audit.Tests
             services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
 
             return services;
+        }
+
+        class AppClock : IAppClock
+        {
+            public DateTime Now => DateTime.UtcNow;
         }
     }
 }
