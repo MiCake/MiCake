@@ -22,7 +22,7 @@ namespace MiCake.Identity.Authentication.JwtToken
             var refreshToken = new RefreshToken(subjectId, subject)
             {
                 CreationTime = _clock.Now,
-                Lifetime = _options.RefreshTokenLifetime,
+                Lifetime = (int)_options.RefreshTokenLifetime,
             };
 
             var handle = await _tokenStore.StoreRefreshTokenAsync(refreshToken, cancellationToken);
@@ -52,7 +52,7 @@ namespace MiCake.Identity.Authentication.JwtToken
             {
                 refreshToken.Version++;
                 refreshToken.CreationTime = _clock.Now;
-                refreshToken.Lifetime = _options.RefreshTokenLifetime;
+                refreshToken.Lifetime = (int)_options.RefreshTokenLifetime;
 
                 needsUpdate = true;
             }

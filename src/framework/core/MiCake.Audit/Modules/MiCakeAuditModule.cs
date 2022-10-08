@@ -30,7 +30,12 @@ namespace MiCake.Audit.Modules
 
             var services = context.Services;
             // core options
-            services.Configure<AuditCoreOptions>(s => { s.DateTimeValueProvider = auditOptions?.AuditDateTimeProvider; });
+            services.Configure<AuditCoreOptions>(s =>
+            {
+                s.DateTimeValueProvider = auditOptions?.AuditDateTimeProvider;
+                s.AssignCreatedTime = !(auditOptions?.UseSqlToGenerateTime ?? false);
+                s.AssignUpdatedTime = true;
+            });
 
             //Audit Executor
             services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();

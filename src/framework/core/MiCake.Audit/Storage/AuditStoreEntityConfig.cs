@@ -9,9 +9,9 @@ namespace MiCake.Audit.Storage
 
         public AuditStoreEntityConfig(MiCakeAuditOptions options)
         {
-            if (string.IsNullOrEmpty(options.TimeGenerateSql))
+            if (options.UseSqlToGenerateTime && string.IsNullOrEmpty(options.SqlForGenerateTime))
             {
-                throw new InvalidOperationException($"When you want to use MiCake Audit, you must assign {nameof(options.TimeGenerateSql)} vaule in {nameof(MiCakeAuditOptions)}");
+                throw new InvalidOperationException($"When you want to use MiCake Audit and the {nameof(options.UseSqlToGenerateTime)} is true, you must assign {nameof(options.SqlForGenerateTime)} vaule in {nameof(MiCakeAuditOptions)}");
             }
 
             _otpions = options;
@@ -23,11 +23,14 @@ namespace MiCake.Audit.Storage
             modelBuilder.Entity<ISoftDeletion>().DirectDeletion(false);
             modelBuilder.Entity<ISoftDeletion>().HasQueryFilter(s => !s.IsDeleted);
 
-            // create time and modify time
-            modelBuilder.Entity<IHasCreatedTime>().Property(s => s.CreatedTime).DefaultValue(_otpions.TimeGenerateSql!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Add);
+            if (_otpions.UseSqlToGenerateTime)
+            {
+                // create time and modify time
+                modelBuilder.Entity<IHasCreatedTime>().Property(s => s.CreatedTime).DefaultValue(_otpions.SqlForGenerateTime!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Add);
 
-            // update modification time in EFCore is need provider support.
-            // modelBuilder.Entity<IHasModificationTime>().Property(s => s.ModificationTime).DefaultValue(_otpions.TimeGenerateSql!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Update);
+                // update modification time in EFCore is need provider support.
+                // modelBuilder.Entity<IHasModificationTime>().Property(s => s.ModificationTime).DefaultValue(_otpions.TimeGenerateSql!, StorePropertyDefaultValueType.SqlValue, StorePropertyDefaultValueSetOpportunity.Update);
+            }
         }
     }
 }

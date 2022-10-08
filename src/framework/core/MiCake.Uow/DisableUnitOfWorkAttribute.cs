@@ -1,7 +1,7 @@
 ﻿namespace MiCake.Uow
 {
     /// <summary>
-    /// Mark current method or class auto commit unit of work.
+    /// Disable current method or class auto commit unit of work.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class DisableAutoUnitOfWorkAttribute : Attribute
@@ -12,7 +12,7 @@
     }
 
     /// <summary>
-    /// Disable current method or class auto commit unit of work.
+    /// Mark current method or class auto commit unit of work.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class AutoUnitOfWorkAttribute : Attribute

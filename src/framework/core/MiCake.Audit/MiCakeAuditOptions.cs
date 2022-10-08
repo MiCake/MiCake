@@ -6,12 +6,21 @@ namespace MiCake.Audit
     public class MiCakeAuditOptions : ICanApplyData<MiCakeAuditOptions>
     {
         /// <summary>
-        ///  Specified sql is used to generate CreateTime And ModifyTime value.
+        /// Indicate use of SQL to automatically generate time, if the value is FALSE, will assign a value by <see cref="IAppClock"/>.
+        /// 
+        /// <para>
+        ///     Defalut value is FALSE. if you wanna open this flag,please assign a value to <see cref="SqlForGenerateTime"/>.
+        /// </para>
+        /// </summary>
+        public bool UseSqlToGenerateTime { get; set; }
+
+        /// <summary>
+        ///  Specified sql is used to generate <see cref=" IHasCreatedTime.CreatedTime"/> And <see cref="IHasUpdatedTime.UpdatedTime"/> value.
         /// <para>
         ///  You can get some preset vaules from <see cref="PresetAuditConstants"/>.
         /// </para> 
         /// </summary>
-        public string? TimeGenerateSql { get; set; }
+        public string? SqlForGenerateTime { get; set; }
 
         /// <summary>
         /// Open soft deletion and soft deletion audit.
@@ -26,7 +35,8 @@ namespace MiCake.Audit
 
         public void Apply(MiCakeAuditOptions options)
         {
-            TimeGenerateSql = options.TimeGenerateSql;
+            UseSqlToGenerateTime = options.UseSqlToGenerateTime;
+            SqlForGenerateTime = options.SqlForGenerateTime;
             UseSoftDeletion = options.UseSoftDeletion;
             AuditDateTimeProvider = options.AuditDateTimeProvider;
         }

@@ -104,7 +104,7 @@ namespace MiCake.Uow.Internal
 
             if (_coreNodeDisposeHandler == null)
             {
-                throw new InvalidOperationException($"there is no core dispose handler for unit of work {ID}. please check your unit of work configuration.");
+                throw new InvalidOperationException($"There is no core dispose handler for unit of work [{ID}]. Please check your unit of work configuration.");
             }
             _coreNodeDisposeHandler.Invoke(this);
         }
@@ -126,7 +126,7 @@ namespace MiCake.Uow.Internal
                     ErrorTransactions.Add(@transaction);
                     exceptions.Add(ex);
 
-                    _logger.LogError(ex, "unit of work SaveChangesAsync failed.");
+                    _logger.LogError(ex, "Uow SaveChangesAsync failed.");
                 }
             }
 

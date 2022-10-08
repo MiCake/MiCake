@@ -12,21 +12,39 @@ namespace MiCake
     {
         /// <summary>
         /// Add MiCake services with whole characters, including auto audit,auto uow save,auto wrap data,etc.
+        /// </summary>
+        /// <typeparam name="TEntryModule">Entry point module</typeparam>
+        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        public static IMiCakeBuilder AddMiCakeServices<TEntryModule, TDbContext>(
+                this IServiceCollection services)
+            where TDbContext : DbContext
+            where TEntryModule : MiCakeModule
+        {
+            return AddMiCakeServices(services, typeof(TEntryModule), typeof(TDbContext), s => { s.AuditOptions.UseSqlToGenerateTime = false; });
+        }
+
+        /// <summary>
+        /// Add MiCake services with whole characters, including auto audit,auto uow save,auto wrap data,etc.
         /// <para>
-        ///     you must specify <paramref name="auditTimeGenerateSql"/>,you can get some preset value from <see cref="PresetAuditConstants"/>.
+        ///     you must specify <paramref name="sqlForGenerateTime"/>,you can get some preset value from <see cref="PresetAuditConstants"/>.
         /// </para>
         /// </summary>
         /// <typeparam name="TEntryModule">Entry point module</typeparam>
         /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="services"><see cref="IServiceCollection"/></param>
-        /// <param name="auditTimeGenerateSql"></param>
+        /// <param name="sqlForGenerateTime"></param>
         public static IMiCakeBuilder AddMiCakeServices<TEntryModule, TDbContext>(
                 this IServiceCollection services,
-                string auditTimeGenerateSql)
+                string sqlForGenerateTime)
             where TDbContext : DbContext
             where TEntryModule : MiCakeModule
         {
-            return AddMiCakeServices(services, typeof(TEntryModule), typeof(TDbContext), s => { s.AuditOptions.TimeGenerateSql = auditTimeGenerateSql; });
+            return AddMiCakeServices(services, typeof(TEntryModule), typeof(TDbContext), s =>
+            {
+                s.AuditOptions.UseSqlToGenerateTime = true;
+                s.AuditOptions.SqlForGenerateTime = sqlForGenerateTime;
+            });
         }
 
         /// <summary>

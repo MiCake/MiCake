@@ -21,10 +21,24 @@ namespace MiCake.Audit.Core
 
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
-            if (auditObjectModel.EntityState == RepositoryEntityState.Modified)
+            if (_options.AssignCreatedTime && auditObjectModel.EntityState == RepositoryEntityState.Added)
+            {
+                SetCreationTime(auditObjectModel.AuditEntity);
+            }
+
+            if (_options.AssignUpdatedTime && auditObjectModel.EntityState == RepositoryEntityState.Modified)
             {
                 SetModifactionTime(auditObjectModel.AuditEntity);
             }
+        }
+
+        private void SetCreationTime(object auditEntity)
+        {
+            if (auditEntity is not IHasCreatedTime)
+                return;
+
+            var value = _options.DateTimeValueProvider is null ? _clock.Now : _options.DateTimeValueProvider();
+            ReflectionHelper.SetValueByPath(auditEntity, auditEntity.GetType(), nameof(IHasCreatedTime.CreatedTime), value);
         }
 
         private void SetModifactionTime(object entity)

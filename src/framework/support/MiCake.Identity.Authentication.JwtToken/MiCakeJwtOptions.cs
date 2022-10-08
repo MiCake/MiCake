@@ -64,7 +64,7 @@ namespace MiCake.Identity.Authentication.JwtToken
         /// Maximum lifetime of a refresh token in seconds. Defaults to 2592000 seconds / 30 days.
         /// If value is less than 0,It's mean unlimited.
         /// </summary>
-        public int RefreshTokenLifetime { get; set; } = 2592000;
+        public uint RefreshTokenLifetime { get; set; } = 2592000;
 
         /// <summary>
         /// Always delete old refresh token record when exchange refresh token.

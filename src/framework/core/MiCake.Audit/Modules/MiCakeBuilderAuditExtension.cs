@@ -16,7 +16,7 @@ namespace MiCake.Audit
         /// <param name="timeGenerateSql">time generate sql. you can get some preset value from <see cref="PresetAuditConstants"/></param>
         public static IMiCakeBuilder UseAudit(this IMiCakeBuilder builder, string timeGenerateSql)
         {
-            return UseAudit(builder, s => s.TimeGenerateSql = timeGenerateSql);
+            return UseAudit(builder, s => s.SqlForGenerateTime = timeGenerateSql);
         }
 
         /// <summary>
@@ -47,9 +47,9 @@ namespace MiCake.Audit
 
         private static void CheckOptions(MiCakeAuditOptions options)
         {
-            if (string.IsNullOrWhiteSpace(options.TimeGenerateSql))
+            if (options.UseSqlToGenerateTime && string.IsNullOrWhiteSpace(options.SqlForGenerateTime))
             {
-                throw new ArgumentException($"You are using MiCake audit module, please config {options.TimeGenerateSql}. you can get more preset vaule in {nameof(PresetAuditConstants)} class.");
+                throw new ArgumentException($"You are using MiCake audit module and the {nameof(options.UseSqlToGenerateTime)} is true, please config {options.SqlForGenerateTime}. you can get more preset vaule in {nameof(PresetAuditConstants)} class.");
             }
         }
     }
