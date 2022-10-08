@@ -35,7 +35,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         {
             CheckValue.NotNull(wrapperContext, nameof(wrapperContext));
 
-            if (orignalData is IResultDataWrapper)
+            if (orignalData is IWrappedResponse)
                 return orignalData;
 
             var data = ApiResponse.Success(orignalData);

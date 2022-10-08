@@ -3,7 +3,7 @@
     /// <summary>
     /// Define a result that will be wrapped
     /// </summary>
-    public interface IResultDataWrapper
+    public interface IWrappedResponse
     {
     }
 }

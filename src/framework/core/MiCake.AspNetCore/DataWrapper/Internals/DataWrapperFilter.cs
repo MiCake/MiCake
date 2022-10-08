@@ -11,6 +11,8 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     {
         private readonly IDataWrapperExecutor _wrapperExecutor;
 
+        private readonly Type aspnetCoreBaseObjType = typeof(ObjectResult);
+
         public DataWrapperFilter(IDataWrapperExecutor wrapperExecutor)
         {
             _wrapperExecutor = wrapperExecutor;
@@ -18,15 +20,19 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
-            if (context.Result is OkObjectResult objectResult)
+            if (context.Result is ObjectResult objectResult)
             {
-                var wrappContext = new DataWrapperContext(context.Result,
-                                                          context.HttpContext,
-                                                          context.ActionDescriptor);
+                // Only handle directly returned types, excluding IActionResult
+                if (objectResult.GetType() == aspnetCoreBaseObjType)
+                {
+                    var wrappContext = new DataWrapperContext(context.Result,
+                                                              context.HttpContext,
+                                                              context.ActionDescriptor);
 
-                var wrappedData = _wrapperExecutor.WrapApiResponse(objectResult.Value!, wrappContext);
-                objectResult.Value = wrappedData;
-                objectResult.DeclaredType = wrappedData.GetType();
+                    var wrappedData = _wrapperExecutor.WrapApiResponse(objectResult.Value!, wrappContext);
+                    objectResult.Value = wrappedData;
+                    objectResult.DeclaredType = wrappedData.GetType();
+                }
             }
 
             await next();

@@ -1,14 +1,14 @@
 ﻿namespace MiCake.AspNetCore.DataWrapper
 {
     [Serializable]
-    public class ApiResponse : IResultDataWrapper
+    public class ApiResponse : IWrappedResponse
     {
         public string? Code { get; set; }
 
         /// <summary>
         /// Is there any error in this request
         /// </summary>
-        public bool IsError { get; set; }
+        public bool HasError { get; set; }
 
         /// <summary>
         /// Response message.
@@ -29,7 +29,7 @@
             {
                 Result = result,
                 Code = code,
-                IsError = false
+                HasError = false
             };
         }
 
@@ -45,7 +45,7 @@
             {
                 Message = message,
                 Code = code,
-                IsError = true
+                HasError = true
             };
         }
     }
@@ -61,7 +61,7 @@
             {
                 Result = result,
                 Code = code,
-                IsError = false
+                HasError = false
             };
         }
 
@@ -71,7 +71,7 @@
             {
                 Message = message,
                 Code = code,
-                IsError = true
+                HasError = true
             };
         }
     }
