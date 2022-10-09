@@ -44,7 +44,7 @@ steps:
     displayName: 'Package Core project to nuget.'
     inputs:
       command: 'pack'
-      packagesToPack: '$(Build.ArtifactStagingDirectory)/src/framework/core/*.csproj'
+      packagesToPack: 'src/framework/core/*.csproj'
       versioningScheme: 'byPrereleaseNumber'
       majorVersion: '$(nuget_version_major)'
       minorVersion: '$(nuget_version_minor)'
