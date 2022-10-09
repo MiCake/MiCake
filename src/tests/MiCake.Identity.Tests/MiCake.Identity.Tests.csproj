@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\framework\core\MiCake.Identity\MiCake.Identity.csproj" />
-    <ProjectReference Include="..\..\framework\support\MiCake.Identity.Authentication.JwtToken\MiCake.Identity.Authentication.JwtToken.csproj" />
   </ItemGroup>
 
   <ItemGroup>
