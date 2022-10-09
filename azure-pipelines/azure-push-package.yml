@@ -15,12 +15,6 @@ variables:
   solution: '**/*.sln'
   buildConfiguration: 'Release'
 
-parameters:
-  - name: pushSupportLibraries
-    displayName: 'Do you want to push [MiCake-Support-Libraries] at the same time?'
-    type: boolean
-    default: false
-
 steps:
 - task: UseDotNet@2
   displayName: 'Set current .NET version to $(dotnet_version)'
@@ -28,27 +22,15 @@ steps:
     packageType: 'sdk'
     version: '$(dotnet_version)'
 
-- ${{ if eq(parameters.pushSupportLibraries, true) }}:
-  - task: DotNetCoreCLI@2
-    displayName: 'Package All project(Core + Support) to nuget.'
-    inputs:
-      command: 'pack'
-      packagesToPack: '$(Build.SourcesDirectory)/src/framework/**/*.csproj'
-      versioningScheme: 'byPrereleaseNumber'
-      majorVersion: '$(nuget_version_major)'
-      minorVersion: '$(nuget_version_minor)'
-      patchVersion: '$(nuget_version_patch)'
-
-- ${{ if eq(parameters.pushSupportLibraries, false) }}:
-  - task: DotNetCoreCLI@2
-    displayName: 'Package Core project to nuget.'
-    inputs:
-      command: 'pack'
-      packagesToPack: '$(Build.SourcesDirectory)/src/framework/core/**/*.csproj'
-      versioningScheme: 'byPrereleaseNumber'
-      majorVersion: '$(nuget_version_major)'
-      minorVersion: '$(nuget_version_minor)'
-      patchVersion: '$(nuget_version_patch)'
+- task: DotNetCoreCLI@2
+  displayName: 'Package Core project to nuget.'
+  inputs:
+    command: 'pack'
+    packagesToPack: '$(Build.SourcesDirectory)/src/framework/core/**/*.csproj'
+    versioningScheme: 'byPrereleaseNumber'
+    majorVersion: '$(nuget_version_major)'
+    minorVersion: '$(nuget_version_minor)'
+    patchVersion: '$(nuget_version_patch)'
 
 - task: NuGetCommand@2
   displayName: 'Push nuget packages to nuget.org'
