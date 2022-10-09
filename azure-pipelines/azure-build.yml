@@ -67,7 +67,7 @@ steps:
       displayName: 'Package All project(Core + Support) to nuget.'
       inputs:
         command: 'pack'
-        packagesToPack: '**/*.csproj;!**/*.Tests.csproj'
+        packagesToPack: '$(Build.SourcesDirectory)/src/framework/**/*.csproj'
         nobuild: true
         includesymbols: true
         includesource: true
@@ -78,7 +78,7 @@ steps:
       displayName: 'Package Core project to nuget.'
       inputs:
         command: 'pack'
-        packagesToPack: '$(Build.ArtifactStagingDirectory)/src/framework/core/*.csproj'
+        packagesToPack: '$(Build.SourcesDirectory)/src/framework/core/**/*.csproj'
         nobuild: true
         includesymbols: true
         includesource: true
