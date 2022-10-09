@@ -3,9 +3,6 @@
 # Add steps that run tests, create a NuGet package, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
-trigger:
-- master
-
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -13,13 +10,26 @@ variables:
   solution: '**/*.sln'
   buildConfiguration: 'Release'
 
+parameters:
+  - name: pushPackageToNuget
+    displayName: 'Do you wanna push package to nuget.org? (please make sure your version settings are correct)'
+    type: boolean
+    default: false
+
+  - name: pushSupportLibraries
+    displayName: 'Do you want to push [MiCake-Support-Libraries] at the same time?'
+    type: boolean
+    default: false
+
 steps:
 - task: UseDotNet@2
+  displayName: 'Set current .NET version to $(dotnet_version)'
   inputs:
     packageType: 'sdk'
-    version: '5.x'
+    version: '$(dotnet_version)'
+    
 - task: DotNetCoreCLI@2
-  displayName: dotnet build
+  displayName: 'Build current projects'
   inputs:
     command: 'build'
     projects: 'src/**/*.csproj'
@@ -27,18 +37,19 @@ steps:
 
 # Run all tests
 - task: DotNetCoreCLI@2
+  displayName: Run Tests
   inputs:
     command: test
     projects: 'src/tests/**/*.csproj'
     arguments: -c $(BuildConfiguration) --settings $(Build.SourcesDirectory)/src/tests/runsettings.xml --collect:"XPlat Code Coverage" -- RunConfiguration.DisableAppDomain=true
-  displayName: Run Tests
 
+# Generate test report
 - task: DotNetCoreCLI@2
+  displayName: Install ReportGenerator tool
   inputs:
     command: custom
     custom: tool
     arguments: install --tool-path . dotnet-reportgenerator-globaltool
-  displayName: Install ReportGenerator tool
   
 - script: ./reportgenerator -reports:$(Agent.TempDirectory)/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/coverlet/reports -reporttypes:"Cobertura"
   displayName: Create reports
@@ -48,6 +59,36 @@ steps:
   inputs:
     codeCoverageTool: Cobertura
     summaryFileLocation: $(Build.SourcesDirectory)/coverlet/reports/Cobertura.xml 
-    
 
+# Push package to nuget
+- ${{ if eq(parameters.pushPackageToNuget, true) }}:
+  - ${{ if eq(parameters.pushSupportLibraries, true) }}:
+    - task: DotNetCoreCLI@2
+      displayName: 'Package All project(Core + Support) to nuget.'
+      inputs:
+        command: 'pack'
+        packagesToPack: '**/*.csproj;!**/*.Tests.csproj'
+        nobuild: true
+        includesymbols: true
+        includesource: true
+        versioningScheme: 'off'
+
+  - ${{ if eq(parameters.pushSupportLibraries, false) }}:
+    - task: DotNetCoreCLI@2
+      displayName: 'Package Core project to nuget.'
+      inputs:
+        command: 'pack'
+        packagesToPack: '$(Build.ArtifactStagingDirectory)/src/framework/core/*.csproj'
+        nobuild: true
+        includesymbols: true
+        includesource: true
+        versioningScheme: 'off'
+  
+  - task: NuGetCommand@2
+    displayName: 'Push nuget packages to nuget.org'
+    inputs:
+      command: 'push'
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg'
+      nuGetFeedType: 'external'
+      publishFeedCredentials: 'MiCake_NuGet_Key'
 
