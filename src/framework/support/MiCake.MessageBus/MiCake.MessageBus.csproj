@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>A message bus abstraction for MiCake.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\MiCake.Core\MiCake.Core.csproj" />
+  </ItemGroup>
+
+</Project>

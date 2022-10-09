@@ -3,7 +3,7 @@ using System;
 using System.Linq.Expressions;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreModelBuilder_Tests : StoreConfigTestBase
     {
@@ -40,12 +40,12 @@ namespace MiCake.DDD.Tests.Store
             var builder = CreateStoreModelBuilder();
             var entity = builder.Entity<FakeEntityA>();
 
-            Assert.NotNull(entity.GetAccessor().Metadata.Name);
+            Assert.NotNull(entity.GetAccessor().Name);
 
             var builder2 = CreateStoreModelBuilder();
-            var entity2 = builder.Entity(typeof(FakeEntityA));
+            var entity2 = builder2.Entity(typeof(FakeEntityA));
 
-            Assert.NotNull(entity2.GetAccessor().Metadata.Name);
+            Assert.NotNull(entity2.GetAccessor().Name);
         }
 
         [Fact]
@@ -65,8 +65,8 @@ namespace MiCake.DDD.Tests.Store
             var builder = CreateStoreModelBuilder();
             var propertyBuilder = builder.Entity<FakeEntityA>().Property(s => s.Content);
 
-            Assert.NotNull(propertyBuilder.GetAccessor().Metadata.Name);
-            Assert.Equal("Content", propertyBuilder.GetAccessor().Metadata.Name);
+            Assert.NotNull(propertyBuilder.GetAccessor().Name);
+            Assert.Equal("Content", propertyBuilder.GetAccessor().Name);
         }
 
         [Fact]

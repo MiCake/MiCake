@@ -1,8 +1,7 @@
-﻿using MiCake.Core.Modularity;
-using MiCake.Core.Tests.Modularity.Fakes;
+﻿using MiCake.Core.Tests.Modularity.Fakes;
+using MiCake.Core.Util.Collections;
 using System;
 using System.Linq;
-using Xunit;
 
 namespace MiCake.Core.Tests.Modularity
 {
@@ -19,14 +18,8 @@ namespace MiCake.Core.Tests.Modularity
             moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
             var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleContext.AllModules;
+            var allmodules = moduleContext.MiCakeModules;
             Assert.Equal(1, allmodules.Count);
-
-            var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(1, defaultModules.Count);
-
-            var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(0, featureModules.Count);
         }
 
         [Fact]
@@ -36,14 +29,8 @@ namespace MiCake.Core.Tests.Modularity
             moduleManager.PopulateModules(typeof(StartUpModule));
             var moduleContext = moduleManager.ModuleContext;
 
-            var allmodules = moduleContext.AllModules;
+            var allmodules = moduleContext.MiCakeModules;
             Assert.Equal(3, allmodules.Count);
-
-            var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(3, defaultModules.Count);
-
-            var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(0, featureModules.Count);
 
             //right order
             var firstModule = moduleContext.MiCakeModules.FirstOrDefault();
@@ -56,86 +43,86 @@ namespace MiCake.Core.Tests.Modularity
         }
 
         [Fact]
-        public void HasFeature_ShouldLoadAddedFeatureModule()
+        public void SlotANoDepencyModule_ShouldInculeModule()
         {
             var moduleManager = new MiCakeModuleManager();
-            moduleManager.AddFeatureModule(typeof(FeatureModuleA));
+            moduleManager.Slot<DepencyModuleA>();
             moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+
             var moduleContext = moduleManager.ModuleContext;
-
-            var allmodules = moduleContext.AllModules;
-            Assert.Equal(2, allmodules.Count);
-
-            var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(1, defaultModules.Count);
-
-            var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(1, featureModules.Count);
+            Assert.Equal(2, moduleContext.MiCakeModules.Count);
         }
 
         [Fact]
-        public void OnlyMiCakeModule_ShouldErrorInCheckFeatureModule()
+        public void SlotAHasDepencyModule_ShouldInculeModule()
         {
             var moduleManager = new MiCakeModuleManager();
-            Assert.ThrowsAny<Exception>(() => moduleManager.AddFeatureModule(typeof(StartUpModule)));
-        }
-
-        [Fact]
-        public void OnlyHasFeature_ShouldCorrectOrder()
-        {
-            var moduleManager = new MiCakeModuleManager();
-            moduleManager.AddFeatureModule(typeof(FeatureModuleA));
-            moduleManager.AddFeatureModule(typeof(FeatureModuleBDepencyModuleA));
-            moduleManager.AddFeatureModule(typeof(FeatureModuleCDencyModuleB));
+            moduleManager.Slot<DepencyModuleB>();
             moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+
             var moduleContext = moduleManager.ModuleContext;
-
-            var allmodules = moduleContext.AllModules;
-            Assert.Equal(4, allmodules.Count);
-
-            var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(1, defaultModules.Count);
-
-            var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(3, featureModules.Count);
-
-            //order
-            var firstModule = moduleContext.FeatureModules.FirstOrDefault();
-            Assert.NotNull(firstModule);
-            Assert.Equal(typeof(FeatureModuleA), firstModule.ModuleType);
-
-            var lastModule = moduleContext.FeatureModules.LastOrDefault();
-            Assert.NotNull(lastModule);
-            Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.ModuleType);
+            Assert.Equal(3, moduleContext.MiCakeModules.Count);  // B is rely on A.
         }
 
         [Fact]
-        public void DeafultAndFeature_ShouldCorrectOrder()
+        public void SlotACoreModule_ModuleDescriptHasFlag()
         {
             var moduleManager = new MiCakeModuleManager();
-            moduleManager.AddFeatureModule(typeof(FeatureModuleA));
-            moduleManager.AddFeatureModule(typeof(FeatureModuleBDepencyModuleA));
-            moduleManager.AddFeatureModule(typeof(FeatureModuleCDencyModuleB));
-            moduleManager.PopulateModules(typeof(StartUpModule));
-            var moduleContext = moduleManager.ModuleContext;
+            moduleManager.Slot(typeof(CoreAModule));
+            moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
 
-            var allmodules = moduleContext.AllModules;
-            Assert.Equal(6, allmodules.Count);
+            var coreModules = moduleManager.ModuleContext.MiCakeModules.Where(s => s.IsCoreModule).ToList();
+            Assert.Single(coreModules);
+        }
 
-            var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(3, defaultModules.Count);
+        [Fact]
+        public void SlotNoMiCakeModule_ShouldThrowAException()
+        {
+            var moduleManager = new MiCakeModuleManager();
+            Assert.ThrowsAny<ArgumentException>(() =>
+            {
+                moduleManager.Slot(typeof(NoMiCakeModule));
+            });
+        }
 
-            var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(3, featureModules.Count);
+        [Fact]
+        public void CallMulitPoplulate_ShouldThrowAException()
+        {
+            var moduleManager = new MiCakeModuleManager();
+            moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+            Assert.ThrowsAny<InvalidOperationException>(() =>
+            {
+                moduleManager.PopulateModules(typeof(StartUpModule_NoDenpency));
+            });
+        }
 
-            //order
-            var firstModule = moduleContext.AllModules.FirstOrDefault();
-            Assert.NotNull(firstModule);
-            Assert.Equal(typeof(DepencyModuleA), firstModule.ModuleType);
+        [Fact]
+        public void UseCusotomSorter_ShouldChangeModuleOrder()
+        {
+            // no sorter.
+            var moduleManager1 = new MiCakeModuleManager();
+            moduleManager1.Slot<CoreAModule>();
+            moduleManager1.PopulateModules(typeof(StartUpModule));
 
-            var lastModule = moduleContext.AllModules.LastOrDefault();
-            Assert.NotNull(lastModule);
-            Assert.Equal(typeof(FeatureModuleCDencyModuleB), lastModule.ModuleType);
+            Assert.False(moduleManager1.ModuleContext.MiCakeModules[^1].IsCoreModule);
+
+            // use sorter.
+            var moduleManager = new MiCakeModuleManager();
+            moduleManager.Slot<CoreAModule>();
+            moduleManager.PopulateModules(typeof(StartUpModule), new CustomModuleSorter());
+
+            Assert.True(moduleManager.ModuleContext.MiCakeModules[^1].IsCoreModule);
+        }
+
+        internal class CustomModuleSorter : IMiCakeModuleSorter
+        {
+            public IMiCakeModuleCollection Sort(IMiCakeModuleCollection ordinalModules)
+            {
+                return ordinalModules.ExchangeOrder(s =>
+                 {
+                     return s.IsCoreModule;
+                 }, ordinalModules.Count - 1).ToMiCakeModuleCollection();
+            }
         }
     }
 }

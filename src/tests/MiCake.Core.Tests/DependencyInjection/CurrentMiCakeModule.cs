@@ -1,8 +1,18 @@
-﻿using MiCake.Core.Modularity;
-
-namespace MiCake.Core.Tests.DependencyInjection
+﻿namespace MiCake.Core.Tests.DependencyInjection
 {
+    [AutoDI]
     public class CurrentMiCakeModule : MiCakeModule
+    {
+    }
+
+    [DisableAutoDI]
+    public class CurrentDisableDIMiCakeModule : MiCakeModule
+    {
+    }
+
+    [AutoDI]
+    [DisableAutoDI]
+    public class BothTwoDITagMiCakeModule : MiCakeModule
     {
     }
 }

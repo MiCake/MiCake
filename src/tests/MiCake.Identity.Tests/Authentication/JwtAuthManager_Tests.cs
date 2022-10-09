@@ -1,4 +1,5 @@
-﻿using MiCake.Identity.Authentication.JwtToken;
+﻿using MiCake.Core.Time;
+using MiCake.Identity.Authentication.JwtToken;
 using MiCake.Identity.Tests.FakeUser;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -178,53 +179,12 @@ namespace MiCake.Identity.Tests.Authentication
             var newToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
             Assert.NotSame(token.RefreshToken, newToken.RefreshToken);
         }
-
-        [Fact]
-        public async void RefreshToken_RecreateBeforeOverdueMode_ShouldNotSame()
-        {
-            var supporter = CreateJwtAuthManager(s =>
-            {
-                s.RefreshTokenMode = RefreshTokenUsageMode.RecreateBeforeOverdue;
-            });
-            var micakeUser = new UserWithJwtClaim()
-            {
-                Id = Guid.NewGuid(),
-                Name = "bob"
-            };
-            var token = await supporter.CreateToken(micakeUser);
-
-            var newToken = await supporter.Refresh(token.RefreshToken, token.AccessToken);
-            Assert.Same(token.RefreshToken, newToken.RefreshToken);
-        }
-
-        [Fact]
-        public async void RefreshToken_RevokeRefreshToken_StillUse_WillThrowException()
-        {
-            var supporter = CreateJwtAuthManager(s =>
-            {
-                s.RefreshTokenMode = RefreshTokenUsageMode.RecreateBeforeOverdue;
-            });
-            var micakeUser = new UserWithJwtClaim()
-            {
-                Id = Guid.NewGuid(),
-                Name = "bob"
-            };
-            var token = await supporter.CreateToken(micakeUser);
-
-            // remove current refresh token.
-            await supporter.RevokeRefreshToken(token.RefreshToken);
-
-            await Assert.ThrowsAnyAsync<Exception>(async () =>
-            {
-                await supporter.Refresh(token.RefreshToken, token.AccessToken);
-            });
-        }
-
         public IJwtAuthManager CreateJwtAuthManager(Action<MiCakeJwtOptions> miCakeJwtOptions)
         {
             var services = new ServiceCollection();
             services.AddDistributedMemoryCache();
 
+            services.AddSingleton<IAppClock, AppClock>();
             services.TryAddSingleton<IJwtAuthManager, JwtAuthManager>();
             services.TryAddSingleton<IRefreshTokenService, DefaultRefreshTokenService>();
 
@@ -236,6 +196,11 @@ namespace MiCake.Identity.Tests.Authentication
 
             return ServiceProvider.GetRequiredService<IJwtAuthManager>();
         }
+    }
+
+    class AppClock : IAppClock
+    {
+        public DateTime Now => DateTime.UtcNow;
     }
 
     public class UserWithPrivateProperty : IMiCakeUser<long>

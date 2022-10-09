@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>AspNetCore extension for MiCake</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiCake.Cord\MiCake.Cord.csproj" />
+    <ProjectReference Include="..\MiCake.Identity\MiCake.Identity.csproj" />
+    <ProjectReference Include="..\MiCake.Uow\MiCake.Uow.csproj" />
+  </ItemGroup>
+
+</Project>

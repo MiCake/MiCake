@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>MiCake's implementation support for DDD Domain layer.</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MiCake.Core\MiCake.Core.csproj" />
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>MiCake.Cord</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+</Project>

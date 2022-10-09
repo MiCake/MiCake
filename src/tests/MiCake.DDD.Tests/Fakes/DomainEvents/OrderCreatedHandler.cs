@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.DDD.Tests.Fakes.DomainEvents
+namespace MiCake.Cord.Tests.Fakes.DomainEvents
 {
     public class OrderCreatedHandler : IDomainEventHandler<CreateOrderEvents>
     {
@@ -10,7 +10,7 @@ namespace MiCake.DDD.Tests.Fakes.DomainEvents
 
         public Task HandleAysnc(CreateOrderEvents domainEvent, CancellationToken cancellationToken = default)
         {
-            domainEvent.OrderID = OrderCreatedHandler.HanlderChangedValue;
+            domainEvent.OrderID = HanlderChangedValue;
 
             return Task.CompletedTask;
         }

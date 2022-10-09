@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsAspNetCore>true</IsAspNetCore>
+    <Description>MiCake's quick start package. Contains EFCore extension,AspNetCore extension,Audit,JWT token and more.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\support\MiCake.AutoMapper\MiCake.AutoMapper.csproj" />
+    <ProjectReference Include="..\..\support\MiCake.Identity.Authentication.JwtToken\MiCake.Identity.Authentication.JwtToken.csproj" />
+    <ProjectReference Include="..\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
+    <ProjectReference Include="..\MiCake.Audit\MiCake.Audit.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>

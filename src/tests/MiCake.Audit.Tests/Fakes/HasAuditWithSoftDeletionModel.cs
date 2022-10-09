@@ -3,11 +3,23 @@ using System;
 
 namespace MiCake.Audit.Tests.Fakes
 {
-    class HasAuditWithSoftDeletionModel : IHasAuditWithSoftDeletion
+    class HasAuditWithSoftDeletionModel : IHasAuditTimeWithSoftDeletion
     {
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
         public bool IsDeleted { get; set; }
-        public DateTime? DeletionTime { get; set; }
+
+        public DateTime CreatedTime
+        {
+            get; set;
+        }
+
+        public DateTime? UpdatedTime
+        {
+            get; set;
+        }
+
+        public DateTime? DeletedTime
+        {
+            get; set;
+        }
     }
 }

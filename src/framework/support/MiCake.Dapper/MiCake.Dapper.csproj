@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>Dapper extension for MiCake</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Dapper.SqlBuilder" Version="2.0.78" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\MiCake.SQLReader\MiCake.SqlReader.csproj" />
+	</ItemGroup>
+
+</Project>

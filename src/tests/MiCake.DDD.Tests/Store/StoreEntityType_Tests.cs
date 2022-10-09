@@ -1,11 +1,11 @@
-﻿using MiCake.DDD.Extensions.Store.Configure;
+﻿using MiCake.Cord.Storage.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreEntityType_Tests : StoreConfigTestBase
     {
@@ -74,7 +74,7 @@ namespace MiCake.DDD.Tests.Store
         {
             var model = CreateModel();
 
-            Expression<Func<FakeOrder, bool>> expression = order => order.OderName.Equals("s");
+            Expression<Func<FakeOrder, bool>> expression = order => order.OrderName.Equals("s");
             var entityType = model.AddStoreEntity(typeof(FakeOrder));
             entityType.AddQueryFilter(expression);
 
@@ -184,7 +184,7 @@ namespace MiCake.DDD.Tests.Store
         {
             public int ID { get; set; }
 
-            public string OderName { get; set; }
+            public string OrderName { get; set; }
         }
     }
 }

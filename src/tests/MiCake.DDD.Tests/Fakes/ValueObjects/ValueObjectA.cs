@@ -1,7 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using System.Collections.Generic;
 
-namespace MiCake.DDD.Tests.Fakes.ValueObjects
+namespace MiCake.Cord.Tests.Fakes.ValueObjects
 {
     public class ValueObjectA : ValueObject
     {

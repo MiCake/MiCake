@@ -1,20 +1,14 @@
-﻿using MiCake.DDD.Extensions.Store.Configure;
+﻿using MiCake.Cord.Storage;
+using MiCake.Cord.Storage.Internal;
 using System.Linq;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreConfig_Tests : StoreConfigTestBase
     {
         public StoreConfig_Tests()
         {
-        }
-
-        [Fact]
-        public void Create_Model_With_Instance()
-        {
-            Assert.Same(StoreConfig.Instance, StoreConfig.Instance);
-            Assert.NotNull(StoreConfig.Instance.GetStoreModel());
         }
 
         [Fact]

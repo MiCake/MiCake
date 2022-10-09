@@ -1,6 +1,6 @@
 ﻿using MiCake.DDD.Domain;
 
-namespace MiCake.DDD.Tests.Fakes.DomainEvents
+namespace MiCake.Cord.Tests.Fakes.DomainEvents
 {
     public class CreateOrderEvents : DomainEvent
     {

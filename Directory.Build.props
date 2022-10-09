@@ -1,32 +1,38 @@
 ﻿<Project>
-  <PropertyGroup>
-    <Product>MiCake</Product>
-    <Authors>MiCake</Authors>
-    <owners>MiCake</owners>
-    <Version>0.6.0-preview1</Version>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageProjectUrl>https://github.com/MiCake/MiCake</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/MiCake/MiCake</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>AspNetCore;DDD;MiCake</PackageTags>
-    <PackageOutputPath>$(MSBuildThisFileDirectory)src\nuget</PackageOutputPath>
-    <PackageIcon>nuget_logo.png</PackageIcon>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>true</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <!--xml notes for all method or property-->
-  <PropertyGroup>
-    <NoWarn>CS1591</NoWarn>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Product>MiCake</Product>
+		<Authors>MiCake</Authors>
+		<owners>MiCake</owners>
+		<Version>0.7.0-preview1</Version>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageProjectUrl>https://github.com/MiCake/MiCake</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/MiCake/MiCake</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>AspNetCore;DDD;MiCake</PackageTags>
+		<PackageOutputPath>$(MSBuildThisFileDirectory)src\nuget</PackageOutputPath>
+		<PackageIcon>nuget_logo.png</PackageIcon>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <!--In order to unit test-->
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>$(MSBuildProjectName).Tests</_Parameter1>
-    </AssemblyAttribute>
+	<!--xml notes for all method or property-->
+	<PropertyGroup>
+		<NoWarn>CS1591,CA1822,CS8618</NoWarn>
+	</PropertyGroup>
 
-    <None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" Visible="false" PackagePath="\"/>
-  </ItemGroup>
+	<ItemGroup>
+		<!--In order to unit test-->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>$(MSBuildProjectName).Tests</_Parameter1>
+		</AssemblyAttribute>
+
+		<None Include="$(MSBuildThisFileDirectory)assets\nuget_logo.png" Pack="true" Visible="false" PackagePath="\"/>
+	</ItemGroup>
 </Project>

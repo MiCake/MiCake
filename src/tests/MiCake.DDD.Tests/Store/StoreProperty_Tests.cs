@@ -1,7 +1,7 @@
-﻿using MiCake.DDD.Extensions.Store.Configure;
+﻿using MiCake.Cord.Storage.Internal;
 using Xunit;
 
-namespace MiCake.DDD.Tests.Store
+namespace MiCake.Cord.Tests.Store
 {
     public class StoreProperty_Tests : StoreConfigTestBase
     {
@@ -28,7 +28,6 @@ namespace MiCake.DDD.Tests.Store
 
             Assert.Equal("Name", entityProperty.Name);
             Assert.NotNull(entityProperty.ClrPropertyInfo);
-            Assert.Null(entityProperty.ClrFieldInfo);
         }
 
         [Fact]
@@ -61,7 +60,7 @@ namespace MiCake.DDD.Tests.Store
             var property = ((StoreEntityType)model.AddStoreEntity(typeof(FakeEntityA))).AddProperty("Name");
             property.SetDefaultValue(3);
 
-            Assert.Equal(3, property.DefaultValue);
+            Assert.Equal(3, property.DefaultValue.Value.DefaultValue);
         }
 
         [Fact]

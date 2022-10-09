@@ -1,5 +1,4 @@
-﻿using MiCake.SqlReader.XmlProvider;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace MiCake.SqlReader.Tests
