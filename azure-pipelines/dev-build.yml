@@ -6,15 +6,14 @@
 pool:
   vmImage: 'ubuntu-latest'
 
+trigger:
+ branches:
+   include:
+     - dev
+
 variables:
   solution: '**/*.sln'
   buildConfiguration: 'Release'
-
-parameters:
-  - name: pushPackageToNuget
-    displayName: 'Do you wanna push package to nuget.org? (please make sure your version settings are correct)'
-    type: boolean
-    default: false
 
 steps:
 - task: UseDotNet@2
@@ -54,24 +53,3 @@ steps:
   inputs:
     codeCoverageTool: Cobertura
     summaryFileLocation: $(Build.SourcesDirectory)/coverlet/reports/Cobertura.xml 
-
-# Push package to nuget
-- ${{ if eq(parameters.pushPackageToNuget, true) }}:
-  - task: DotNetCoreCLI@2
-    displayName: 'Package Core project to nuget.'
-    inputs:
-      command: 'pack'
-      packagesToPack: '$(Build.SourcesDirectory)/src/framework/core/**/*.csproj'
-      nobuild: true
-      includesymbols: true
-      includesource: true
-      versioningScheme: 'off'
-  
-  - task: NuGetCommand@2
-    displayName: 'Push nuget packages to nuget.org'
-    inputs:
-      command: 'push'
-      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg'
-      nuGetFeedType: 'external'
-      publishFeedCredentials: 'MiCake_NuGet_Key'
-
