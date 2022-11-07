@@ -14,7 +14,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
 
-        public async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync(PaginationFilter queryModel, CancellationToken cancellationToken = default)
+        public virtual async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync(PaginationFilter queryModel, CancellationToken cancellationToken = default)
         {
             var result = await DbSet.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             var count = await GetCountAsync(cancellationToken);
@@ -22,7 +22,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
         }
 
-        public async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync<TOrderKey>(PaginationFilter queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
+        public virtual async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync<TOrderKey>(PaginationFilter queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
         {
             List<TAggregateRoot> result;
             if (asc)

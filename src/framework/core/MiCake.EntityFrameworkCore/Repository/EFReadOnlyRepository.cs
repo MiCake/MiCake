@@ -25,7 +25,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             return await DbSet.FindAsync(new object[] { ID! }, cancellationToken);
         }
 
-        public async ValueTask<long> GetCountAsync(CancellationToken cancellationToken = default)
+        public virtual async ValueTask<long> GetCountAsync(CancellationToken cancellationToken = default)
         {
             return await DbSet.LongCountAsync(cancellationToken);
         }
