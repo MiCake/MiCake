@@ -21,7 +21,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void CreateToken_UseMiCakeUser()
+        public async System.Threading.Tasks.Task CreateToken_UseMiCakeUser()
         {
             var supporter = CreateJwtAuthManager(s => { });
 
@@ -37,7 +37,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void CreateToken_NotUseRefreshToken_ShowEmptyRefreshToken()
+        public async System.Threading.Tasks.Task CreateToken_NotUseRefreshToken_ShowEmptyRefreshToken()
         {
             var supporter = CreateJwtAuthManager(s => { s.UseRefreshToken = false; });
 
@@ -52,7 +52,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void CreateToken_UseMiCakeUser_PrivateProperty()
+        public async System.Threading.Tasks.Task CreateToken_UseMiCakeUser_PrivateProperty()
         {
             var supporter = CreateJwtAuthManager(s => { });
 
@@ -69,7 +69,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void DecodeJwtToken_UseRightSecurityKey()
+        public async System.Threading.Tasks.Task DecodeJwtToken_UseRightSecurityKey()
         {
             var supporter = CreateJwtAuthManager(s => { });
 
@@ -87,7 +87,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void DecodeJwtToken_UseWrongSecurityKey()
+        public async System.Threading.Tasks.Task DecodeJwtToken_UseWrongSecurityKey()
         {
             var supporter = CreateJwtAuthManager(s => { });
 
@@ -114,7 +114,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void RefreshToken_RightRefreshToken()
+        public async System.Threading.Tasks.Task RefreshToken_RightRefreshToken()
         {
             var supporter = CreateJwtAuthManager(s => { });
             var micakeUser = new UserWithJwtClaim()
@@ -131,7 +131,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void RefreshToken_WrongRefreshToken()
+        public async System.Threading.Tasks.Task RefreshToken_WrongRefreshToken()
         {
             var supporter = CreateJwtAuthManager(s => { });
             var micakeUser = new UserWithJwtClaim()
@@ -147,7 +147,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void RefreshToken_ReUseMode_ShouldSame()
+        public async System.Threading.Tasks.Task RefreshToken_ReUseMode_ShouldSame()
         {
             var supporter = CreateJwtAuthManager(s => { });
             var micakeUser = new UserWithJwtClaim()
@@ -162,7 +162,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void RefreshToken_ReCreateMode_ShouldNotSame()
+        public async System.Threading.Tasks.Task RefreshToken_ReCreateMode_ShouldNotSame()
         {
             var supporter = CreateJwtAuthManager(s =>
             {
@@ -180,7 +180,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void RefreshToken_RecreateBeforeOverdueMode_ShouldNotSame()
+        public async System.Threading.Tasks.Task RefreshToken_RecreateBeforeOverdueMode_ShouldNotSame()
         {
             var supporter = CreateJwtAuthManager(s =>
             {
@@ -198,7 +198,7 @@ namespace MiCake.Identity.Tests.Authentication
         }
 
         [Fact]
-        public async void RefreshToken_RevokeRefreshToken_StillUse_WillThrowException()
+        public async System.Threading.Tasks.Task RefreshToken_RevokeRefreshToken_StillUse_WillThrowException()
         {
             var supporter = CreateJwtAuthManager(s =>
             {

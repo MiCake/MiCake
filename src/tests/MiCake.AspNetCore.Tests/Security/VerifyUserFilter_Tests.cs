@@ -25,7 +25,7 @@ namespace MiCake.AspNetCore.Tests.Security
         private readonly ActionExecutionDelegate FilterDelegate = () => { return Task.FromResult<ActionExecutedContext>(null); };
 
         [Fact]
-        public async void VerifyCurrentUser_DefaultController_HasNoAnyAttribute()
+        public async Task VerifyCurrentUser_DefaultController_HasNoAnyAttribute()
         {
             // Arrange
             var context = CreateHttpContext(null);
@@ -41,7 +41,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasAttributeAction_ButNoUserClaim()
+        public async Task VerifyCurrentUser_HasAttributeAction_ButNoUserClaim()
         {
             // Arrange
             var context = CreateHttpContext(null);
@@ -61,7 +61,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasAttributeAction_HasRightClaim()
+        public async Task VerifyCurrentUser_HasAttributeAction_HasRightClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -82,7 +82,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasAttributeAction_HasWrongClaim()
+        public async Task VerifyCurrentUser_HasAttributeAction_HasWrongClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "339") };
@@ -103,7 +103,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public void VerifyCurrentUser_HasMoreAttribute()
+        public async Task VerifyCurrentUser_HasMoreAttribute()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -118,14 +118,14 @@ namespace MiCake.AspNetCore.Tests.Security
             var filter = new VerifyCurrentUserFilter(Options.Create(new MiCakeIdentityOptions()));
 
             // Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
-            {
-                await filter.OnActionExecutionAsync(actionExecContext, FilterDelegate);
-            });   //beacuse has more CurrentUserAttribute.
+            await Assert.ThrowsAsync<ArgumentException>(async () =>
+              {
+                  await filter.OnActionExecutionAsync(actionExecContext, FilterDelegate);
+              });   //beacuse has more CurrentUserAttribute.
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasNoAttributeAction_HasSameClaim()
+        public async Task VerifyCurrentUser_HasNoAttributeAction_HasSameClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -146,7 +146,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasNoAttributeAction_HasDifferentClaim()
+        public async Task VerifyCurrentUser_HasNoAttributeAction_HasDifferentClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -167,7 +167,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasModelAttribute_WithRightClaim()
+        public async Task VerifyCurrentUser_HasModelAttribute_WithRightClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -188,7 +188,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasModelAttribute_WithWrongClaim()
+        public async Task VerifyCurrentUser_HasModelAttribute_WithWrongClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "524") };
@@ -209,7 +209,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasModelAttribute_ModelNoVerifyID_WithWrongClaim()
+        public async Task VerifyCurrentUser_HasModelAttribute_ModelNoVerifyID_WithWrongClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "524") };
@@ -230,7 +230,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_HasModelAttribute_ModelNoVerifyID_WithSameClaim()
+        public async Task VerifyCurrentUser_HasModelAttribute_ModelNoVerifyID_WithSameClaim()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -251,7 +251,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public void VerifyCurrentUser_HasModelAttribute_ModelHasMoreVerifyID()
+        public async Task VerifyCurrentUser_HasModelAttribute_ModelHasMoreVerifyID()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -265,14 +265,14 @@ namespace MiCake.AspNetCore.Tests.Security
             // Act
             var filter = new VerifyCurrentUserFilter(Options.Create(new MiCakeIdentityOptions()));
             // Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            await Assert.ThrowsAsync<ArgumentException>(async () =>
            {
                await filter.OnActionExecutionAsync(actionExecContext, FilterDelegate);
            });
         }
 
         [Fact]
-        public async void VerifyCurrentUser_WithGuidType()
+        public async Task VerifyCurrentUser_WithGuidType()
         {
             // Arrange
             var useIDValue = Guid.NewGuid();
@@ -294,7 +294,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_WithStructType()
+        public async Task VerifyCurrentUser_WithStructType()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };
@@ -315,7 +315,7 @@ namespace MiCake.AspNetCore.Tests.Security
         }
 
         [Fact]
-        public async void VerifyCurrentUser_ComplexType()
+        public async Task VerifyCurrentUser_ComplexType()
         {
             // Arrange
             var claims = new List<Claim>() { new Claim("userid", "123") };

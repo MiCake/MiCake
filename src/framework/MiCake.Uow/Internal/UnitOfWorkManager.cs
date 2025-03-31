@@ -8,17 +8,17 @@ namespace MiCake.Uow.Internal
     /// <summary>
     /// Set the DI level to scoped in order to automatically release resources on each HTTP request.
     /// </summary>
-    internal class UnitOfWorkManager : IUnitOfWorkManager
+    internal class UnitOfWorkManager(IServiceProvider serviceProvider, IOptions<UnitOfWorkOptions> defaultOptions) : IUnitOfWorkManager
     {
         /// <summary>
         /// The ServiceProvider use to create ServiceScope for each of unit of work.
         /// </summary>
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider = serviceProvider;
 
         /// <summary>
         /// When no configuration item is specified, this default configuration will be used.
         /// </summary>
-        private readonly UnitOfWorkOptions _defaultOptions;
+        private readonly UnitOfWorkOptions _defaultOptions = defaultOptions.Value;
 
         /// <summary>
         /// Used to save existing units of work as stack structure.
@@ -27,12 +27,6 @@ namespace MiCake.Uow.Internal
         internal UnitOfWorkCallContext CallContext => _callContext;
 
         private bool _isDisposed = false;
-
-        public UnitOfWorkManager(IServiceProvider serviceProvider, IOptions<UnitOfWorkOptions> defaultOptions)
-        {
-            _serviceProvider = serviceProvider;
-            _defaultOptions = defaultOptions.Value;
-        }
 
         public virtual IUnitOfWork Create()
         {
@@ -139,10 +133,10 @@ namespace MiCake.Uow.Internal
                 };
                 (result as INeedParts<UnitOfWorkNeedParts>)?.SetParts(uowNeedParts);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 uowScope.Dispose();
-                throw ex;
+                throw;
             }
 
             return result;

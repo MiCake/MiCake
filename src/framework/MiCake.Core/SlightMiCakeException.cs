@@ -6,20 +6,20 @@ namespace MiCake.Core
     /// Indicates a non critical error message
     /// </summary>
     [Serializable]
-    public class SoftlyMiCakeException : MiCakeException, ISoftlyMiCakeException
+    public class SlightMiCakeException : MiCakeException, ISlightException
     {
-        public SoftlyMiCakeException() : base()
+        public SlightMiCakeException() : base()
         {
         }
 
-        public SoftlyMiCakeException(
+        public SlightMiCakeException(
             string message,
             string details = null,
             string code = null) : base(message, details, code)
         {
         }
 
-        public SoftlyMiCakeException(
+        public SlightMiCakeException(
             string message,
             Exception innerException,
             string details = null,

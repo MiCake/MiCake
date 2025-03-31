@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.ExceptionHandling
@@ -51,7 +52,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             }
         }
 
-        private async Task HandleException(HttpContext context, Exception exception)
+        private static async Task HandleException(HttpContext context, Exception exception)
         {
             var currentRequestProvider = context.RequestServices;
             var miCakeCurrentRequest = currentRequestProvider.GetService<IMiCakeCurrentRequestContext>();
@@ -72,9 +73,9 @@ namespace MiCake.AspNetCore.ExceptionHandling
             if (!_useWrapper)
                 return;
 
-            if (exception is SoftlyMiCakeException)
+            if (exception is SlightMiCakeException)
             {
-                await WriteSoftExceptionResponse(context, exception as SoftlyMiCakeException);
+                await WriteSoftExceptionResponse(context, exception as SlightMiCakeException, GetOptions());
             }
             else
             {
@@ -82,7 +83,16 @@ namespace MiCake.AspNetCore.ExceptionHandling
             }
         }
 
-        private async Task WriteSoftExceptionResponse(HttpContext context, SoftlyMiCakeException softMiCakeException)
+        private static JsonSerializerOptions GetOptions()
+        {
+            return new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+        }
+
+        private static async Task WriteSoftExceptionResponse(HttpContext context, SlightMiCakeException softMiCakeException, JsonSerializerOptions options)
         {
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status200OK;
@@ -91,12 +101,6 @@ namespace MiCake.AspNetCore.ExceptionHandling
             {
                 ErrorCode = softMiCakeException.Code,
                 IsError = true
-            };
-
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                IgnoreNullValues = true,
             };
             var resultJsonData = JsonSerializer.Serialize(wrapDataResult, options);
 
@@ -113,12 +117,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
 
             var wrapDataResult = new ApiError(exception.Message, micakeException?.Details, micakeException?.Code, stackTraceInfo);
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                IgnoreNullValues = true,
-            };
-            var resultJsonData = JsonSerializer.Serialize(wrapDataResult, options);
+            var resultJsonData = JsonSerializer.Serialize(wrapDataResult, GetOptions());
 
             await httpResponse.WriteAsync(resultJsonData);
         }

@@ -25,9 +25,9 @@ namespace MiCake.DDD.Tests.ProxyRepository
             Assert.NotNull(repository);
 
             //some api tests
-            var entity = new HasEventsAggregate() { Id = 1 };
+            _ = new HasEventsAggregate() { Id = 1 };
             var entity2 = new HasEventsAggregate() { Id = 2 };
-            var entity3 = new HasEventsAggregate() { Id = 3 };
+            _ = new HasEventsAggregate() { Id = 3 };
             var entity4 = new HasEventsAggregate() { Id = 4 };
 
             await repository.AddAsync(entity2);
@@ -39,7 +39,7 @@ namespace MiCake.DDD.Tests.ProxyRepository
             await repository.DeleteAsync(entity2);
             Assert.Equal(1, await repository.GetCountAsync());
 
-            Assert.NotNull(repository.FindAsync(4).Result);
+            Assert.NotNull(await repository.FindAsync(4));
 
             await repository.UpdateAsync(entity4);
             Assert.Equal(1, await repository.GetCountAsync());

@@ -196,7 +196,7 @@ namespace MiCake.Audit.Tests
             Assert.Null(entity.DeletionTime);
         }
 
-        private IServiceCollection BuildServices()
+        private static IServiceCollection BuildServices()
         {
             var services = new ServiceCollection();
             //Audit Executor

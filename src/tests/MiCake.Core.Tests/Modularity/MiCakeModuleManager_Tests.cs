@@ -20,13 +20,13 @@ namespace MiCake.Core.Tests.Modularity
             var moduleContext = moduleManager.ModuleContext;
 
             var allmodules = moduleContext.AllModules;
-            Assert.Equal(1, allmodules.Count);
+            Assert.Single(allmodules);
 
             var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(1, defaultModules.Count);
+            Assert.Single(defaultModules);
 
             var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(0, featureModules.Count);
+            Assert.Empty(featureModules);
         }
 
         [Fact]
@@ -43,7 +43,7 @@ namespace MiCake.Core.Tests.Modularity
             Assert.Equal(3, defaultModules.Count);
 
             var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(0, featureModules.Count);
+            Assert.Empty(featureModules);
 
             //right order
             var firstModule = moduleContext.MiCakeModules.FirstOrDefault();
@@ -67,10 +67,10 @@ namespace MiCake.Core.Tests.Modularity
             Assert.Equal(2, allmodules.Count);
 
             var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(1, defaultModules.Count);
+            Assert.Single(defaultModules);
 
             var featureModules = moduleContext.FeatureModules;
-            Assert.Equal(1, featureModules.Count);
+            Assert.Single(featureModules);
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace MiCake.Core.Tests.Modularity
             Assert.Equal(4, allmodules.Count);
 
             var defaultModules = moduleContext.MiCakeModules;
-            Assert.Equal(1, defaultModules.Count);
+            Assert.Single(defaultModules);
 
             var featureModules = moduleContext.FeatureModules;
             Assert.Equal(3, featureModules.Count);
