@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MiCake.Core.DependencyInjection
 {
@@ -19,7 +20,7 @@ namespace MiCake.Core.DependencyInjection
             _services = serviceCollection;
         }
 
-        public virtual void Register(IMiCakeModuleCollection miCakeModules)
+        public virtual Task Register(IMiCakeModuleCollection miCakeModules)
         {
             var injectServices = new List<InjectServiceInfo>();
 
@@ -61,13 +62,17 @@ namespace MiCake.Core.DependencyInjection
                     _services.Add(serviceDescriptor);
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         protected abstract List<InjectServiceInfo> AddInjectServices(Type currentType);
 
-        public void SetServiceTypesFinder(FindAutoServiceTypesDelegate findAutoServiceTypes)
+        public Task SetServiceTypesFinder(FindAutoServiceTypesDelegate findAutoServiceTypes)
         {
             _serviceTypesFinder = findAutoServiceTypes;
+
+            return Task.CompletedTask;
         }
 
         protected virtual MiCakeServiceLifetime? GetServiceLifetime(Type type)

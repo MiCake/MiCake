@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Modularity;
+﻿using System.Threading.Tasks;
+using MiCake.Core.Modularity;
 
 namespace MiCake.Core.DependencyInjection
 {
@@ -7,12 +8,12 @@ namespace MiCake.Core.DependencyInjection
     /// </summary>
     internal interface IMiCakeServiceRegistrar
     {
-        void Register(IMiCakeModuleCollection miCakeModules);
+        Task Register(IMiCakeModuleCollection miCakeModules);
 
         /// <summary>
         /// Set user-defined service registration type lookup rules
         /// </summary>
         /// <param name="findAutoServiceTypes"><see cref="FindAutoServiceTypesDelegate"/></param>
-        void SetServiceTypesFinder(FindAutoServiceTypesDelegate findAutoServiceTypes);
+        Task SetServiceTypesFinder(FindAutoServiceTypesDelegate findAutoServiceTypes);
     }
 }

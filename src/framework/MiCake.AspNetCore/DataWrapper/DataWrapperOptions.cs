@@ -13,7 +13,7 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// Shows the stack trace information in the responseException details.
         /// </summary>
-        public bool IsDebug { get; set; } = false;
+        public bool ShowStackTraceWhenError { get; set; } = false;
 
         /// <summary>
         /// When the http status code in this list, the result is not wrapped.
@@ -21,7 +21,7 @@ namespace MiCake.AspNetCore.DataWrapper
         /// 
         /// <see cref="StatusCodes"/>
         /// </summary>
-        public List<int> NoWrapStatusCode { get; set; } = new List<int>() { 201, 202, 404 };
+        public List<int> NoWrapStatusCode { get; set; } = [201, 202, 404];
 
         /// <summary>
         /// <see cref="ProblemDetails"/> has a separate format in asp net core.
@@ -48,6 +48,6 @@ namespace MiCake.AspNetCore.DataWrapper
         ///     The precondition for executing the wrapper is: 1: the result source type is <see cref="ObjectResult"/> 2: no exception occurred.
         /// </para>
         /// </summary>
-        public Dictionary<Range, CustomWrapperModel> CustomModelConfig { get; set; } = new Dictionary<Range, CustomWrapperModel>();
+        public Dictionary<Range, CustomWrapperModel> CustomModelConfig { get; set; } = [];
     }
 }

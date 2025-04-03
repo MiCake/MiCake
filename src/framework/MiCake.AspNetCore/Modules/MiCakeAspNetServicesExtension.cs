@@ -3,6 +3,7 @@ using MiCake.AspNetCore.ExceptionHandling;
 using MiCake.Core;
 using MiCake.Core.Data;
 using MiCake.Core.Modularity;
+using MiCake.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -43,7 +44,10 @@ namespace MiCake
 
             configOptions?.Invoke(options);
 
-            return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder();
+            return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder().ConfigureApplication((app, services) =>
+            {
+                app.ModuleManager.AddMiCakeModule(typeof(MiCakeEssentialModule));
+            });
         }
 
         /// <summary>
@@ -85,9 +89,9 @@ namespace MiCake
                                     throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
                                     $"Please Check your has already AddMiCake() in ConfigureServices method");
 
-            if (micakeApp is INeedParts<IServiceProvider> needServiceProvider)
+            if (micakeApp is IDependencyReceiver<IServiceProvider> needServiceProvider)
             {
-                needServiceProvider.SetParts(applicationBuilder.ApplicationServices);
+                needServiceProvider.AddDependency(applicationBuilder.ApplicationServices);
             }
 
             var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;

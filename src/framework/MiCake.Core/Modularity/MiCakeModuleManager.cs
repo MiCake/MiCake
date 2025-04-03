@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MiCake.Core.Modularity
 {
@@ -15,10 +16,9 @@ namespace MiCake.Core.Modularity
         private bool _isPopulate;
         public bool IsPopulated => _isPopulate;
 
-        private readonly List<Type> _featureModulesTypes = new();
-        private readonly List<Type> _normalModulesTypes = new();
+        private readonly List<Type> _normalModulesTypes = [];
 
-        public void PopulateModules(Type entryType)
+        public Task PopulateModules(Type entryType)
         {
             if (_isPopulate)
                 throw new InvalidOperationException("PopulateDefaultModule can only be called once.");
@@ -26,39 +26,32 @@ namespace MiCake.Core.Modularity
             _isPopulate = true;
 
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, entryType);
-            IMiCakeModuleCollection normalModules = ResolvingMiCakeModules(_normalModulesTypes)
-                                                            .ToMiCakeModuleCollection();
+            IMiCakeModuleCollection modules = ResolvingMiCakeModules(_normalModulesTypes).ToMiCakeModuleCollection();
+
             //Ensure that the position of the entry module is the last
-            if (normalModules[^1].ModuleType != entryType)
+            if (modules[^1].ModuleType != entryType)
             {
-                normalModules.ExchangeOrder(s => s.ModuleType == entryType, normalModules.Count - 1);
+                modules.ExchangeOrder(s => s.ModuleType == entryType, modules.Count - 1);
             }
 
-            IMiCakeModuleCollection featureModules = ResolvingMiCakeModules(_featureModulesTypes)
-                                                            .ToMiCakeModuleCollection();
+            _moduleContext = new MiCakeModuleContext(modules);
 
-            IMiCakeModuleCollection allModules = MiCakeModuleHelper.CombineNormalAndFeatureModules(normalModules, featureModules);
-
-            _moduleContext = new MiCakeModuleContext(allModules, normalModules, featureModules);
+            return Task.CompletedTask;
         }
 
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
         {
-            return _moduleContext.AllModules.FirstOrDefault(s => s.ModuleType == moduleType);
+            return _moduleContext.MiCakeModules.FirstOrDefault(s => s.ModuleType == moduleType);
         }
 
-        public void AddFeatureModule(Type featureModule)
-        {
-            MiCakeModuleHelper.CheckFeatureModule(featureModule);
-            _featureModulesTypes.AddIfNotContains(featureModule);
-        }
-
-        public void AddMiCakeModule(Type moduleType)
+        public Task AddMiCakeModule(Type moduleType)
         {
             MiCakeModuleHelper.CheckModule(moduleType);
 
-            //add denpend on  modules
+            //add denpend on modules
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, moduleType);
+
+            return Task.CompletedTask;
         }
 
         // Get the description information (including dependency and order) of the module according to its type
@@ -93,7 +86,7 @@ namespace MiCake.Core.Modularity
         }
 
         //Get module dependencies
-        private List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDepencyies(
+        private static List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDepencyies(
             List<MiCakeModuleDescriptor> modules,
             MiCakeModuleDescriptor moduleDescriptor)
         {

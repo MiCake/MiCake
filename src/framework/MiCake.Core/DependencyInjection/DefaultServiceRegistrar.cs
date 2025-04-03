@@ -6,18 +6,13 @@ using System.Reflection;
 
 namespace MiCake.Core.DependencyInjection
 {
-    internal class DefaultServiceRegistrar : MiCakeServiceRegistrarBase
+    internal class DefaultServiceRegistrar(IServiceCollection services) : MiCakeServiceRegistrarBase(services)
     {
-        public IServiceCollection _services;
-
-        public DefaultServiceRegistrar(IServiceCollection services) : base(services)
-        {
-            _services = services;
-        }
+        public IServiceCollection _services = services;
 
         protected override List<InjectServiceInfo> AddInjectServices(Type currentType)
         {
-            List<InjectServiceInfo> result = new();
+            List<InjectServiceInfo> result = [];
 
             //add attribute mark services
             var injectServiceInfo = currentType.GetCustomAttribute<InjectServiceAttribute>();
@@ -56,7 +51,7 @@ namespace MiCake.Core.DependencyInjection
             return result;
         }
 
-        private List<Type> GetAttributeServices(Type type, InjectServiceAttribute serviceAttribute)
+        private static List<Type> GetAttributeServices(Type type, InjectServiceAttribute serviceAttribute)
             => serviceAttribute.GetServiceTypes(type);
 
         private List<Type> GetInheritInterfaceServices(Type type)

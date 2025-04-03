@@ -14,7 +14,7 @@ namespace MiCake.EntityFrameworkCore.Interprets.Strategies
         {
             var filters = storeEntity.GetQueryFilters();
 
-            if (filters.Count() == 0)
+            if (!filters.Any())
                 return modelBuilder;
 
             var entityBuilder = modelBuilder.Entity(efModelType);
@@ -27,7 +27,7 @@ namespace MiCake.EntityFrameworkCore.Interprets.Strategies
             return modelBuilder;
         }
 
-        private LambdaExpression ConvertToEFCoreFilter(LambdaExpression originalExpression, Type efClrType)
+        private static LambdaExpression ConvertToEFCoreFilter(LambdaExpression originalExpression, Type efClrType)
         {
             CheckValue.NotNull(originalExpression, nameof(originalExpression));
             CheckValue.NotNull(efClrType, nameof(efClrType));

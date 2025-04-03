@@ -1,4 +1,4 @@
-﻿using MiCake.Uow;
+﻿using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 
 namespace MiCake.EntityFrameworkCore.Uow

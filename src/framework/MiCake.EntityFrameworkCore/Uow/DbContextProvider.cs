@@ -1,4 +1,4 @@
-﻿using MiCake.Uow;
+﻿using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -34,7 +34,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             return dbContext;
         }
 
-        IDbExecutor CreateDbContextExecutor(TDbContext dbContext)
+        static IDbExecutor CreateDbContextExecutor(TDbContext dbContext)
         {
             var dbExecutorType = typeof(DbContextExecutor<>).MakeGenericType(typeof(TDbContext));
             return (IDbExecutor)Activator.CreateInstance(dbExecutorType, dbContext);

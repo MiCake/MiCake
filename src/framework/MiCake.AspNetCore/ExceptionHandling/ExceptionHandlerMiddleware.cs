@@ -113,7 +113,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
             httpResponse.StatusCode = StatusCodes.Status500InternalServerError;
 
             var micakeException = exception as MiCakeException;
-            var stackTraceInfo = _wrapOptions.IsDebug ? exception.StackTrace : null;
+            var stackTraceInfo = _wrapOptions.ShowStackTraceWhenError ? exception.StackTrace : null;
 
             var wrapDataResult = new ApiError(exception.Message, micakeException?.Details, micakeException?.Code, stackTraceInfo);
 

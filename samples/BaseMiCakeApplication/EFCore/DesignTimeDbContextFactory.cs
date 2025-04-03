@@ -9,8 +9,15 @@ namespace BaseMiCakeApplication.EFCore
         public BaseAppDbContext CreateDbContext(string[] args)
         {
             var builder = new DbContextOptionsBuilder<BaseAppDbContext>();
-            builder.UseNpgsql("Host=localhost;Port=54320;Database=micake_db;Username=postgres;Password=a12345");
+
+            var connectionString = "Server=localhost;Database=MiCakeApp;User=root;Password=yourpassword;";
+            builder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+                             mySqlOptions => mySqlOptions.EnableRetryOnFailure());
+                             
             return new BaseAppDbContext(builder.Options, ServiceLocator.Instance.Locator);
         }
+
+        // use [dotnet ef migrations add <MigrationName>] to create migration
+        // use [dotnet ef database update] to update database
     }
 }

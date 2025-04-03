@@ -48,7 +48,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             ApiError result = new(exception.Message,
                                            originalData,
                                            micakeException?.Code,
-                                           options.IsDebug ? exception.StackTrace : null);
+                                           options.ShowStackTraceWhenError ? exception.StackTrace : null);
 
             return result;
         }
@@ -150,7 +150,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             return AssignValueToCustomType(customModelInfo, wrapperContext);
         }
 
-        private object AssignValueToCustomType(CustomModelWithType customModelInfo, DataWrapperContext wrapperContext)
+        private static object AssignValueToCustomType(CustomModelWithType customModelInfo, DataWrapperContext wrapperContext)
         {
             if (customModelInfo == null)
                 return null;

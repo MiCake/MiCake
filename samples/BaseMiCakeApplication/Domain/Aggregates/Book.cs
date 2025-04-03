@@ -7,7 +7,7 @@ using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
-    public class Book : AggregateRoot<Guid>, IMayHasCreator<long>
+    public class Book : AggregateRoot<Guid>
     {
         public string BookName { get; private set; }
 

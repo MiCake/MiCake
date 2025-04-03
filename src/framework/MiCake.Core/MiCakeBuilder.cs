@@ -35,7 +35,7 @@ namespace MiCake.Core
 
             _configureAction?.Invoke(app, _services);
             app.SetEntry(_entryType);
-            app.Initialize();
+            app.Initialize().GetAwaiter().GetResult();
 
             return app;
         }

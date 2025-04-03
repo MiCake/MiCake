@@ -128,7 +128,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             Assert.Equal(203, (resultInfo.Value as ApiResponse).StatusCode);
         }
 
-        private ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult result)
+        private static ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult result)
         {
             return new ResultExecutingContext(
                 new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(), new ActionDescriptor()),
@@ -137,12 +137,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 controller: new object());
         }
 
-        private ResultExecutedContext CreateResultExecutedContext(ResultExecutingContext context)
+        private static ResultExecutedContext CreateResultExecutedContext(ResultExecutingContext context)
         {
             return new ResultExecutedContext(context, context.Filters, context.Result, context.Controller);
         }
 
-        private HttpContext CreateFakeHttpContext(string method, int statusCode)
+        private static HttpContext CreateFakeHttpContext(string method, int statusCode)
         {
             var fakeHttpContext = new DefaultHttpContext();
             fakeHttpContext.Request.Method = method;

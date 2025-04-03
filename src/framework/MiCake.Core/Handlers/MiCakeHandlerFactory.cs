@@ -19,7 +19,7 @@ namespace MiCake.Core.Handlers
 
             var result = new List<MiCakeHandlerDescriptor>();
 
-            if (handlers.Count() == 0)
+            if (!handlers.Any())
                 return result;
 
             foreach (var handler in handlers)

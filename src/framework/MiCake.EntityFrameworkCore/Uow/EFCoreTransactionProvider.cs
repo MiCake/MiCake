@@ -1,5 +1,5 @@
 ﻿using MiCake.Core.Util;
-using MiCake.Uow;
+using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -38,7 +38,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         public ITransactionObject Reused(IEnumerable<ITransactionObject> existedTrasactions, IDbExecutor dbExecutor)
         {
-            if (existedTrasactions.Count() == 0)
+            if (!existedTrasactions.Any())
                 return null;
 
             ITransactionObject optimalTransaction = null;
