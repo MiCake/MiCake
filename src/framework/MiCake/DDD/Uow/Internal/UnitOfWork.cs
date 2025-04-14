@@ -21,9 +21,9 @@ namespace MiCake.DDD.Uow.Internal
         private readonly IEnumerable<ITransactionProvider> _transactions;
 
         protected UnitOfWorkEvents Events => UnitOfWorkOptions?.Events;
-        protected List<ITransactionObject> ErrorTransactions { get; private set; } = new();
-        protected List<ITransactionObject> CreatedTransactions { get; private set; } = new();
-        protected List<IDbExecutor> AddedExecutors { get; private set; } = new();
+        protected List<ITransactionObject> ErrorTransactions { get; private set; } = [];
+        protected List<ITransactionObject> CreatedTransactions { get; private set; } = [];
+        protected List<IDbExecutor> AddedExecutors { get; private set; } = [];
         protected Action<IUnitOfWork> DisposeHandler { get; private set; }
 
         private bool _isSaved = false;
@@ -67,7 +67,11 @@ namespace MiCake.DDD.Uow.Internal
             CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
 
             //added executor.Guarantee that it will eventually be released
-            AddedExecutors.AddIfNotContains(dbExecutor);
+            if (AddedExecutors.AddIfNotContains(dbExecutor) is false)
+            {
+                //already added,just return.
+                return true;
+            }
 
             if (!EnsureToOpenTransaction())
                 return true;
@@ -136,7 +140,7 @@ namespace MiCake.DDD.Uow.Internal
         {
             CheckSaved();
 
-            List<Exception> exceptions = new();
+            List<Exception> exceptions = [];
 
             foreach (var @transaction in CreatedTransactions)
             {

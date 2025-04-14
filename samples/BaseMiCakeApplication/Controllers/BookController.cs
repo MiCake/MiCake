@@ -53,7 +53,6 @@ namespace BaseMiCakeApplication.Controllers
         {
             var book = new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName);
 
-            book.ChangeAuthor("xx", "aa");
             await _bookRepository.AddAsync(book);
         }
 

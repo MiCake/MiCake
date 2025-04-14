@@ -18,7 +18,7 @@ namespace MiCake.Audit.Core
         /// <summary>
         /// Some additional information.
         /// </summary>
-        public Dictionary<string, object> AdditionalInfo { get; set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> AdditionalInfo { get; set; } = [];
 
         public AuditObjectModel(object entity, RepositoryEntityState state)
         {
