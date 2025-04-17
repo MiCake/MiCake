@@ -16,15 +16,14 @@ namespace MiCake.EntityFrameworkCore.Internal
     internal class MiCakeEFCoreInterceptor : ISaveChangesInterceptor
     {
         private readonly IServiceProvider _services;
-        private readonly IEFSaveChangesLifetime _saveChangesLifetime;
+        private readonly IEFSaveChangesLifetime? _saveChangesLifetime;
 
         private IEnumerable<EntityEntry> _efcoreEntries;
 
         public MiCakeEFCoreInterceptor(IServiceProvider services)
         {
             _services = services ?? throw new ArgumentException($"{nameof(MiCakeEFCoreInterceptor)} received a null value of {nameof(IServiceProvider)}");
-            _saveChangesLifetime = _services.GetService<IEFSaveChangesLifetime>() ??
-                                    throw new ArgumentNullException($"Can not reslove {nameof(IEFSaveChangesLifetime)},Please check has added UseEFCore() in MiCake.");
+            _saveChangesLifetime = _services.GetService<IEFSaveChangesLifetime>();
         }
 
         public void SaveChangesFailed(DbContextErrorEventData eventData)
@@ -47,7 +46,7 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime.AfterSaveChangesAsync(_efcoreEntries);
+            await _saveChangesLifetime?.AfterSaveChangesAsync(_efcoreEntries, cancellationToken);
             return result;
         }
 
@@ -61,7 +60,7 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime.BeforeSaveChangesAsync(GetChangeEntities(eventData.Context), cancellationToken);
+            await _saveChangesLifetime?.BeforeSaveChangesAsync(GetChangeEntities(eventData.Context), cancellationToken);
             return result;
         }
 
