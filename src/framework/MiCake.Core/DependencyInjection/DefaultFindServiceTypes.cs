@@ -13,7 +13,7 @@ namespace MiCake.Core.DependencyInjection
             foreach (var inhertInterface in interfaces)
             {
                 var interfaceName = inhertInterface.Name.ToUpper();
-                if (interfaceName.StartsWith("I"))
+                if (interfaceName.StartsWith('I'))
                 {
                     if (interfaceName.Contains(typeName))
                         result.Add(inhertInterface);

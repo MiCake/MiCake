@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Audit\" />
+    <Folder Include="Uow\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\framework\MiCake\MiCake.csproj" />
+  </ItemGroup>
+	
+</Project>

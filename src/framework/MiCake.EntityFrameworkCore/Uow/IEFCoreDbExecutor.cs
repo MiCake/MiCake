@@ -1,4 +1,4 @@
-﻿using MiCake.Uow;
+﻿using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 
 namespace MiCake.EntityFrameworkCore.Uow
@@ -12,5 +12,10 @@ namespace MiCake.EntityFrameworkCore.Uow
         /// Current <see cref="DbContext"/>.
         /// </summary>
         DbContext EFCoreDbContext { get; }
+
+        /// <summary>
+        /// The indicator whether to only use efcore savechanges method to save changes for uow and won't use commit.
+        /// </summary>
+        bool ShouldCommitTrxForEFCore { get; }
     }
 }

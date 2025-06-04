@@ -6,14 +6,9 @@ namespace MiCake.Core.Modularity
     /// <summary>
     /// use to log module lifetime info
     /// </summary>
-    internal class MiCakeModuleLogger
+    internal class MiCakeModuleLogger(ILogger logger)
     {
-        public ILogger _logger;
-
-        public MiCakeModuleLogger(ILogger logger)
-        {
-            _logger = logger;
-        }
+        public ILogger _logger = logger;
 
         public void LogModuleInfo(MiCakeModuleDescriptor moduleDescriptor, string preInfo = "")
         {
@@ -23,12 +18,9 @@ namespace MiCake.Core.Modularity
             _logger.LogInformation(preInfo + GetModuleInfoString(moduleDescriptor));
         }
 
-        private string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
+        private static string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)
         {
-            var moduleType = moduleDesciptor.ModuleType;
-
-            var featerTag = (typeof(IFeatureModule).IsAssignableFrom(moduleType)) ? "[Feature] - " : string.Empty;
-            return featerTag + moduleType.Name;
+            return moduleDesciptor.ModuleType?.Name;
         }
     }
 }

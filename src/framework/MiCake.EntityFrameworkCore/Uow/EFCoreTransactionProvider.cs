@@ -1,5 +1,5 @@
 ﻿using MiCake.Core.Util;
-using MiCake.Uow;
+using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -20,25 +20,24 @@ namespace MiCake.EntityFrameworkCore.Uow
         public bool CanCreate(IDbExecutor dbExecutor)
             => dbExecutor is IEFCoreDbExecutor;
 
-        public ITransactionObject GetTransactionObject(CreateTransactionContext context)
-        {
-            var dbContext = CheckContextAndGetDbContext(context);
-
-            var dbContextTransaction = dbContext.Database.BeginTransaction();
-            return new EFCoreTransactionObject(dbContextTransaction, dbContext);
-        }
-
         public async Task<ITransactionObject> GetTransactionObjectAsync(CreateTransactionContext context, CancellationToken cancellationToken = default)
         {
-            var dbContext = CheckContextAndGetDbContext(context);
+            var (dbcontext, willCommitTrx) = CheckContextAndGetDbContext(context);
 
-            var dbContextTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            return new EFCoreTransactionObject(dbContextTransaction, dbContext);
+            if (willCommitTrx)
+            {
+                var dbContextTransaction = await dbcontext.Database.BeginTransactionAsync(cancellationToken);
+                return new EFCoreTransactionObject(dbContextTransaction, dbcontext, true);
+            }
+            else
+            {
+                return new EFCoreTransactionObject(null, dbcontext, false);
+            }
         }
 
         public ITransactionObject Reused(IEnumerable<ITransactionObject> existedTrasactions, IDbExecutor dbExecutor)
         {
-            if (existedTrasactions.Count() == 0)
+            if (!existedTrasactions.Any())
                 return null;
 
             ITransactionObject optimalTransaction = null;
@@ -60,7 +59,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             return optimalTransaction;
         }
 
-        private DbContext CheckContextAndGetDbContext(CreateTransactionContext context)
+        private (DbContext dbcontext, bool willCommitTrx) CheckContextAndGetDbContext(CreateTransactionContext context)
         {
             CheckValue.NotNull(context.CurrentUnitOfWork, nameof(context.CurrentUnitOfWork));
             CheckValue.NotNull(context.CurrentDbExecutor, nameof(context.CurrentDbExecutor));
@@ -70,7 +69,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             CheckValue.NotNull(efDbExecutor.EFCoreDbContext, nameof(efDbExecutor.EFCoreDbContext));
 
-            return efDbExecutor.EFCoreDbContext;
+            return (efDbExecutor.EFCoreDbContext, efDbExecutor.ShouldCommitTrxForEFCore);
         }
     }
 }

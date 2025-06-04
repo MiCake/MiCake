@@ -87,7 +87,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             Assert.Null(result);
         }
 
-        private ExceptionContext GetExceptionContext(HttpContext httpContext, Exception exception, bool isHandled = false)
+        private static ExceptionContext GetExceptionContext(HttpContext httpContext, Exception exception, bool isHandled = false)
         {
             return new ExceptionContext(
                 new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(), new ActionDescriptor()),
@@ -98,7 +98,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             };
         }
 
-        private HttpContext CreateFakeHttpContext(string method, int statusCode)
+        private static HttpContext CreateFakeHttpContext(string method, int statusCode)
         {
             var fakeHttpContext = new DefaultHttpContext();
             fakeHttpContext.Request.Method = method;

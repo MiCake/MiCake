@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace MiCake.Core.Modularity
 {
@@ -7,24 +8,24 @@ namespace MiCake.Core.Modularity
     /// </summary>
     internal interface IMiCakeModuleBoot
     {
-        void ConfigServices(ModuleConfigServiceContext context);
+        Task ConfigServices(ModuleConfigServiceContext context);
 
-        void Initialization(ModuleLoadContext context);
+        Task Initialization(ModuleLoadContext context);
 
-        void ShutDown(ModuleLoadContext context);
+        Task ShutDown(ModuleLoadContext context);
 
         /// <summary>
         /// Add other configservice actions. 
         /// This part of the operation will be called at the end of ConfigServices().
         /// </summary>
         /// <param name="configServiceAction"></param>
-        void AddConfigService(Action<ModuleConfigServiceContext> configServiceAction);
+        Task AddConfigService(Action<ModuleConfigServiceContext> configServiceAction);
 
         /// <summary>
         /// Add other initalzation actions. 
         /// This part of the operation will be called at the end of Initialization().
         /// </summary>
         /// <param name="initalzationAction"></param>
-        void AddInitalzation(Action<ModuleLoadContext> initalzationAction);
+        Task AddInitalzation(Action<ModuleLoadContext> initalzationAction);
     }
 }

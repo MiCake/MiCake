@@ -13,6 +13,8 @@ namespace MiCake.EntityFrameworkCore
         /// </summary>
         public Type DbContextType { get; private set; }
 
+        public bool WillOpenTransactionForUow { get; set; } = false;
+
         MiCakeEFCoreOptions IObjectAccessor<MiCakeEFCoreOptions>.Value => this;
 
         public MiCakeEFCoreOptions(Type dbContextType)

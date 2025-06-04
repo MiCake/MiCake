@@ -11,7 +11,7 @@ namespace MiCake.EntityFrameworkCore.Interprets.Strategies
         {
             var properties = storeEntity.GetProperties();
 
-            if (properties.Count() == 0)
+            if (!properties.Any())
                 return modelBuilder;
 
             var entityBuilder = modelBuilder.Entity(efModelType);

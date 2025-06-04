@@ -38,7 +38,7 @@ namespace MiCake.AspNetCore.DataWrapper
 
         public CustomWrapperModel()
         {
-            _configProperties = new Dictionary<string, ConfigWrapperPropertyDelegate>();
+            _configProperties = [];
         }
 
         public CustomWrapperModel(string modelName) : this()

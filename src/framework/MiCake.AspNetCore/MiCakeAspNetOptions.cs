@@ -1,6 +1,5 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.Security;
-using MiCake.Uow;
+using MiCake.DDD.Uow;
 using System.Collections.Generic;
 
 namespace MiCake.AspNetCore
@@ -26,12 +25,6 @@ namespace MiCake.AspNetCore
         /// </summary>
         public DataWrapperOptions DataWrapperOptions { get; set; }
 
-        /// <summary>
-        /// Whether it is need to verify user id automic.
-        /// When you open this option,<see cref="CurrentUserAttribute"/> will take effect.
-        /// </summary>
-        public bool UseAutoVerifyUserId { get; set; } = true;
-
         public MiCakeAspNetOptions()
         {
             UnitOfWork = new MiCakeAspNetUowOption();
@@ -52,13 +45,12 @@ namespace MiCake.AspNetCore
         public UnitOfWorkOptions? RootUowOptions { get; set; }
 
         /// <summary>
-        /// Match controller action name start key work to close unit of work transaction.
+        /// Match controller action name start key work to close unit of work transaction to improve performance.
         /// default is : [Find],[Get],[Query],[Search]
         /// 
         /// it taks effect at <see cref="UnitOfWorkScope"/> is not Suppress 
         /// and has no <see cref="DisableTransactionAttribute"/>
         /// </summary>
-        public List<string> KeyWordToCloseTransaction { get; set; }
-            = new List<string>() { "Find", "Get", "Query", "Search" };
+        public List<string> KeyWordForCloseUow { get; set; } = ["Find", "Get", "Query", "Search"];
     }
 }

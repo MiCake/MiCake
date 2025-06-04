@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 namespace BaseMiCakeApplication.Controllers
 {
     [ApiController]
-    [Authorize]
     [Route("[controller]/[action]")]
     public class BookController : ControllerBase
     {
@@ -38,7 +37,7 @@ namespace BaseMiCakeApplication.Controllers
         public string GetStringResult() => "MiCake";
 
         [HttpGet]
-        public List<int> GetListResult() => new() { 1, 3, 4 };
+        public List<int> GetListResult() => [1, 3, 4];
 
         [HttpGet]
         public IActionResult GetSoftlyMiCakeException() => throw new SlightMiCakeException("This is MiCake softly exception. http code is 200.");
@@ -54,7 +53,6 @@ namespace BaseMiCakeApplication.Controllers
         {
             var book = new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName);
 
-            book.ChangeAuthor("xx", "aa");
             await _bookRepository.AddAsync(book);
         }
 

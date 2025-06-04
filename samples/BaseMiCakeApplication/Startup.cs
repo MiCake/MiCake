@@ -1,9 +1,7 @@
-using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.Handlers;
 using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,10 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace BaseMiCakeApplication
 {
@@ -36,7 +33,11 @@ namespace BaseMiCakeApplication
 
             services.AddDbContext<BaseAppDbContext>(options =>
             {
-                options.UseNpgsql("Host=localhost;Port=54320;Database=micake_db;Username=postgres;Password=a12345");
+                var connectionString = Configuration.GetConnectionString("DefaultConnection");
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), c =>
+                {
+                    c.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                }); 
             });
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -48,28 +49,9 @@ namespace BaseMiCakeApplication
                 miCakeAspNetConfig: options =>
                 {
                     options.UseCustomModel();
-                    options.DataWrapperOptions.IsDebug = true;
-                })
-                .UseIdentity<User>()
-                .UseJwt(options =>
-                {
-                    options.Issuer = "MiCake";
-                    options.Audience = "MiCake";
-                    options.SecurityKey = Encoding.Default.GetBytes("ASDFGHJKL:QWERTYUIOP");
+                    options.DataWrapperOptions.ShowStackTraceWhenError = true;
                 })
                 .Build();
-
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                    .AddJwtBearer(options =>
-                    {
-                        options.TokenValidationParameters = new TokenValidationParameters()
-                        {
-                            ValidateAudience = false,
-                            IssuerSigningKey = new SymmetricSecurityKey(Encoding.Default.GetBytes("ASDFGHJKL:QWERTYUIOP")),
-                            ValidIssuer = "MiCake",
-                            ValidAudience = "MiCake",
-                        };
-                    });
 
             // Swagger
             services.AddSwaggerGen(c =>

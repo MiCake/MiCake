@@ -9,9 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.DDD.Extensions\MiCake.DDD.Extensions.csproj" />
-    <ProjectReference Include="..\MiCake.Identity\MiCake.Identity.csproj" />
-    <ProjectReference Include="..\MiCake.Uow\MiCake.Uow.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\MiCake\MiCake.csproj" />
   </ItemGroup>
 
 </Project>

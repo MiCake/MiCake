@@ -1,4 +1,5 @@
-﻿using MiCake.Core.Util;
+﻿using System.Linq;
+using MiCake.Core.Util;
 using MiCake.Core.Util.Reflection;
 using MiCake.DDD.Extensions.Store.Configure;
 using MiCake.DDD.Extensions.Store.Interpret;
@@ -24,7 +25,7 @@ namespace MiCake.EntityFrameworkCore.Interprets
             var efEntities = receiver.Model.GetEntityTypes();
             var configEntities = storeModel.GetStoreEntities();
 
-            foreach (StoreEntityType configEntity in configEntities)
+            foreach (StoreEntityType configEntity in configEntities.Cast<StoreEntityType>())
             {
                 var clrType = configEntity.ClrType;
 

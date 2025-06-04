@@ -1,6 +1,6 @@
 ﻿using MiCake.AspNetCore.Helper;
-using MiCake.Uow;
-using MiCake.Uow.Helper;
+using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Helper;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -9,18 +9,12 @@ using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.Uow
 {
-    public class UnitOfWorkFilter : IAsyncActionFilter
+    public class UnitOfWorkFilter(
+        IUnitOfWorkManager unitOfWorkManager,
+        IOptions<MiCakeAspNetOptions> aspnetUowOptions) : IAsyncActionFilter
     {
-        private readonly IUnitOfWorkManager _unitOfWorkManager;
-        private readonly MiCakeAspNetUowOption _miCakeAspNetUowOption;
-
-        public UnitOfWorkFilter(
-            IUnitOfWorkManager unitOfWorkManager,
-            IOptions<MiCakeAspNetOptions> aspnetUowOptions)
-        {
-            _unitOfWorkManager = unitOfWorkManager;
-            _miCakeAspNetUowOption = aspnetUowOptions.Value.UnitOfWork;
-        }
+        private readonly IUnitOfWorkManager _unitOfWorkManager = unitOfWorkManager;
+        private readonly MiCakeAspNetUowOption _miCakeAspNetUowOption = aspnetUowOptions.Value.UnitOfWork;
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
@@ -50,7 +44,7 @@ namespace MiCake.AspNetCore.Uow
                    MiCakeUowHelper.IsDisableTransaction(actionMehtod);
 
             //has match action key word 
-            var hasMatchKeyWord = _miCakeAspNetUowOption.KeyWordToCloseTransaction.Any(keyWord =>
+            var hasMatchKeyWord = _miCakeAspNetUowOption.KeyWordForCloseUow.Any(keyWord =>
             controllerActionDes.ActionName.ToUpper().StartsWith(keyWord.ToUpper()));
 
             options.Scope = hasDisableAttribute || hasMatchKeyWord ? UnitOfWorkScope.Suppress : options.Scope;

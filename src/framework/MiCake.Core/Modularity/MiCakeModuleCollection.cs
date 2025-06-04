@@ -7,7 +7,7 @@ namespace MiCake.Core.Modularity
 {
     public class MiCakeModuleCollection : IMiCakeModuleCollection
     {
-        private readonly List<MiCakeModuleDescriptor> _descriptors = new();
+        private readonly List<MiCakeModuleDescriptor> _descriptors = [];
 
         public MiCakeModuleDescriptor this[int index]
         {
@@ -47,7 +47,7 @@ namespace MiCake.Core.Modularity
 
         public Assembly[] GetAssemblies(bool includeFrameworkModule = true)
         {
-            Assembly[] assemblies = { };
+            Assembly[] assemblies = [];
             assemblies = _descriptors.Where(s =>
                                             includeFrameworkModule ?
                                             true :

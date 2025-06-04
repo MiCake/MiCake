@@ -11,7 +11,7 @@ namespace MiCake.EntityFrameworkCore.Interprets.Strategies
         {
             var ignoredMembers = storeEntity.GetIgnoredMembers();
 
-            if (ignoredMembers.Count() == 0)
+            if (!ignoredMembers.Any())
                 return modelBuilder;
 
             var entityBuilder = modelBuilder.Entity(efModelType);

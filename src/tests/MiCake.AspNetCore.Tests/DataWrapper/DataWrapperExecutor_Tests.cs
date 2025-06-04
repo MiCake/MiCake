@@ -216,7 +216,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             Assert.IsAssignableFrom<ApiResponse>(result);
         }
 
-        private HttpContext CreateFakeHttpContext(string method, int statusCode)
+        private static HttpContext CreateFakeHttpContext(string method, int statusCode)
         {
             var fakeHttpContext = new DefaultHttpContext();
             fakeHttpContext.Request.Method = method;

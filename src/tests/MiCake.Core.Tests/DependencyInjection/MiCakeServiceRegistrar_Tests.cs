@@ -111,14 +111,14 @@ namespace MiCake.Core.Tests.DependencyInjection
             Assert.Equal(1, injectServiceCount);
         }
 
-        public IServiceCollection BuildServiceCollection()
+        public static IServiceCollection BuildServiceCollection()
         {
             IServiceCollection Services = new ServiceCollection();
 
             return Services;
         }
 
-        public IMiCakeModuleCollection BuildCurrentModule()
+        public static IMiCakeModuleCollection BuildCurrentModule()
         {
             IMiCakeModuleCollection miCakeModules = new MiCakeModuleCollection();
 

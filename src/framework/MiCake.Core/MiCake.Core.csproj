@@ -1,15 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>MiCake core components.Contains micake modules,micake builder,service registrar,and more.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.3" />
   </ItemGroup>
 
+
   <ItemGroup>
-    <ProjectReference Include="..\MiCake.Core.Abstractions\MiCake.Core.Abstractions.csproj" />
+    <Folder Include="Abstractions\" />
+    <Folder Include="Util\" />
   </ItemGroup>
 
 </Project>
