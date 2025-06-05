@@ -75,7 +75,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
 
             if (exception is SlightMiCakeException)
             {
-                await WriteSoftExceptionResponse(context, exception as SlightMiCakeException, GetOptions());
+                await WriteSlightExceptionResponse(context, exception as SlightMiCakeException, GetOptions());
             }
             else
             {
@@ -92,16 +92,14 @@ namespace MiCake.AspNetCore.ExceptionHandling
             };
         }
 
-        private static async Task WriteSoftExceptionResponse(HttpContext context, SlightMiCakeException softMiCakeException, JsonSerializerOptions options)
+        private  async Task WriteSlightExceptionResponse(HttpContext context, SlightMiCakeException slightMiCakeException, JsonSerializerOptions options)
         {
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status200OK;
 
-            var wrapDataResult = new ApiResponse(message: softMiCakeException.Message, result: softMiCakeException.Details)
-            {
-                ErrorCode = softMiCakeException.Code,
-                IsError = true
-            };
+            var wrapDataResult = new ApiResponse(DefaultWrapperExecutor.GetApiResponseCode(slightMiCakeException.Code, DefaultWrapperExecutor.WrapperResultType.Success, _wrapOptions),
+                                                 slightMiCakeException.Message,
+                                                 slightMiCakeException.Details);
             var resultJsonData = JsonSerializer.Serialize(wrapDataResult, options);
 
             await httpResponse.WriteAsync(resultJsonData);
@@ -115,7 +113,11 @@ namespace MiCake.AspNetCore.ExceptionHandling
             var micakeException = exception as MiCakeException;
             var stackTraceInfo = _wrapOptions.ShowStackTraceWhenError ? exception.StackTrace : null;
 
-            var wrapDataResult = new ApiError(exception.Message, micakeException?.Details, micakeException?.Code, stackTraceInfo);
+            var wrapDataResult = new ApiError(
+                DefaultWrapperExecutor.GetApiResponseCode(micakeException?.Code, DefaultWrapperExecutor.WrapperResultType.Error, _wrapOptions),
+                exception.Message,
+                micakeException?.Details,
+                stackTraceInfo);
 
             var resultJsonData = JsonSerializer.Serialize(wrapDataResult, GetOptions());
 
