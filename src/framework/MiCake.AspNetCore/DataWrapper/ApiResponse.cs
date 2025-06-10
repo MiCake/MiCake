@@ -7,19 +7,9 @@ namespace MiCake.AspNetCore.DataWrapper
     public class ApiResponse : IResultDataWrapper
     {
         /// <summary>
-        /// <see cref="StatusCodes"/>
+        /// Indication code of business operation.
         /// </summary>
-        public int StatusCode { get; set; }
-
-        /// <summary>
-        /// Is there any error in this request
-        /// </summary>
-        public bool IsError { get; set; }
-
-        /// <summary>
-        /// Indication code of business operation error
-        /// </summary>
-        public string ErrorCode { get; set; }
+        public string Code { get; set; }
 
         /// <summary>
         /// Response message.
@@ -29,23 +19,21 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// The result data of this request.
         /// </summary>
-        public object Result { get; set; }
+        public object Data { get; set; }
 
         public ApiResponse() { }
 
-        public ApiResponse(string message, int statusCode = 200)
+        public ApiResponse(string code, string message)
         {
-            StatusCode = statusCode;
+            Code = code;
             Message = message;
-            IsError = false;
         }
 
-        public ApiResponse(string message, object result)
+        public ApiResponse(string code, string message, object data)
         {
-            Result = result;
-            StatusCode = 200;
+            Data = data;
+            Code = code;
             Message = message;
-            IsError = false;
         }
     }
 }
