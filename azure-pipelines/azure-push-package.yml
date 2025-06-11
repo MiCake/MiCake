@@ -39,3 +39,9 @@ steps:
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
     nuGetFeedType: 'external'
     publishFeedCredentials: 'MiCake_NuGet_Key'
+
+- task: NuGetAuthenticate@1
+  inputs:
+    nuGetServiceConnections: 'MiCake_NuGet_Key'
+  
+- script: dotnet nuget push --api-key MiCake_NuGet_Key --source https://api.nuget.org/v3/index.json  "$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg"
