@@ -32,9 +32,7 @@ steps:
     minorVersion: '$(nuget_version_minor)'
     patchVersion: '$(nuget_version_patch)'
   
-- task: NuGetAuthenticate@1
-
-- task: NuGetCommand@2
+- task: DotNetCoreCLI@2
   displayName: 'Push nuget packages to nuget.org'
   inputs:
     command: 'push'
