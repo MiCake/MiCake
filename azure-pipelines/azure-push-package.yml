@@ -12,8 +12,11 @@ trigger:
      - releases/preview*
 
 variables:
-  solution: '**/*.sln'
-  buildConfiguration: 'Release'
+- group: MiCake Shared Variables
+- name: solution
+  value: '**/*.sln'
+- name: buildConfiguration
+  value:  'Release'
 
 steps:
 - task: UseDotNet@2
@@ -32,4 +35,4 @@ steps:
     minorVersion: '$(nuget_version_minor)'
     patchVersion: '$(nuget_version_patch)'
 
-- script: dotnet nuget push --api-key MiCake_NuGet_Key --source https://api.nuget.org/v3/index.json  "$(Build.ArtifactStagingDirectory)/**/*.nupkg"
+- script: dotnet nuget push --api-key $(MiCake_NuGet_Key) --source https://api.nuget.org/v3/index.json  "$(Build.ArtifactStagingDirectory)/**/*.nupkg"
