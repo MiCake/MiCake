@@ -49,5 +49,20 @@ namespace MiCake.AspNetCore.DataWrapper
         /// </para>
         /// </summary>
         public Dictionary<Range, CustomWrapperModel> CustomModelConfig { get; set; } = [];
+
+        /// <summary>
+        /// The default code setting for data wrapper.
+        /// This setting is used to set the default code for success and error.
+        /// </summary>
+        public DataWrapperDefaultCode DefaultCodeSetting { get; set; } = new();
+    }
+
+    public class DataWrapperDefaultCode
+    {
+        public string Success { get; set; } = "0";
+
+        public string ProblemDetails { get; set; } = "9998";
+
+        public string Error { get; set; } = "9999";
     }
 }

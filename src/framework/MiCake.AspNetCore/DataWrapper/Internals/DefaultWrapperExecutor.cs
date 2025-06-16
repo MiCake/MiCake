@@ -45,10 +45,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             }
 
             var micakeException = exception as MiCakeException;
-            ApiError result = new(exception.Message,
-                                           originalData,
-                                           micakeException?.Code,
-                                           options.ShowStackTraceWhenError ? exception.StackTrace : null);
+            ApiError result = new(GetApiResponseCode(micakeException?.Code, WrapperResultType.Error, wrapperContext.WrapperOptions), exception.Message, micakeException?.Details, options.ShowStackTraceWhenError ? exception.StackTrace : null);
 
             return result;
         }
@@ -56,54 +53,41 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public virtual object WrapSuccesfullysResult(object orignalData, DataWrapperContext wrapperContext, bool isSoftException = false)
+        public virtual object WrapSuccesfullysResult(object originalData, DataWrapperContext wrapperContext, bool isSoftException = false)
         {
             CheckValue.NotNull(wrapperContext, nameof(wrapperContext));
             CheckValue.NotNull(wrapperContext.HttpContext, nameof(wrapperContext.HttpContext));
             CheckValue.NotNull(wrapperContext.WrapperOptions, nameof(wrapperContext.WrapperOptions));
 
-            if (orignalData is IResultDataWrapper)
-                return orignalData;
+            if (originalData is IResultDataWrapper)
+                return originalData;
 
             var options = wrapperContext.WrapperOptions;
-            var statuCode = (wrapperContext.ResultData as ObjectResult)?.StatusCode ?? wrapperContext.HttpContext.Response.StatusCode;
-
             if (!options.UseCustomModel)
             {
                 if (isSoftException)
                 {
                     var softlyException = wrapperContext.SoftlyException;
 
-                    return new ApiResponse(softlyException.Message)
-                    {
-                        Result = softlyException.Details,
-                        ErrorCode = softlyException.Code,
-                        IsError = true,
-                    };
+                    return new ApiResponse(GetApiResponseCode(softlyException.Code, WrapperResultType.Success, wrapperContext.WrapperOptions), softlyException.Message, softlyException.Details);
                 }
 
-                if (orignalData is ProblemDetails problemDetails)
+                if (originalData is ProblemDetails problemDetails)
                 {
-                    return options.WrapProblemDetails ? new ApiResponse(problemDetails.Title)
-                    {
-                        Result = problemDetails.Detail,
-                        StatusCode = statuCode,
-                        IsError = true,
-                    }
-                    : orignalData;
+                    return options.WrapProblemDetails ? new ApiResponse(GetApiResponseCode(null, WrapperResultType.ProblemDetails, wrapperContext.WrapperOptions), problemDetails.Title, originalData) : originalData;
                 }
 
-                return new ApiResponse(ResponseMessage.Success, orignalData) { StatusCode = statuCode };
+                return new ApiResponse(GetApiResponseCode(null, WrapperResultType.Success, wrapperContext.WrapperOptions), null, originalData);
             }
             else
             {
                 if (options.CustomModelConfig == null || options.CustomModelConfig.Count == 0)
-                    return orignalData;
+                    return originalData;
 
                 //create customer model.
                 var customerModel = CreateCustomModel(wrapperContext);
                 if (customerModel == null)
-                    return orignalData;
+                    return originalData;
 
                 return customerModel;
             }
@@ -164,7 +148,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             return modelInstance;
         }
 
-        private Type CreateCustomEmitType(CustomWrapperModel customWrapperModel)
+        private static Type CreateCustomEmitType(CustomWrapperModel customWrapperModel)
         {
             var dyClass = EmitHelper.CreateClass(customWrapperModel.ModelName,
                                      MiCakeReflectionPredefined.DynamicAssembly,
@@ -180,16 +164,35 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             return dyClass.CreateType();
         }
 
-        class CustomModelWithType
+        public static string GetApiResponseCode(string? businessCode, WrapperResultType successStation, DataWrapperOptions wrapperOptions)
         {
-            public CustomWrapperModel ModelConfig { get; set; }
-            public Type EmitType { get; set; }
+            var defaultCodeSetting = wrapperOptions.DefaultCodeSetting;
 
-            public CustomModelWithType(CustomWrapperModel customModel, Type emitType)
+            if (string.IsNullOrWhiteSpace(businessCode))
             {
-                ModelConfig = customModel;
-                EmitType = emitType;
+                businessCode = successStation switch
+                {
+                    WrapperResultType.Success => defaultCodeSetting.Success,
+                    WrapperResultType.Error => defaultCodeSetting.Error,
+                    WrapperResultType.ProblemDetails => defaultCodeSetting.ProblemDetails,
+                    _ => throw new ArgumentOutOfRangeException(nameof(successStation), "Unknown result type for data wrapper.")
+                };
             }
+
+            return businessCode;
+        }
+
+        public class CustomModelWithType(CustomWrapperModel customModel, Type emitType)
+        {
+            public CustomWrapperModel ModelConfig { get; set; } = customModel;
+            public Type EmitType { get; set; } = emitType;
+        }
+
+        public enum WrapperResultType
+        {
+            Success,
+            Error,
+            ProblemDetails
         }
     }
 }

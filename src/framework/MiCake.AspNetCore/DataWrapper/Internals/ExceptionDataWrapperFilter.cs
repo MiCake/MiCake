@@ -31,7 +31,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                                                      context.ActionDescriptor);
 
             var wrappedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrapContext);
-            if (!(wrappedData is ApiError))
+            if (wrappedData is not ApiError)
             {
                 context.ExceptionHandled = true;
                 context.Result = new ObjectResult(wrappedData);

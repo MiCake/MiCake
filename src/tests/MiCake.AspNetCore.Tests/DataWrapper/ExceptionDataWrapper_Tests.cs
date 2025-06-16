@@ -41,7 +41,6 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
             var apiResponse = result.Value as ApiResponse;
             Assert.NotNull(apiResponse);
-            Assert.True(apiResponse.IsError);
             Assert.Equal("MiCake", apiResponse.Message);
         }
 

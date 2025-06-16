@@ -89,7 +89,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public async Task DataWrapperFilter_ObjectResultStatusCodeIsNull()
+        public async Task DataWrapperFilter_DefaultSuccessCode()
         {
             // Arrange
             var httpContext = CreateFakeHttpContext("Get", 200);
@@ -105,16 +105,25 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             //assert
             var resultInfo = resultExecutingContext.Result as ObjectResult;
             Assert.NotNull(resultInfo);
-            Assert.Equal(200, (resultInfo.Value as ApiResponse).StatusCode);
+            Assert.Equal("0", (resultInfo.Value as ApiResponse).Code);
         }
 
         [Fact]
-        public async Task DataWrapperFilter_ObjectResultStatusCodeNotNull()
+        public async Task DataWrapperFilter_SpecificCode()
         {
             // Arrange
             var httpContext = CreateFakeHttpContext("Get", 200);
             var objResult = new OkObjectResult("1234") { StatusCode = 203 };
             var options = Options.Create(new MiCakeAspNetOptions());
+            options.Value.DataWrapperOptions = new DataWrapperOptions()
+            {
+                DefaultCodeSetting = new DataWrapperDefaultCode()
+                {
+                    Success = "10",
+                    ProblemDetails = "11",
+                    Error = "12"
+                }
+            };
             var resultExecutingContext = GetResourceExecutingContext(httpContext, objResult);
             var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
 
@@ -125,7 +134,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             //assert
             var resultInfo = resultExecutingContext.Result as ObjectResult;
             Assert.NotNull(resultInfo);
-            Assert.Equal(203, (resultInfo.Value as ApiResponse).StatusCode);
+            Assert.Equal("10", (resultInfo.Value as ApiResponse).Code);
         }
 
         private static ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult result)
