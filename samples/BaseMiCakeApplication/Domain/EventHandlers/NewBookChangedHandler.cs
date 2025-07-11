@@ -20,9 +20,9 @@ namespace BaseMiCakeApplication.Domain.EventHandlers
 
         public async Task HandleAysnc(NewBookChangeEvent domainEvent, CancellationToken cancellationToken = default)
         {
-            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"));
-            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"));
-            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"));
+            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"), cancellationToken);
+            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"), cancellationToken);
+            await _repo.AddAsync(new Aggregates.Book("xx", "x", "x1"), cancellationToken);
         }
     }
 }

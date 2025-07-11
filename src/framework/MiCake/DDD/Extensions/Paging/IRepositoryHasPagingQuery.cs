@@ -20,7 +20,7 @@ namespace MiCake.DDD.Extensions.Paging
         /// <param name="queryModel"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync(PagingQueryModel queryModel, CancellationToken cancellationToken = default);
+        Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync(PagingQueryModel queryModel, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Paing query data from repository and specify a sort selector.
@@ -31,6 +31,6 @@ namespace MiCake.DDD.Extensions.Paging
         /// <param name="asc"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<PagingQueryResult<IEnumerable<TAggregateRoot>>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default);
+        Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default);
     }
 }
