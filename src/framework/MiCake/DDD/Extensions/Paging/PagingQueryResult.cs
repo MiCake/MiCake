@@ -1,4 +1,6 @@
-﻿namespace MiCake.DDD.Extensions.Paging
+﻿using System.Collections.Generic;
+
+namespace MiCake.DDD.Extensions.Paging
 {
     /// <summary>
     /// A model for paging query result.
@@ -21,9 +23,9 @@
     /// </summary>
     public class PagingQueryResult<T> : PagingQueryResult
     {
-        public T Data { get; set; }
+        public IEnumerable<T> Data { get; set; }
 
-        public PagingQueryResult(int currentIndex, long total, T data) : base(currentIndex, total)
+        public PagingQueryResult(int currentIndex, long total, IEnumerable<T> data) : base(currentIndex, total)
         {
             Data = data;
         }

@@ -47,7 +47,7 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime.AfterSaveChangesAsync(_efcoreEntries);
+            await _saveChangesLifetime.AfterSaveChangesAsync(_efcoreEntries, cancellationToken);
             return result;
         }
 
