@@ -48,8 +48,8 @@ namespace BaseMiCakeApplication
                 },
                 miCakeAspNetConfig: options =>
                 {
-                    options.UseCustomModel();
-                    options.DataWrapperOptions.ShowStackTraceWhenError = true;
+                    // options.UseCustomModel();
+                    // options.DataWrapperOptions.ShowStackTraceWhenError = true;
                 })
                 .Build();
 
