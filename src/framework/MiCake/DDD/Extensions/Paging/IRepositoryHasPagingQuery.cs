@@ -1,6 +1,5 @@
 ﻿using MiCake.DDD.Domain;
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +11,7 @@ namespace MiCake.DDD.Extensions.Paging
     /// </summary>
     /// <typeparam name="TAggregateRoot"></typeparam>
     /// <typeparam name="TKey"></typeparam>
-    public interface IRepositoryHasPagingQuery<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey>
+    public interface IRepositoryHasPagingQuery<TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey>
     {
         /// <summary>
         /// Paing query data from repository by <see cref="PagingQueryModel"/>
