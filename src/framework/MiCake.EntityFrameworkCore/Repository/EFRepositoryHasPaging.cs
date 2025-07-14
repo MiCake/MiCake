@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
-    public class EFRepositoryHasPaging<TDbContext, TAggregateRoot, TKey> : EFRepository<DbContext, TAggregateRoot, TKey>, IRepositoryHasPagingQuery<TAggregateRoot, TKey>
+    public class EFRepositoryHasPaging<TDbContext, TAggregateRoot, TKey> : EFRepository<TDbContext, TAggregateRoot, TKey>, IRepositoryHasPagingQuery<TAggregateRoot, TKey>
             where TAggregateRoot : class, IAggregateRoot<TKey>
             where TDbContext : DbContext
     {

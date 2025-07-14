@@ -13,6 +13,8 @@ namespace MiCake.EntityFrameworkCore.Uow
     {
         private readonly ICurrentUnitOfWork _currentUnitOfWork;
         private readonly IObjectAccessor<MiCakeEFCoreOptions> optAccessor;
+        
+        private static readonly Type DbExecutorType = typeof(DbContextExecutor<>).MakeGenericType(typeof(TDbContext));
 
         public DbContextProvider(ICurrentUnitOfWork currentUnitOfWork, IObjectAccessor<MiCakeEFCoreOptions> opts)
         {
@@ -37,8 +39,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         IDbExecutor CreateDbContextExecutor(TDbContext dbContext)
         {
-            var dbExecutorType = typeof(DbContextExecutor<>).MakeGenericType(typeof(TDbContext));
-            return (IDbExecutor)Activator.CreateInstance(dbExecutorType, dbContext, optAccessor);
+            return (IDbExecutor)Activator.CreateInstance(DbExecutorType, dbContext, optAccessor);
         }
 
         async Task<DbContext> IDbContextProvider.GetDbContextAsync(CancellationToken cancellationToken)
