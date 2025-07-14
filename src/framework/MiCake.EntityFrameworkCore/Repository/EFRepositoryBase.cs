@@ -22,6 +22,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         protected IDbContextProvider<TDbContext> DbContextProvider;
 
         private TDbContext _currentDbContext;
+        private DbSet<TEntity> _dbSet;
 
         /// <summary>
         /// 
@@ -56,9 +57,34 @@ namespace MiCake.EntityFrameworkCore.Repository
             return _currentDbContext;
         }
 
+        protected virtual DbSet<TEntity> DbSet
+        {
+            get
+            {
+                if (_dbSet == null)
+                {
+                    // Try to get it synchronously first
+                    if (_currentDbContext != null)
+                    {
+                        _dbSet = _currentDbContext.Set<TEntity>();
+                    }
+                    else
+                    {
+                        _dbSet = GetDbSetAsync().GetAwaiter().GetResult();
+                    }
+                }
+                return _dbSet;
+            }
+        }
+
         protected virtual async Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
         {
-            return (await GetDbContextAsync(cancellationToken)).Set<TEntity>();
+            if (_dbSet == null)
+            {
+                var context = await GetDbContextAsync(cancellationToken);
+                _dbSet = context.Set<TEntity>();
+            }
+            return _dbSet;
         }
     }
 }
