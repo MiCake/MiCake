@@ -53,5 +53,12 @@ namespace MiCake.DDD.Domain
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Save changes of this repository to database.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

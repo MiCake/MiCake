@@ -37,6 +37,11 @@ namespace MiCake.DDD.Extensions.Internal
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
             => _inner.GetCountAsync(cancellationToken);
 
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return _inner.SaveChangesAsync(cancellationToken);
+        }
+
         public Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.UpdateAsync(aggregateRoot, cancellationToken);
     }

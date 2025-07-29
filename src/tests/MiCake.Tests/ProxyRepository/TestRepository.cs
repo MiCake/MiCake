@@ -42,6 +42,11 @@ namespace MiCake.DDD.Tests.ProxyRepository
             throw new System.NotImplementedException();
         }
 
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public void Update(TAggregateRoot aggregateRoot)
         {
             Data.RemoveAll(s => s.Id.Equals(aggregateRoot.Id));
