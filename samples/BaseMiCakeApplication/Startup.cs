@@ -1,6 +1,5 @@
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.Handlers;
-using BaseMiCakeApplication.MiCakeFeatures;
 using MiCake;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

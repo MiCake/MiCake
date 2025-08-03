@@ -9,6 +9,11 @@ namespace MiCake.Core.Util.LinqFilter
     {
         public static IQueryable<T> Sort<T>(this IQueryable<T> query, List<Sort> orders)
         {
+            if (orders == null || orders.Count == 0)
+            {
+                return query;
+            }
+
             foreach (var order in orders)
             {
                 query = query.Sort(order);

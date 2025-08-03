@@ -11,7 +11,7 @@ namespace MiCake.Core.Util.LinqFilter
     {
         public static IQueryable<T> Filter<T>(this IQueryable<T> query, List<Filter> filters)
         {
-            if (filters.Count == 0)
+            if (filters == null || filters.Count == 0)
             {
                 return query;
             }
@@ -19,18 +19,49 @@ namespace MiCake.Core.Util.LinqFilter
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
             var expression = CreateFilterExpression<T>(filters, pe);
+
+            if (expression == null)
+            {
+                return query;
+            }
+
             MethodCallExpression whereCallExpression = Expression.Call(
-                typeof(Queryable),
-                "Where",
-                [query.ElementType],
-                query.Expression,
-                Expression.Lambda<Func<T, bool>>(expression,
-                [pe]));
+               typeof(Queryable),
+               "Where",
+               [query.ElementType],
+               query.Expression,
+               Expression.Lambda<Func<T, bool>>(expression, [pe]));
 
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
 
-        public static IQueryable<T> Filter<T>(this IQueryable<T> query, FilterGroupsHolder filterGroupsHolder)
+        public static IQueryable<T> Filter<T>(this IQueryable<T> query, FilterGroup filterGroup)
+        {
+            if (filterGroup?.Filters == null || filterGroup.Filters.Count == 0)
+            {
+                return query;
+            }
+
+            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
+
+            var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FilterGroupJoinType);
+
+            if (expression == null)
+            {
+                return query;
+            }
+
+            MethodCallExpression whereCallExpression = Expression.Call(
+               typeof(Queryable),
+               "Where",
+               [query.ElementType],
+               query.Expression,
+               Expression.Lambda<Func<T, bool>>(expression, [pe]));
+
+            return query.Provider.CreateQuery<T>(whereCallExpression);
+        }
+
+        public static IQueryable<T> Filter<T>(this IQueryable<T> query, CompositeFilterGroup filterGroupsHolder)
         {
             if (filterGroupsHolder.FilterGroups.Count == 0)
             {

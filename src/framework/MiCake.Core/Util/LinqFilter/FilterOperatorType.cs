@@ -1,5 +1,8 @@
 ﻿namespace MiCake.Core.Util.LinqFilter
 {
+    /// <summary>
+    /// An enumeration that defines the operator types for filters.
+    /// </summary>
     public enum FilterOperatorType
     {
         /// <summary>

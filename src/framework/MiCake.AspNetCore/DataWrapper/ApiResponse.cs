@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using System;
+﻿using System;
 
 namespace MiCake.AspNetCore.DataWrapper
 {

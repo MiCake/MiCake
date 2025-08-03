@@ -1,6 +1,5 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates.Events;
 using BaseMiCakeApplication.Domain.Events;
-using MiCake.Audit;
 using MiCake.Core;
 using MiCake.DDD.Domain;
 using System;
@@ -10,6 +9,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
     public class Book : AggregateRoot<Guid>
     {
         public string BookName { get; private set; }
+        public DateTime PublishDate { get; private set; } = DateTime.Now;
 
         public BookAuthor Author { get; private set; }
         public long? CreatorID { get; set; }

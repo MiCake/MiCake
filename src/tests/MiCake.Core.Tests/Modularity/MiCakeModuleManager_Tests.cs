@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Modularity;
 using MiCake.Core.Tests.Modularity.Fakes;
-using System;
 using System.Linq;
 using Xunit;
 

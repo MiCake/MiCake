@@ -1,8 +1,10 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
+using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Dto;
 using MiCake.Core;
+using MiCake.Core.Util.LinqFilter;
 using MiCake.DDD.Domain;
-using Microsoft.AspNetCore.Authorization;
+using MiCake.DDD.Extensions.Paging;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -15,10 +17,12 @@ namespace BaseMiCakeApplication.Controllers
     public class BookController : ControllerBase
     {
         private readonly IRepository<Book, Guid> _bookRepository;
+        private readonly IBookRepository _bookRepositoryPaging;
 
-        public BookController(IRepository<Book, Guid> repository)
+        public BookController(IRepository<Book, Guid> repository, IBookRepository bookRepositoryPaging)
         {
             _bookRepository = repository;
+            _bookRepositoryPaging = bookRepositoryPaging;
         }
 
         [HttpGet]
@@ -65,6 +69,15 @@ namespace BaseMiCakeApplication.Controllers
             _bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
 
             return true;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetBookList([FromQuery] BookFilterDto filterDto)
+        {
+            var filterGrp = filterDto.GenerateFilterGroup();
+            var books = await _bookRepositoryPaging.CommonFilterPagingQueryAsync(new PagingQueryModel(1, 10), filterGrp);
+
+            return Ok(books);
         }
     }
 }

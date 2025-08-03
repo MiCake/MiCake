@@ -5,7 +5,7 @@ using System;
 
 namespace BaseMiCakeApplication.EFCore.Repositories
 {
-    public class BookRepository : EFRepository<BaseAppDbContext, Book, Guid>, IBookRepository
+    public class BookRepository : EFRepositoryHasPaging<BaseAppDbContext, Book, Guid>, IBookRepository
     {
         public BookRepository(IServiceProvider serviceProvider) : base(serviceProvider)
         {

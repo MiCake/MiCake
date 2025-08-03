@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Core.Util.LinqFilter;
+using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions.Paging;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -18,11 +19,10 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
         }
 
-
         public async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync(PagingQueryModel queryModel, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
-            var result = await dbset.Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum).ToListAsync(cancellationToken: cancellationToken);
+            var result = await dbset.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             var count = await GetCountAsync(cancellationToken);
 
             return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
@@ -35,15 +35,51 @@ namespace MiCake.EntityFrameworkCore.Repository
             IEnumerable<TAggregateRoot> result;
             if (asc)
             {
-                result = await dbset.OrderBy(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum).ToListAsync(cancellationToken: cancellationToken);
+                result = await dbset.OrderBy(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             }
             else
             {
-                result = await dbset.OrderByDescending(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageNum).ToListAsync(cancellationToken: cancellationToken);
+                result = await dbset.OrderByDescending(orderSelector).Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             }
             var count = await GetCountAsync(cancellationToken);
 
             return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+        }
+
+        public async Task<PagingQueryResult<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingQueryModel queryModel, FilterGroup filterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken);
+            var query = dbset.AsQueryable().Filter(filterGroup).Sort(sorts);
+            var result = await query.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
+            var count = await query.CountAsync(cancellationToken);
+
+            return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+        }
+
+        public async Task<PagingQueryResult<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingQueryModel queryModel, CompositeFilterGroup compositeFilterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken);
+            var query = dbset.AsQueryable().Filter(compositeFilterGroup).Sort(sorts);
+            var result = await query.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
+            var count = await query.CountAsync(cancellationToken);
+
+            return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+        }
+
+        public async Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(FilterGroup filterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken);
+            var query = dbset.AsQueryable().Filter(filterGroup).Sort(sorts);
+
+            return await query.ToListAsync(cancellationToken);
+        }
+
+        public async Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(CompositeFilterGroup compositeFilterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken);
+            var query = dbset.AsQueryable().Filter(compositeFilterGroup).Sort(sorts);
+
+            return await query.ToListAsync(cancellationToken);
         }
     }
 }

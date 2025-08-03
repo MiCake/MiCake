@@ -9,7 +9,7 @@ namespace MiCake.DDD.Extensions.Paging
     {
         public int PageIndex { get; set; }
 
-        public int PageNum { get; set; }
+        public int PageSize { get; set; }
 
         public PagingQueryModel(int pageIndex, int pageNum)
         {
@@ -17,10 +17,10 @@ namespace MiCake.DDD.Extensions.Paging
                 throw new ArgumentException("page index and page num cannot less than zero.");
 
             PageIndex = pageIndex;
-            PageNum = pageNum;
+            PageSize = pageNum;
         }
 
-        public int CurrentStartNo => (PageIndex - 1) * PageNum;
+        public int CurrentStartNo => (PageIndex - 1) * PageSize;
 
     }
 

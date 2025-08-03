@@ -1,5 +1,7 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Core.Util.LinqFilter;
+using MiCake.DDD.Domain;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,5 +33,33 @@ namespace MiCake.DDD.Extensions.Paging
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Using <see cref="FilterGroup"/> to query data from repository.
+        /// </summary>
+        Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Using <see cref="CompositeFilterGroup"/> to query data from repository.
+        /// </summary>
+        Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Using <see cref="FilterGroup"/> to paging query data from repository.
+        /// </summary>
+        Task<PagingQueryResult<TAggregateRoot>> CommonFilterPagingQueryAsync(
+            PagingQueryModel queryModel,
+            FilterGroup filterGroup,
+            List<Sort>? sorts = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Using <see cref="CompositeFilterGroup"/> to paging query data from repository.
+        /// </summary>
+        Task<PagingQueryResult<TAggregateRoot>> CommonFilterPagingQueryAsync(
+            PagingQueryModel queryModel,
+            CompositeFilterGroup compositeFilterGroup,
+            List<Sort>? sorts = null,
+            CancellationToken cancellationToken = default);
     }
 }

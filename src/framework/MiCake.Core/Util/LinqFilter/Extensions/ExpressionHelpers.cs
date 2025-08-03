@@ -1,13 +1,18 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace MiCake.Core.Util.LinqFilter
 {
-    public static class ExpressionHelpers
+    internal static class ExpressionHelpers
     {
-        public static Expression BuildNestedPropertyExpression(ParameterExpression pe, string propertyName)
+        internal static Expression BuildNestedPropertyExpression(ParameterExpression parameter, string propertyName)
         {
-            Expression body = pe;
+            ArgumentNullException.ThrowIfNull(parameter);
+            if (string.IsNullOrWhiteSpace(propertyName))
+                throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
+
+            Expression body = parameter;
             foreach (var member in propertyName.Split('.'))
             {
                 body = FixReflectedType(Expression.PropertyOrField(body, member));
@@ -15,77 +20,72 @@ namespace MiCake.Core.Util.LinqFilter
             return body;
         }
 
-        public static Expression ConcatExpressionsWithOperator(Expression left, Expression right, FilterOperatorType expressionOperator)
+        internal static Expression ConcatExpressionsWithOperator(Expression left, Expression right, FilterOperatorType operatorType)
         {
-            switch (expressionOperator)
+            ArgumentNullException.ThrowIfNull(left);
+            ArgumentNullException.ThrowIfNull(right);
+
+            return operatorType switch
             {
-                case FilterOperatorType.Equal:
-                    return Expression.Equal(left, right);
-                case FilterOperatorType.NotEqual:
-                    return Expression.NotEqual(left, right);
-                case FilterOperatorType.LessThan:
-                    return Expression.LessThan(left, right);
-                case FilterOperatorType.GreaterThan:
-                    return Expression.GreaterThan(left, right);
-                case FilterOperatorType.LessThanOrEqual:
-                    return Expression.LessThanOrEqual(left, right);
-                case FilterOperatorType.GreaterThanOrEqual:
-                    return Expression.GreaterThanOrEqual(left, right);
-                case FilterOperatorType.In:
-                    {
-                        MethodInfo method = right.Type.GetMethod("Contains", [typeof(int)]);
-                        return Expression.Call(right, method, left);
-                    }
-                case FilterOperatorType.Contains:
-                    {
-                        MethodInfo method = typeof(string).GetMethod("Contains", [typeof(string)]);
-                        return Expression.Call(left, method, right);
-                    }
-                case FilterOperatorType.StartsWith:
-                    {
-                        MethodInfo method = typeof(string).GetMethod("StartsWith", [typeof(string)]);
-                        return Expression.Call(left, method, right);
-                    }
-                case FilterOperatorType.EndsWith:
-                    {
-                        MethodInfo method = typeof(string).GetMethod("EndsWith", [typeof(string)]);
-                        return Expression.Call(left, method, right);
-                    }
-                default:
-                    return Expression.Equal(left, right);
-            }
+                FilterOperatorType.Equal => Expression.Equal(left, right),
+                FilterOperatorType.NotEqual => Expression.NotEqual(left, right),
+                FilterOperatorType.LessThan => Expression.LessThan(left, right),
+                FilterOperatorType.GreaterThan => Expression.GreaterThan(left, right),
+                FilterOperatorType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
+                FilterOperatorType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
+                FilterOperatorType.In => CreateInExpression(left, right),
+                FilterOperatorType.Contains => CreateStringMethodExpression(left, right, "Contains"),
+                FilterOperatorType.StartsWith => CreateStringMethodExpression(left, right, "StartsWith"),
+                FilterOperatorType.EndsWith => CreateStringMethodExpression(left, right, "EndsWith"),
+                _ => Expression.Equal(left, right)
+            };
         }
 
-        public static Expression ConcatExpressionsWithOperator(Expression left, Expression right, FilterJoinType filterJoinType)
+        internal static Expression ConcatExpressionsWithOperator(Expression left, Expression right, FilterJoinType joinType)
         {
-            switch (filterJoinType)
+            ArgumentNullException.ThrowIfNull(left);
+            ArgumentNullException.ThrowIfNull(right);
+
+            return joinType switch
             {
-                case FilterJoinType.And:
-                    return Expression.And(left, right);
-                case FilterJoinType.Or:
-                    return Expression.OrElse(left, right);
-                default:
-                    return Expression.And(left, right);
-            }
+                FilterJoinType.And => Expression.AndAlso(left, right),
+                FilterJoinType.Or => Expression.OrElse(left, right),
+                _ => Expression.AndAlso(left, right)
+            };
         }
 
-        private static MemberExpression FixReflectedType(MemberExpression expr)
+        private static Expression CreateInExpression(Expression left, Expression right)
         {
-            var member = expr.Member;
+            var containsMethod = right.Type.GetMethod("Contains", [left.Type]);
+            if (containsMethod == null)
+                throw new InvalidOperationException($"Contains method not found for type {right.Type}");
+
+            return Expression.Call(right, containsMethod, left);
+        }
+
+        private static MethodCallExpression CreateStringMethodExpression(Expression left, Expression right, string methodName)
+        {
+            var method = typeof(string).GetMethod(methodName, [typeof(string)]);
+            if (method == null)
+                throw new InvalidOperationException($"{methodName} method not found for string type");
+
+            return Expression.Call(left, method, right);
+        }
+
+        private static MemberExpression FixReflectedType(MemberExpression expression)
+        {
+            var member = expression.Member;
             var declaringType = member.DeclaringType;
 
-            if (member.ReflectedType != declaringType)
-            {
-                switch (member.MemberType)
-                {
-                    case MemberTypes.Property:
-                        return Expression.Property(expr.Expression, declaringType, member.Name);
-                    case MemberTypes.Field:
-                        return Expression.Field(expr.Expression, declaringType, member.Name);
-                }
-            }
+            if (member.ReflectedType == declaringType)
+                return expression;
 
-            return expr;
+            return member.MemberType switch
+            {
+                MemberTypes.Property => Expression.Property(expression.Expression, declaringType, member.Name),
+                MemberTypes.Field => Expression.Field(expression.Expression, declaringType, member.Name),
+                _ => expression
+            };
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Metadata;
 using System;
 using System.Collections.Generic;
