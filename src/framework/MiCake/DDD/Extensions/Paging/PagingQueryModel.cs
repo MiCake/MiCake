@@ -11,13 +11,13 @@ namespace MiCake.DDD.Extensions.Paging
 
         public int PageSize { get; set; }
 
-        public PagingQueryModel(int pageIndex, int pageNum)
+        public PagingQueryModel(int pageIndex, int pageSize)
         {
-            if (pageIndex < 0 || pageNum < 0)
+            if (pageIndex < 0 || pageSize < 0)
                 throw new ArgumentException("page index and page num cannot less than zero.");
 
             PageIndex = pageIndex;
-            PageSize = pageNum;
+            PageSize = pageSize;
         }
 
         public int CurrentStartNo => (PageIndex - 1) * PageSize;
@@ -28,13 +28,8 @@ namespace MiCake.DDD.Extensions.Paging
     /// A model for paging query.(include custom data)
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class PagingQueryModel<T> : PagingQueryModel
+    public class PagingQueryModel<T>(int pageIndex, int pageSize, T data) : PagingQueryModel(pageIndex, pageSize)
     {
-        public PagingQueryModel(int pageIndex, int pageNum, T data) : base(pageIndex, pageNum)
-        {
-            Data = data;
-        }
-
-        public T Data { get; set; }
+        public T Data { get; set; } = data;
     }
 }

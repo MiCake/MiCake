@@ -9,7 +9,4 @@ public class BookFilterDto : IDynamicQueryObj
 {
     [DynamicFilter(OperatorType = FilterOperatorType.Equal)]
     public string? BookName { get; set; }
-
-    [DynamicFilter(OperatorType = FilterOperatorType.GreaterThanOrEqual)]
-    public DateTime PublishDate { get; set; }
 }

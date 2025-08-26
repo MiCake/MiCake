@@ -12,7 +12,7 @@ namespace MiCake.DDD.Domain.Internal
     {
         //Base on MediatR.Registration
         //see https://github.com/jbogard/MediatR.Extensions.Microsoft.DependencyInjection
-        public static void ResigterDomainEventHandler(this IServiceCollection services, IMiCakeModuleCollection miCakeModules)
+        public static void RegisterDomainEventHandler(this IServiceCollection services, IMiCakeModuleCollection miCakeModules)
         {
             var assemblies = miCakeModules.GetAssemblies(false).ToList();
 

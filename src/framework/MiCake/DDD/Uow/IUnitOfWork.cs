@@ -1,4 +1,3 @@
-﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,49 +5,54 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Uow
 {
     /// <summary>
-    /// Define a unit of work.
+    /// Clean Unit of Work interface for managing database transactions
     /// </summary>
     public interface IUnitOfWork : IDisposable
     {
         /// <summary>
-        /// The ID of this unit of work.
+        /// Unique identifier for this unit of work
         /// </summary>
-        Guid ID { get; }
+        Guid Id { get; }
 
         /// <summary>
-        /// Indicate unit of work is disposed.
+        /// Indicates if this unit of work is disposed
         /// </summary>
         bool IsDisposed { get; }
 
         /// <summary>
-        /// The option of unit of work.<see cref="UnitOfWorkOptions"/>
+        /// Indicates if this unit of work has been completed
         /// </summary>
-        UnitOfWorkOptions UnitOfWorkOptions { get; }
+        bool IsCompleted { get; }
 
         /// <summary>
-        /// The <see cref="IServiceScope"/> the unit of work depends on.
-        /// The services created through this ServicScope are released together with the unit of work.
+        /// Indicates if transactions have been started for this unit of work
         /// </summary>
-        IServiceScope ServiceScope { get; }
+        bool HasActiveTransactions { get; }
 
         /// <summary>
-        /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/> asynchronously. 
-        /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
+        /// Begins transactions for all registered database contexts
         /// </summary>
-        /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
-        /// <param name="cancellationToken"></param>
-        Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default);
+        Task BeginTransactionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Commits all changes made to the database in the current unit of work asynchronously.
+        /// Commits all changes to the database
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        Task SaveChangesAsync(CancellationToken cancellationToken = default);
+        Task CommitAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Discards all changes made to the database in the current unit of work asynchronously.
+        /// Rolls back all changes
         /// </summary>
         Task RollbackAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Register a DbContext wrapper with this unit of work (internal use)
+        /// </summary>
+        void RegisterDbContext(IDbContextWrapper wrapper);
+
+        /// <summary>
+        /// Marks this unit of work to skip commit operations for performance optimization.
+        /// This is useful for read-only operations or when you don't need to persist changes.
+        /// </summary>
+        Task MarkAsCompletedAsync(CancellationToken cancellationToken = default);
     }
 }

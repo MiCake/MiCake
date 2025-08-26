@@ -10,7 +10,7 @@ namespace BaseMiCakeApplication.EFCore
         {
             var builder = new DbContextOptionsBuilder<BaseAppDbContext>();
 
-            var connectionString = "Server=localhost;Database=MiCakeApp;User=root;Password=yourpassword;";
+            var connectionString = "Server=localhost;Database=MiCakeApp;User=root;Password=asd12345;";
             builder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
                              mySqlOptions => mySqlOptions.EnableRetryOnFailure());
                              

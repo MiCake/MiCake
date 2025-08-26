@@ -1,145 +1,123 @@
-﻿using MiCake.Core.Data;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow.Internal
 {
     /// <summary>
-    /// Set the DI level to scoped in order to automatically release resources on each HTTP request.
+    /// Clean implementation of Unit of Work Manager using AsyncLocal for context
     /// </summary>
-    internal class UnitOfWorkManager(IServiceProvider serviceProvider, IOptions<UnitOfWorkOptions> defaultOptions) : IUnitOfWorkManager
+    internal class UnitOfWorkManager : IUnitOfWorkManager
     {
-        /// <summary>
-        /// The ServiceProvider use to create ServiceScope for each of unit of work.
-        /// </summary>
-        private readonly IServiceProvider _serviceProvider = serviceProvider;
+        private static readonly AsyncLocal<IUnitOfWork> _current = new();
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<UnitOfWorkManager> _logger;
+        private bool _disposed = false;
 
-        /// <summary>
-        /// When no configuration item is specified, this default configuration will be used.
-        /// </summary>
-        private readonly UnitOfWorkOptions _defaultOptions = defaultOptions.Value;
+        public IUnitOfWork Current => _current.Value;
 
-        /// <summary>
-        /// Used to save existing units of work as stack structure.
-        /// </summary>
-        private readonly UnitOfWorkCallContext _callContext = new();
-        internal UnitOfWorkCallContext CallContext => _callContext;
-
-        private bool _isDisposed = false;
-
-        public virtual IUnitOfWork Create()
+        public UnitOfWorkManager(IServiceProvider serviceProvider, ILogger<UnitOfWorkManager> logger)
         {
-            return Create(_defaultOptions.Clone());
+            _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
-        public virtual IUnitOfWork Create(UnitOfWorkScope unitOfWorkScope)
+        public IUnitOfWork Begin(bool requiresNew = false)
         {
-            var options = _defaultOptions.Clone();
-            options.Scope = unitOfWorkScope;
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
-            return Create(options);
-        }
-
-        public virtual IUnitOfWork Create(UnitOfWorkOptions options)
-        {
-            IUnitOfWork resultUow;
-
-            if (NeedCreateNewUnitOfWork(options))
+            // If we already have a UOW and don't require a new one, return the current one
+            if (!requiresNew && _current.Value != null && !_current.Value.IsDisposed)
             {
-                resultUow = CreateNewUnitOfWork(options);
+                _logger.LogDebug("Returning existing UnitOfWork {UnitOfWorkId}", _current.Value.Id);
+                return _current.Value;
             }
-            else
-            {
-                //create child unit of work ,it will use the configuration of the previous unit of work
-                resultUow = new ChildUnitOfWork(_callContext.GetCurrentUow());
 
-                void handler(IUnitOfWork context)
+            // Create a new unit of work
+            var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
+            var unitOfWork = new UnitOfWork(logger);
+
+            // Set as current
+            _current.Value = unitOfWork;
+
+            _logger.LogDebug("Created new UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
+
+            // Return a wrapper that clears the current UOW when disposed
+            return new UnitOfWorkWrapper(unitOfWork, () =>
+            {
+                if (_current.Value == unitOfWork)
                 {
-                    _callContext.PopUnitOfWork();
+                    _current.Value = null;
                 }
-
-                UowDependencyParts uowNeedParts = new() { Options = options, DisposeHandler = handler };
-                (resultUow as IDependencyReceiver<UowDependencyParts>)?.AddDependency(uowNeedParts);
-            }
-            _callContext.PushUnitOfWork(resultUow);
-
-            return resultUow;
+            });
         }
 
-        public virtual IUnitOfWork GetCurrentUnitOfWork()
+        public void Dispose()
         {
-            return _callContext.GetCurrentUow();
-        }
-
-        public virtual IUnitOfWork GetUnitOfWork(Guid Id)
-        {
-            return _callContext.GetUowByID(Id);
-        }
-
-        public virtual void Dispose()
-        {
-            if (_isDisposed)
+            if (_disposed)
                 return;
 
-            _isDisposed = true;
+            _logger.LogDebug("Disposing UnitOfWorkManager");
 
-            //It's always be null?
-            var currentUow = _callContext.GetCurrentUow();
-            while (currentUow != null)
-            {
-                currentUow.Dispose();
+            // Dispose current UOW if exists
+            _current.Value?.Dispose();
+            _current.Value = null;
 
-                currentUow = _callContext.PopUnitOfWork();
-            }
+            _disposed = true;
         }
 
-        //Determine whether a new unit of work needs to be created
-        private bool NeedCreateNewUnitOfWork(UnitOfWorkOptions options)
-            => options.Scope switch
-            {
-                UnitOfWorkScope.Required => _callContext.GetCurrentUow() == null,
-                UnitOfWorkScope.RequiresNew => true,
-                UnitOfWorkScope.Suppress => true,
-                _ => throw new ArgumentException($"{options.Scope} is not supported.")
-            };
-
-        //Create a new unit of work with options. 
-        private IUnitOfWork CreateNewUnitOfWork(UnitOfWorkOptions options)
+        /// <summary>
+        /// Wrapper to handle cleanup of AsyncLocal context
+        /// </summary>
+        public class UnitOfWorkWrapper : IUnitOfWork
         {
-            IUnitOfWork result;
+            private readonly UnitOfWork _inner;
+            private readonly Action _onDispose;
 
-            //Give this scope to unit of work who will be created.
-            var uowScope = options.ServiceScope ?? _serviceProvider.CreateScope();
-            var autoDispose = options.ServiceScope == null;
-            try
+            public UnitOfWorkWrapper(UnitOfWork inner, Action onDispose)
             {
-                //Release resources and update _callContext status through Ondispose event.
-                void handler(IUnitOfWork context)
-                {
-                    _callContext.PopUnitOfWork();
-
-                    if (autoDispose)
-                        uowScope.Dispose();
-                }
-
-                result = uowScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-                UowDependencyParts uowNeedParts = new()
-                {
-                    Options = options,
-                    ServiceScope = uowScope,
-                    DisposeHandler = handler
-                };
-                (result as IDependencyReceiver<UowDependencyParts>)?.AddDependency(uowNeedParts);
-            }
-            catch (Exception)
-            {
-                uowScope.Dispose();
-                throw;
+                _inner = inner;
+                _onDispose = onDispose;
             }
 
-            return result;
+            public Guid Id => _inner.Id;
+            public bool IsDisposed => _inner.IsDisposed;
+            public bool IsCompleted => _inner.IsCompleted;
+
+            public bool HasActiveTransactions => throw new NotImplementedException();
+
+            public async Task CommitAsync(CancellationToken cancellationToken = default)
+            {
+                await _inner.CommitAsync(cancellationToken);
+            }
+
+            public async Task RollbackAsync(CancellationToken cancellationToken = default)
+            {
+                await _inner.RollbackAsync(cancellationToken);
+            }
+
+            public void RegisterDbContext(IDbContextWrapper wrapper)
+            {
+                _inner.RegisterDbContext(wrapper);
+            }
+
+            public void Dispose()
+            {
+                _inner.Dispose();
+                _onDispose?.Invoke();
+            }
+
+            public Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+            {
+                return _inner.BeginTransactionAsync(cancellationToken);
+            }
+
+            public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
+            {
+                return _inner.MarkAsCompletedAsync(cancellationToken);
+            }
         }
     }
 }

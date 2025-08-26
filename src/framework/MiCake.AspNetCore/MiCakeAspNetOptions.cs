@@ -1,5 +1,4 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
-using MiCake.DDD.Uow;
 using System.Collections.Generic;
 
 namespace MiCake.AspNetCore
@@ -38,19 +37,11 @@ namespace MiCake.AspNetCore
     public class MiCakeAspNetUowOption
     {
         /// <summary>
-        /// <see cref="UnitOfWorkOptions"/> for root <see cref="IUnitOfWork"/>
-        /// MiCake always has a Root UnitOfWork. It provider your db transaction object.
-        /// if you dont want to open transaction default,set this options or use other ways.
-        /// </summary>
-        public UnitOfWorkOptions? RootUowOptions { get; set; }
-
-        /// <summary>
         /// Match controller action name start key work to close unit of work transaction to improve performance.
-        /// default is : [Find],[Get],[Query],[Search]
-        /// 
-        /// it taks effect at <see cref="UnitOfWorkScope"/> is not Suppress 
-        /// and has no <see cref="DisableTransactionAttribute"/>
+        /// <para>
+        /// Default: [Find],[Get],[Query],[Search]
+        /// </para>
         /// </summary>
-        public List<string> KeyWordForCloseUow { get; set; } = ["Find", "Get", "Query", "Search"];
+        public List<string> KeyWordForCloseAutoCommit { get; set; } = ["Find", "Get", "Query", "Search"];
     }
 }

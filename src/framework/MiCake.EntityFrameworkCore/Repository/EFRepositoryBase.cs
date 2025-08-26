@@ -1,90 +1,159 @@
 ﻿using MiCake.DDD.Domain;
+using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Repository
 {
     /// <summary>
-    /// a base repository for EFCore
+    /// a base repository for EFCore with UoW-aware caching
     /// </summary>
     public abstract class EFRepositoryBase<TDbContext, TEntity, TKey>
-         where TEntity : class, IEntity<TKey>
-         where TDbContext : DbContext
+            where TEntity : class, IEntity<TKey>
+            where TDbContext : DbContext
     {
-        /// <summary>
-        /// Use to get need services.
-        /// </summary>
-        protected IServiceProvider ServiceProvider { get; }
-        protected IDbContextProvider<TDbContext> DbContextProvider;
+        private readonly IEFCoreContextFactory<TDbContext> _contextFactory;
+        private readonly IUnitOfWorkManager _unitOfWorkManager;
+        protected readonly ILogger Logger;
 
-        private TDbContext _currentDbContext;
-        private DbSet<TEntity> _dbSet;
+        // UoW-aware caching: cache per UoW to avoid cross-UoW contamination
+        private readonly Lock _cacheLock = new();
+        private Guid? _cachedUowId;
+        private TDbContext _cachedDbContext;
+        private DbSet<TEntity> _cachedDbSet;
+        private IQueryable<TEntity> _cachedEntities;
+        private IQueryable<TEntity> _cachedEntitiesNoTracking;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="serviceProvider"></param>
-        public EFRepositoryBase(IServiceProvider serviceProvider)
+        protected EFRepositoryBase(IServiceProvider serviceProvider)
         {
-            ServiceProvider = serviceProvider;
-
-            InitComponents();
+            _contextFactory = serviceProvider.GetRequiredService<IEFCoreContextFactory<TDbContext>>();
+            _unitOfWorkManager = serviceProvider.GetRequiredService<IUnitOfWorkManager>();
+            Logger = serviceProvider.GetRequiredService<ILogger<EFRepositoryBase<TDbContext, TEntity, TKey>>>();
         }
 
         /// <summary>
-        /// Can use this method to initialization services or other action.
-        /// <para>
-        ///     for example:can get some di services from <see cref="ServiceProvider"/>
-        /// </para>
+        /// Gets the DbContext with UoW-aware caching
         /// </summary>
-        protected virtual void InitComponents()
+        protected TDbContext DbContext => GetCachedDbContext();
+
+        /// <summary>
+        /// Gets the DbSet with UoW-aware caching
+        /// </summary>
+        protected DbSet<TEntity> DbSet => GetCachedDbSet();
+
+        /// <summary>
+        /// Gets entities with tracking
+        /// </summary>
+        protected IQueryable<TEntity> Entities => GetCachedEntities();
+
+        /// <summary>
+        /// Gets entities without tracking
+        /// </summary>
+        protected IQueryable<TEntity> EntitiesNoTracking => GetCachedEntitiesNoTracking();
+
+        /// <summary>
+        /// Async version for getting DbContext
+        /// </summary>
+        protected async Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
         {
-            DbContextProvider = ServiceProvider.GetService<IDbContextProvider<TDbContext>>() ??
-                throw new ArgumentNullException($"Cannot get {nameof(IDbContextProvider)},current repository initialization failed.");
+            return await _contextFactory.GetDbContextAsync(cancellationToken);
         }
 
-        protected virtual async Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Async version for getting DbSet
+        /// </summary>
+        protected async Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
         {
-            if (_currentDbContext == null)
+            var context = await GetDbContextAsync(cancellationToken);
+            return context.Set<TEntity>();
+        }
+
+        #region UoW-Aware Caching Implementation
+
+        private TDbContext GetCachedDbContext()
+        {
+            var currentUow = _unitOfWorkManager.Current;
+            if (currentUow == null)
             {
-                _currentDbContext = await DbContextProvider.GetDbContextAsync(cancellationToken);
+                throw new InvalidOperationException(
+                    $"Cannot access {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
+                    $"Please wrap your operation in: using var uow = unitOfWorkManager.Begin();");
             }
 
-            return _currentDbContext;
-        }
-
-        protected virtual DbSet<TEntity> DbSet
-        {
-            get
+            lock (_cacheLock)
             {
-                if (_dbSet == null)
+                // Check if we need to invalidate cache (different UoW or no cache)
+                if (_cachedUowId != currentUow.Id)
                 {
-                    // Try to get it synchronously first
-                    if (_currentDbContext != null)
+                    InvalidateCache();
+                    _cachedUowId = currentUow.Id;
+
+                    try
                     {
-                        _dbSet = _currentDbContext.Set<TEntity>();
+                        _cachedDbContext = _contextFactory.GetDbContextAsync().GetAwaiter().GetResult();
                     }
-                    else
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("No active Unit of Work"))
                     {
-                        _dbSet = GetDbSetAsync().GetAwaiter().GetResult();
+                        throw new InvalidOperationException(
+                            $"Cannot access {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
+                            $"Please wrap your operation in: using var uow = unitOfWorkManager.Begin();", ex);
                     }
                 }
-                return _dbSet;
+
+                return _cachedDbContext;
             }
         }
 
-        protected virtual async Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
+        private DbSet<TEntity> GetCachedDbSet()
         {
-            if (_dbSet == null)
+            lock (_cacheLock)
             {
-                var context = await GetDbContextAsync(cancellationToken);
-                _dbSet = context.Set<TEntity>();
+                if (_cachedDbSet == null)
+                {
+                    _cachedDbSet = GetCachedDbContext().Set<TEntity>();
+                }
+                return _cachedDbSet;
             }
-            return _dbSet;
         }
+
+        private IQueryable<TEntity> GetCachedEntities()
+        {
+            lock (_cacheLock)
+            {
+                if (_cachedEntities == null)
+                {
+                    _cachedEntities = GetCachedDbSet().AsQueryable();
+                }
+                return _cachedEntities;
+            }
+        }
+
+        private IQueryable<TEntity> GetCachedEntitiesNoTracking()
+        {
+            lock (_cacheLock)
+            {
+                if (_cachedEntitiesNoTracking == null)
+                {
+                    _cachedEntitiesNoTracking = GetCachedDbSet().AsNoTracking();
+                }
+                return _cachedEntitiesNoTracking;
+            }
+        }
+
+        private void InvalidateCache()
+        {
+            _cachedDbContext = null;
+            _cachedDbSet = null;
+            _cachedEntities = null;
+            _cachedEntitiesNoTracking = null;
+        }
+
+        #endregion
     }
 }

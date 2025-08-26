@@ -1,222 +1,297 @@
-using MiCake.Core.Data;
-using MiCake.Core.Util;
-using MiCake.Core.Util.Collections;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow.Internal
 {
-    internal class UnitOfWork : IUnitOfWork, IDependencyReceiver<UowDependencyParts>
+    /// <summary>
+    /// Clean implementation of Unit of Work that manages database transactions and contexts
+    /// </summary>
+    internal class UnitOfWork : IUnitOfWork
     {
-        public Guid ID { get; }
-        public bool IsDisposed { get; private set; }
-        public UnitOfWorkOptions UnitOfWorkOptions { get; private set; }
-        public IServiceScope ServiceScope { get; private set; }
+        #region Fields
 
-        private readonly IEnumerable<ITransactionProvider> _transactions;
-
-        protected UnitOfWorkEvents Events => UnitOfWorkOptions?.Events;
-        protected List<ITransactionObject> ErrorTransactions { get; private set; } = [];
-        protected List<ITransactionObject> CreatedTransactions { get; private set; } = [];
-        protected List<IDbExecutor> AddedExecutors { get; private set; } = [];
-        protected Action<IUnitOfWork> DisposeHandler { get; private set; }
-
-        private bool _isSaved = false;
-        private bool _isRollback = false;
-
+        private readonly List<IDbContextWrapper> _dbContexts = [];
         private readonly ILogger<UnitOfWork> _logger;
+        private readonly Lock _lock = new();
 
-        public UnitOfWork(IEnumerable<ITransactionProvider> transactions, ILoggerFactory loggerFactory)
+        private bool _disposed = false;
+        private bool _completed = false;
+        private bool _transactionsStarted = false;
+        private bool _skipCommit = false;
+
+        #endregion
+
+        #region Properties
+
+        public Guid Id { get; }
+        public bool IsDisposed => _disposed;
+        public bool IsCompleted => _completed;
+        public bool HasActiveTransactions => _transactionsStarted;
+
+        #endregion
+
+        public UnitOfWork(ILogger<UnitOfWork> logger)
         {
-            _transactions = transactions.OrderBy(s => s.Order);
+            Id = Guid.NewGuid();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
-            ID = Guid.NewGuid();
-            _logger = loggerFactory.CreateLogger<UnitOfWork>();
+        #region Public Methods
+
+        public void RegisterDbContext(IDbContextWrapper dbContextWrapper)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot register DbContext after unit of work is completed");
+            ArgumentNullException.ThrowIfNull(dbContextWrapper);
+
+            lock (_lock)
+            {
+                if (TryFindExistingWrapper(dbContextWrapper.ContextIdentifier, out _))
+                {
+                    _logger.LogDebug("DbContext with identifier {ContextIdentifier} already registered with UnitOfWork {UnitOfWorkId}, skipping duplicate registration",
+                        dbContextWrapper.ContextIdentifier, Id);
+                    return;
+                }
+
+                _dbContexts.Add(dbContextWrapper);
+                _logger.LogDebug("DbContext with identifier {ContextIdentifier} registered with UnitOfWork {UnitOfWorkId} (SkipCommit: {SkipCommit})",
+                    dbContextWrapper.ContextIdentifier, Id, _skipCommit);
+            }
+        }
+
+        public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot begin transactions after unit of work is completed");
+
+            if (_transactionsStarted)
+            {
+                _logger.LogDebug("Transactions already started for UnitOfWork {UnitOfWorkId}", Id);
+                return;
+            }
+
+            _logger.LogDebug("Beginning transactions for UnitOfWork {UnitOfWorkId} with {ContextCount} contexts", Id, _dbContexts.Count);
+
+            var exceptions = await ExecuteOnAllWrappersAsync(
+                wrapper => wrapper.BeginTransactionAsync(cancellationToken),
+                "Failed to begin transaction for DbContext {0} in UnitOfWork {1}");
+
+            if (exceptions.Count > 0)
+            {
+                await RollbackInternalAsync(cancellationToken);
+                throw new AggregateException("Failed to begin transactions", exceptions);
+            }
+
+            _transactionsStarted = true;
+            _logger.LogDebug("Successfully started transactions for UnitOfWork {UnitOfWorkId}", Id);
+        }
+
+        public async Task CommitAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Unit of work has already been completed");
+
+            if (_skipCommit)
+            {
+                _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} due to skip commit flag", Id);
+                MarkAsCompleted();
+                return;
+            }
+
+            _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ContextCount} contexts", Id, _dbContexts.Count);
+
+            var exceptions = await ExecuteCommitOperationsAsync(cancellationToken);
+
+            if (exceptions.Count > 0)
+            {
+                if (_transactionsStarted)
+                {
+                    await RollbackInternalAsync(cancellationToken);
+                }
+                throw new AggregateException("Failed to commit unit of work", exceptions);
+            }
+
+            MarkAsCompleted();
+            _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
+        }
+
+        public async Task RollbackAsync(CancellationToken cancellationToken = default)
+        {
+            if (_disposed) return;
+
+            ThrowIfCompleted("Cannot rollback a completed unit of work");
+            await RollbackInternalAsync(cancellationToken);
+        }
+
+        public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            if (_completed)
+            {
+                _logger.LogDebug("UnitOfWork {UnitOfWorkId} already completed", Id);
+                return Task.CompletedTask;
+            }
+
+            _skipCommit = true;
+            _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} to skip commit for performance optimization", Id);
+            return Task.CompletedTask;
         }
 
         public void Dispose()
         {
-            if (IsDisposed)
-                return;
+            if (_disposed) return;
 
-            IsDisposed = true;
+            _logger.LogDebug("Disposing UnitOfWork {UnitOfWorkId} (Completed: {Completed}, SkipCommit: {SkipCommit})",
+                Id, _completed, _skipCommit);
 
-            //release db executor.
-            foreach (var dbExecutor in AddedExecutors)
-            {
-                dbExecutor.Dispose();
-            }
+            HandleDisposalCleanup();
+            DisposeAllWrappers();
 
-            //release transaction.
-            foreach (var transaction in CreatedTransactions)
-            {
-                transaction.Dispose();
-            }
+            _dbContexts.Clear();
+            _disposed = true;
 
-            //pop this unit of work to stack.
-            DisposeHandler?.Invoke(this);
+            _logger.LogDebug("Disposed UnitOfWork {UnitOfWorkId}", Id);
         }
 
-        public async Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default)
+        #endregion
+
+        #region Private Helper Methods
+
+        private void ThrowIfDisposed()
         {
-            CheckValue.NotNull(dbExecutor, nameof(dbExecutor));
-
-            //added executor.Guarantee that it will eventually be released
-            if (AddedExecutors.AddIfNotContains(dbExecutor) is false)
-            {
-                //already added,just return.
-                return true;
-            }
-
-            if (!EnsureToOpenTransaction())
-                return true;
-
-            if (dbExecutor.HasTransaction)
-                return true;
-
-            bool result = false;
-            var transactionObj = await OpenTransactionAndGiveExecutorAsync(_transactions, dbExecutor, cancellationToken);
-
-            if (transactionObj != null)
-            {
-                //reused or new?
-                if (!CreatedTransactions.Any(s => s.ID == transactionObj.ID))
-                    CreatedTransactions.Add(transactionObj);
-
-                result = true;
-            }
-
-            return result;
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        protected virtual async Task<ITransactionObject> OpenTransactionAndGiveExecutorAsync(
-            IEnumerable<ITransactionProvider> transactionProviders,
-            IDbExecutor dbExecutor,
-            CancellationToken cancellationToken)
+        private void ThrowIfCompleted(string message)
         {
-            //if not any provider,reutrn false.
-            if (!transactionProviders.Any())
-                return null;
-
-            ITransactionObject exceptedTransaction = null;
-
-            foreach (var transactionProvider in transactionProviders)
-            {
-                if (!transactionProvider.CanCreate(dbExecutor))
-                    continue;
-
-                //already has transaction,can reused?
-                if (CreatedTransactions.Count > 0)
-                {
-                    var reusedTransaction = transactionProvider.Reused(CreatedTransactions, dbExecutor);
-
-                    if (reusedTransaction != null)
-                    {
-                        //reused this transaction,and back.
-                        await dbExecutor.UseTransactionAsync(reusedTransaction, cancellationToken);
-                        return reusedTransaction;
-                    }
-                }
-
-                //create new transaction.
-                exceptedTransaction = await transactionProvider.GetTransactionObjectAsync(new CreateTransactionContext(this, dbExecutor), cancellationToken);
-                if (exceptedTransaction != null)
-                {
-                    await dbExecutor.UseTransactionAsync(exceptedTransaction, cancellationToken);
-                    break;
-                }
-                //if exceptedTransaction is null,let the next provider create.
-            }
-
-            return exceptedTransaction;
+            if (_completed)
+                throw new InvalidOperationException(message);
         }
 
-        public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        private bool TryFindExistingWrapper(string contextIdentifier, out IDbContextWrapper wrapper)
         {
-            CheckSaved();
+            wrapper = _dbContexts.Find(w => w.ContextIdentifier == contextIdentifier);
+            return wrapper != null;
+        }
 
-            List<Exception> exceptions = [];
+        private void MarkAsCompleted()
+        {
+            _completed = true;
+        }
 
-            foreach (var @transaction in CreatedTransactions)
+        private async Task<List<Exception>> ExecuteOnAllWrappersAsync(
+            Func<IDbContextWrapper, Task> action,
+            string errorMessageTemplate)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var wrapper in _dbContexts)
             {
                 try
                 {
-                    await @transaction.CommitAsync(cancellationToken);
+                    await action(wrapper);
                 }
                 catch (Exception ex)
                 {
-                    ErrorTransactions.Add(@transaction);
                     exceptions.Add(ex);
-
-                    _logger.LogError(ex, "unit of work SaveChangesAsync failed.");
+                    _logger.LogError(ex, errorMessageTemplate, wrapper.ContextIdentifier, Id);
                 }
             }
 
+            return exceptions;
+        }
+
+        private async Task<List<Exception>> ExecuteCommitOperationsAsync(CancellationToken cancellationToken)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var wrapper in _dbContexts)
+            {
+                try
+                {
+                    await wrapper.SaveChangesAsync(cancellationToken);
+
+                    // Only commit transaction if we have active transactions
+                    if (_transactionsStarted && wrapper.HasActiveTransaction)
+                    {
+                        await wrapper.CommitTransactionAsync(cancellationToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    _logger.LogError(ex, "Failed to commit DbContext {ContextIdentifier} in UnitOfWork {UnitOfWorkId}",
+                        wrapper.ContextIdentifier, Id);
+                }
+            }
+
+            return exceptions;
+        }
+
+        private async Task RollbackInternalAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogDebug("Rolling back UnitOfWork {UnitOfWorkId}", Id);
+
+            var exceptions = await ExecuteOnAllWrappersAsync(
+                async wrapper =>
+                {
+                    // Only rollback if we have active transactions
+                    if (_transactionsStarted && wrapper.HasActiveTransaction)
+                    {
+                        await wrapper.RollbackTransactionAsync(cancellationToken);
+                    }
+                },
+                "Failed to rollback DbContext {0} in UnitOfWork {1}");
+
             if (exceptions.Count > 0)
-                ReThrow(exceptions);
-
-            _isSaved = true;
-
-            await Events?.Completed(this);
-        }
-
-        public virtual async Task RollbackAsync(CancellationToken cancellationToken = default)
-        {
-            CheckRollback();
-
-            //error transaction have priority.
-            foreach (var errorTransaction in ErrorTransactions)
             {
-                await errorTransaction.RollbackAsync(cancellationToken);
+                _logger.LogWarning("Some DbContexts failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
             }
 
-            foreach (var createTransaction in CreatedTransactions)
+            _transactionsStarted = false;
+        }
+
+        private void HandleDisposalCleanup()
+        {
+            // If not completed and not marked to skip commit, try to rollback
+            if (!_completed && !_skipCommit)
             {
-                if (!createTransaction.IsCommit)
-                    await createTransaction.RollbackAsync(cancellationToken);
+                try
+                {
+                    RollbackAsync().GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to rollback during disposal of UnitOfWork {UnitOfWorkId}", Id);
+                }
             }
-
-            //if rollback has error, throw exception to developer.
-
-            _isRollback = true;
-
-            await Events?.Rollbacked(this);
+            else if (_skipCommit && !_completed)
+            {
+                // Mark as completed if skip commit was set but CommitAsync wasn't called
+                MarkAsCompleted();
+                _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} as completed during disposal due to skip commit flag", Id);
+            }
         }
 
-        #region Private Method
-        private void CheckSaved()
+        private void DisposeAllWrappers()
         {
-            if (_isSaved)
-                throw new InvalidOperationException($"This unit of work has been saved!");
+            foreach (var wrapper in _dbContexts)
+            {
+                try
+                {
+                    wrapper.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to dispose DbContext wrapper in UnitOfWork {UnitOfWorkId}", Id);
+                }
+            }
         }
 
-        private void CheckRollback()
-        {
-            if (_isRollback)
-                throw new InvalidOperationException($"This unit of work has been rollback!");
-        }
-
-        private static void ReThrow(IEnumerable<Exception> exceptions)
-        {
-            if (exceptions.Any())
-                throw new AggregateException(exceptions);
-        }
-
-        //If config scope is Suppress,Transaction will not be opened
-        private bool EnsureToOpenTransaction()
-            => UnitOfWorkOptions.Scope != UnitOfWorkScope.Suppress;
         #endregion
-
-        public void AddDependency(UowDependencyParts parts)
-        {
-            UnitOfWorkOptions = parts.Options;
-            ServiceScope = parts.ServiceScope;
-            DisposeHandler = parts.DisposeHandler;
-        }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using MiCake.AspNetCore.Helper;
 using MiCake.DDD.Uow;
-using MiCake.DDD.Uow.Helper;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,35 +23,21 @@ namespace MiCake.AspNetCore.Uow
             }
 
             var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
-            UnitOfWorkOptions options = _miCakeAspNetUowOption.RootUowOptions;
-
-            if (options == null)
-            {
-                // create default uow options.
-                var currentScope = context.HttpContext.RequestServices as IServiceScope;
-                options = new UnitOfWorkOptions()
-                {
-                    Scope = UnitOfWorkScope.Required,
-                    ServiceScope = currentScope
-                };
-            }
-
-            //has disableTransactionAttribute
-            var actionMehtod = ActionDescriptorHelper.GetActionMethodInfo(context.ActionDescriptor);
-            var hasDisableAttribute = MiCakeUowHelper.IsDisableTransaction(context.Controller.GetType()) ||
-                   MiCakeUowHelper.IsDisableTransaction(actionMehtod);
 
             //has match action key word 
-            var hasMatchKeyWord = _miCakeAspNetUowOption.KeyWordForCloseUow.Any(keyWord =>
-            controllerActionDes.ActionName.ToUpper().StartsWith(keyWord.ToUpper()));
+            var noNeedCommit = _miCakeAspNetUowOption.KeyWordForCloseAutoCommit.Any(keyWord =>
+                controllerActionDes.ActionName.StartsWith(keyWord, System.StringComparison.CurrentCultureIgnoreCase));
 
-            options.Scope = hasDisableAttribute || hasMatchKeyWord ? UnitOfWorkScope.Suppress : options.Scope;
+            using var unitOfWork = _unitOfWorkManager.Begin();
+            if (noNeedCommit)
+            {
+                await unitOfWork.MarkAsCompletedAsync();
+            }
 
-            using var unitOfWork = _unitOfWorkManager.Create(options);
             var result = await next();
 
-            if (Succeed(result))
-                await unitOfWork.SaveChangesAsync();
+            if (Succeed(result) && !noNeedCommit)
+                await unitOfWork.CommitAsync();
         }
 
         private static bool Succeed(ActionExecutedContext result)

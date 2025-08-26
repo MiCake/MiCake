@@ -72,11 +72,11 @@ namespace MiCake.Modules
 
             // UOW 
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            context.Services.TryAddScoped<ICurrentUnitOfWork, CurrentUnitOfWork>();
+            services.TryAddScoped(provider => provider.GetService<IUnitOfWorkManager>().Current);
             context.Services.TryAddTransient<IUnitOfWork, UnitOfWork>();
 
             //regiter all domain event handler to services
-            services.ResigterDomainEventHandler(context.MiCakeModules);
+            services.RegisterDomainEventHandler(context.MiCakeModules);
 
             services.AddScoped<IEventDispatcher, EventDispatcher>();
 

@@ -15,11 +15,20 @@ namespace MiCake.EntityFrameworkCore
 
         public bool WillOpenTransactionForUow { get; set; } = false;
 
+        /// <summary>
+        /// Whether to use implicit mode for Unit of Work.
+        /// If the <see cref="ImplicitModeForUow"/> is false, you must open a uow before using the repository.
+        /// <para>
+        /// Default: true
+        /// </para>
+        /// </summary>
+        public bool ImplicitModeForUow { get; set; } = true;
+
         MiCakeEFCoreOptions IObjectAccessor<MiCakeEFCoreOptions>.Value => this;
 
         public MiCakeEFCoreOptions(Type dbContextType)
         {
-            DbContextType = dbContextType ?? throw new ArgumentNullException($"{nameof(MiCakeEFCoreOptions.DbContextType)} can not be null.");
+            DbContextType = dbContextType ?? throw new ArgumentNullException($"{nameof(DbContextType)} can not be null.");
         }
     }
 }

@@ -1,40 +1,22 @@
-﻿using MiCake.DDD.Uow.Internal;
 using System;
 
 namespace MiCake.DDD.Uow
 {
     /// <summary>
-    /// A <see cref="UnitOfWork"/> manager.
-    /// Responsible for creating and managing work <see cref="UnitOfWork"/>
+    /// Clean Unit of Work Manager interface
     /// </summary>
     public interface IUnitOfWorkManager : IDisposable
     {
         /// <summary>
-        /// Get units of work in the current scope.
+        /// Gets the current Unit of Work instance
         /// </summary>
-        IUnitOfWork GetCurrentUnitOfWork();
+        IUnitOfWork Current { get; }
 
         /// <summary>
-        /// Get <see cref="UnitOfWork"/> by unit of work id.
+        /// Begins a new Unit of Work
         /// </summary>
-        /// <param name="Id">the unit of work id</param>
-        IUnitOfWork GetUnitOfWork(Guid Id);
-
-        /// <summary>
-        /// Create a <see cref="IUnitOfWork"/> with a default options.
-        /// </summary>
-        IUnitOfWork Create();
-
-        /// <summary>
-        /// Create a <see cref="IUnitOfWork"/> with a unit of work scope.
-        /// </summary>
-        /// <param name="unitOfWorkScope"><see cref="UnitOfWorkScope"/></param>
-        IUnitOfWork Create(UnitOfWorkScope unitOfWorkScope);
-
-        /// <summary>
-        ///  Create a <see cref="IUnitOfWork"/> with a custom options.
-        /// </summary>
-        /// <param name="options"><see cref="UnitOfWorkOptions"/></param>
-        IUnitOfWork Create(UnitOfWorkOptions options);
+        /// <param name="requiresNew">Whether to create a new UoW even if one already exists</param>
+        /// <returns>The Unit of Work instance</returns>
+        IUnitOfWork Begin(bool requiresNew = false);
     }
 }
