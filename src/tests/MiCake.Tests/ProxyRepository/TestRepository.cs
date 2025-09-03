@@ -28,6 +28,11 @@ namespace MiCake.DDD.Tests.ProxyRepository
             return Task.CompletedTask;
         }
 
+        public Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
         public void Delete(TAggregateRoot aggregateRoot)
         => Data.Remove(aggregateRoot);
 

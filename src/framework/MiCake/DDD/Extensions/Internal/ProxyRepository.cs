@@ -25,6 +25,9 @@ namespace MiCake.DDD.Extensions.Internal
         public Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.AddAsync(aggregateRoot, cancellationToken);
 
+        public Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default)
+            => _inner.ClearChangeTrackingAsync(cancellationToken);
+
         public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.DeleteAsync(aggregateRoot, cancellationToken);
 

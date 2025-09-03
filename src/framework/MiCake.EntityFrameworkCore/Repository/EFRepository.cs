@@ -33,6 +33,12 @@ namespace MiCake.EntityFrameworkCore.Repository
             await dbset.AddAsync(aggregateRoot, cancellationToken);
         }
 
+        public async Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default)
+        {
+            var dbcontext = await GetDbContextAsync(cancellationToken);
+            dbcontext.ChangeTracker.Clear();
+        }
+
         public virtual async Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);

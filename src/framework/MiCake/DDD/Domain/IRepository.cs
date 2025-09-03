@@ -60,5 +60,12 @@ namespace MiCake.DDD.Domain
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Clear change tracking for the repository.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default);
     }
 }
