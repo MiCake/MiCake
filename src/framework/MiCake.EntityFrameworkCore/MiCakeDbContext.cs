@@ -1,13 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MiCake.EntityFrameworkCore.Extensions;
-using MiCake.EntityFrameworkCore.Internal;
 using System;
-using System.Linq;
 
 namespace MiCake.EntityFrameworkCore
 {
     /// <summary>
-    /// <inheritdoc/>
+    /// Base DbContext class with MiCake features pre-configured.
+    /// You can inherit from this class, or use the extension methods in your own DbContext.
     /// </summary>
     public class MiCakeDbContext : DbContext
     {
@@ -26,24 +25,16 @@ namespace MiCake.EntityFrameworkCore
         {
             base.OnModelCreating(modelBuilder);
             
-            // Apply simplified MiCake conventions
-            var entityTypes = modelBuilder.Model.GetEntityTypes()
-                .Select(t => t.ClrType)
-                .Where(t => t != null)
-                .ToArray();
-                
-            modelBuilder.ApplyMiCakeConventions(entityTypes);
+            // Apply MiCake conventions using extension method
+            modelBuilder.UseMiCakeConventions();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
             
-            // Add MiCake interceptors if service provider is available
-            if (CurrentScopeServices != null)
-            {
-                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(CurrentScopeServices));
-            }
+            // Add MiCake interceptors using extension method
+            optionsBuilder.UseMiCakeInterceptors(CurrentScopeServices);
         }
     }
 }
