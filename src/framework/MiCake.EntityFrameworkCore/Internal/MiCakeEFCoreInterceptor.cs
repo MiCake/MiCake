@@ -46,7 +46,10 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime?.AfterSaveChangesAsync(_efcoreEntries, cancellationToken);
+            if (_saveChangesLifetime != null && _efcoreEntries != null)
+            {
+                await _saveChangesLifetime.AfterSaveChangesAsync(_efcoreEntries, cancellationToken);
+            }
             return result;
         }
 
@@ -60,12 +63,18 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime?.BeforeSaveChangesAsync(GetChangeEntities(eventData.Context), cancellationToken);
+            if (eventData.Context != null && _saveChangesLifetime != null)
+            {
+                await _saveChangesLifetime.BeforeSaveChangesAsync(GetChangeEntities(eventData.Context), cancellationToken);
+            }
             return result;
         }
 
         private IEnumerable<EntityEntry> GetChangeEntities(DbContext dbContext)
         {
+            if (dbContext == null)
+                throw new ArgumentNullException(nameof(dbContext));
+                
             return _efcoreEntries = dbContext.ChangeTracker.Entries();   // ChangeTracker.Entries() and ChangeTracker.Entries<TEntity>() will trigger ChangeTracker.DetectChanges();
         }
     }

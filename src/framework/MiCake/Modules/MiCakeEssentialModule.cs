@@ -3,7 +3,6 @@ using MiCake.Audit;
 using MiCake.Audit.Core;
 using MiCake.Audit.Lifetime;
 using MiCake.Audit.SoftDeletion;
-using MiCake.Audit.Store;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
@@ -12,7 +11,6 @@ using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Internal;
 using MiCake.DDD.Extensions.Lifetime;
 using MiCake.DDD.Extensions.Metadata;
-using MiCake.DDD.Extensions.Store.Configure;
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,13 +21,6 @@ namespace MiCake.Modules
     public class MiCakeEssentialModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
-
-        public override Task PreConfigServices(ModuleConfigServiceContext context)
-        {
-            StoreConfig.Instance.AddModelProvider(new SoftDeletionStoreEntityConfig());
-
-            return Task.CompletedTask;
-        }
 
         public override Task ConfigServices(ModuleConfigServiceContext context)
         {

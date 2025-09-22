@@ -4,37 +4,39 @@ using System;
 namespace MiCake.Audit.Core
 {
     /// <summary>
-    /// Give entity creation time or modifaction time.
+    /// Provides creation and modification time for entities
     /// </summary>
     internal class DefaultTimeAuditProvider : IAuditProvider
     {
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
-            if (auditObjectModel.EntityState == RepositoryEntityState.Added)
+            switch (auditObjectModel.EntityState)
             {
-                SetCreationTime(auditObjectModel.AuditEntity);
-            }
-            else if (auditObjectModel.EntityState == RepositoryEntityState.Modified)
-            {
-                SetModifactionTime(auditObjectModel.AuditEntity);
+                case RepositoryEntityState.Added:
+                    SetCreationTime(auditObjectModel.AuditEntity);
+                    break;
+                    
+                case RepositoryEntityState.Modified:
+                    SetModificationTime(auditObjectModel.AuditEntity);
+                    break;
             }
         }
 
         private static void SetCreationTime(object entity)
         {
-            if (!(entity is IHasCreationTime hasCreationTimeObj))
-                return;
-
-            if (hasCreationTimeObj.CreationTime == default)
-                hasCreationTimeObj.CreationTime = DateTime.Now;
+            if (entity is IHasCreationTime hasCreationTime && 
+                hasCreationTime.CreationTime == default)
+            {
+                hasCreationTime.CreationTime = DateTime.Now;
+            }
         }
 
-        private static void SetModifactionTime(object entity)
+        private static void SetModificationTime(object entity)
         {
-            if (!(entity is IHasModificationTime hasModificationTimeObj))
-                return;
-
-            hasModificationTimeObj.ModificationTime = DateTime.Now;
+            if (entity is IHasModificationTime hasModificationTime)
+            {
+                hasModificationTime.ModificationTime = DateTime.Now;
+            }
         }
     }
 }
