@@ -1,8 +1,7 @@
-using MiCake.Audit.Core;
-using MiCake.Audit;
+using MiCake.DDD.Extensions.Store;
 using System;
 
-namespace MiCake.DDD.Extensions.Store.Conventions
+namespace MiCake.Audit.Conventions
 {
     /// <summary>
     /// Convention for audit time properties
@@ -30,7 +29,9 @@ namespace MiCake.DDD.Extensions.Store.Conventions
             if (propertyName == nameof(IHasCreationTime.CreationTime) ||
                 propertyName == nameof(IHasModificationTime.ModificationTime))
             {
-                // Let audit system handle these properties
+                // dont need to do anything, just ignore
+                // usually, these properties are handled by efcore correctly
+                
                 return;
             }
         }

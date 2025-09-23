@@ -5,7 +5,7 @@ namespace MiCake.Audit
 {
     public static class MiCakeBuilderAuditCoreExtension
     {
-        internal const string AuditForApplicationOptionsKey = "MiCake.Audit.Key";
+        public const string AuditForApplicationOptionsKey = "MiCake.Audit.Key";
 
         /// <summary>
         /// Add MiCake Audit services.

@@ -1,12 +1,12 @@
 ﻿using MiCake.Audit;
+using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Domain;
 using System;
 
 namespace BaseMiCakeApplication.Domain.Aggregates
 {
-    public class User : IHasCreationTime, IHasModificationTime
+    public class User : AggregateRoot<long>, IHasCreationTime, IHasModificationTime, ISoftDeletion
     {
-        public long Id { get; set; }
-
         public string Name { get; private set; }
 
         public string Avatar { get; private set; }
@@ -20,6 +20,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public DateTime CreationTime { get; set; }
 
         public DateTime? ModificationTime { get; set; }
+        public bool IsDeleted { get; set; }
 
         public User()
         {

@@ -1,31 +1,44 @@
 using MiCake.Audit;
+using MiCake.Audit.Conventions;
 using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions.Store.Conventions;
-using MiCake.EntityFrameworkCore;
+using MiCake.DDD.Extensions.Store;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Store
 {
-    public class ConventionIntegrationTests
+    [Collection("ConventionEngineTests")]
+    public class ConventionIntegrationTests : IDisposable
     {
+        public ConventionIntegrationTests()
+        {
+            // Setup default conventions for testing
+            var engine = new StoreConventionEngine();
+            engine.AddConvention(new SoftDeletionConvention());
+            engine.AddConvention(new AuditTimeConvention());
+            MiCakeConventionEngineProvider.SetConventionEngine(engine);
+        }
+        
+        public void Dispose()
+        {
+            // Clean up after tests
+            ModelBuilderExtensions.ClearConventionCache();
+            MiCakeConventionEngineProvider.Clear();
+        }
+
         [Fact]
         public void MiCakeDbContext_WithConventions_ShouldApplyCorrectly()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<IntegrationTestDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
             // Act & Assert
-            using var context = new IntegrationTestDbContext(options, serviceProvider);
+            using var context = new IntegrationTestDbContext(options);
             context.Database.EnsureCreated();
             
             // The context should be created without errors
@@ -39,14 +52,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
         public void SoftDeletionConvention_ShouldFilterDeletedEntities()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<IntegrationTestDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
-            using var context = new IntegrationTestDbContext(options, serviceProvider);
+            using var context = new IntegrationTestDbContext(options);
             context.Database.EnsureCreated();
             
             // Add test data
@@ -68,15 +78,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
         public void ModelBuilderExtensions_ShouldApplyBuiltInConventions()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<IntegrationTestDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
             // Act
-            using var context = new IntegrationTestDbContext(options, serviceProvider);
+            using var context = new IntegrationTestDbContext(options);
             var model = context.Model;
             
             // Assert
@@ -115,15 +122,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
         public void MiCakeDbContext_AppliesConventionsInOrder()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<IntegrationTestDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
             // Act
-            using var context = new IntegrationTestDbContext(options, serviceProvider);
+            using var context = new IntegrationTestDbContext(options);
             
             // Assert - Context should initialize successfully with all conventions
             Assert.NotNull(context.Model);
@@ -137,14 +141,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
         public void AddMiCakeModel_ConfiguresEntitiesCorrectly()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<IntegrationTestDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
-            using var context = new IntegrationTestDbContext(options, serviceProvider);
+            using var context = new IntegrationTestDbContext(options);
             var model = context.Model;
             
             // Act & Assert
@@ -160,7 +161,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
     // Test DbContext for integration testing
     public class IntegrationTestDbContext : MiCakeDbContext
     {
-        public IntegrationTestDbContext(DbContextOptions options, IServiceProvider serviceProvider) : base(options, serviceProvider) { }
+        public IntegrationTestDbContext(DbContextOptions options) : base(options) { }
         
         public DbSet<IntegrationSoftDeletableEntity> SoftDeletableEntities { get; set; }
         public DbSet<IntegrationAuditableEntity> AuditableEntities { get; set; }

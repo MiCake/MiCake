@@ -7,7 +7,7 @@ namespace BaseMiCakeApplication.EFCore
 {
     public class BaseAppDbContext : MiCakeDbContext
     {
-        public BaseAppDbContext(DbContextOptions options, IServiceProvider serviceProvider) : base(options, serviceProvider)
+        public BaseAppDbContext(DbContextOptions options) : base(options)
         {
         }
 

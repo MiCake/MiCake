@@ -2,7 +2,6 @@ using MiCake.Audit;
 using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions.Store;
-using MiCake.DDD.Extensions.Store.Conventions;
 using System;
 using System.Linq.Expressions;
 using Xunit;

@@ -1,8 +1,9 @@
 using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Extensions.Store;
 using System;
 using System.Linq.Expressions;
 
-namespace MiCake.DDD.Extensions.Store.Conventions
+namespace MiCake.Audit.Conventions
 {
     /// <summary>
     /// Convention for soft deletion behavior

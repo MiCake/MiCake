@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,28 +12,26 @@ namespace MiCake.EntityFrameworkCore.Internal
 {
     /// <summary>
     /// This interceptor is designed to execute the <see cref="IRepositoryLifetime"/> events.
-    /// Optimized for performance with large datasets.
+    /// Optimized for performance with large datasets and uses singleton IEFSaveChangesLifetime
+    /// which handles scoped service resolution internally.
     /// </summary>
     internal class MiCakeEFCoreInterceptor : ISaveChangesInterceptor
     {
-        private readonly IEFSaveChangesLifetime? _saveChangesLifetime;
+        private readonly IEFSaveChangesLifetime _saveChangesLifetime;
 
         // Cache for changed entities to avoid repeated scanning
         private IReadOnlyList<EntityEntry> _changedEntries = [];
 
-        public MiCakeEFCoreInterceptor(IEFSaveChangesLifetime? saveChangesLifetime = null)
+        /// <summary>
+        /// Constructor that takes IEFSaveChangesLifetime service.
+        /// The service is now registered as Singleton with lazy scoped service resolution.
+        /// </summary>
+        /// <param name="saveChangesLifetime">The save changes lifetime service</param>
+        public MiCakeEFCoreInterceptor(IEFSaveChangesLifetime saveChangesLifetime)
         {
-            _saveChangesLifetime = saveChangesLifetime;
+            _saveChangesLifetime = saveChangesLifetime ?? throw new ArgumentNullException(nameof(saveChangesLifetime));
         }
-
-        // 为了向后兼容，保留原来的构造函数
-        public MiCakeEFCoreInterceptor(IServiceProvider services)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-            _saveChangesLifetime = services.GetService<IEFSaveChangesLifetime>();
-        }
-
+        
         public void SaveChangesFailed(DbContextErrorEventData eventData)
         {
             // Clear cache on failure

@@ -21,6 +21,30 @@ namespace MiCake.DDD.Extensions.Store
             _conventions.Sort((x, y) => x.Priority.CompareTo(y.Priority));
         }
         
+        /// <summary>
+        /// Get all registered entity conventions
+        /// </summary>
+        public IEnumerable<IEntityConvention> GetEntityConventions()
+        {
+            return _conventions.OfType<IEntityConvention>();
+        }
+        
+        /// <summary>
+        /// Get all registered property conventions
+        /// </summary>
+        public IEnumerable<IPropertyConvention> GetPropertyConventions()
+        {
+            return _conventions.OfType<IPropertyConvention>();
+        }
+        
+        /// <summary>
+        /// Check if any convention can apply to the given entity type
+        /// </summary>
+        public bool CanApplyToEntityType(Type entityType)
+        {
+            return _conventions.Any(c => c.CanApply(entityType));
+        }
+        
         public EntityConventionContext ApplyEntityConventions(Type entityType)
         {
             if (entityType == null)

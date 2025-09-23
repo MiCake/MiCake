@@ -1,31 +1,47 @@
 using MiCake.Audit;
+using MiCake.Audit.Conventions;
 using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions.Store.Conventions;
-using MiCake.EntityFrameworkCore;
+using MiCake.DDD.Extensions.Store;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Extensions
 {
-    public class EFCoreModelBuilderConventionTests
+    [CollectionDefinition("ConventionEngineTests", DisableParallelization = true)]
+    public class ConventionEngineTestCollection { }
+
+    [Collection("ConventionEngineTests")]
+    public class EFCoreModelBuilderConventionTests : IDisposable
     {
+        public EFCoreModelBuilderConventionTests()
+        {
+            // Initialize the convention engine with default conventions for testing
+            var conventionEngine = new StoreConventionEngine();
+            conventionEngine.AddConvention(new SoftDeletionConvention());
+            conventionEngine.AddConvention(new AuditTimeConvention());
+            
+            MiCakeConventionEngineProvider.SetConventionEngine(conventionEngine);
+        }
+
+        public void Dispose()
+        {
+            // Clean up the convention engine after tests
+            MiCakeConventionEngineProvider.Clear();
+        }
+
         [Fact]
         public void AddMiCakeModelSimplified_ShouldApplyBuiltInConventions()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<TestConventionDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
             // Act
-            using var context = new TestConventionDbContext(options, serviceProvider);
+            using var context = new TestConventionDbContext(options);
             var model = context.Model;
             
             // Assert
@@ -57,15 +73,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
         public void MiCakeDbContext_ShouldUseSimplifiedConventions()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<TestConventionDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
             // Act
-            using var context = new TestConventionDbContext(options, serviceProvider);
+            using var context = new TestConventionDbContext(options);
             context.Database.EnsureCreated();
             
             // Add test data to verify soft deletion
@@ -85,15 +98,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
         public void PropertyConventions_ShouldBeApplied()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<TestConventionDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
                 
             // Act
-            using var context = new TestConventionDbContext(options, serviceProvider);
+            using var context = new TestConventionDbContext(options);
             var model = context.Model;
             
             // Assert
@@ -109,7 +119,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
     // Test DbContext for convention testing
     public class TestConventionDbContext : MiCakeDbContext
     {
-        public TestConventionDbContext(DbContextOptions options, IServiceProvider serviceProvider) : base(options, serviceProvider) { }
+        public TestConventionDbContext(DbContextOptions options) : base(options) { }
         
         public DbSet<TestSoftDeletableDbEntity> SoftDeletableEntities { get; set; }
         public DbSet<TestAuditableDbEntity> AuditableEntities { get; set; }
@@ -117,8 +127,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Use the new simplified convention system
-            modelBuilder.AddMiCakeModelSimplified();
             base.OnModelCreating(modelBuilder);
         }
     }

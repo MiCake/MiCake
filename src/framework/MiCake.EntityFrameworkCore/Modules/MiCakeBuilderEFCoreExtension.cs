@@ -1,6 +1,11 @@
-﻿using MiCake.Core;
+﻿using MiCake.Audit;
+using MiCake.Audit.Conventions;
+using MiCake.Core;
 using MiCake.Core.DependencyInjection;
+using MiCake.DDD.Extensions.Store;
+using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Modules;
+using MiCake.EntityFrameworkCore.Options;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +16,7 @@ namespace MiCake.EntityFrameworkCore
     public static class MiCakeBuilderEFCoreExtension
     {
         /// <summary>
-        /// Add MiCake EFCore services.
+        /// Add MiCake EFCore services with default conventions.
         /// </summary>
         /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
@@ -19,23 +24,90 @@ namespace MiCake.EntityFrameworkCore
         public static IMiCakeBuilder UseEFCore<TDbContext>(this IMiCakeBuilder builder)
             where TDbContext : DbContext
         {
-            UseEFCore<TDbContext>(builder, null);
-            return builder;
+            return UseEFCore<TDbContext>(builder, null, null);
         }
 
         /// <summary>
-        /// Add MiCake EFCore services.
+        /// Add MiCake EFCore services with configurable conventions.
         /// </summary>
         /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        /// <param name="conventionBuilder">Optional configuration for EF Core conventions</param>
+        /// <returns><see cref="IMiCakeBuilder"/></returns>
+        public static IMiCakeBuilder UseEFCore<TDbContext>(
+            this IMiCakeBuilder builder,
+            Action<MiCakeEFCoreConventionOptions> conventionBuilder)
+            where TDbContext : DbContext
+        {
+            return UseEFCore<TDbContext>(builder, conventionBuilder, null);
+        }
+
+        /// <summary>
+        /// Add MiCake EFCore services with configurable conventions and options.
+        /// </summary>
+        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
+        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        /// <param name="conventionBuilder">Optional configuration for EF Core conventions</param>
         /// <param name="optionsBuilder">The config for MiCake EFCore extension</param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseEFCore<TDbContext>(
             this IMiCakeBuilder builder,
+            Action<MiCakeEFCoreConventionOptions> conventionBuilder,
             Action<MiCakeEFCoreOptions> optionsBuilder)
             where TDbContext : DbContext
         {
-            return UseEFCore(builder, typeof(TDbContext), optionsBuilder);
+            return UseEFCore(builder, typeof(TDbContext), conventionBuilder, optionsBuilder);
+        }
+
+        /// <summary>
+        /// Enable Entity Framework Core integration without any conventions
+        /// </summary>
+        /// <typeparam name="TDbContext">The DbContext type to configure</typeparam>
+        /// <param name="builder">The MiCake builder instance</param>
+        /// <param name="optionsBuilder">Optional configuration for MiCake EF Core options</param>
+        /// <returns>The MiCake builder for method chaining</returns>
+        public static IMiCakeBuilder UseEFCoreWithoutConventions<TDbContext>(
+            this IMiCakeBuilder builder,
+            Action<MiCakeEFCoreOptions> optionsBuilder = null)
+            where TDbContext : DbContext
+        {
+            return UseEFCore<TDbContext>(builder, conventions => conventions.ClearConventions(), optionsBuilder);
+        }
+
+        /// <summary>
+        /// Enable Entity Framework Core integration with only specific conventions
+        /// </summary>
+        /// <typeparam name="TDbContext">The DbContext type to configure</typeparam>
+        /// <param name="builder">The MiCake builder instance</param>
+        /// <param name="conventionBuilder">Configuration for specific conventions</param>
+        /// <param name="optionsBuilder">Optional configuration for MiCake EF Core options</param>
+        /// <returns>The MiCake builder for method chaining</returns>
+        public static IMiCakeBuilder UseEFCoreWithConventions<TDbContext>(
+            this IMiCakeBuilder builder,
+            Action<MiCakeEFCoreConventionOptions> conventionBuilder,
+            Action<MiCakeEFCoreOptions> optionsBuilder = null)
+            where TDbContext : DbContext
+        {
+            return UseEFCore<TDbContext>(builder, conventions =>
+            {
+                conventions.ClearConventions(); // Start with clean slate
+                conventionBuilder?.Invoke(conventions);
+            }, optionsBuilder);
+        }
+
+        /// <summary>
+        /// Add MiCake EFCore services (backward compatibility).
+        /// </summary>
+        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
+        /// <param name="miCakeDbContextType"><see cref="MiCakeDbContext"/></param>
+        /// <param name="optionsBuilder">The config for MiCake EFCore extension</param>
+        /// <returns><see cref="IMiCakeBuilder"/></returns>
+        public static IMiCakeBuilder UseEFCore(
+            this IMiCakeBuilder builder,
+            Type miCakeDbContextType,
+            Action<MiCakeEFCoreOptions> optionsBuilder)
+        {
+            return UseEFCore(builder, miCakeDbContextType, null, optionsBuilder);
         }
 
         /// <summary>
@@ -43,15 +115,17 @@ namespace MiCake.EntityFrameworkCore
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="miCakeDbContextType"><see cref="MiCakeDbContext"/></param>
-        /// <param name="optionsBulder">The config for MiCake EFCore extension</param>
+        /// <param name="conventionBuilder">Optional configuration for EF Core conventions</param>
+        /// <param name="optionsBuilder">The config for MiCake EFCore extension</param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseEFCore(
             this IMiCakeBuilder builder,
             Type miCakeDbContextType,
-            Action<MiCakeEFCoreOptions> optionsBulder)
+            Action<MiCakeEFCoreConventionOptions> conventionBuilder,
+            Action<MiCakeEFCoreOptions> optionsBuilder)
         {
             MiCakeEFCoreOptions options = new(miCakeDbContextType);
-            optionsBulder?.Invoke(options);
+            optionsBuilder?.Invoke(options);
 
             builder.ConfigureApplication((app, services) =>
             {
@@ -62,9 +136,79 @@ namespace MiCake.EntityFrameworkCore
 
                 //add efcore uow services.
                 services.AddUowCoreServices(miCakeDbContextType);
+
+                // Configure conventions
+                ConfigureConventions(conventionBuilder, app);
+
+                // Configure the MiCake interceptor factory using proper DI patterns
+                ConfigureInterceptorFactory(services, app);
             });
 
             return builder;
+        }
+
+        private static void ConfigureConventions(Action<MiCakeEFCoreConventionOptions> conventionBuilder, IMiCakeApplication app)
+        {
+            var conventionOptions = new MiCakeEFCoreConventionOptions();
+
+            // Add default conventions if no custom configuration provided
+            if (conventionBuilder == null)
+            {
+                AddDefaultConventionsCore(conventionOptions, app);
+            }
+            else
+            {
+                conventionBuilder(conventionOptions);
+            }
+
+            // Create and configure the convention engine
+            var engine = CreateConventionEngine(conventionOptions);
+            MiCakeConventionEngineProvider.SetConventionEngine(engine);
+        }
+
+        public static MiCakeEFCoreConventionOptions AddDefaultConventions(this MiCakeEFCoreConventionOptions conventionOptions, IMiCakeApplication app)
+        {
+            AddDefaultConventionsCore(conventionOptions, app);
+            return conventionOptions;
+        }
+
+        private static void AddDefaultConventionsCore(MiCakeEFCoreConventionOptions conventionOptions, IMiCakeApplication app)
+        {
+            var auditOps = (MiCakeAuditOptions)app.ApplicationOptions.ExtraDataStash.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
+
+            if (auditOps == null || !auditOps.UseAudit)
+                return;
+
+            conventionOptions.AddConvention(new AuditTimeConvention());
+
+            if (auditOps.UseSoftDeletion)
+                conventionOptions.AddConvention(new SoftDeletionConvention());
+        }
+
+        private static StoreConventionEngine CreateConventionEngine(MiCakeEFCoreConventionOptions conventionOptions)
+        {
+            var engine = new StoreConventionEngine();
+
+            // Register all configured conventions
+            foreach (var convention in conventionOptions.Conventions)
+            {
+                engine.AddConvention(convention);
+            }
+
+            return engine;
+        }
+
+        /// <summary>
+        /// Configure the MiCake interceptor factory with proper dependency injection pattern.
+        /// This approach avoids memory leaks by using proper service registration instead of creating ServiceProvider instances.
+        /// </summary>
+        /// <param name="services">The service collection</param>
+        /// <param name="app">The MiCake application instance</param>
+        private static void ConfigureInterceptorFactory(IServiceCollection services, IMiCakeApplication app)
+        {
+            // Register the interceptor factory as a singleton service
+            // The factory will use the DI container properly without creating additional ServiceProviders
+            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
         }
     }
 }

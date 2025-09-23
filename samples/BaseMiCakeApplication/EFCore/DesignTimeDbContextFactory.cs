@@ -1,5 +1,4 @@
-﻿using MiCake.Core.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace BaseMiCakeApplication.EFCore
@@ -14,7 +13,7 @@ namespace BaseMiCakeApplication.EFCore
             builder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
                              mySqlOptions => mySqlOptions.EnableRetryOnFailure());
                              
-            return new BaseAppDbContext(builder.Options, ServiceLocator.Instance.Locator);
+            return new BaseAppDbContext(builder.Options);
         }
 
         // use [dotnet ef migrations add <MigrationName>] to create migration

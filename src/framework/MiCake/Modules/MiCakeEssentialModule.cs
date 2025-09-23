@@ -34,18 +34,18 @@ namespace MiCake.Modules
                 //Audit CreationTime and ModifationTime
                 services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
                 //RepositoryLifeTime
-                services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
+                services.AddScoped<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 
                 if (auditOptions?.UseSoftDeletion == true)
                 {
                     //Audit Deletion Time
                     services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
                     //RepositoryLifeTime
-                    services.AddTransient<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
+                    services.AddScoped<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
                 }
             }
 
-            services.AddTransient<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
+            services.AddSingleton<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
             services.AddSingleton<DomainObjectFactory>();
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
             services.AddSingleton(factory =>
@@ -59,7 +59,7 @@ namespace MiCake.Modules
             services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
 
             //LifeTime
-            services.AddTransient<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+            services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
 
             // UOW 
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();

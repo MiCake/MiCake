@@ -35,6 +35,28 @@ namespace MiCake.Core.Util.Collections
         }
 
         /// <summary>
+        /// Adds an item to the collection if it's not already in the collection based on the given <paramref name="predicate"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="item"></param>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public static bool AddIfNotContains<T>(this ICollection<T> source, T item, Func<T, bool> predicate)
+        {
+            CheckValue.NotNull(source, nameof(source));
+            CheckValue.NotNull(predicate, nameof(predicate));
+
+            if (source.Any(predicate))
+            {
+                return false;
+            }
+
+            source.Add(item);
+            return true;
+        }
+
+        /// <summary>
         /// Adds items to the collection which are not already in the collection.
         /// </summary>
         /// <param name="source">The collection</param>
