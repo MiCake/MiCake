@@ -34,7 +34,7 @@ namespace MiCake.EntityFrameworkCore
                 modelBuilder.ApplyMiCakeConventions(domainEntityTypes);
             }
 
-            // EFCore will cache the all model configurations, we can clear our interal cache safely.
+            // EFCore will cache the all model configurations, we can clear our internal cache safely.
             ModelBuilderExtensions.ClearConventionCache();
             ClearDomainEntityTypeCache();
         }
