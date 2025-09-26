@@ -1,6 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -48,9 +49,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         public virtual async Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
-            var item = await dbset.FindAsync(new object[] { ID }, cancellationToken);
-            if (item != null)
-                dbset.Remove(item);
+            await dbset.Where(e => e.Id.Equals(ID)).ExecuteDeleteAsync(cancellationToken);
         }
 
         public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

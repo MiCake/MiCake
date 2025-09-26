@@ -4,11 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Repository\**" />
     <Compile Remove="Uow\**" />
-    <EmbeddedResource Remove="Repository\**" />
     <EmbeddedResource Remove="Uow\**" />
-    <None Remove="Repository\**" />
     <None Remove="Uow\**" />
   </ItemGroup>
 

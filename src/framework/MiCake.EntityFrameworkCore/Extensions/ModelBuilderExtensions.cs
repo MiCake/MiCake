@@ -3,6 +3,7 @@ using MiCake.DDD.Extensions.Store;
 using MiCake.Core.Util;
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -15,34 +16,34 @@ namespace MiCake.EntityFrameworkCore
         private const int ConventionEnginesCacheSize = 50;
         private const int EntityContextsCacheSize = 2000;
         private const int PropertyContextsCacheSize = 5000;
-        
+
         // Bounded caches to prevent unbounded memory growth in long-running applications
         private static readonly BoundedLruCache<string, StoreConventionEngine> _conventionEngines = new(maxSize: ConventionEnginesCacheSize);
         private static readonly BoundedLruCache<(string engineKey, Type entityType), EntityConventionContext> _entityContexts = new(maxSize: EntityContextsCacheSize);
         private static readonly BoundedLruCache<(string engineKey, Type entityType, string propertyName), PropertyConventionContext> _propertyContexts = new(maxSize: PropertyContextsCacheSize);
-        
+
         public static StoreConventionEngine GetOrCreateConventionEngine(string engineKey, Func<StoreConventionEngine> factory)
         {
             return _conventionEngines.GetOrAdd(engineKey, _ => factory());
         }
-        
+
         public static EntityConventionContext GetOrCreateEntityContext(string engineKey, Type entityType, Func<EntityConventionContext> factory)
         {
             return _entityContexts.GetOrAdd((engineKey, entityType), _ => factory());
         }
-        
+
         public static PropertyConventionContext GetOrCreatePropertyContext(string engineKey, Type entityType, string propertyName, Func<PropertyConventionContext> factory)
         {
             return _propertyContexts.GetOrAdd((engineKey, entityType, propertyName), _ => factory());
         }
-        
+
         public static void Clear()
         {
             _conventionEngines.Clear();
             _entityContexts.Clear();
             _propertyContexts.Clear();
         }
-        
+
         // Internal method for testing only - do not use in production
         internal static void ClearForTesting()
         {
@@ -56,17 +57,17 @@ namespace MiCake.EntityFrameworkCore
     internal static class MiCakeConventionEngineProvider
     {
         private static StoreConventionEngine _conventionEngine;
-        
+
         internal static void SetConventionEngine(StoreConventionEngine engine)
         {
             _conventionEngine = engine;
         }
-        
+
         internal static StoreConventionEngine GetConventionEngine()
         {
             return _conventionEngine;
         }
-        
+
         internal static void Clear()
         {
             _conventionEngine = null;
@@ -90,14 +91,14 @@ namespace MiCake.EntityFrameworkCore
                 // No conventions configured, skip processing
                 return;
             }
-            
+
             ApplyConventionsInternal(modelBuilder, entityTypes, engine);
         }
-        
+
         private static void ApplyConventionsInternal(ModelBuilder modelBuilder, Type[] entityTypes, StoreConventionEngine engine)
         {
             var engineKey = engine.GetHashCode().ToString();
-            
+
             foreach (var entityType in entityTypes)
             {
                 try
@@ -105,8 +106,9 @@ namespace MiCake.EntityFrameworkCore
                     // First check if any convention can apply to this entity type using CanApply
                     if (!CanAnyConventionApply(engine, entityType))
                         continue;
-                        
-                    ApplyEntityConventions(modelBuilder, entityType, engine, engineKey);
+
+                    ApplyEntityLevelConventions(modelBuilder, entityType, engine, engineKey);
+                    ApplyPropertyLevelConventions(modelBuilder, entityType, engine, engineKey);
                 }
                 catch (InvalidOperationException ex) when (ex.Message.Contains("cannot be configured as an entity"))
                 {
@@ -122,67 +124,39 @@ namespace MiCake.EntityFrameworkCore
                 }
             }
         }
-        
+
         private static bool CanAnyConventionApply(StoreConventionEngine engine, Type entityType)
         {
             // Use the engine's built-in method to check if any convention can apply
             return engine.CanApplyToEntityType(entityType);
         }
-        
-        private static void ApplyEntityConventions(ModelBuilder modelBuilder, Type entityType, StoreConventionEngine engine, string engineKey)
+
+        private static void ApplyEntityLevelConventions(
+            ModelBuilder modelBuilder,
+            Type entityType,
+            StoreConventionEngine engine,
+            string engineKey)
         {
-            // Check if entity exists in the model after user configuration
-            var existingEntityType = modelBuilder.Model.FindEntityType(entityType);
-            if (existingEntityType == null)
+            try
             {
-                // Entity was not configured by user, we can try to add it
-                try
+                // Get cached entity context
+                var entityContext = EntityConventionCache.GetOrCreateEntityContext(engineKey, entityType,
+                    () => engine.ApplyEntityConventions(entityType));
+
+                var shouldResolveEntity = entityContext.NeedApplyEntityConvention;
+                if (!shouldResolveEntity)
+                    return;
+
+                // Check if entity exists in the model after user configuration
+                var existingEntityType = modelBuilder.Model.FindEntityType(entityType);
+                var isOwnedEntity = existingEntityType?.IsOwned() == true;
+                if (isOwnedEntity)
                 {
-                    modelBuilder.Entity(entityType);
-                    existingEntityType = modelBuilder.Model.FindEntityType(entityType);
-                }
-                catch (InvalidOperationException)
-                {
-                    // Cannot add entity (probably abstract or interface), skip
+                    // Skip owned entities for entity-level conventions
                     return;
                 }
-            }
-            
-            var isOwnedEntity = existingEntityType?.IsOwned() == true;
-            
-            // Get cached entity context
-            var entityContext = EntityConventionCache.GetOrCreateEntityContext(engineKey, entityType, 
-                () => engine.ApplyEntityConventions(entityType));
-            
-            Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder entityBuilder;
-            
-            try
-            {
-                entityBuilder = modelBuilder.Entity(entityType);
-            }
-            catch (InvalidOperationException)
-            {
-                // Cannot get entity builder (probably owned type), skip
-                System.Diagnostics.Debug.WriteLine($"Cannot get entity builder for {entityType.Name}, skipping conventions");
-                return;
-            }
-            
-            // Apply entity-level conventions (only for non-owned entities)
-            if (!isOwnedEntity)
-            {
-                ApplyEntityLevelConventions(entityBuilder, entityContext);
-            }
-            
-            // Apply property-level conventions for both owned and regular entities
-            ApplyPropertyLevelConventions(entityBuilder, entityType, engine, engineKey, isOwnedEntity);
-        }
-        
-        private static void ApplyEntityLevelConventions(
-            Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder entityBuilder, 
-            EntityConventionContext entityContext)
-        {
-            try
-            {
+                
+                EntityTypeBuilder? entityBuilder = modelBuilder.Entity(entityType);
                 // Apply soft deletion query filter
                 if (entityContext.EnableSoftDeletion && entityContext.QueryFilter != null)
                 {
@@ -192,7 +166,7 @@ namespace MiCake.EntityFrameworkCore
                         entityBuilder.HasQueryFilter(entityContext.QueryFilter);
                     }
                 }
-                
+
                 // Apply ignored properties at entity level
                 foreach (var ignoredProperty in entityContext.IgnoredProperties)
                 {
@@ -208,16 +182,15 @@ namespace MiCake.EntityFrameworkCore
                 System.Diagnostics.Debug.WriteLine($"Failed to apply entity-level conventions: {ex.Message}");
             }
         }
-        
+
         private static void ApplyPropertyLevelConventions(
-            Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder entityBuilder, 
-            Type entityType, 
+            ModelBuilder modelBuilder,
+            Type entityType,
             StoreConventionEngine engine,
-            string engineKey,
-            bool isOwnedEntity)
+            string engineKey)
         {
             var properties = entityType.GetProperties();
-            
+
             foreach (var property in properties)
             {
                 try
@@ -225,12 +198,17 @@ namespace MiCake.EntityFrameworkCore
                     // Get cached property context
                     var propertyContext = EntityConventionCache.GetOrCreatePropertyContext(
                         engineKey,
-                        entityType, 
+                        entityType,
                         property.Name,
                         () => engine.ApplyPropertyConventions(entityType, property));
-                    
+
+                    if (!propertyContext.NeedApplyPropertyConvention)
+                        continue;
+
+                    var entityBuilder = modelBuilder.Entity(entityType);
+
                     // Skip ignored properties for owned entities (they might be navigation properties)
-                    if (propertyContext.IsIgnored && !isOwnedEntity)
+                    if (propertyContext.IsIgnored)
                     {
                         var existingProperty = entityBuilder.Metadata.FindProperty(property.Name);
                         if (existingProperty == null && !IsNavigationProperty(entityBuilder.Metadata, property.Name))
@@ -238,9 +216,17 @@ namespace MiCake.EntityFrameworkCore
                             entityBuilder.Ignore(property.Name);
                         }
                     }
-                    
-                    // Apply property configurations
-                    ApplyPropertyConfiguration(entityBuilder, property.Name, propertyContext);
+
+                    // Apply default value if property exists and doesn't have a default value set
+                    if (propertyContext.HasDefaultValue)
+                    {
+                        var existingProperty = entityBuilder.Metadata.FindProperty(property.Name);
+                        var currentDefaultValue = existingProperty?.GetDefaultValue();
+                        if (currentDefaultValue == null)
+                        {
+                            entityBuilder.Property(property.Name).HasDefaultValue(propertyContext.DefaultValue);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -249,31 +235,13 @@ namespace MiCake.EntityFrameworkCore
                 }
             }
         }
-        
-        private static void ApplyPropertyConfiguration(
-            Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder entityBuilder,
-            string propertyName,
-            PropertyConventionContext propertyContext)
-        {
-            var existingProperty = entityBuilder.Metadata.FindProperty(propertyName);
-            
-            // Apply default value if property exists and doesn't have a default value set
-            if (propertyContext.HasDefaultValue && existingProperty != null)
-            {
-                var currentDefaultValue = existingProperty.GetDefaultValue();
-                if (currentDefaultValue == null)
-                {
-                    entityBuilder.Property(propertyName).HasDefaultValue(propertyContext.DefaultValue);
-                }
-            }
-        }
-        
+
         private static bool IsNavigationProperty(Microsoft.EntityFrameworkCore.Metadata.IMutableEntityType entityType, string propertyName)
         {
             return entityType.GetNavigations().Any(n => n.Name == propertyName) ||
                    entityType.GetSkipNavigations().Any(n => n.Name == propertyName);
         }
-        
+
         /// <summary>
         /// Clear all cached convention data (useful for testing)
         /// </summary>

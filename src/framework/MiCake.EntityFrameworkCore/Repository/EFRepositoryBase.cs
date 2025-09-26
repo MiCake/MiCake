@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Domain;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.DDD.Domain;
 using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ namespace MiCake.EntityFrameworkCore.Repository
     {
         private readonly IEFCoreContextFactory<TDbContext> _contextFactory;
         private readonly IUnitOfWorkManager _unitOfWorkManager;
+        private readonly MiCakeEFCoreOptions _efCoreOptions;
         protected readonly ILogger Logger;
 
         // UoW-aware caching: cache per UoW to avoid cross-UoW contamination
@@ -34,6 +36,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             _contextFactory = serviceProvider.GetRequiredService<IEFCoreContextFactory<TDbContext>>();
             _unitOfWorkManager = serviceProvider.GetRequiredService<IUnitOfWorkManager>();
+            _efCoreOptions = serviceProvider.GetRequiredService<IObjectAccessor<MiCakeEFCoreOptions>>().Value;
             Logger = serviceProvider.GetRequiredService<ILogger<EFRepositoryBase<TDbContext, TEntity, TKey>>>();
         }
 
@@ -79,30 +82,37 @@ namespace MiCake.EntityFrameworkCore.Repository
         private TDbContext GetCachedDbContext()
         {
             var currentUow = _unitOfWorkManager.Current;
-            if (currentUow == null)
+            var isUsingImplicitMode = _efCoreOptions.ImplicitModeForUow;
+
+            // In implicit mode, allow access without UoW; in explicit mode, require UoW
+            if (currentUow == null && !isUsingImplicitMode)
             {
                 throw new InvalidOperationException(
                     $"Cannot access {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
-                    $"Please wrap your operation in: using var uow = unitOfWorkManager.Begin();");
+                    $"Please wrap your operation in: using var uow = unitOfWorkManager.Begin(); " +
+                    $"Or enable ImplicitModeForUow in MiCakeEFCoreOptions.");
             }
 
             lock (_cacheLock)
             {
-                // Check if we need to invalidate cache (different UoW or no cache)
-                if (_cachedUowId != currentUow.Id)
+                var cacheKey = currentUow?.Id ?? Guid.Empty;
+
+                // Check if we need to invalidate cache (different UoW/mode or no cache)
+                if (_cachedUowId != cacheKey)
                 {
                     InvalidateCache();
-                    _cachedUowId = currentUow.Id;
+                    _cachedUowId = cacheKey;
 
                     try
                     {
                         _cachedDbContext = _contextFactory.GetDbContextAsync().GetAwaiter().GetResult();
                     }
-                    catch (InvalidOperationException ex) when (ex.Message.Contains("No active Unit of Work"))
+                    catch (InvalidOperationException ex)
                     {
                         throw new InvalidOperationException(
-                            $"Cannot access {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
-                            $"Please wrap your operation in: using var uow = unitOfWorkManager.Begin();", ex);
+                            $"Failed to create a DbContext for {typeof(TDbContext).Name}. " +
+                            "Please ensure you've registered your DbContext with the service provider using AddDbContext or AddDbContextPool.",
+                            ex);
                     }
                 }
 
@@ -114,10 +124,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             lock (_cacheLock)
             {
-                if (_cachedDbSet == null)
-                {
-                    _cachedDbSet = GetCachedDbContext().Set<TEntity>();
-                }
+                _cachedDbSet ??= GetCachedDbContext().Set<TEntity>();
                 return _cachedDbSet;
             }
         }
@@ -138,10 +145,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
             lock (_cacheLock)
             {
-                if (_cachedEntitiesNoTracking == null)
-                {
-                    _cachedEntitiesNoTracking = GetCachedDbSet().AsNoTracking();
-                }
+                _cachedEntitiesNoTracking ??= GetCachedDbSet().AsNoTracking();
                 return _cachedEntitiesNoTracking;
             }
         }
