@@ -1,0 +1,142 @@
+using System;
+using MiCake.Core.Util.PaginationData;
+using Xunit;
+
+namespace MiCake.Core.Tests.Util.PaginationData;
+
+public class PaginationConfigTests
+{
+    [Fact]
+    public void Constructor_ShouldSetDefaultValues()
+    {
+        // Arrange & Act
+        var config = new PaginationConfig();
+
+        // Assert
+        Assert.Equal(1000, config.MaxItemsPerRequest);
+        Assert.Equal(0, config.MaxTotalItems);
+        Assert.Equal(50, config.MaxRequests);
+        Assert.Equal(100, config.DelayBetweenRequests);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(5000)]
+    public void MaxItemsPerRequest_ValidValues_ShouldSetCorrectly(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act
+        config.MaxItemsPerRequest = value;
+
+        // Assert
+        Assert.Equal(value, config.MaxItemsPerRequest);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void MaxItemsPerRequest_InvalidValues_ShouldThrowArgumentOutOfRangeException(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => config.MaxItemsPerRequest = value);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1000)]
+    [InlineData(50000)]
+    public void MaxTotalItems_ValidValues_ShouldSetCorrectly(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act
+        config.MaxTotalItems = value;
+
+        // Assert
+        Assert.Equal(value, config.MaxTotalItems);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [InlineData(100)]
+    public void MaxRequests_ValidValues_ShouldSetCorrectly(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act
+        config.MaxRequests = value;
+
+        // Assert
+        Assert.Equal(value, config.MaxRequests);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-10)]
+    public void MaxRequests_InvalidValues_ShouldThrowArgumentOutOfRangeException(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => config.MaxRequests = value);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(50)]
+    [InlineData(1000)]
+    public void DelayBetweenRequests_ValidValues_ShouldSetCorrectly(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act
+        config.DelayBetweenRequests = value;
+
+        // Assert
+        Assert.Equal(value, config.DelayBetweenRequests);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void DelayBetweenRequests_InvalidValues_ShouldThrowArgumentOutOfRangeException(int value)
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => config.DelayBetweenRequests = value);
+    }
+
+    [Fact]
+    public void AllProperties_CanBeSetTogether()
+    {
+        // Arrange
+        var config = new PaginationConfig();
+
+        // Act
+        config.MaxItemsPerRequest = 500;
+        config.MaxTotalItems = 10000;
+        config.MaxRequests = 25;
+        config.DelayBetweenRequests = 200;
+
+        // Assert
+        Assert.Equal(500, config.MaxItemsPerRequest);
+        Assert.Equal(10000, config.MaxTotalItems);
+        Assert.Equal(25, config.MaxRequests);
+        Assert.Equal(200, config.DelayBetweenRequests);
+    }
+}
