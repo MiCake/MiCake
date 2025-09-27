@@ -23,16 +23,6 @@ public class HttpPaginationProviderTests
     }
 
     [Fact]
-    public void Constructor_WithNullHttpClient_ShouldThrowArgumentNullException()
-    {
-        // Arrange
-        var mockLogger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<TestHttpPaginationProvider>();
-
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new NullHttpClientProvider(mockLogger));
-    }
-
-    [Fact]
     public void Constructor_WithValidDependencies_ShouldInitializeCorrectly()
     {
         // Arrange

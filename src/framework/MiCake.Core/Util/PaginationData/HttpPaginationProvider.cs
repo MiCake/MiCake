@@ -12,15 +12,17 @@ namespace MiCake.Core.Util.PaginationData;
 /// <summary>
 /// HTTP-specific pagination provider
 /// </summary>
-public abstract class HttpPaginationProvider<TData> : PaginationDataProviderBase<HttpPaginationRequest, TData>, IDisposable
+public abstract class HttpPaginationProvider<TData>(ILogger logger) : PaginationDataProviderBase<HttpPaginationRequest, TData>(logger), IDisposable
 {
-    private readonly HttpClient _httpClient;
     private bool _disposed;
-
-    protected HttpPaginationProvider(ILogger logger)
-        : base(logger)
+    private HttpClient _httpClient;
+    protected HttpClient CurrentHttpClient
     {
-        _httpClient = CreateHttpClient() ?? throw new ArgumentNullException("httpClient", "HttpClient cannot be null");
+        get
+        {
+            _httpClient ??= CreateHttpClient() ?? throw new ArgumentNullException(nameof(_httpClient), "HttpClient cannot be null");
+            return _httpClient;
+        }
     }
 
     protected abstract HttpClient CreateHttpClient();
@@ -86,7 +88,7 @@ public abstract class HttpPaginationProvider<TData> : PaginationDataProviderBase
             _logger.LogTrace("Making HTTP {Method} request to: {Url}",
                 httpRequest.Method, httpRequest.RequestUri);
 
-            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+            using var response = await CurrentHttpClient.SendAsync(httpRequest, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (string.IsNullOrWhiteSpace(content))
