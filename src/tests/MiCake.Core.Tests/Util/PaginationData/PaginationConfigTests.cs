@@ -15,7 +15,7 @@ public class PaginationConfigTests
         // Assert
         Assert.Equal(1000, config.MaxItemsPerRequest);
         Assert.Equal(0, config.MaxTotalItems);
-        Assert.Equal(50, config.MaxRequests);
+        Assert.Equal(50, config.MaxPages);
         Assert.Equal(100, config.DelayBetweenRequests);
     }
 
@@ -74,10 +74,10 @@ public class PaginationConfigTests
         var config = new PaginationConfig();
 
         // Act
-        config.MaxRequests = value;
+        config.MaxPages = value;
 
         // Assert
-        Assert.Equal(value, config.MaxRequests);
+        Assert.Equal(value, config.MaxPages);
     }
 
     [Theory]
@@ -90,7 +90,7 @@ public class PaginationConfigTests
         var config = new PaginationConfig();
 
         // Act & Assert
-        Assert.Throws<ArgumentOutOfRangeException>(() => config.MaxRequests = value);
+        Assert.Throws<ArgumentOutOfRangeException>(() => config.MaxPages = value);
     }
 
     [Theory]
@@ -130,13 +130,13 @@ public class PaginationConfigTests
         // Act
         config.MaxItemsPerRequest = 500;
         config.MaxTotalItems = 10000;
-        config.MaxRequests = 25;
+        config.MaxPages = 25;
         config.DelayBetweenRequests = 200;
 
         // Assert
         Assert.Equal(500, config.MaxItemsPerRequest);
         Assert.Equal(10000, config.MaxTotalItems);
-        Assert.Equal(25, config.MaxRequests);
+        Assert.Equal(25, config.MaxPages);
         Assert.Equal(200, config.DelayBetweenRequests);
     }
 }

@@ -47,7 +47,7 @@ public class PaginationDataProviderBaseTests
         var config = new PaginationConfig
         {
             MaxItemsPerRequest = 10,
-            MaxRequests = 5,
+            MaxPages = 5,
             DelayBetweenRequests = 0
         };
 
@@ -78,7 +78,7 @@ public class PaginationDataProviderBaseTests
         var config = new PaginationConfig
         {
             MaxItemsPerRequest = 2,
-            MaxRequests = 10,
+            MaxPages = 10,
             DelayBetweenRequests = 0
         };
 
@@ -110,7 +110,7 @@ public class PaginationDataProviderBaseTests
         {
             MaxItemsPerRequest = 2,
             MaxTotalItems = 3,
-            MaxRequests = 10,
+            MaxPages = 10,
             DelayBetweenRequests = 0
         };
 
@@ -140,7 +140,7 @@ public class PaginationDataProviderBaseTests
         var config = new PaginationConfig
         {
             MaxItemsPerRequest = 1,
-            MaxRequests = 2,
+            MaxPages = 2,
             DelayBetweenRequests = 0
         };
 
@@ -167,7 +167,7 @@ public class PaginationDataProviderBaseTests
         var config = new PaginationConfig
         {
             MaxItemsPerRequest = 2,
-            MaxRequests = 5,
+            MaxPages = 5,
             DelayBetweenRequests = 0
         };
 
@@ -190,7 +190,7 @@ public class PaginationDataProviderBaseTests
         var config = new PaginationConfig
         {
             MaxItemsPerRequest = 10,
-            MaxRequests = 5,
+            MaxPages = 5,
             DelayBetweenRequests = 0
         };
 
@@ -235,7 +235,7 @@ public class PaginationDataProviderBaseTests
         var config = new PaginationConfig
         {
             MaxItemsPerRequest = 1,
-            MaxRequests = 2,
+            MaxPages = 2,
             DelayBetweenRequests = 50
         };
 

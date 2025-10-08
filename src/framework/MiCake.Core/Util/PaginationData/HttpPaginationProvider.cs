@@ -28,6 +28,63 @@ public abstract class HttpPaginationProvider<TData>(ILogger logger) : Pagination
     protected abstract HttpClient CreateHttpClient();
 
     /// <summary>
+    /// Allow users to dynamically replace the HttpClient instance
+    /// This is useful for scenarios like proxy switching or connection pooling changes
+    /// </summary>
+    /// <param name="httpClient">New HttpClient instance to use</param>
+    public void SetHttpClient(HttpClient httpClient)
+    {
+        ArgumentNullException.ThrowIfNull(httpClient);
+
+        // Dispose existing client if it was created internally
+        if (_httpClient != null && _httpClient != httpClient)
+        {
+            _httpClient.Dispose();
+        }
+
+        _httpClient = httpClient;
+        _logger.LogInformation("HttpClient has been replaced with a new instance");
+    }
+
+    /// <summary>
+    /// Called when an HTTP request fails. Override to handle failures (e.g., switch proxies)
+    /// </summary>
+    /// <param name="exception">The exception that occurred</param>
+    /// <param name="request">The pagination request that failed</param>
+    protected virtual void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request)
+    {
+        // Default implementation: log and continue
+        _logger.LogWarning(exception, "HTTP request failed for {Identifier} at offset {Offset}",
+            request.Identifier, request.Offset);
+    }
+
+    /// <summary>
+    /// Called when an HTTP response has a non-success status code. Override to handle response errors.
+    /// </summary>
+    /// <param name="response">The HTTP response</param>
+    /// <param name="request">The pagination request</param>
+    /// <param name="parsedResult">The parsed result from ParseResponse</param>
+    protected virtual void OnHttpResponseError(HttpResponseMessage response, PaginationRequest<HttpPaginationRequest> request, PaginationResponse<TData> parsedResult)
+    {
+        // Default implementation: log warning
+        _logger.LogWarning("HTTP {StatusCode} received for {Identifier} at offset {Offset}: {ReasonPhrase}",
+            response.StatusCode, request.Identifier, request.Offset, response.ReasonPhrase);
+    }
+
+    /// <summary>
+    /// Called when an HTTP response is successful. Override to handle successful responses.
+    /// </summary>
+    /// <param name="response">The HTTP response</param>
+    /// <param name="request">The pagination request</param>
+    /// <param name="parsedResult">The parsed result from ParseResponse</param>
+    protected virtual void OnHttpResponseSuccess(HttpResponseMessage response, PaginationRequest<HttpPaginationRequest> request, PaginationResponse<TData> parsedResult)
+    {
+        // Default implementation: log trace
+        _logger.LogTrace("HTTP {StatusCode} received successfully for {Identifier} at offset {Offset}",
+            response.StatusCode, request.Identifier, request.Offset);
+    }
+
+    /// <summary>
     /// Build request URL for specific offset/limit
     /// </summary>
     /// <param name="baseRequest">Base HTTP request</param>
@@ -81,6 +138,10 @@ public abstract class HttpPaginationProvider<TData>(ILogger logger) : Pagination
         PaginationRequest<HttpPaginationRequest> request,
         CancellationToken cancellationToken)
     {
+        // Capture the HttpClient instance at the start of the request
+        // This ensures consistency even if SetHttpClient is called during execution
+        var httpClient = CurrentHttpClient;
+
         try
         {
             using var httpRequest = CreateHttpRequest(request);
@@ -88,7 +149,7 @@ public abstract class HttpPaginationProvider<TData>(ILogger logger) : Pagination
             _logger.LogTrace("Making HTTP {Method} request to: {Url}",
                 httpRequest.Method, httpRequest.RequestUri);
 
-            using var response = await CurrentHttpClient.SendAsync(httpRequest, cancellationToken);
+            using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (string.IsNullOrWhiteSpace(content))
@@ -103,19 +164,27 @@ public abstract class HttpPaginationProvider<TData>(ILogger logger) : Pagination
 
             var result = ParseResponse(content, response.StatusCode);
 
-            // Log HTTP errors
-            if (!response.IsSuccessStatusCode && result.IsSuccess)
+            // Check for HTTP errors
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("HTTP {StatusCode} received: {ReasonPhrase}",
-                    response.StatusCode, response.ReasonPhrase);
+                OnHttpResponseError(response, request, result); // Notify user of response error
 
                 result.ErrorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}";
+                // Ensure error state
+                result.Data ??= new List<TData>();
+                result.HasMore = false;
+            }
+            else
+            {
+                OnHttpResponseSuccess(response, request, result); // Notify user of successful response
             }
 
             return result;
         }
         catch (HttpRequestException ex)
         {
+            OnHttpRequestFailed(ex, request); // Notify user of failure
+
             _logger.LogError(ex, "HTTP error occurred for request {Identifier} at offset {Offset}",
                 request.Identifier, request.Offset);
 
@@ -128,6 +197,8 @@ public abstract class HttpPaginationProvider<TData>(ILogger logger) : Pagination
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
+            OnHttpRequestFailed(ex, request); // Notify user of timeout failure
+
             _logger.LogError(ex, "Request timeout for {Identifier} at offset {Offset}",
                 request.Identifier, request.Offset);
 
@@ -140,6 +211,8 @@ public abstract class HttpPaginationProvider<TData>(ILogger logger) : Pagination
         }
         catch (Exception ex)
         {
+            OnHttpRequestFailed(ex, request); // Notify user of unexpected failure
+
             _logger.LogError(ex, "Unexpected error for request {Identifier} at offset {Offset}",
                 request.Identifier, request.Offset);
 

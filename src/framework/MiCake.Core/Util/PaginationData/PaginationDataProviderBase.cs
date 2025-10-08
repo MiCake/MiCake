@@ -47,12 +47,12 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
         var allData = new List<TData>();
         int currentOffset = 0;
         bool hasMoreData = true;
-        int requestCount = 0;
+        int currentPage = config.StartPageOffset ?? 0;
 
         _logger.LogDebug("Starting paginated data loading for {Identifier}, config: {@Config}",
             identifier ?? "unknown", config);
 
-        while (hasMoreData && requestCount < config.MaxRequests)
+        while (hasMoreData && currentPage < config.MaxPages)
         {
             if (config.MaxTotalItems > 0 && allData.Count >= config.MaxTotalItems)
             {
@@ -74,7 +74,7 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
                 };
 
                 _logger.LogTrace("Making request {RequestCount} for {Identifier} at offset {Offset}",
-                    requestCount + 1, identifier, currentOffset);
+                    currentPage + 1, identifier, currentOffset);
 
                 var response = await FetchPageAsync(paginationRequest, cancellationToken);
 
@@ -94,7 +94,7 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
 
                 allData.AddRange(response.Data);
                 hasMoreData = response.HasMore;
-                requestCount++;
+                currentPage++;
 
                 // Update offset for next request
                 if (response.NextOffset.HasValue)
@@ -107,10 +107,10 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
                 }
 
                 _logger.LogTrace("Fetched {Count} items in request {RequestCount} for {Identifier}, total: {Total}, hasMore: {HasMore}",
-                    response.Data.Count, requestCount, identifier, allData.Count, hasMoreData);
+                    response.Data.Count, currentPage, identifier, allData.Count, hasMoreData);
 
                 // Respect rate limiting
-                if (hasMoreData && requestCount < config.MaxRequests && config.DelayBetweenRequests > 0)
+                if (hasMoreData && currentPage < config.MaxPages && config.DelayBetweenRequests > 0)
                 {
                     await Task.Delay(config.DelayBetweenRequests, cancellationToken);
                 }
@@ -123,14 +123,14 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
             }
         }
 
-        if (requestCount >= config.MaxRequests)
+        if (currentPage >= config.MaxPages)
         {
-            _logger.LogWarning("Reached maximum request limit ({MaxRequests}) for {Identifier}",
-                config.MaxRequests, identifier);
+            _logger.LogWarning("Reached maximum request limit ({MaxPages}) for {Identifier}",
+                config.MaxPages, identifier);
         }
 
         _logger.LogInformation("Completed paginated loading for {Identifier}: {TotalItems} items in {RequestCount} requests",
-            identifier, allData.Count, requestCount);
+            identifier, allData.Count, currentPage);
 
         return allData.Count > 0 ? allData : null;
     }
