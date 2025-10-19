@@ -525,10 +525,10 @@ public class HttpPaginationProviderTests
             };
         }
 
-        protected override void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request)
+        protected override void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request, int attemptNumber = 1)
         {
             OnHttpRequestFailedCalled = true;
-            base.OnHttpRequestFailed(exception, request);
+            base.OnHttpRequestFailed(exception, request, attemptNumber);
         }
 
         public async Task<PaginationResponse<string>> TestFetchPageAsync(
@@ -565,10 +565,10 @@ public class HttpPaginationProviderTests
             };
         }
 
-        protected override void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request)
+        protected override void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request, int attemptNumber = 1)
         {
             OnHttpRequestFailedCalled = true;
-            base.OnHttpRequestFailed(exception, request);
+            base.OnHttpRequestFailed(exception, request, attemptNumber);
         }
 
         public async Task<PaginationResponse<string>> TestFetchPageAsync(
@@ -699,10 +699,10 @@ public class HttpPaginationProviderTests
             };
         }
 
-        protected override void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request)
+        protected override void OnHttpRequestFailed(Exception exception, PaginationRequest<HttpPaginationRequest> request, int attemptNumber = 1)
         {
             OnHttpRequestFailedCalled = true;
-            base.OnHttpRequestFailed(exception, request);
+            base.OnHttpRequestFailed(exception, request, attemptNumber);
         }
 
         public async Task<PaginationResponse<string>> TestFetchPageAsync(
