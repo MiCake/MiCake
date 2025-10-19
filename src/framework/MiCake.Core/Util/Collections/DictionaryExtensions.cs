@@ -7,17 +7,17 @@ namespace MiCake.Core.Util.Collections
     {
         public static bool HasValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
         {
-            return dic.Values.Any(v => v.Equals(value));
+            return dic.Values.Any(v => EqualityComparer<TValue>.Default.Equals(v, value));
         }
 
         public static List<TKey> GetKeyByValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
         {
-            return [.. dic.Where(v => v.Equals(value)).Select(k => k.Key)];
+            return [.. dic.Where(kvp => EqualityComparer<TValue>.Default.Equals(kvp.Value, value)).Select(kvp => kvp.Key)];
         }
 
         public static TKey GetFirstKeyByValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TValue value)
         {
-            return dic.Where(v => v.Equals(value)).Select(k => k.Key).FirstOrDefault();
+            return dic.FirstOrDefault(kvp => EqualityComparer<TValue>.Default.Equals(kvp.Value, value)).Key;
         }
     }
 }
