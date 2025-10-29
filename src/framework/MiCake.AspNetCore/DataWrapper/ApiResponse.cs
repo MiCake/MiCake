@@ -1,38 +1,50 @@
-﻿using System;
-
 namespace MiCake.AspNetCore.DataWrapper
 {
-    [Serializable]
-    public class ApiResponse : IResultDataWrapper
+    /// <summary>
+    /// Standard response wrapper model for successful responses.
+    /// </summary>
+    /// <typeparam name="T">The type of data being returned</typeparam>
+    public class ApiResponse<T> : IResponseWrapper
     {
         /// <summary>
-        /// Indication code of business operation.
+        /// Business operation status code.
         /// </summary>
         public string Code { get; set; }
 
         /// <summary>
-        /// Response message.
+        /// Response message describing the result.
         /// </summary>
         public string Message { get; set; }
 
         /// <summary>
-        /// The result data of this request.
+        /// The actual response data.
         /// </summary>
-        public object Data { get; set; }
+        public T Data { get; set; }
 
-        public ApiResponse() { }
+        public ApiResponse()
+        {
+        }
 
-        public ApiResponse(string code, string message)
+        public ApiResponse(string code, string message, T data)
         {
             Code = code;
             Message = message;
+            Data = data;
+        }
+    }
+
+    /// <summary>
+    /// Non-generic version of standard response for backward compatibility.
+    /// </summary>
+    public class ApiResponse : ApiResponse<object>
+    {
+        public ApiResponse()
+        {
         }
 
         public ApiResponse(string code, string message, object data)
+            : base(code, message, data)
         {
-            Data = data;
-            Code = code;
-            Message = message;
         }
     }
 }

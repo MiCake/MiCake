@@ -7,20 +7,18 @@ using System.Threading.Tasks;
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
     /// <summary>
-    /// Wrap current http response data.
-    /// Only <see cref="ObjectResult"/> will be wrapped.
+    /// Filter to wrap successful HTTP responses.
+    /// Only wraps ObjectResult to ensure proper JSON serialization.
     /// </summary>
     internal class DataWrapperFilter : IAsyncResultFilter
     {
-        private readonly IDataWrapperExecutor _wrapperExecutor;
+        private readonly ResponseWrapperExecutor _executor;
         private readonly DataWrapperOptions _options;
 
-        public DataWrapperFilter(
-            IOptions<MiCakeAspNetOptions> options,
-            IDataWrapperExecutor wrapperExecutor)
+        public DataWrapperFilter(IOptions<MiCakeAspNetOptions> options)
         {
-            _wrapperExecutor = wrapperExecutor;
-            _options = options.Value?.DataWrapperOptions;
+            _options = options.Value?.DataWrapperOptions ?? new DataWrapperOptions();
+            _executor = new ResponseWrapperExecutor(_options);
         }
 
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
@@ -29,16 +27,19 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             {
                 var statusCode = objectResult.StatusCode ?? context.HttpContext.Response.StatusCode;
 
-                if (!_options.NoWrapStatusCode.Any(s => s == statusCode))
+                // Skip wrapping for configured status codes
+                if (!_options.IgnoreStatusCodes.Any(s => s == statusCode))
                 {
-                    var wrappContext = new DataWrapperContext(context.Result,
-                                                              context.HttpContext,
-                                                              _options,
-                                                              context.ActionDescriptor);
+                    var wrappedData = _executor.WrapSuccess(
+                        objectResult.Value,
+                        context.HttpContext,
+                        statusCode
+                    );
 
-                    var wrappedData = _wrapperExecutor.WrapSuccesfullysResult(objectResult.Value, wrappContext);
+                    // Update ObjectResult to use wrapped data
+                    // This ensures ASP.NET Core's JSON serialization is applied
                     objectResult.Value = wrappedData;
-                    objectResult.DeclaredType = wrappedData.GetType();
+                    objectResult.DeclaredType = wrappedData?.GetType();
                 }
             }
 

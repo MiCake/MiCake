@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using MiCake.AspNetCore.DataWrapper.Internals;
 using MiCake.AspNetCore.Internal;
 using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore.Modules;
@@ -23,7 +22,6 @@ namespace MiCake.AspNetCore.Modules
         {
             var services = context.Services;
 
-            services.AddSingleton<IDataWrapperExecutor, DefaultWrapperExecutor>();
             services.AddSingleton<IConfigureOptions<MvcOptions>, MvcOptionsConfigure>();
 
             //This services is only use in asp net core middleware.

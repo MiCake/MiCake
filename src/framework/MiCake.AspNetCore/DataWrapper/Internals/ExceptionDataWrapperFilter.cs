@@ -1,21 +1,25 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MiCake.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.DataWrapper.Internals
 {
+    /// <summary>
+    /// Filter to wrap exception responses.
+    /// Handles both MiCake exceptions and general exceptions.
+    /// </summary>
     internal class ExceptionDataWrapperFilter : IAsyncExceptionFilter
     {
-        private readonly IDataWrapperExecutor _wrapperExecutor;
+        private readonly ResponseWrapperExecutor _executor;
         private readonly DataWrapperOptions _options;
 
-        public ExceptionDataWrapperFilter(
-            IOptions<MiCakeAspNetOptions> options,
-            IDataWrapperExecutor wrapperExecutor)
+        public ExceptionDataWrapperFilter(IOptions<MiCakeAspNetOptions> options)
         {
-            _wrapperExecutor = wrapperExecutor;
-            _options = options.Value?.DataWrapperOptions;
+            _options = options.Value?.DataWrapperOptions ?? new DataWrapperOptions();
+            _executor = new ResponseWrapperExecutor(_options);
         }
 
         public Task OnExceptionAsync(ExceptionContext context)
@@ -23,24 +27,58 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             if (context.ExceptionHandled)
                 return Task.CompletedTask;
 
-            //httpContext status code is always be 0.
+            var exception = context.Exception;
 
-            var wrapContext = new DataWrapperContext(context.Result,
-                                                     context.HttpContext,
-                                                     _options,
-                                                     context.ActionDescriptor);
-
-            var wrappedData = _wrapperExecutor.WrapFailedResult(context.Result, context.Exception, wrapContext);
-            if (wrappedData is not ApiError)
+            // Handle SlightException - treat as successful response with 200 status
+            if (exception is ISlightException slightException)
             {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
+                context.HttpContext.Items["MiCake.SlightException"] = exception;
+
+                var wrappedData = _executor.WrapSuccess(
+                    null,
+                    context.HttpContext,
+                    StatusCodes.Status200OK
+                );
+
                 context.ExceptionHandled = true;
-                context.Result = new ObjectResult(wrappedData);
+                context.Result = new ObjectResult(wrappedData)
+                {
+                    StatusCode = StatusCodes.Status200OK
+                };
+
+                return Task.CompletedTask;
             }
 
-            //exceptionContext.Result != null || exceptionContext.Exception == null || exceptionContext.ExceptionHandled
-            //Therefore, the exceptionContext.Result is not assigned here and is handled by middleware
+            // Handle regular exceptions
+            var statusCode = DetermineStatusCode(exception);
+            var errorData = _executor.WrapError(
+                exception,
+                context.HttpContext,
+                statusCode,
+                context.Result
+            );
+
+            context.ExceptionHandled = true;
+            context.Result = new ObjectResult(errorData)
+            {
+                StatusCode = statusCode
+            };
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Determines appropriate HTTP status code based on exception type.
+        /// </summary>
+        private static int DetermineStatusCode(System.Exception exception)
+        {
+            // MiCake exceptions default to 500 unless specified
+            if (exception is MiCakeException)
+                return StatusCodes.Status500InternalServerError;
+
+            // Other exceptions default to 500
+            return StatusCodes.Status500InternalServerError;
         }
     }
 }

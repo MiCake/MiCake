@@ -13,31 +13,35 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 {
     public class DataWrapperFilter_Tests
     {
-        public DataWrapperFilter_Tests()
-        {
-        }
-
         [Fact]
         public async Task DataWrapperFilter_ObjectResult_UseWrapper()
         {
             // Arrange
             var httpContext = CreateFakeHttpContext("Get", 200);
             ObjectResult objectResult = new(1234);
+
             var options = Options.Create(new MiCakeAspNetOptions()
             {
+                UseDataWrapper = true,
                 DataWrapperOptions = new DataWrapperOptions()
             });
-            var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
-            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
 
-            //action
+            var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
+            var wrapperFilter = new DataWrapperFilter(options);
+
+            // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
                                                        () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
 
-            //assert
+            // Assert
             Assert.NotNull(resultExecutingContext.Result);
             Assert.IsAssignableFrom<ObjectResult>(resultExecutingContext.Result);
-            Assert.IsAssignableFrom<IResultDataWrapper>(((ObjectResult)resultExecutingContext.Result).Value);
+            Assert.IsAssignableFrom<IResponseWrapper>(((ObjectResult)resultExecutingContext.Result).Value);
+            
+            // The non-generic StandardResponse is used for primitives
+            var standardResponse = ((ObjectResult)resultExecutingContext.Result).Value as ApiResponse;
+            Assert.NotNull(standardResponse);
+            Assert.Equal(1234, standardResponse.Data);
         }
 
         [Fact]
@@ -45,110 +49,104 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var httpContext = CreateFakeHttpContext("Get", 200);
-            var noFoundResult = new NotFoundResult();
+            ContentResult contentResult = new() { Content = "test" };
+
             var options = Options.Create(new MiCakeAspNetOptions()
             {
+                UseDataWrapper = true,
                 DataWrapperOptions = new DataWrapperOptions()
             });
-            var resultExecutingContext = GetResourceExecutingContext(httpContext, noFoundResult);
-            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
 
-            //action
+            var resultExecutingContext = GetResourceExecutingContext(httpContext, contentResult);
+            var wrapperFilter = new DataWrapperFilter(options);
+
+            // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
                                                        () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
 
-            //assert
-            var resultInfo = resultExecutingContext.Result as NotFoundResult;
-            Assert.NotNull(resultInfo);
+            // Assert - should not wrap non-ObjectResult
+            Assert.NotNull(resultExecutingContext.Result);
+            Assert.IsType<ContentResult>(resultExecutingContext.Result);
         }
 
         [Fact]
-        public async Task DataWrapperFilter_NotWrapStatueCodeOption()
+        public async Task DataWrapperFilter_AlreadyWrapped_DoesNotDoubleWrap()
         {
             // Arrange
             var httpContext = CreateFakeHttpContext("Get", 200);
-            var objResult = new ObjectResult("1234");
-            var options = Options.Create(new MiCakeAspNetOptions()
+            var alreadyWrappedData = new ApiResponse<string>
             {
-                DataWrapperOptions = new DataWrapperOptions()
-                {
-                    NoWrapStatusCode = new List<int>() { 200 }
-                }
-            });
-            var resultExecutingContext = GetResourceExecutingContext(httpContext, objResult);
-            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
-
-            //action
-            await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
-                                                       () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
-
-            //assert
-            var resultInfo = resultExecutingContext.Result as ObjectResult;
-            Assert.NotNull(resultInfo);
-            Assert.False(resultInfo.Value is IResultDataWrapper);
-        }
-
-        [Fact]
-        public async Task DataWrapperFilter_DefaultSuccessCode()
-        {
-            // Arrange
-            var httpContext = CreateFakeHttpContext("Get", 200);
-            var objResult = new ObjectResult("1234") { StatusCode = null };
-            var options = Options.Create(new MiCakeAspNetOptions());
-            var resultExecutingContext = GetResourceExecutingContext(httpContext, objResult);
-            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
-
-            //action
-            await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
-                                                       () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
-
-            //assert
-            var resultInfo = resultExecutingContext.Result as ObjectResult;
-            Assert.NotNull(resultInfo);
-            Assert.Equal("0", (resultInfo.Value as ApiResponse).Code);
-        }
-
-        [Fact]
-        public async Task DataWrapperFilter_SpecificCode()
-        {
-            // Arrange
-            var httpContext = CreateFakeHttpContext("Get", 200);
-            var objResult = new OkObjectResult("1234") { StatusCode = 203 };
-            var options = Options.Create(new MiCakeAspNetOptions());
-            options.Value.DataWrapperOptions = new DataWrapperOptions()
-            {
-                DefaultCodeSetting = new DataWrapperDefaultCode()
-                {
-                    Success = "10",
-                    ProblemDetails = "11",
-                    Error = "12"
-                }
+                Code = "0",
+                Message = "Success",
+                Data = "test"
             };
-            var resultExecutingContext = GetResourceExecutingContext(httpContext, objResult);
-            var wrapperFilter = new DataWrapperFilter(options, new DefaultWrapperExecutor());
+            ObjectResult objectResult = new(alreadyWrappedData);
 
-            //action
+            var options = Options.Create(new MiCakeAspNetOptions()
+            {
+                UseDataWrapper = true,
+                DataWrapperOptions = new DataWrapperOptions()
+            });
+
+            var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
+            var wrapperFilter = new DataWrapperFilter(options);
+
+            // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
                                                        () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
 
-            //assert
-            var resultInfo = resultExecutingContext.Result as ObjectResult;
-            Assert.NotNull(resultInfo);
-            Assert.Equal("10", (resultInfo.Value as ApiResponse).Code);
+            // Assert - should not double-wrap
+            Assert.NotNull(resultExecutingContext.Result);
+            var resultValue = ((ObjectResult)resultExecutingContext.Result).Value;
+            Assert.IsType<ApiResponse<string>>(resultValue);
+            Assert.Equal("test", ((ApiResponse<string>)resultValue).Data);
         }
 
-        private static ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult result)
+        [Fact]
+        public async Task DataWrapperFilter_IgnoreStatusCode_DoesNotWrap()
+        {
+            // Arrange
+            var httpContext = CreateFakeHttpContext("Get", 404);
+            ObjectResult objectResult = new(new { Error = "NotFound" }) { StatusCode = 404 };
+
+            var options = Options.Create(new MiCakeAspNetOptions()
+            {
+                UseDataWrapper = true,
+                DataWrapperOptions = new DataWrapperOptions()
+                {
+                    IgnoreStatusCodes = new List<int> { 404 }
+                }
+            });
+
+            var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
+            var wrapperFilter = new DataWrapperFilter(options);
+
+            // Act
+            await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
+                                                       () => Task.FromResult(CreateResultExecutedContext(resultExecutingContext)));
+
+            // Assert - should not wrap ignored status codes
+            Assert.NotNull(resultExecutingContext.Result);
+            var resultValue = ((ObjectResult)resultExecutingContext.Result).Value;
+            Assert.False(resultValue is IResponseWrapper);
+        }
+
+        private static ResultExecutingContext GetResourceExecutingContext(HttpContext httpContext, IActionResult actionResult)
         {
             return new ResultExecutingContext(
                 new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(), new ActionDescriptor()),
                 new List<IFilterMetadata>(),
-                result,
-                controller: new object());
+                actionResult,
+                new object());
         }
 
-        private static ResultExecutedContext CreateResultExecutedContext(ResultExecutingContext context)
+        private static ResultExecutedContext CreateResultExecutedContext(ResultExecutingContext resultExecutingContext)
         {
-            return new ResultExecutedContext(context, context.Filters, context.Result, context.Controller);
+            return new ResultExecutedContext(
+                resultExecutingContext,
+                resultExecutingContext.Filters,
+                resultExecutingContext.Result,
+                resultExecutingContext.Controller);
         }
 
         private static HttpContext CreateFakeHttpContext(string method, int statusCode)
