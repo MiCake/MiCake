@@ -35,7 +35,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                 return originalData;
 
             // Handle SlightException - treated as successful response with custom code
-            if (TryGetSlightException(httpContext, out var slightException))
+            if (httpContext.TryGetSlightException(out var slightException))
             {
                 // Create a special object that contains exception details for the factory
                 var slightExceptionData = new SlightExceptionData
@@ -62,21 +62,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             return _options.GetOrCreateFactory().ErrorFactory(context);
         }
 
-        /// <summary>
-        /// Checks if the current exception is a SlightException stored in HttpContext.
-        /// </summary>
-        private static bool TryGetSlightException(HttpContext httpContext, out SlightMiCakeException exception)
-        {
-            exception = null;
-            if (httpContext?.Items != null &&
-                httpContext.Items.TryGetValue("MiCake.SlightException", out var item) &&
-                item is SlightMiCakeException slightEx)
-            {
-                exception = slightEx;
-                return true;
-            }
-            return false;
-        }
+
     }
 
     /// <summary>

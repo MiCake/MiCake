@@ -33,7 +33,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             if (exception is ISlightException slightException)
             {
                 context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
-                context.HttpContext.Items["MiCake.SlightException"] = exception;
+                context.HttpContext.SetSlightException(slightException as SlightMiCakeException);
 
                 var wrappedData = _executor.WrapSuccess(
                     null,

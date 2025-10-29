@@ -1,4 +1,5 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
+using MiCake.AspNetCore.DataWrapper.Internals;
 using MiCake.AspNetCore.Internal;
 using MiCake.Core;
 using MiCake.Core.Handlers;
@@ -22,6 +23,7 @@ namespace MiCake.AspNetCore.ExceptionHandling
     {
         private readonly RequestDelegate _next;
         private readonly DataWrapperOptions _wrapOptions;
+        private readonly ResponseWrapperExecutor _wrapperExecutor;
         private readonly bool _useWrapper = false;
 
         public ExceptionHandlerMiddleware(
@@ -29,7 +31,8 @@ namespace MiCake.AspNetCore.ExceptionHandling
             IOptions<MiCakeAspNetOptions> options)
         {
             _next = next;
-            _wrapOptions = options.Value?.DataWrapperOptions;
+            _wrapOptions = options.Value?.DataWrapperOptions ?? new DataWrapperOptions();
+            _wrapperExecutor = new ResponseWrapperExecutor(_wrapOptions);
 
             _useWrapper = options.Value?.UseDataWrapper ?? false;
         }
@@ -96,14 +99,17 @@ namespace MiCake.AspNetCore.ExceptionHandling
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status200OK;
 
-            // Use StandardResponse for SlightException (treated as successful business response)
-            var wrapDataResult = new ApiResponse
-            {
-                Code = slightMiCakeException.Code ?? _wrapOptions.DefaultCodeSetting.Success,
-                Message = slightMiCakeException.Message
-            };
+            // Store the slight exception for ResponseWrapperExecutor to detect
+            context.SetSlightException(slightMiCakeException);
 
-            var resultJsonData = JsonSerializer.Serialize(wrapDataResult, options);
+            // Use the factory to wrap the response consistently
+            var wrappedData = _wrapperExecutor.WrapSuccess(
+                slightMiCakeException.Details,
+                context,
+                StatusCodes.Status200OK
+            );
+
+            var resultJsonData = JsonSerializer.Serialize(wrappedData, options);
 
             await httpResponse.WriteAsync(resultJsonData);
         }
@@ -113,19 +119,14 @@ namespace MiCake.AspNetCore.ExceptionHandling
             var httpResponse = context.Response;
             httpResponse.StatusCode = StatusCodes.Status500InternalServerError;
 
-            var micakeException = exception as MiCakeException;
-            var stackTraceInfo = _wrapOptions.ShowStackTraceWhenError ? exception.StackTrace : null;
+            // Use the factory to wrap the response consistently
+            var wrappedData = _wrapperExecutor.WrapError(
+                exception,
+                context,
+                StatusCodes.Status500InternalServerError
+            );
 
-            // Use ErrorResponse for general exceptions
-            var wrapDataResult = new ErrorResponse
-            {
-                Code = micakeException?.Code ?? _wrapOptions.DefaultCodeSetting.Error,
-                Message = exception.Message,
-                Details = micakeException?.Details,
-                StackTrace = stackTraceInfo
-            };
-
-            var resultJsonData = JsonSerializer.Serialize(wrapDataResult, GetOptions());
+            var resultJsonData = JsonSerializer.Serialize(wrappedData, GetOptions());
 
             await httpResponse.WriteAsync(resultJsonData);
         }
