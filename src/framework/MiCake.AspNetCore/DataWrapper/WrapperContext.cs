@@ -19,6 +19,7 @@ namespace MiCake.AspNetCore.DataWrapper
 
         /// <summary>
         /// The original data to be wrapped.
+        /// The value may be null.
         /// </summary>
         public object OriginalData { get; }
 

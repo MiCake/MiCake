@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace MiCake.AspNetCore.DataWrapper
 {
@@ -24,16 +22,9 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// Whether to wrap ProblemDetails responses.
         /// When false, ProblemDetails maintains its standard ASP.NET Core format.
-        /// Default: false
+        /// Default: true
         /// </summary>
-        public bool WrapProblemDetails { get; set; } = false;
-
-        /// <summary>
-        /// Whether to wrap ValidationProblemDetails responses (e.g., from FluentValidation).
-        /// When false, validation errors maintain their standard format.
-        /// Default: false
-        /// </summary>
-        public bool WrapValidationProblemDetails { get; set; } = false;
+        public bool WrapProblemDetails { get; set; } = true;
 
         /// <summary>
         /// Custom factory for creating response wrappers.

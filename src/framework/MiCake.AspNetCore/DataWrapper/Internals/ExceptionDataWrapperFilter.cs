@@ -29,7 +29,6 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
             var exception = context.Exception;
 
-            // Handle SlightException - treat as successful response with 200 status
             if (exception is ISlightException slightException)
             {
                 context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
@@ -50,7 +49,6 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                 return Task.CompletedTask;
             }
 
-            // Handle regular exceptions
             var statusCode = DetermineStatusCode(exception);
             var errorData = _executor.WrapError(
                 exception,
@@ -73,11 +71,9 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// </summary>
         private static int DetermineStatusCode(System.Exception exception)
         {
-            // MiCake exceptions default to 500 unless specified
             if (exception is MiCakeException)
                 return StatusCodes.Status500InternalServerError;
 
-            // Other exceptions default to 500
             return StatusCodes.Status500InternalServerError;
         }
     }

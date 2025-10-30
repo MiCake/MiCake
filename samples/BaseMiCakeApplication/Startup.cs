@@ -1,5 +1,6 @@
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.Handlers;
+using FluentValidation;
 using MiCake;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
+using FluentValidation.AspNetCore;
 
 namespace BaseMiCakeApplication
 {
@@ -36,8 +38,11 @@ namespace BaseMiCakeApplication
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), c =>
                 {
                     c.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
-                }); 
+                });
             });
+
+            services.AddValidatorsFromAssemblyContaining<Startup>();
+            services.AddFluentValidationAutoValidation();
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(
@@ -47,8 +52,6 @@ namespace BaseMiCakeApplication
                 },
                 miCakeAspNetConfig: options =>
                 {
-                    // options.UseCustomModel();
-                    // options.DataWrapperOptions.ShowStackTraceWhenError = true;
                 })
                 .Build();
 

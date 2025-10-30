@@ -1,4 +1,3 @@
-using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -9,14 +8,9 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     /// Simplified executor for wrapping responses.
     /// Focuses solely on wrapping logic using factory pattern.
     /// </summary>
-    internal class ResponseWrapperExecutor
+    internal class ResponseWrapperExecutor(DataWrapperOptions options)
     {
-        private readonly DataWrapperOptions _options;
-
-        public ResponseWrapperExecutor(DataWrapperOptions options)
-        {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
-        }
+        private readonly DataWrapperOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
         /// <summary>
         /// Wraps a successful response using the configured factory.
@@ -26,30 +20,21 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             if (originalData is IResponseWrapper)
                 return originalData;
 
-            // Handle ProblemDetails
-            if (originalData is ProblemDetails && !_options.WrapProblemDetails)
+            if (!_options.WrapProblemDetails && IsProblemDetails(originalData))
                 return originalData;
 
-            // Handle ValidationProblemDetails 
-            if (originalData is ValidationProblemDetails && !_options.WrapValidationProblemDetails)
-                return originalData;
-
-            // Handle SlightException - treated as successful response with custom code
+            var context = new WrapperContext(httpContext, statusCode, originalData);
             if (httpContext.TryGetSlightException(out var slightException))
             {
-                // Create a special object that contains exception details for the factory
                 var slightExceptionData = new SlightExceptionData
                 {
                     Code = slightException.Code,
                     Message = slightException.Message,
                     Details = slightException.Details
                 };
-
-                var slightExceptionContext = new WrapperContext(httpContext, statusCode, slightExceptionData);
-                return _options.GetOrCreateFactory().SuccessFactory(slightExceptionContext);
+                context = new WrapperContext(httpContext, statusCode, slightExceptionData);
             }
 
-            var context = new WrapperContext(httpContext, statusCode, originalData);
             return _options.GetOrCreateFactory().SuccessFactory(context);
         }
 
@@ -62,7 +47,10 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             return _options.GetOrCreateFactory().ErrorFactory(context);
         }
 
-
+        private static bool IsProblemDetails(object data)
+        {
+            return data is ProblemDetails || data is HttpValidationProblemDetails || data is ValidationProblemDetails;
+        }
     }
 
     /// <summary>

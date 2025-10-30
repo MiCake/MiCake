@@ -88,44 +88,6 @@ namespace BaseMiCakeApplication.MiCakeFeatures
 
             return options;
         }
-
-        /// <summary>
-        /// Example 5: Configure FluentValidation error handling
-        /// </summary>
-        public static MiCakeAspNetOptions ConfigureValidationErrors(this MiCakeAspNetOptions options)
-        {
-            // Keep ASP.NET Core's ValidationProblemDetails format (recommended for FluentValidation)
-            options.DataWrapperOptions.WrapValidationProblemDetails = false;
-            
-            // Or wrap them in your custom format
-            // options.DataWrapperOptions.WrapValidationProblemDetails = true;
-
-            return options;
-        }
-
-        #region Legacy Example (Obsolete)
-
-        /// <summary>
-        /// Legacy example using CustomWrapperModel (obsolete - kept for backward compatibility)
-        /// </summary>
-        [System.Obsolete("Use UseCustomWrapper() instead for simpler configuration")]
-        public static MiCakeAspNetOptions UseCustomModel(this MiCakeAspNetOptions options)
-        {
-            // Old complex way - use ResponseWrapperFactory instead
-            options.DataWrapperOptions.WrapperFactory = new ResponseWrapperFactory
-            {
-                SuccessFactory = context => new
-                {
-                    company = "MiCake",
-                    statusCode = context.StatusCode,
-                    result = context.OriginalData
-                }
-            };
-
-            return options;
-        }
-
-        #endregion
     }
 
     // Example custom response models

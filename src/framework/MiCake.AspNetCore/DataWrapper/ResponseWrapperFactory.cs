@@ -1,3 +1,7 @@
+using System.Linq;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
 namespace MiCake.AspNetCore.DataWrapper
 {
     /// <summary>
@@ -37,22 +41,42 @@ namespace MiCake.AspNetCore.DataWrapper
         {
             return new ResponseWrapperFactory
             {
-                SuccessFactory = context => 
+                SuccessFactory = context =>
                 {
-                    // Check if this is a SlightException being wrapped as a success response
                     if (context.OriginalData is Internals.SlightExceptionData slightData)
                     {
                         var code = string.IsNullOrWhiteSpace(slightData.Code)
                             ? options.DefaultCodeSetting.Success
                             : slightData.Code;
-                        
+
                         return new ApiResponse(
                             code: code,
                             message: slightData.Message,
                             data: slightData.Details
                         );
                     }
-                    
+
+                    if (options.WrapProblemDetails && context.OriginalData != null)
+                    {
+                        if (context.OriginalData is HttpValidationProblemDetails validationProblemDetails)
+                        {
+                            return new ApiResponse(
+                                code: options.DefaultCodeSetting.ProblemDetails,
+                                message: validationProblemDetails.Title,
+                                data: string.Join("; ", validationProblemDetails.Errors.SelectMany(kvp => kvp.Value))
+                            );
+                        }
+
+                        if (context.OriginalData is ProblemDetails problemDetails)
+                        {
+                            return new ApiResponse(
+                                code: options.DefaultCodeSetting.ProblemDetails,
+                                message: problemDetails.Title,
+                                data: problemDetails.Detail
+                            );
+                        }
+                    }
+
                     return new ApiResponse(
                         code: options.DefaultCodeSetting.Success,
                         message: null,

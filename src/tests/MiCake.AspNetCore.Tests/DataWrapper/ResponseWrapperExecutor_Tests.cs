@@ -79,22 +79,6 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WrapSuccess_ValidationProblemDetails_WrapDisabled_ReturnsOriginal()
-        {
-            // Arrange
-            var options = new DataWrapperOptions { WrapValidationProblemDetails = false };
-            var executor = new ResponseWrapperExecutor(options);
-            var httpContext = CreateHttpContext(400);
-            var validationProblem = new ValidationProblemDetails();
-
-            // Act
-            var result = executor.WrapSuccess(validationProblem, httpContext, 400);
-
-            // Assert
-            Assert.Same(validationProblem, result);
-        }
-
-        [Fact]
         public void WrapError_Exception_ReturnsErrorResponse()
         {
             // Arrange

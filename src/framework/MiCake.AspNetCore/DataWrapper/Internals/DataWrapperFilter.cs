@@ -27,7 +27,6 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             {
                 var statusCode = objectResult.StatusCode ?? context.HttpContext.Response.StatusCode;
 
-                // Skip wrapping for configured status codes
                 if (!_options.IgnoreStatusCodes.Any(s => s == statusCode))
                 {
                     var wrappedData = _executor.WrapSuccess(
@@ -36,8 +35,6 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                         statusCode
                     );
 
-                    // Update ObjectResult to use wrapped data
-                    // This ensures ASP.NET Core's JSON serialization is applied
                     objectResult.Value = wrappedData;
                     objectResult.DeclaredType = wrappedData?.GetType();
                 }

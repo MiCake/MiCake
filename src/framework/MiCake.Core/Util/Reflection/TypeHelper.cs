@@ -102,6 +102,24 @@ namespace MiCake.Core.Util.Reflection
             return type.GetTypeInfo().IsGenericTypeDefinition || type.GetTypeInfo().ContainsGenericParameters;
         }
 
+        public static bool IsInheritedFrom(Type givenType, Type baseType)
+        {
+            var givenTypeInfo = givenType.GetTypeInfo();
+            var baseTypeInfo = baseType.GetTypeInfo();
+
+            while (givenTypeInfo.BaseType != null)
+            {
+                if (givenTypeInfo.BaseType.GetTypeInfo() == baseTypeInfo)
+                {
+                    return true;
+                }
+
+                givenTypeInfo = givenTypeInfo.BaseType.GetTypeInfo();
+            }
+
+            return false;
+        }
+
         private static bool IsPrimitiveExtendedInternal(Type type, bool includeEnums)
         {
             if (type.IsPrimitive)

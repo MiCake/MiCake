@@ -41,15 +41,11 @@ namespace MiCake.AspNetCore.ExceptionHandling
         {
             try
             {
-                // Call the next delegate/middleware in the pipeline
                 await _next(context);
             }
             catch (Exception ex)
             {
-                //If has exception hander.
                 await HandleException(context, ex);
-
-                //If use data wrapper.
                 await WrapperException(context, ex);
             }
         }
