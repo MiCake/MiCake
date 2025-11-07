@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -55,7 +56,7 @@ namespace MiCake.EntityFrameworkCore.Internal
     internal static class MiCakeInterceptorFactoryHelper
     {
         private static volatile IMiCakeInterceptorFactory _factory;
-        private static readonly object _lock = new object();
+        private static readonly Lock _lock = new Lock();
 
         /// <summary>
         /// Configure the factory instance (called during DI setup)

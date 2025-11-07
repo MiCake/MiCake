@@ -1,12 +1,10 @@
-﻿using MiCake.AspNetCore;
-using MiCake.AspNetCore.ExceptionHandling;
+﻿using MiCake.AspNetCore.ExceptionHandling;
 using MiCake.Core;
 using MiCake.Core.Data;
 using MiCake.Core.Modularity;
 using MiCake.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System;
 
 namespace MiCake
@@ -93,8 +91,6 @@ namespace MiCake
             {
                 needServiceProvider.AddDependency(applicationBuilder.ApplicationServices);
             }
-
-            var micakeAspnetOption = applicationBuilder.ApplicationServices.GetService<IOptions<MiCakeAspNetOptions>>().Value;
 
             AddMiCakeCoreMiddleware(applicationBuilder);
 

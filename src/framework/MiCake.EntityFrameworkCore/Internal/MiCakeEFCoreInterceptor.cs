@@ -123,6 +123,9 @@ namespace MiCake.EntityFrameworkCore.Internal
             {
                 _changedEntries = GetChangedEntities(eventData.Context);
 
+                _logger.LogDebug("SavingChangesAsync called with {Count} changed entities in {ContextType}",
+                    _changedEntries.Count, eventData.Context.GetType().Name);
+
                 if (_changedEntries.Count > 0)
                 {
                     await _saveChangesLifetime.BeforeSaveChangesAsync(_changedEntries, cancellationToken);

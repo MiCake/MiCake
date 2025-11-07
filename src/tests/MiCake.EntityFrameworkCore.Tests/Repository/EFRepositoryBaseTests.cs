@@ -2,7 +2,6 @@ using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Repository;
-using MiCake.EntityFrameworkCore.Tests.Seed;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

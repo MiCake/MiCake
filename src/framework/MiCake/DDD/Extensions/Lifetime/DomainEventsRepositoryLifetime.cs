@@ -37,6 +37,9 @@ namespace MiCake.DDD.Extensions.Lifetime
             if (entityEvents == null || entityEvents.Count == 0)
                 return entityState;
 
+            _logger.LogDebug("Dispatching {Count} domain events for entity {EntityType}",
+                entityEvents.Count, entity.GetType().Name);
+
             var completedEventCount = 0;
             var failedEvents = new List<(IDomainEvent DomainEvent, Exception Error)>();
 
@@ -44,6 +47,7 @@ namespace MiCake.DDD.Extensions.Lifetime
             {
                 try
                 {
+                    _logger.LogDebug("Dispatching event {EventType}", @event.GetType().Name);
                     await _eventDispatcher.DispatchAsync(@event, cancellationToken);
                     completedEventCount++;
                 }

@@ -65,6 +65,7 @@ namespace MiCake.Modules
 
             //LifeTime
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+            services.AddScoped<IRepositoryPostSaveChanges, DomainEventCleanupLifetime>();
 
             // UOW 
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();

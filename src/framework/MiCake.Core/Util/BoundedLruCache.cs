@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MiCake.Core.Util
 {
@@ -15,7 +16,7 @@ namespace MiCake.Core.Util
         private readonly int _maxSize;
         private readonly ConcurrentDictionary<TKey, LinkedListNode<CacheItem>> _cache;
         private readonly LinkedList<CacheItem> _accessOrder;
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
         private volatile bool _disposed;
 
         /// <summary>

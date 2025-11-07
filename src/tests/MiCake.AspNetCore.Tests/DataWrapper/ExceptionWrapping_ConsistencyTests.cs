@@ -1,6 +1,5 @@
 using MiCake.AspNetCore.DataWrapper;
 using MiCake.AspNetCore.DataWrapper.Internals;
-using MiCake.AspNetCore.ExceptionHandling;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using System;
