@@ -1,6 +1,7 @@
 using MiCake.Audit;
 using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore;
+using MiCake.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.Sqlite;
@@ -45,9 +46,14 @@ namespace MiCake.IntegrationTests.Infrastructure
 
             micakeApp?.Start().GetAwaiter().GetResult();
 
-            // Now add DbContext AFTER Interceptor Factory is configured
+            // Now add DbContext AFTER framework initialization
             services.AddDbContext<TestDbContext>(options =>
                 options.UseSqlite(_connection));
+
+            // CRITICAL FIX: Reset the interceptor factory static state BEFORE building the second provider.
+            // This ensures the new provider's singleton LazyEFSaveChangesLifetime will be properly registered
+            // with the new provider's IServiceScopeFactory, instead of reusing the old one from the first provider.
+            MiCakeInterceptorFactoryHelper.Reset();
 
             // Rebuild ServiceProvider with DbContext
             ServiceProvider = services.BuildServiceProvider();

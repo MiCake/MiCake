@@ -22,6 +22,6 @@ namespace MiCake.DDD.Extensions.Metadata
         /// <summary>
         /// Value objects defined in the system
         /// </summary>
-        public List<VauleObjectDescriptor> VauleObjects { get; } = [];
+        public List<VauleObjectDescriptor> ValueObjects { get; } = [];
     }
 }

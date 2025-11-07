@@ -106,7 +106,7 @@ namespace MiCake.IntegrationTests
             Assert.True(order.DeletionTime >= beforeDelete && order.DeletionTime <= afterDelete);
         }
 
-                [Fact]
+        [Fact]
         public async Task Audit_MultipleEntities_ShouldHaveIndependentAuditInfo()
         {
             // Arrange
@@ -123,8 +123,8 @@ namespace MiCake.IntegrationTests
                 product1Id = product1.Id;
             }
 
-            await Task.Delay(100); // Delay for time difference
-            
+            await Task.Delay(20); // Delay for time difference
+
             using (var uow = uowManager.Begin())
             {
                 var product2 = new Product { Name = "Product 2", Price = 200m, Stock = 20 };
@@ -139,7 +139,7 @@ namespace MiCake.IntegrationTests
                 var dbContext = GetDbContext();
                 var savedProduct1 = await dbContext.Products.FindAsync(product1Id);
                 var savedProduct2 = await dbContext.Products.FindAsync(product2Id);
-                
+
                 Assert.NotNull(savedProduct1);
                 Assert.NotNull(savedProduct2);
                 Assert.NotEqual(default(DateTime), savedProduct1.CreationTime);
@@ -155,7 +155,7 @@ namespace MiCake.IntegrationTests
             var uowManager = GetService<IUnitOfWorkManager>();
             var repository = GetService<IRepository<Product, int>>();
             var customTime = new DateTime(2024, 1, 1, 12, 0, 0);
-            
+
             DefaultTimeAuditProvider.CurrentTimeProvider = () => customTime;
 
             try

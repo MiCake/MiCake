@@ -8,6 +8,9 @@ namespace MiCake.Audit.SoftDeletion
     {
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
+            if (auditObjectModel?.AuditEntity == null)
+                return;
+
             if (auditObjectModel.EntityState != RepositoryEntityState.Deleted)
                 return;
 

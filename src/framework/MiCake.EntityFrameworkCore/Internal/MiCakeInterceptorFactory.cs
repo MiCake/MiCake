@@ -53,7 +53,7 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// This class maintains the original API while using proper DI internally.
     /// Thread-safe implementation for multi-threaded scenarios.
     /// </summary>
-    internal static class MiCakeInterceptorFactoryHelper
+    public static class MiCakeInterceptorFactoryHelper
     {
         private static volatile IMiCakeInterceptorFactory _factory;
         private static readonly Lock _lock = new Lock();
@@ -95,7 +95,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// <summary>
         /// Reset the factory configuration (used in testing scenarios)
         /// </summary>
-        internal static void Reset()
+        public static void Reset()
         {
             lock (_lock)
             {

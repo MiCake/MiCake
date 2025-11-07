@@ -17,6 +17,9 @@ namespace MiCake.Audit.Core
 
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
+            if (auditObjectModel?.AuditEntity == null)
+                return;
+
             switch (auditObjectModel.EntityState)
             {
                 case RepositoryEntityState.Added:
@@ -31,18 +34,24 @@ namespace MiCake.Audit.Core
 
         private static void SetCreationTime(object entity)
         {
+            if (entity == null)
+                return;
+
             if (entity is IHasCreationTime hasCreationTime &&
                 hasCreationTime.CreationTime == default)
             {
-                hasCreationTime.CreationTime = CurrentTimeProvider();
+                hasCreationTime.CreationTime = CurrentTimeProvider?.Invoke() ?? DateTime.Now;
             }
         }
 
         private static void SetModificationTime(object entity)
         {
+            if (entity == null)
+                return;
+
             if (entity is IHasModificationTime hasModificationTime)
             {
-                hasModificationTime.ModificationTime = CurrentTimeProvider();
+                hasModificationTime.ModificationTime = CurrentTimeProvider?.Invoke() ?? DateTime.Now;
             }
         }
     }

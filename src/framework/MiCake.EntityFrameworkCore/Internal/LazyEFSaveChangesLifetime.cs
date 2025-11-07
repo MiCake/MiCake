@@ -61,26 +61,17 @@ namespace MiCake.EntityFrameworkCore.Internal
             Func<IReadOnlyList<EntityEntry>, IServiceProvider, CancellationToken, Task> processor,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                // Convert to list once to avoid multiple enumeration
-                var entries = entityEntries as IReadOnlyList<EntityEntry> ?? [.. entityEntries];
-                
-                if (entries.Count == 0)
-                    return;
+            // Convert to list once to avoid multiple enumeration
+            var entries = entityEntries as IReadOnlyList<EntityEntry> ?? [.. entityEntries];
+            
+            if (entries.Count == 0)
+                return;
 
-                // Create a scope to safely resolve scoped services
-                using var scope = _serviceScopeFactory.CreateScope();
-                
-                await processor(entries, scope.ServiceProvider, cancellationToken);
-                // The scope will be disposed here, properly cleaning up scoped services
-            }
-            catch (Exception ex)
-            {
-                // If service resolution fails, continue silently to allow graceful degradation
-                // This can happen during application startup when services are not properly registered
-                System.Diagnostics.Debug.WriteLine($"LazyEFSaveChangesLifetime execution failed: {ex.Message}");
-            }
+            // Create a scope to safely resolve scoped services
+            using var scope = _serviceScopeFactory.CreateScope();
+            
+            await processor(entries, scope.ServiceProvider, cancellationToken);
+            // The scope will be disposed here, properly cleaning up scoped services
         }
 
         /// <summary>

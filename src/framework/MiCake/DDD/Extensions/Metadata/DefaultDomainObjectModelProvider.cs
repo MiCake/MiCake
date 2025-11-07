@@ -36,7 +36,7 @@ namespace MiCake.DDD.Extensions.Metadata
 
                 if (entityDes != null) context.Result.Entities.Add(entityDes);
                 if (aggregateRootDes != null) context.Result.AggregateRoots.Add(aggregateRootDes);
-                if (valueObjectDes != null) context.Result.VauleObjects.Add(valueObjectDes);
+                if (valueObjectDes != null) context.Result.ValueObjects.Add(valueObjectDes);
             }
         }
 
