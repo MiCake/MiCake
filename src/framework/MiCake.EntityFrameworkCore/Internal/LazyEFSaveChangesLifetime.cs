@@ -1,4 +1,6 @@
+using MiCake.DDD.Extensions;
 using MiCake.DDD.Extensions.Lifetime;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -62,9 +64,8 @@ namespace MiCake.EntityFrameworkCore.Internal
             try
             {
                 // Convert to list once to avoid multiple enumeration
-                var entries = entityEntries as IReadOnlyList<EntityEntry> ?? entityEntries.ToList();
+                var entries = entityEntries as IReadOnlyList<EntityEntry> ?? [.. entityEntries];
                 
-                // Early exit if no entities
                 if (entries.Count == 0)
                     return;
 
@@ -94,16 +95,21 @@ namespace MiCake.EntityFrameworkCore.Internal
             if (handlers.Count == 0)
                 return;
 
-            // Process handlers in priority order
+            var entityStates = new (EntityEntry entry, object entity, RepositoryEntityState state)[entries.Count];
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                entityStates[i] = (entry, entry.Entity, entry.State.ToRepositoryState());
+            }
+
             foreach (var handler in handlers)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                // Process each entity for this handler
-                foreach (var entity in entries)
+                for (int i = 0; i < entityStates.Length; i++)
                 {
-                    var state = entity.State.ToRepositoryState();
-                    await handler.PostSaveChangesAsync(state, entity.Entity, cancellationToken);
+                    var (_, entity, state) = entityStates[i];
+                    await handler.PostSaveChangesAsync(state, entity, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -120,25 +126,32 @@ namespace MiCake.EntityFrameworkCore.Internal
             if (handlers.Count == 0)
                 return;
 
-            // Process handlers in priority order
+            var stateChanges = new List<(EntityEntry entry, EntityState newState)>(capacity: Math.Max(1, entries.Count / 10));
+
             foreach (var handler in handlers)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
                 // Process each entity for this handler
-                foreach (var entity in entries)
+                foreach (var entry in entries)
                 {
-                    var originalEFState = entity.State;
-                    var state = entity.State.ToRepositoryState();
+                    var originalEFState = entry.State;
+                    var state = originalEFState.ToRepositoryState();
                     
-                    state = await handler.PreSaveChangesAsync(state, entity.Entity, cancellationToken);
+                    state = await handler.PreSaveChangesAsync(state, entry.Entity, cancellationToken).ConfigureAwait(false);
                     
-                    // Only update state if it changed to avoid unnecessary operations
-                    if (state.ToEFState() != originalEFState)
+                    var newEFState = state.ToEFState();
+                    if (newEFState != originalEFState)
                     {
-                        entity.State = state.ToEFState();
+                        stateChanges.Add((entry, newEFState));
                     }
                 }
+            }
+
+            for (int i = 0; i < stateChanges.Count; i++)
+            {
+                var (entry, newState) = stateChanges[i];
+                entry.State = newState;
             }
         }
     }

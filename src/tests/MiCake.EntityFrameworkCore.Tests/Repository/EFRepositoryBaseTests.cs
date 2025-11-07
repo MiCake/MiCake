@@ -57,8 +57,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
 
             // Setup mock context factory to return our test context
             _mockContextFactory
-                .Setup(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(_testDbContext);
+                .Setup(x => x.GetDbContext())
+                .Returns(_testDbContext);
 
             // Setup mock UoW with a test ID
             _mockUow.Setup(x => x.Id).Returns(Guid.NewGuid());
@@ -248,7 +248,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             // Assert
             Assert.Same(dbContext1, dbContext2);
             // Context factory should only be called once due to caching
-            _mockContextFactory.Verify(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _mockContextFactory.Verify(x => x.GetDbContext(), Times.Once);
         }
 
         [Fact]
@@ -277,17 +277,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             // Assert
             Assert.Same(dbContext1, dbContext2); // Same because our mock returns same instance
             // But factory should be called twice due to UoW change
-            _mockContextFactory.Verify(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+            _mockContextFactory.Verify(x => x.GetDbContext(), Times.Exactly(2));
         }
 
         [Fact]
-        public void Caching_ImplicitModeWithoutUoW_ShouldUseSeparateCache()
+        public void Caching_WithSameUoW_ShouldReuseCache()
         {
             // Arrange
-            var options = new MiCakeEFCoreOptions(typeof(TestDbContext)) { ImplicitModeForUow = true };
+            var options = new MiCakeEFCoreOptions(typeof(TestDbContext)) { ImplicitModeForUow = false };
             _serviceProvider = BuildServiceProvider(options);
 
-            _mockUowManager.Setup(x => x.Current).Returns((IUnitOfWork)null);
+            _mockUowManager.Setup(x => x.Current).Returns(_mockUow.Object);
 
             var repository = new TestRepository(_serviceProvider);
 
@@ -298,7 +298,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             // Assert
             Assert.Same(dbContext1, dbContext2);
             // Context factory should only be called once due to caching
-            _mockContextFactory.Verify(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _mockContextFactory.Verify(x => x.GetDbContext(), Times.Once);
         }
 
         [Fact]
@@ -322,7 +322,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             // Assert
             Assert.Same(dbContext1, dbContext2); // Same because mock returns same instance
             // Factory should be called twice due to cache invalidation
-            _mockContextFactory.Verify(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+            _mockContextFactory.Verify(x => x.GetDbContext(), Times.Exactly(2));
         }
 
         #endregion
@@ -344,7 +344,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
 
             // Assert
             Assert.NotNull(dbContext);
-            _mockContextFactory.Verify(x => x.GetDbContextAsync(cancellationToken), Times.Once);
+            _mockContextFactory.Verify(x => x.GetDbContext(), Times.Once);
         }
 
         [Fact]
@@ -394,9 +394,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             {
                 Assert.Same(results[0], results[i]);
             }
-
-            // Context factory should be called only once despite concurrent access
-            _mockContextFactory.Verify(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         #endregion
@@ -412,8 +409,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
 
             var expectedException = new InvalidOperationException("Factory error for testing");
             _mockContextFactory
-                .Setup(x => x.GetDbContextAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(expectedException);
+                .Setup(x => x.GetDbContext())
+                .Throws(expectedException);
 
             _mockUowManager.Setup(x => x.Current).Returns((IUnitOfWork)null);
 

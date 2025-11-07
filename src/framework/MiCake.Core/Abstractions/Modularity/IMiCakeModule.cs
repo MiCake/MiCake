@@ -6,7 +6,7 @@
     public interface IMiCakeModule : IModuleConfigServicesLifetime, IModuleLifetime
     {
         /// <summary>
-        /// Tag this module is farmework level.
+        /// Tag this module is framework level.
         /// Framework level modules do not need to be traversed.
         /// </summary>
         public bool IsFrameworkLevel { get; }

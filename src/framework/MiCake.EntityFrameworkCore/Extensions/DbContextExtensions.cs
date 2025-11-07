@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using MiCake.DDD.Domain.Helper;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Core.Util;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Linq;
 
@@ -107,17 +109,21 @@ namespace MiCake.EntityFrameworkCore
         /// <summary>
         /// Configure DbContextOptionsBuilder to use MiCake interceptors with specific lifetime service.
         /// This overload provides direct control over the lifetime service instance.
+        /// Internal API for advanced scenarios.
         /// </summary>
         /// <param name="optionsBuilder">The DbContextOptionsBuilder instance</param>
         /// <param name="saveChangesLifetime">The save changes lifetime service</param>
+        /// <param name="logger">Optional logger instance for the interceptor (uses NullLogger if not provided)</param>
         /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        public static DbContextOptionsBuilder UseMiCakeInterceptors(
+        internal static DbContextOptionsBuilder UseMiCakeInterceptors(
             this DbContextOptionsBuilder optionsBuilder,
-            IEFSaveChangesLifetime saveChangesLifetime)
+            IEFSaveChangesLifetime saveChangesLifetime,
+            ILogger<MiCakeEFCoreInterceptor> logger = null)
         {
             if (saveChangesLifetime != null)
             {
-                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(saveChangesLifetime));
+                logger ??= NullLogger<MiCakeEFCoreInterceptor>.Instance;
+                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(saveChangesLifetime, logger));
             }
 
             return optionsBuilder;

@@ -68,9 +68,6 @@ namespace MiCake.Core
             if (_isStarted)
                 throw new InvalidOperationException($"MiCake has already started.");
 
-            //Pre activation ServiceLocator
-            AppServiceProvider.GetService(typeof(IServiceLocator));
-
             //Module Inspection.
             var inspectContext = new ModuleInspectionContext(AppServiceProvider, ModuleContext.MiCakeModules);
             foreach (var module in ModuleContext.MiCakeModules)
@@ -82,7 +79,7 @@ namespace MiCake.Core
             var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
             await _miCakeModuleBoot.Initialization(context);
 
-            //Release options additional infomation.
+            //Release options additional info.
             ApplicationOptions.ExtraDataStash.Release();
         }
 
@@ -154,12 +151,6 @@ namespace MiCake.Core
         {
             services.AddSingleton<IMiCakeApplication>(this);
             services.Configure<MiCakeApplicationOptions>(op => op.Apply(ApplicationOptions));
-
-            services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
-            {
-                ServiceLocator.Instance.Locator = provider;
-                return ServiceLocator.Instance;
-            });
         }
 
         //Inject service into container according to matching rules

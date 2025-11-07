@@ -1,4 +1,5 @@
 ﻿using MiCake.Core.Util.Collections;
+using MiCake.Core.Util.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ namespace MiCake.Core.Modularity
 {
     public class MiCakeModuleManager : IMiCakeModuleManager
     {
-        public Func<Type, object> ServiceCtor { get; private set; } = Activator.CreateInstance;
+        public Func<Type, object> ServiceCtor { get; private set; } = CompiledActivator.CreateInstance;
 
         private MiCakeModuleContext _moduleContext;
         public IMiCakeModuleContext ModuleContext => _moduleContext;

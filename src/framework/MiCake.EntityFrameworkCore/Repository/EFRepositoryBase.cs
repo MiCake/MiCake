@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace MiCake.EntityFrameworkCore.Repository
 {
     /// <summary>
-    /// a base repository for EFCore with UoW-aware caching
+    /// Base repository for EFCore.
     /// </summary>
     public abstract class EFRepositoryBase<TDbContext, TEntity, TKey>
             where TEntity : class, IEntity<TKey>
@@ -24,13 +24,17 @@ namespace MiCake.EntityFrameworkCore.Repository
         private readonly MiCakeEFCoreOptions _efCoreOptions;
         protected readonly ILogger Logger;
 
-        // UoW-aware caching: cache per UoW to avoid cross-UoW contamination
-        private readonly Lock _cacheLock = new();
-        private Guid? _cachedUowId;
-        private TDbContext _cachedDbContext;
-        private DbSet<TEntity> _cachedDbSet;
-        private IQueryable<TEntity> _cachedEntities;
-        private IQueryable<TEntity> _cachedEntitiesNoTracking;
+        private readonly AsyncLocal<CacheContext> _asyncLocalCache = new();
+        private readonly SemaphoreSlim _initLock = new(1, 1);
+
+        private class CacheContext
+        {
+            public Guid UowId { get; set; }
+            public TDbContext DbContext { get; set; }
+            public DbSet<TEntity> DbSet { get; set; }
+            public IQueryable<TEntity> Entities { get; set; }
+            public IQueryable<TEntity> EntitiesNoTracking { get; set; }
+        }
 
         protected EFRepositoryBase(IServiceProvider serviceProvider)
         {
@@ -41,50 +45,49 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
         /// <summary>
-        /// Gets the DbContext with UoW-aware caching
+        /// Gets the DbContext
         /// </summary>
-        protected TDbContext DbContext => GetCachedDbContext();
+        protected TDbContext DbContext => GetOrCreateCacheContext().DbContext;
 
         /// <summary>
-        /// Gets the DbSet with UoW-aware caching
+        /// Gets the DbSet
         /// </summary>
-        protected DbSet<TEntity> DbSet => GetCachedDbSet();
+        protected DbSet<TEntity> DbSet => GetOrCreateCacheContext().DbSet;
 
         /// <summary>
         /// Gets entities with tracking
         /// </summary>
-        protected IQueryable<TEntity> Entities => GetCachedEntities();
+        protected IQueryable<TEntity> Entities => GetOrCreateCacheContext().Entities;
 
         /// <summary>
         /// Gets entities without tracking
         /// </summary>
-        protected IQueryable<TEntity> EntitiesNoTracking => GetCachedEntitiesNoTracking();
+        protected IQueryable<TEntity> EntitiesNoTracking => GetOrCreateCacheContext().EntitiesNoTracking;
 
         /// <summary>
         /// Async version for getting DbContext
         /// </summary>
-        protected async Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
+        protected Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
         {
-            return await _contextFactory.GetDbContextAsync(cancellationToken);
+            return Task.FromResult(_contextFactory.GetDbContext());
         }
 
         /// <summary>
         /// Async version for getting DbSet
         /// </summary>
-        protected async Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
+        protected Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
         {
-            var context = await GetDbContextAsync(cancellationToken);
-            return context.Set<TEntity>();
+            var context = _contextFactory.GetDbContext();
+            return Task.FromResult(context.Set<TEntity>());
         }
 
         #region UoW-Aware Caching Implementation
 
-        private TDbContext GetCachedDbContext()
+        private CacheContext GetOrCreateCacheContext()
         {
             var currentUow = _unitOfWorkManager.Current;
             var isUsingImplicitMode = _efCoreOptions.ImplicitModeForUow;
 
-            // In implicit mode, allow access without UoW; in explicit mode, require UoW
             if (currentUow == null && !isUsingImplicitMode)
             {
                 throw new InvalidOperationException(
@@ -93,69 +96,55 @@ namespace MiCake.EntityFrameworkCore.Repository
                     $"Or enable ImplicitModeForUow in MiCakeEFCoreOptions.");
             }
 
-            lock (_cacheLock)
+            var cacheKey = currentUow?.Id ?? Guid.Empty;
+
+            var cached = _asyncLocalCache.Value;
+            if (cached != null && cached.UowId == cacheKey)
+                return cached;
+
+            _initLock.Wait();
+            try
             {
-                var cacheKey = currentUow?.Id ?? Guid.Empty;
+                // Double-check after acquiring lock
+                cached = _asyncLocalCache.Value;
+                if (cached != null && cached.UowId == cacheKey)
+                    return cached;
 
-                // Check if we need to invalidate cache (different UoW/mode or no cache)
-                if (_cachedUowId != cacheKey)
-                {
-                    InvalidateCache();
-                    _cachedUowId = cacheKey;
-
-                    try
-                    {
-                        _cachedDbContext = _contextFactory.GetDbContextAsync().GetAwaiter().GetResult();
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        throw new InvalidOperationException(
-                            $"Failed to create a DbContext for {typeof(TDbContext).Name}. " +
-                            "Please ensure you've registered your DbContext with the service provider using AddDbContext or AddDbContextPool.",
-                            ex);
-                    }
-                }
-
-                return _cachedDbContext;
+                cached = CreateCacheContext(cacheKey);
+                _asyncLocalCache.Value = cached;
+                return cached;
+            }
+            finally
+            {
+                _initLock.Release();
             }
         }
 
-        private DbSet<TEntity> GetCachedDbSet()
+        private CacheContext CreateCacheContext(Guid uowId)
         {
-            lock (_cacheLock)
+            TDbContext dbContext;
+            try
             {
-                _cachedDbSet ??= GetCachedDbContext().Set<TEntity>();
-                return _cachedDbSet;
+                dbContext = _contextFactory.GetDbContext();
             }
-        }
-
-        private IQueryable<TEntity> GetCachedEntities()
-        {
-            lock (_cacheLock)
+            catch (InvalidOperationException ex)
             {
-                if (_cachedEntities == null)
-                {
-                    _cachedEntities = GetCachedDbSet().AsQueryable();
-                }
-                return _cachedEntities;
+                throw new InvalidOperationException(
+                    $"Failed to create a DbContext for {typeof(TDbContext).Name}. " +
+                    "Please ensure you've registered your DbContext with the service provider using AddDbContext or AddDbContextPool.",
+                    ex);
             }
-        }
 
-        private IQueryable<TEntity> GetCachedEntitiesNoTracking()
-        {
-            lock (_cacheLock)
+            var cache = new CacheContext
             {
-                _cachedEntitiesNoTracking ??= GetCachedDbSet().AsNoTracking();
-                return _cachedEntitiesNoTracking;
-            }
-        }
+                UowId = uowId,
+                DbContext = dbContext,
+                DbSet = dbContext.Set<TEntity>(),
+            };
+            cache.Entities = cache.DbSet.AsQueryable();
+            cache.EntitiesNoTracking = cache.DbSet.AsNoTracking();
 
-        private void InvalidateCache()
-        {
-            _cachedDbContext = null;
-            _cachedDbSet = null;
-            _cachedEntities = null;
-            _cachedEntitiesNoTracking = null;
+            return cache;
         }
 
         #endregion

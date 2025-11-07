@@ -1,4 +1,5 @@
 ﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Util.Reflection;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions;
 using System;
@@ -28,7 +29,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             var repoType = _readOnlyRepoTypeCache.GetOrAdd(typeof(TAggregateRoot),
                   key => typeof(EFReadOnlyRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TAggregateRoot), typeof(TKey)));
 
-            return (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(repoType, _serviceProvider);
+            return (IRepository<TAggregateRoot, TKey>)CompiledActivator.CreateInstance(repoType, _serviceProvider);
         }
 
         public IRepository<TAggregateRoot, TKey> GetRepository()
@@ -36,7 +37,7 @@ namespace MiCake.EntityFrameworkCore.Repository
             var repoType = _repoTypeCache.GetOrAdd(typeof(TAggregateRoot),
                   key => typeof(EFRepository<,,>).MakeGenericType(_options.DbContextType, typeof(TAggregateRoot), typeof(TKey)));
 
-            return (IRepository<TAggregateRoot, TKey>)Activator.CreateInstance(repoType, _serviceProvider);
+            return (IRepository<TAggregateRoot, TKey>)CompiledActivator.CreateInstance(repoType, _serviceProvider);
         }
     }
 }

@@ -4,10 +4,17 @@ using System;
 namespace MiCake.Audit.Core
 {
     /// <summary>
-    /// Provides creation and modification time for entities
+    /// Provides creation and modification time for entities.
+    /// Supports customization of time generation logic through <see cref="CurrentTimeProvider"/>.
     /// </summary>
-    internal class DefaultTimeAuditProvider : IAuditProvider
+    public class DefaultTimeAuditProvider : IAuditProvider
     {
+        /// <summary>
+        /// Gets or sets the function that provides the current time for audit operations.
+        /// Default: <see cref="DateTime.Now"/>
+        /// </summary>
+        public static Func<DateTime> CurrentTimeProvider { get; set; } = () => DateTime.Now;
+
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
             switch (auditObjectModel.EntityState)
@@ -15,7 +22,7 @@ namespace MiCake.Audit.Core
                 case RepositoryEntityState.Added:
                     SetCreationTime(auditObjectModel.AuditEntity);
                     break;
-                    
+
                 case RepositoryEntityState.Modified:
                     SetModificationTime(auditObjectModel.AuditEntity);
                     break;
@@ -24,10 +31,10 @@ namespace MiCake.Audit.Core
 
         private static void SetCreationTime(object entity)
         {
-            if (entity is IHasCreationTime hasCreationTime && 
+            if (entity is IHasCreationTime hasCreationTime &&
                 hasCreationTime.CreationTime == default)
             {
-                hasCreationTime.CreationTime = DateTime.Now;
+                hasCreationTime.CreationTime = CurrentTimeProvider();
             }
         }
 
@@ -35,7 +42,7 @@ namespace MiCake.Audit.Core
         {
             if (entity is IHasModificationTime hasModificationTime)
             {
-                hasModificationTime.ModificationTime = DateTime.Now;
+                hasModificationTime.ModificationTime = CurrentTimeProvider();
             }
         }
     }

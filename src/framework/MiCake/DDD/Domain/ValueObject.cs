@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MiCake.DDD.Domain
 {
-    //Inspired from https://docs.microsoft.com/en-us/dotnet/standard/microservices-architecture/microservice-ddd-cqrs-patterns/implement-value-objects
-
+    /// <summary>
+    /// Base class for value objects following Domain-Driven Design principles.
+    /// Value objects are immutable and compared by their property values rather than identity.
+    /// </summary>
     public abstract class ValueObject : IValueObject
     {
         protected static bool EqualOperator(ValueObject left, ValueObject right)
@@ -21,6 +24,11 @@ namespace MiCake.DDD.Domain
             return !(EqualOperator(left, right));
         }
 
+        /// <summary>
+        /// Returns the components used for equality comparison.
+        /// Derived classes must implement this to return all fields that define equality.
+        /// </summary>
+        /// <returns>An enumerable of components to compare</returns>
         protected abstract IEnumerable<object> GetEqualityComponents();
 
         public override bool Equals(object obj)
@@ -37,9 +45,12 @@ namespace MiCake.DDD.Domain
 
         public override int GetHashCode()
         {
-            return GetEqualityComponents()
-                .Select(x => x != null ? x.GetHashCode() : 0)
-                .Aggregate((x, y) => x ^ y);
+            var hash = new HashCode();
+            foreach (var component in GetEqualityComponents())
+            {
+                hash.Add(component);
+            }
+            return hash.ToHashCode();
         }
 
         public static bool operator ==(ValueObject left, ValueObject right)
@@ -59,7 +70,8 @@ namespace MiCake.DDD.Domain
     }
 
     /// <summary>
-    /// A <see cref="IValueObject"/> use C# record.
+    /// A <see cref="IValueObject"/> using C# record.
+    /// Records provide built-in value-based equality and immutability.
     /// </summary>
     public abstract record RecordValueObject : IValueObject { };
 }

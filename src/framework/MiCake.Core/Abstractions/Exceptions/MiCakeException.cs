@@ -3,7 +3,7 @@
 namespace MiCake.Core
 {
     /// <summary>
-    /// Base exception type for Micake farmework.
+    /// Base exception type for Micake framework.
     /// </summary>
     [Serializable]
     public class MiCakeException : Exception

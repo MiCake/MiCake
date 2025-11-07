@@ -1,5 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MiCake.EntityFrameworkCore.Internal
 {
@@ -31,7 +33,12 @@ namespace MiCake.EntityFrameworkCore.Internal
             // Resolve the singleton IEFSaveChangesLifetime service 
             // This service uses lazy resolution for its scoped dependencies
             var saveChangesLifetime = _serviceProvider.GetRequiredService<IEFSaveChangesLifetime>();
-            return new MiCakeEFCoreInterceptor(saveChangesLifetime);
+            
+            // Logger is optional - uses NullLogger if not registered
+            var logger = _serviceProvider.GetService<ILogger<MiCakeEFCoreInterceptor>>() 
+                ?? NullLogger<MiCakeEFCoreInterceptor>.Instance;
+            
+            return new MiCakeEFCoreInterceptor(saveChangesLifetime, logger);
         }
 
         /// <summary>

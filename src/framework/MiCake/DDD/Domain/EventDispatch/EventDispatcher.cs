@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiCake.Core.Util.Reflection;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
@@ -38,7 +39,7 @@ namespace MiCake.DDD.Domain.EventDispatch
         {
             var domainEventType = domainEvent.GetType();
             var handler = _domainEventHandlers.GetOrAdd(domainEventType,
-                factory => (DomainEventHandlerWrapper)Activator.CreateInstance(typeof(DomainEventHandlerWrapperImp<>).MakeGenericType(domainEventType)));
+                factory => (DomainEventHandlerWrapper)CompiledActivator.CreateInstance(typeof(DomainEventHandlerWrapperImp<>).MakeGenericType(domainEventType)));
 
             return handler.Handle(domainEvent, cancellationToken, _serviceProvider, PublishCore);
         }

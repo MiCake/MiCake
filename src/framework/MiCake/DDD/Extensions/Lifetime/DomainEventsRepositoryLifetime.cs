@@ -1,7 +1,10 @@
-﻿using MiCake.DDD.Domain.EventDispatch;
+﻿using MiCake.DDD.Domain;
+using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,43 +14,72 @@ namespace MiCake.DDD.Extensions.Lifetime
     {
         private readonly IEventDispatcher _eventDispatcher;
         private readonly ILogger<DomainEventsRepositoryLifetime> _logger;
+        private readonly DomainEventOptions _options;
 
-        public DomainEventsRepositoryLifetime(IEventDispatcher eventDispatcher, ILoggerFactory loggerFactory)
+        public DomainEventsRepositoryLifetime(
+            IEventDispatcher eventDispatcher, 
+            ILoggerFactory loggerFactory,
+            IOptions<DomainEventOptions> options)
         {
             _eventDispatcher = eventDispatcher;
             _logger = loggerFactory.CreateLogger<DomainEventsRepositoryLifetime>();
+            _options = options?.Value ?? new DomainEventOptions();
         }
 
         public int Order { get; set; } = -1000;
 
         public async ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
-            if (entity is IDomainEventProvider domainEventProvider)
+            if (entity is not IDomainEventProvider domainEventProvider)
+                return entityState;
+
+            var entityEvents = domainEventProvider.GetDomainEvents();
+            if (entityEvents == null || entityEvents.Count == 0)
+                return entityState;
+
+            var completedEventCount = 0;
+            var failedEvents = new List<(IDomainEvent DomainEvent, Exception Error)>();
+
+            foreach (var @event in entityEvents)
             {
-                var entityEvents = domainEventProvider.GetDomainEvents();
-                var completedEventCount = 0;
-
-                if (entityEvents == null || entityEvents.Count == 0)
-                    return entityState;
-
-                foreach (var @event in entityEvents)
+                try
                 {
-                    try
-                    {
-                        await _eventDispatcher.DispatchAsync(@event, cancellationToken);
-                        completedEventCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "There has a error when dispatch domain event.");
-                    }
+                    await _eventDispatcher.DispatchAsync(@event, cancellationToken);
+                    completedEventCount++;
                 }
-
-                if (completedEventCount != entityEvents.Count)
+                catch (Exception ex)
                 {
-                    //count is not equal. prove the existence of failed events
+                    _logger.LogError(ex, "Failed to dispatch domain event of type {EventType}", @event.GetType().Name);
+                    failedEvents.Add((@event, ex));
+
+                    if (_options.OnEventFailure == DomainEventOptions.EventFailureStrategy.ThrowOnError)
+                    {
+                        throw new DomainEventException(
+                            $"Failed to dispatch domain event of type {@event.GetType().Name}. See inner exception for details.",
+                            @event,
+                            ex);
+                    }
+
+                    if (_options.OnEventFailure == DomainEventOptions.EventFailureStrategy.StopOnError)
+                    {
+                        _logger.LogWarning(
+                            "Stopping domain event dispatch due to error. Completed: {Completed}, Failed: {Failed}",
+                            completedEventCount,
+                            failedEvents.Count);
+                        break;
+                    }
                 }
             }
+
+            if (failedEvents.Count > 0 && 
+                _options.OnEventFailure == DomainEventOptions.EventFailureStrategy.ContinueOnError)
+            {
+                _logger.LogWarning(
+                    "Domain event dispatch completed with {FailedCount} failures out of {TotalCount} events",
+                    failedEvents.Count,
+                    entityEvents.Count);
+            }
+
             return entityState;
         }
     }

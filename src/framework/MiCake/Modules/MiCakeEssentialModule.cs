@@ -36,6 +36,11 @@ namespace MiCake.Modules
                 //RepositoryLifeTime
                 services.AddScoped<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 
+                if (auditOptions?.AuditTimeProvider is not null)
+                {
+                    DefaultTimeAuditProvider.CurrentTimeProvider = auditOptions.AuditTimeProvider;
+                }
+
                 if (auditOptions?.UseSoftDeletion == true)
                 {
                     //Audit Deletion Time

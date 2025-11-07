@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
@@ -17,12 +15,12 @@ namespace MiCake.EntityFrameworkCore.Uow
         /// <summary>
         /// Gets the DbContext for the current Unit of Work
         /// </summary>
-        Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default);
+        TDbContext GetDbContext();
 
         /// <summary>
         /// Gets the DbContext wrapper for the current Unit of Work
         /// </summary>
-        Task<EFCoreDbContextWrapper> GetDbContextWrapperAsync(CancellationToken cancellationToken = default);
+        EFCoreDbContextWrapper GetDbContextWrapper();
     }
 
     /// <summary>
@@ -48,7 +46,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _efCoreOptions = efCoreOptions.Value;
         }
 
-        public async Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
+        public TDbContext GetDbContext()
         {
             var isUsingImplicitMode = _efCoreOptions.ImplicitModeForUow;
             if (isUsingImplicitMode && _unitOfWorkManager.Current == null)
@@ -56,11 +54,11 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return _serviceProvider.GetRequiredService<TDbContext>();
             }
 
-            var wrapper = await GetDbContextWrapperAsync(cancellationToken);
+            var wrapper = GetDbContextWrapper();
             return (TDbContext)wrapper.DbContext;
         }
 
-        public Task<EFCoreDbContextWrapper> GetDbContextWrapperAsync(CancellationToken cancellationToken = default)
+        public EFCoreDbContextWrapper GetDbContextWrapper()
         {
             var currentUow = _unitOfWorkManager.Current ?? throw new InvalidOperationException(
                        $"No active Unit of Work found. Please ensure you're within a Unit of Work scope when accessing {typeof(TDbContext).Name}. " +
@@ -90,7 +88,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _logger.LogDebug("Retrieved EFCore DbContext wrapper for {DbContextType} with identifier {ContextIdentifier} in UoW {UowId}",
                 typeof(TDbContext).Name, wrapper.ContextIdentifier, currentUow.Id);
 
-            return Task.FromResult(wrapper);
+            return wrapper;
         }
     }
 }
