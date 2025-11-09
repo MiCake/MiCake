@@ -4,37 +4,43 @@ using System;
 namespace MiCake.Core
 {
     /// <summary>
-    /// A build for <see cref="IMiCakeApplication"/>
+    /// A builder for <see cref="IMiCakeApplication"/>
     /// </summary>
     public class MiCakeBuilder : IMiCakeBuilder
     {
         private readonly MiCakeApplicationOptions _options;
         private readonly Type _entryType;
         private readonly IServiceCollection _services;
-        private readonly bool _needNewScopeed;
+        private readonly bool _needNewScope;
 
         private Action<IMiCakeApplication, IServiceCollection> _configureAction;
 
-        public MiCakeBuilder(IServiceCollection services,
-                             Type entryType,
-                             MiCakeApplicationOptions options,
-                             bool needNewScope = false)
+        public MiCakeBuilder(
+            IServiceCollection services,
+            Type entryType,
+            MiCakeApplicationOptions options,
+            bool needNewScope = false)
         {
-            _services = services;
-            _entryType = entryType;
+            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _entryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
             _options = options ?? new MiCakeApplicationOptions();
-
-            _needNewScopeed = needNewScope;
+            _needNewScope = needNewScope;
 
             AddEnvironment();
         }
 
         public IMiCakeApplication Build()
         {
-            var app = new MiCakeApplication(_services, _options, _needNewScopeed);
+            // Build the service provider first
+            var serviceProvider = _services.BuildServiceProvider();
+
+            // Create the application with the service provider
+            var app = new MiCakeApplication(_services, serviceProvider, _options, _needNewScope);
 
             _configureAction?.Invoke(app, _services);
             app.SetEntry(_entryType);
+            
+            // Initialize synchronously (blocking) - this is required before the app can be used
             app.Initialize().GetAwaiter().GetResult();
 
             return app;
@@ -54,7 +60,6 @@ namespace MiCake.Core
         private void AddEnvironment()
         {
             var environment = new MiCakeEnvironment { EntryType = _entryType };
-
             _services.AddSingleton<IMiCakeEnvironment>(environment);
         }
     }

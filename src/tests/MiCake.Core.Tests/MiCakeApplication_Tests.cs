@@ -26,7 +26,8 @@ namespace MiCake.Core.Tests
                 DomainLayerAssemblies = assemblies
             };
 
-            MiCakeApplication miCakeApplication = new(Services, options, false);
+            var serviceProvider = Services.BuildServiceProvider();
+            MiCakeApplication miCakeApplication = new(Services, serviceProvider, options, false);
             Services.AddSingleton<IMiCakeApplication>(miCakeApplication);
             miCakeApplication.SetEntry(typeof(MiCakeCoreTestModule));
             await miCakeApplication.Initialize();

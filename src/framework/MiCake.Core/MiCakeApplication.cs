@@ -9,125 +9,175 @@ using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
-    public class MiCakeApplication(
-        IServiceCollection services,
-        MiCakeApplicationOptions options,
-        bool needNewScope) : IMiCakeApplication, IDependencyReceiver<IServiceProvider>
+    /// <summary>
+    /// Represents a MiCake application instance.
+    /// Manages the module system and application lifecycle.
+    /// </summary>
+    public class MiCakeApplication : IMiCakeApplication
     {
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
-        public MiCakeApplicationOptions ApplicationOptions { get; private set; } = options;
+        private readonly IServiceCollection _services;
+        private readonly IServiceScope _appServiceScope;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly bool _needNewScope;
+        
+        private Type _entryType;
+        private IMiCakeModuleBoot _miCakeModuleBoot;
+        
+        private bool _isInitialized;
+        private bool _isStarted;
+        private bool _isShutdown;
 
         /// <summary>
-        /// <inheritdoc/>
+        /// Application options
         /// </summary>
-        public IMiCakeModuleManager ModuleManager { get; private set; } = new MiCakeModuleManager();
+        public MiCakeApplicationOptions ApplicationOptions { get; private set; }
 
-        private readonly IServiceCollection _services = services;
-        private IServiceScope _appServiceScope;
+        /// <summary>
+        /// Module manager
+        /// </summary>
+        public IMiCakeModuleManager ModuleManager { get; private set; }
 
-        private IServiceProvider _appServiceProvider;
+        /// <summary>
+        /// Service provider for the application
+        /// </summary>
         public IServiceProvider AppServiceProvider
         {
             get
             {
-                if (_appServiceProvider == null)
+                if (_needNewScope && _appServiceScope != null)
                 {
-                    if (_needNewScope)
-                        _appServiceScope = _serviceProvider.CreateScope();
-
-                    _appServiceProvider = _appServiceScope == null ?
-                                                    _serviceProvider :
-                                                    _appServiceScope.ServiceProvider;
+                    return _appServiceScope.ServiceProvider;
                 }
-                return _appServiceProvider;
+                return _serviceProvider;
             }
         }
 
         private IMiCakeModuleContext ModuleContext => ModuleManager?.ModuleContext;
 
-        private Type _entryType;
-        private IMiCakeModuleBoot _miCakeModuleBoot;
-        private IServiceProvider _serviceProvider;
-        private readonly bool _needNewScope = needNewScope;
+        /// <summary>
+        /// Creates a new MiCake application instance.
+        /// </summary>
+        /// <param name="services">Service collection</param>
+        /// <param name="serviceProvider">Service provider (required for application startup)</param>
+        /// <param name="options">Application options</param>
+        /// <param name="needNewScope">Whether to create a new scope</param>
+        public MiCakeApplication(
+            IServiceCollection services,
+            IServiceProvider serviceProvider,
+            MiCakeApplicationOptions options,
+            bool needNewScope = false)
+        {
+            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            ApplicationOptions = options ?? new MiCakeApplicationOptions();
+            _needNewScope = needNewScope;
+            
+            ModuleManager = new MiCakeModuleManager();
 
-        private readonly bool _isInitialized = false;
-        private readonly bool _isStarted = false;
-        private readonly bool _isShutdown = false;
+            if (_needNewScope)
+            {
+                _appServiceScope = _serviceProvider.CreateScope();
+            }
+        }
 
         /// <summary>
-        /// Start micake application.
-        /// Must provider <see cref="IServiceProvider"/>
+        /// Start MiCake application.
         /// </summary>
         public virtual async Task Start()
         {
-            if (AppServiceProvider == null)
-                throw new ArgumentNullException(nameof(AppServiceProvider));
-
             if (_isStarted)
-                throw new InvalidOperationException($"MiCake has already started.");
+                throw new InvalidOperationException("MiCake has already started.");
 
-            //Module Inspection.
+            if (!_isInitialized)
+                throw new InvalidOperationException("MiCake must be initialized before starting. Call Initialize() first.");
+
+            if (AppServiceProvider == null)
+                throw new InvalidOperationException("ServiceProvider is not available.");
+
+            _logger?.LogInformation("Starting MiCake Application...");
+
+            // Module Inspection
             var inspectContext = new ModuleInspectionContext(AppServiceProvider, ModuleContext.MiCakeModules);
             foreach (var module in ModuleContext.MiCakeModules)
             {
                 if (module is IModuleSelfInspection selfInspection)
-                    await selfInspection.Inspect(inspectContext);
+                    await selfInspection.Inspect(inspectContext)
+                        .ConfigureAwait(false);
             }
 
             var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
-            await _miCakeModuleBoot.Initialization(context);
+            await _miCakeModuleBoot.Initialization(context)
+                .ConfigureAwait(false);
 
-            //Release options additional info.
+            // Release options additional info
             ApplicationOptions.ExtraDataStash.Release();
+
+            _isStarted = true;
+            _logger?.LogInformation("MiCake Application Started Successfully.");
         }
 
         /// <summary>
-        /// Shudown micake application
+        /// Shutdown MiCake application
         /// </summary>
         public virtual async Task ShutDown()
         {
             if (_isShutdown)
-                throw new InvalidOperationException($"MiCake has already shutdown.");
+                throw new InvalidOperationException("MiCake has already shutdown.");
+
+            _logger?.LogInformation("Shutting Down MiCake Application...");
 
             var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
-            await _miCakeModuleBoot.ShutDown(context);
+            await _miCakeModuleBoot.ShutDown(context)
+                .ConfigureAwait(false);
 
             _appServiceScope?.Dispose();
+
+            _isShutdown = true;
+            _logger?.LogInformation("MiCake Application Shutdown Completed.");
         }
 
         /// <summary>
-        /// Initialize micake services
+        /// Initialize MiCake services
         /// </summary>
         public async Task Initialize()
         {
             if (_isInitialized)
-                throw new InvalidOperationException($"MiCake has already build common services." +
-                                        $"The {nameof(Initialize)} method only can called once!");
+                throw new InvalidOperationException(
+                    $"MiCake has already been initialized. The {nameof(Initialize)} method can only be called once!");
 
             if (_entryType == null)
-                throw new NullReferenceException($"Cannot find entry module type,Please make sure you has already call {nameof(SetEntry)} method.");
+                throw new InvalidOperationException(
+                    $"Cannot find entry module type. Please make sure you have called {nameof(SetEntry)} method.");
 
-            AddMiCakeCoreSerivces(_services);
+            _logger?.LogInformation("Initializing MiCake Application...");
 
-            //Find all micake modules according to the entry module type
-            await ModuleManager.PopulateModules(_entryType);
+            AddMiCakeCoreServices(_services);
+
+            // Find all MiCake modules according to the entry module type
+            await ModuleManager.PopulateModules(_entryType)
+                .ConfigureAwait(false);
+            
             _services.AddSingleton(ModuleContext);
 
-            var loggerFactory = _services.BuildServiceProvider().GetRequiredService<ILoggerFactory>()
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() 
                                 ?? NullLoggerFactory.Instance;
 
             _miCakeModuleBoot = new MiCakeModuleBoot(loggerFactory, ModuleContext.MiCakeModules);
-            //auto register services to di.
-            await _miCakeModuleBoot.AddConfigService(AutoRegisterServices);
+            
+            // Auto register services to DI
+            await _miCakeModuleBoot.AddConfigService(AutoRegisterServices)
+                .ConfigureAwait(false);
 
             var configServiceContext = new ModuleConfigServiceContext(
-                                                _services,
-                                                ModuleContext.MiCakeModules,
-                                                ApplicationOptions);
+                _services,
+                ModuleContext.MiCakeModules,
+                ApplicationOptions);
 
-            await _miCakeModuleBoot.ConfigServices(configServiceContext);
+            await _miCakeModuleBoot.ConfigServices(configServiceContext)
+                .ConfigureAwait(false);
+
+            _isInitialized = true;
+            _logger?.LogInformation("MiCake Application Initialized Successfully.");
         }
 
         /// <summary>
@@ -135,25 +185,17 @@ namespace MiCake.Core
         /// </summary>
         public void SetEntry(Type type)
         {
-            _entryType = type ?? throw new ArgumentException("Please add startup type when you use AddMiCake().");
+            _entryType = type ?? throw new ArgumentException(
+                $"Entry module type cannot be null. Please provide a valid module type when calling AddMiCake().");
         }
 
-        /// <summary>
-        /// Set <see cref="IServiceProvider"/>.
-        /// </summary>
-        void IDependencyReceiver<IServiceProvider>.AddDependency(IServiceProvider parts)
-        {
-            _serviceProvider = parts ??
-                              throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");
-        }
-
-        private void AddMiCakeCoreSerivces(IServiceCollection services)
+        private void AddMiCakeCoreServices(IServiceCollection services)
         {
             services.AddSingleton<IMiCakeApplication>(this);
             services.Configure<MiCakeApplicationOptions>(op => op.Apply(ApplicationOptions));
         }
 
-        //Inject service into container according to matching rules
+        // Inject service into container according to matching rules
         private void AutoRegisterServices(ModuleConfigServiceContext context)
         {
             var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
@@ -163,13 +205,15 @@ namespace MiCake.Core
             serviceRegistrar.Register(context.MiCakeModules);
         }
 
-
         public async ValueTask DisposeAsync()
         {
             if (!_isShutdown)
-                await ShutDown();
+                await ShutDown().ConfigureAwait(false);
 
             ModuleManager = null;
         }
+
+        private ILogger _logger => _serviceProvider?.GetService<ILoggerFactory>()
+            ?.CreateLogger<MiCakeApplication>();
     }
 }

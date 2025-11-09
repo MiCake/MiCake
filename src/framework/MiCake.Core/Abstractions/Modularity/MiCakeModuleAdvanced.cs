@@ -1,0 +1,65 @@
+using System.Threading.Tasks;
+
+namespace MiCake.Core.Modularity
+{
+    /// <summary>
+    /// Advanced base class for MiCake modules with fine-grained lifecycle control
+    /// Use this when you need precise control over module configuration and initialization order.
+    /// Most modules should use <see cref="MiCakeModule"/> instead.
+    /// </summary>
+    public abstract class MiCakeModuleAdvanced : MiCakeModule, IMiCakeModuleAdvanced
+    {
+        /// <summary>
+        /// Pre-configure services - Execute before ConfigureServices
+        /// Use this for early configuration that other modules might depend on.
+        /// </summary>
+        /// <param name="context">Contains Services, other modules, and application options</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public virtual Task PreConfigureServices(object context)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Post-configure services - Execute after ConfigureServices
+        /// Use this for configuration that depends on services registered by other modules.
+        /// </summary>
+        /// <param name="context">Contains Services, other modules, and application options</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public virtual Task PostConfigureServices(object context)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Pre-initialization - Execute before OnApplicationInitialization
+        /// </summary>
+        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public virtual Task PreInitialization(object context)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Post-initialization - Execute after OnApplicationInitialization
+        /// </summary>
+        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public virtual Task PostInitialization(object context)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Pre-shutdown - Execute before OnApplicationShutdown
+        /// Use this to prepare for graceful shutdown.
+        /// </summary>
+        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public virtual Task PreShutdown(object context)
+        {
+            return Task.CompletedTask;
+        }
+    }
+}
