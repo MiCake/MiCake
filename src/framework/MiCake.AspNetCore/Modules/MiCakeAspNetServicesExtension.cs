@@ -79,35 +79,35 @@ namespace MiCake
 
         /// <summary>
         /// Start MiCake application.
+        /// This method initializes and starts all registered MiCake modules.
         /// </summary>
         /// <param name="applicationBuilder"><see cref="IApplicationBuilder"/></param>
         public static void StartMiCake(this IApplicationBuilder applicationBuilder)
         {
             var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
-                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
-                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
-
-            if (micakeApp is IDependencyReceiver<IServiceProvider> needServiceProvider)
-            {
-                needServiceProvider.AddDependency(applicationBuilder.ApplicationServices);
-            }
+                                    throw new InvalidOperationException(
+                                        $"Cannot find the instance of {nameof(IMiCakeApplication)}. " +
+                                        $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
             AddMiCakeCoreMiddleware(applicationBuilder);
 
-            micakeApp.Start();
+            // Start the application asynchronously but block on it for compatibility
+            micakeApp.Start().GetAwaiter().GetResult();
         }
 
         /// <summary>
         /// Shut down MiCake application.
+        /// This method gracefully shuts down all registered MiCake modules.
         /// </summary>
         /// <param name="applicationBuilder"><see cref="IApplicationBuilder"/></param>
         public static void ShutdownMiCake(this IApplicationBuilder applicationBuilder)
         {
             var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
-                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
-                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
+                                    throw new InvalidOperationException(
+                                        $"Cannot find the instance of {nameof(IMiCakeApplication)}. " +
+                                        $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
-            micakeApp.ShutDown();
+            micakeApp.ShutDown().GetAwaiter().GetResult();
         }
 
         /// <summary>
