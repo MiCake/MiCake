@@ -30,9 +30,9 @@ namespace MiCake.Core.Modularity
         /// Configure services - Register services to DI container during application startup
         /// This is the main place to register your services.
         /// </summary>
-        /// <param name="context">Contains Services, other modules, and application options</param>
+        /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
         /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task ConfigureServices(object context)
+        public virtual Task ConfigureServices(ModuleConfigServiceContext context)
         {
             return Task.CompletedTask;
         }
@@ -41,9 +41,9 @@ namespace MiCake.Core.Modularity
         /// Application initialization - Execute after application startup is complete
         /// Use this to perform initialization that requires services from the container.
         /// </summary>
-        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
+        /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
         /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task OnApplicationInitialization(object context)
+        public virtual Task OnApplicationInitialization(ModuleInitializationContext context)
         {
             return Task.CompletedTask;
         }
@@ -52,9 +52,9 @@ namespace MiCake.Core.Modularity
         /// Application shutdown - Execute cleanup work when application shuts down
         /// Use this to release resources and perform cleanup.
         /// </summary>
-        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
+        /// <param name="context">Module shutdown context containing ServiceProvider, other modules, and application options</param>
         /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task OnApplicationShutdown(object context)
+        public virtual Task OnApplicationShutdown(ModuleShutdownContext context)
         {
             return Task.CompletedTask;
         }

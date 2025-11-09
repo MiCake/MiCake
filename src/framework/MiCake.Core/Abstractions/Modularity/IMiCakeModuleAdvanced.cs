@@ -13,28 +13,28 @@ namespace MiCake.Core.Modularity
         /// Pre-configure services - Execute before ConfigureServices
         /// Use this for early configuration that other modules might depend on.
         /// </summary>
-        Task PreConfigureServices(object context);
+        Task PreConfigureServices(ModuleConfigServiceContext context);
 
         /// <summary>
         /// Post-configure services - Execute after ConfigureServices
         /// Use this for configuration that depends on services registered by other modules.
         /// </summary>
-        Task PostConfigureServices(object context);
+        Task PostConfigureServices(ModuleConfigServiceContext context);
 
         /// <summary>
         /// Pre-initialization - Execute before OnApplicationInitialization
         /// </summary>
-        Task PreInitialization(object context);
+        Task PreInitialization(ModuleInitializationContext context);
 
         /// <summary>
         /// Post-initialization - Execute after OnApplicationInitialization
         /// </summary>
-        Task PostInitialization(object context);
+        Task PostInitialization(ModuleInitializationContext context);
 
         /// <summary>
         /// Pre-shutdown - Execute before OnApplicationShutdown
         /// Use this to prepare for graceful shutdown.
         /// </summary>
-        Task PreShutdown(object context);
+        Task PreShutdown(ModuleShutdownContext context);
     }
 }

@@ -29,19 +29,19 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Configure services - Register services to DI container during application startup
         /// </summary>
-        /// <param name="context">Contains Services, other modules, and application options</param>
-        Task ConfigureServices(object context);
+        /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
+        Task ConfigureServices(ModuleConfigServiceContext context);
 
         /// <summary>
         /// Application initialization - Execute after application startup is complete
         /// </summary>
-        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
-        Task OnApplicationInitialization(object context);
+        /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
+        Task OnApplicationInitialization(ModuleInitializationContext context);
 
         /// <summary>
         /// Application shutdown - Execute cleanup work when application shuts down
         /// </summary>
-        /// <param name="context">Contains ServiceProvider, other modules, and application options</param>
-        Task OnApplicationShutdown(object context);
+        /// <param name="context">Module shutdown context containing ServiceProvider, other modules, and application options</param>
+        Task OnApplicationShutdown(ModuleShutdownContext context);
     }
 }

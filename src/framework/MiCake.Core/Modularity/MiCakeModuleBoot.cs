@@ -18,7 +18,7 @@ namespace MiCake.Core.Modularity
         private readonly MiCakeModuleLogger _moduleLogger;
 
         private Action<ModuleConfigServiceContext> _configServiceActions;
-        private Action<ModuleLoadContext> _initializationActions;
+        private Action<ModuleInitializationContext> _initializationActions;
 
         public MiCakeModuleBoot(
             ILoggerFactory loggerFactory,
@@ -36,27 +36,102 @@ namespace MiCake.Core.Modularity
 
             _logger.LogInformation("MiCake: Configuring Services......");
 
-            await StartModuleLifetime(_modules, bootInfos.Where(s => s.Type == ModuleBootType.ConfigService), context);
+            // Pre-configure services (only for advanced modules)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake PreConfigureServices: ");
+                if (module.Instance is IMiCakeModuleAdvanced advancedModule)
+                {
+                    await advancedModule.PreConfigureServices(context)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Configure services (standard lifecycle method)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake ConfigureServices: ");
+                await module.Instance.ConfigureServices(context)
+                    .ConfigureAwait(false);
+            }
+
+            // Post-configure services (only for advanced modules)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake PostConfigureServices: ");
+                if (module.Instance is IMiCakeModuleAdvanced advancedModule)
+                {
+                    await advancedModule.PostConfigureServices(context)
+                        .ConfigureAwait(false);
+                }
+            }
+
             _configServiceActions?.Invoke(context);
 
             _logger.LogInformation("MiCake: Service Configuration Completed.");
         }
 
-        public async Task Initialization(ModuleLoadContext context)
+        public async Task Initialization(ModuleInitializationContext context)
         {
             _logger.LogInformation("MiCake: Initializing Application......");
 
-            await StartModuleLifetime(_modules, bootInfos.Where(s => s.Type == ModuleBootType.Init), context);
+            // Pre-initialization (only for advanced modules)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake PreInitialization: ");
+                if (module.Instance is IMiCakeModuleAdvanced advancedModule)
+                {
+                    await advancedModule.PreInitialization(context)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Application initialization (standard lifecycle method)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake OnApplicationInitialization: ");
+                await module.Instance.OnApplicationInitialization(context)
+                    .ConfigureAwait(false);
+            }
+
+            // Post-initialization (only for advanced modules)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake PostInitialization: ");
+                if (module.Instance is IMiCakeModuleAdvanced advancedModule)
+                {
+                    await advancedModule.PostInitialization(context)
+                        .ConfigureAwait(false);
+                }
+            }
+
             _initializationActions?.Invoke(context);
 
             _logger.LogInformation("MiCake: Application Initialization Completed.");
         }
 
-        public async Task ShutDown(ModuleLoadContext context)
+        public async Task ShutDown(ModuleShutdownContext context)
         {
             _logger.LogInformation("MiCake: Shutting Down Application......");
 
-            await StartModuleLifetime(_modules, bootInfos.Where(s => s.Type == ModuleBootType.Shutdown), context);
+            // Pre-shutdown (only for advanced modules)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake PreShutdown: ");
+                if (module.Instance is IMiCakeModuleAdvanced advancedModule)
+                {
+                    await advancedModule.PreShutdown(context)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Application shutdown (standard lifecycle method)
+            foreach (var module in _modules)
+            {
+                _moduleLogger.LogModuleInfo(module, "MiCake OnApplicationShutdown: ");
+                await module.Instance.OnApplicationShutdown(context)
+                    .ConfigureAwait(false);
+            }
 
             _logger.LogInformation("MiCake: Application Shutdown Completed.");
         }
@@ -67,154 +142,10 @@ namespace MiCake.Core.Modularity
             return Task.CompletedTask;
         }
 
-        public Task AddInitalzation(Action<ModuleLoadContext> initalzationAction)
+        public Task AddInitalzation(Action<ModuleInitializationContext> initalzationAction)
         {
             _initializationActions += initalzationAction;
             return Task.CompletedTask;
         }
-
-        private async Task StartModuleLifetime(
-            IMiCakeModuleCollection modules,
-            IEnumerable<ModuleBootInfo> lifetimes,
-            object contextInfo)
-        {
-            foreach (var lifetimeInfo in lifetimes)
-            {
-                foreach (var module in modules)
-                {
-                    // Logging current module info
-                    _moduleLogger.LogModuleInfo(module, $"MiCake {lifetimeInfo.Description}: ");
-                    
-                    // Execute current module lifetime
-                    await lifetimeInfo.StartAction(module.Instance, contextInfo)
-                        .ConfigureAwait(false);
-                }
-            }
-        }
-
-        #region LifeTimes
-        private readonly List<ModuleBootInfo> bootInfos =
-        [
-            // Pre-configure services (only for advanced modules)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.ConfigService,
-                Description = "PreConfigureServices",
-                StartAction = async (s, context) =>
-                {
-                    if (s is IMiCakeModuleAdvanced advancedModule)
-                    {
-                        await advancedModule.PreConfigureServices(context)
-                            .ConfigureAwait(false);
-                    }
-                }
-            },
-            // Configure services (standard lifecycle method)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.ConfigService,
-                Description = "ConfigureServices",
-                StartAction = async (s, context) =>
-                {
-                    await s.ConfigureServices(context)
-                        .ConfigureAwait(false);
-                }
-            },
-            // Post-configure services (only for advanced modules)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.ConfigService,
-                Description = "PostConfigureServices",
-                StartAction = async (s, context) =>
-                {
-                    if (s is IMiCakeModuleAdvanced advancedModule)
-                    {
-                        await advancedModule.PostConfigureServices(context)
-                            .ConfigureAwait(false);
-                    }
-                }
-            },
-            // Pre-initialization (only for advanced modules)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.Init,
-                Description = "PreInitialization",
-                StartAction = async (s, context) =>
-                {
-                    if (s is IMiCakeModuleAdvanced advancedModule)
-                    {
-                        await advancedModule.PreInitialization(context)
-                            .ConfigureAwait(false);
-                    }
-                }
-            },
-            // Application initialization (standard lifecycle method)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.Init,
-                Description = "OnApplicationInitialization",
-                StartAction = async (s, context) =>
-                {
-                    await s.OnApplicationInitialization(context)
-                        .ConfigureAwait(false);
-                }
-            },
-            // Post-initialization (only for advanced modules)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.Init,
-                Description = "PostInitialization",
-                StartAction = async (s, context) =>
-                {
-                    if (s is IMiCakeModuleAdvanced advancedModule)
-                    {
-                        await advancedModule.PostInitialization(context)
-                            .ConfigureAwait(false);
-                    }
-                }
-            },
-            // Pre-shutdown (only for advanced modules)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.Shutdown,
-                Description = "PreShutdown",
-                StartAction = async (s, context) =>
-                {
-                    if (s is IMiCakeModuleAdvanced advancedModule)
-                    {
-                        await advancedModule.PreShutdown(context)
-                            .ConfigureAwait(false);
-                    }
-                }
-            },
-            // Application shutdown (standard lifecycle method)
-            new ModuleBootInfo()
-            {
-                Type = ModuleBootType.Shutdown,
-                Description = "OnApplicationShutdown",
-                StartAction = async (s, context) =>
-                {
-                    await s.OnApplicationShutdown(context)
-                        .ConfigureAwait(false);
-                }
-            },
-        ];
-
-        class ModuleBootInfo
-        {
-            public ModuleBootType Type { get; set; }
-
-            public Func<IMiCakeModule, object, Task> StartAction { get; set; }
-
-            public string Description { get; set; }
-        }
-
-        enum ModuleBootType
-        {
-            ConfigService,
-            Init,
-            Shutdown
-        }
-        #endregion
     }
 }

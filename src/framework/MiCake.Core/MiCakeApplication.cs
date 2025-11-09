@@ -16,9 +16,7 @@ namespace MiCake.Core
     public class MiCakeApplication : IMiCakeApplication
     {
         private readonly IServiceCollection _services;
-        private readonly IServiceScope _appServiceScope;
         private readonly IServiceProvider _serviceProvider;
-        private readonly bool _needNewScope;
         
         private Type _entryType;
         private IMiCakeModuleBoot _miCakeModuleBoot;
@@ -40,44 +38,27 @@ namespace MiCake.Core
         /// <summary>
         /// Service provider for the application
         /// </summary>
-        public IServiceProvider AppServiceProvider
-        {
-            get
-            {
-                if (_needNewScope && _appServiceScope != null)
-                {
-                    return _appServiceScope.ServiceProvider;
-                }
-                return _serviceProvider;
-            }
-        }
+        public IServiceProvider AppServiceProvider => _serviceProvider;
 
         private IMiCakeModuleContext ModuleContext => ModuleManager?.ModuleContext;
 
         /// <summary>
         /// Creates a new MiCake application instance.
+        /// This constructor should typically be called by the DI container.
         /// </summary>
         /// <param name="services">Service collection</param>
-        /// <param name="serviceProvider">Service provider (required for application startup)</param>
+        /// <param name="serviceProvider">Service provider (injected by DI container)</param>
         /// <param name="options">Application options</param>
-        /// <param name="needNewScope">Whether to create a new scope</param>
         public MiCakeApplication(
             IServiceCollection services,
             IServiceProvider serviceProvider,
-            MiCakeApplicationOptions options,
-            bool needNewScope = false)
+            MiCakeApplicationOptions options)
         {
             _services = services ?? throw new ArgumentNullException(nameof(services));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             ApplicationOptions = options ?? new MiCakeApplicationOptions();
-            _needNewScope = needNewScope;
             
             ModuleManager = new MiCakeModuleManager();
-
-            if (_needNewScope)
-            {
-                _appServiceScope = _serviceProvider.CreateScope();
-            }
         }
 
         /// <summary>
@@ -105,7 +86,7 @@ namespace MiCake.Core
                         .ConfigureAwait(false);
             }
 
-            var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
+            var context = new ModuleInitializationContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
             await _miCakeModuleBoot.Initialization(context)
                 .ConfigureAwait(false);
 
@@ -126,11 +107,9 @@ namespace MiCake.Core
 
             _logger?.LogInformation("Shutting Down MiCake Application...");
 
-            var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
+            var context = new ModuleShutdownContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
             await _miCakeModuleBoot.ShutDown(context)
                 .ConfigureAwait(false);
-
-            _appServiceScope?.Dispose();
 
             _isShutdown = true;
             _logger?.LogInformation("MiCake Application Shutdown Completed.");
