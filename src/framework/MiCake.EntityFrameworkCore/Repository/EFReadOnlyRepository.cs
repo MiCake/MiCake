@@ -20,10 +20,10 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
 
-        public virtual async Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
+        public virtual async Task<TAggregateRoot> FindAsync(TKey id, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
-            return await dbset.FindAsync(new object[] { ID }, cancellationToken);
+            return await dbset.FindAsync(new object[] { id }, cancellationToken);
         }
 
         public async Task<long> GetCountAsync(CancellationToken cancellationToken = default)

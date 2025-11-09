@@ -19,8 +19,8 @@ namespace MiCake.DDD.Extensions.Internal
             _inner = factory.CreateReadOnlyRepository();
         }
 
-        public Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
-            => _inner.FindAsync(ID, cancellationToken);
+        public Task<TAggregateRoot> FindAsync(TKey id, CancellationToken cancellationToken = default)
+            => _inner.FindAsync(id, cancellationToken);
 
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
             => _inner.GetCountAsync(cancellationToken);

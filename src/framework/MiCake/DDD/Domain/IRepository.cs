@@ -49,10 +49,10 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Delete aggregateRoot form repository by id.
         /// </summary>
-        /// <param name="ID"></param>
+        /// <param name="id"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default);
+        Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Save changes of this repository to database.

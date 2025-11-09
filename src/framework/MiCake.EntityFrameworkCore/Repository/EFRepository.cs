@@ -46,10 +46,10 @@ namespace MiCake.EntityFrameworkCore.Repository
             dbset.Remove(aggregateRoot);
         }
 
-        public virtual async Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+        public virtual async Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
-            await dbset.Where(e => e.Id.Equals(ID)).ExecuteDeleteAsync(cancellationToken);
+            await dbset.Where(e => e.Id.Equals(id)).ExecuteDeleteAsync(cancellationToken);
         }
 
         public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -42,7 +42,7 @@ namespace MiCake.DDD.Tests.ProxyRepository
             return Task.CompletedTask;
         }
 
-        public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
+        public Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
         }

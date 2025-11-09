@@ -14,10 +14,10 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Find your AggrageteRoot with primary key
         /// </summary>
-        /// <param name="ID">Primary key of the aggrageteRoot to get</param>
+        /// <param name="id">Primary key of the aggrageteRoot to get</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         /// <returns></returns>
-        Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default);
+        Task<TAggregateRoot> FindAsync(TKey id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets total count of all aggrageteroot.

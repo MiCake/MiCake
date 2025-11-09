@@ -31,11 +31,11 @@ namespace MiCake.DDD.Extensions.Internal
         public Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
             => _inner.DeleteAsync(aggregateRoot, cancellationToken);
 
-        public Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default)
-         => _inner.DeleteByIdAsync(ID, cancellationToken);
+        public Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
+         => _inner.DeleteByIdAsync(id, cancellationToken);
 
-        public Task<TAggregateRoot> FindAsync(TKey ID, CancellationToken cancellationToken = default)
-            => _inner.FindAsync(ID, cancellationToken);
+        public Task<TAggregateRoot> FindAsync(TKey id, CancellationToken cancellationToken = default)
+            => _inner.FindAsync(id, cancellationToken);
 
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default)
             => _inner.GetCountAsync(cancellationToken);
