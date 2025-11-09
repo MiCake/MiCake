@@ -5,38 +5,45 @@ using System.Threading.Tasks;
 namespace MiCake.Core
 {
     /// <summary>
-    /// Represents a micake application.
+    /// Represents a MiCake application instance.
+    /// The application manages the module system and coordinates the application lifecycle.
     /// </summary>
     public interface IMiCakeApplication : IAsyncDisposable
     {
         /// <summary>
-        /// <see cref="MiCakeApplicationOptions"/>
+        /// Gets the application options
         /// </summary>
-        public MiCakeApplicationOptions ApplicationOptions { get; }
+        MiCakeApplicationOptions ApplicationOptions { get; }
 
         /// <summary>
-        /// <see cref="IMiCakeModuleManager"/>
+        /// Gets the module manager responsible for module discovery and lifecycle
         /// </summary>
         IMiCakeModuleManager ModuleManager { get; }
 
         /// <summary>
-        /// Set entry module to start micake.
+        /// Sets the entry module type to start MiCake application.
+        /// The entry module serves as the root of the module dependency tree.
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="type">The entry module type</param>
         void SetEntry(Type type);
 
         /// <summary>
-        /// Use to build micake modules and trigger config services lifetime.
+        /// Initializes the MiCake application.
+        /// This discovers and configures all modules and their dependencies.
+        /// Must be called before <see cref="Start"/>.
         /// </summary>
         Task Initialize();
 
         /// <summary>
-        /// Start micake appliction.
+        /// Starts the MiCake application.
+        /// This executes the initialization lifecycle of all modules.
+        /// Must be called after <see cref="Initialize"/>.
         /// </summary>
         Task Start();
 
         /// <summary>
-        /// Used to gracefully shutdown the application and all modules.
+        /// Gracefully shuts down the application and all modules.
+        /// This executes the shutdown lifecycle of all modules in reverse order.
         /// </summary>
         Task ShutDown();
     }
