@@ -1,19 +1,21 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.Core.Modularity;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
     /// <summary>
     /// A builder for <see cref="IMiCakeApplication"/>
-    /// Registers MiCake services and configures the application to be resolved from DI container
+    /// Configures MiCake modules and registers services before the DI container is built
     /// </summary>
     public class MiCakeBuilder : IMiCakeBuilder
     {
         private readonly MiCakeApplicationOptions _options;
         private readonly Type _entryType;
         private readonly IServiceCollection _services;
-
-        private Action<IServiceCollection> _configureAction;
 
         public MiCakeBuilder(
             IServiceCollection services,
@@ -25,36 +27,33 @@ namespace MiCake.Core
             _options = options ?? new MiCakeApplicationOptions();
 
             AddEnvironment();
-            RegisterMiCakeApplication();
         }
 
         /// <summary>
-        /// Completes the MiCake configuration.
-        /// Returns the builder for chaining. The actual IMiCakeApplication will be resolved from DI container.
+        /// Builds the MiCake configuration and registers all module services.
+        /// This must be called to complete the setup and allow modules to register their services.
         /// </summary>
         public IMiCakeBuilder Build()
         {
-            _configureAction?.Invoke(_services);
+            // Initialize MiCake and configure all modules synchronously
+            // This happens BEFORE the service provider is built
+            InitializeMiCakeModules().GetAwaiter().GetResult();
+            
+            // Register the application factory - it will be resolved after ServiceProvider is built
+            RegisterMiCakeApplicationFactory();
+            
             return this;
         }
 
         public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp)
         {
-            // Store configuration to be applied when application is resolved
-            _configureAction += (services) =>
-            {
-                // Configuration will be applied when app is first resolved
-            };
+            // This can be stored and applied when the application is created
             return this;
         }
 
         public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication, IServiceCollection> configureApp)
         {
-            _configureAction += (services) =>
-            {
-                // Configuration will be applied when app is first resolved
-                // We'll need to handle this differently - store it for later
-            };
+            // This can be stored and applied when the application is created
             return this;
         }
 
@@ -64,20 +63,88 @@ namespace MiCake.Core
             _services.AddSingleton<IMiCakeEnvironment>(environment);
         }
 
-        private void RegisterMiCakeApplication()
+        private async Task InitializeMiCakeModules()
         {
-            // Register a factory that creates MiCakeApplication with proper dependencies
+            // Create a temporary module manager to discover modules
+            var moduleManager = new MiCakeModuleManager();
+            
+            // Discover all modules starting from entry module
+            await moduleManager.PopulateModules(_entryType).ConfigureAwait(false);
+            
+            // Register the module context as singleton
+            _services.AddSingleton(moduleManager.ModuleContext);
+            
+            // Store entry type and options for later
+            _services.AddSingleton(_options);
+            _services.AddSingleton(new MiCakeModuleEntryInfo(_entryType));
+            _services.Configure<MiCakeApplicationOptions>(op => op.Apply(_options));
+            
+            // Execute ConfigureServices lifecycle for all modules
+            // This allows modules to register their services
+            await ConfigureModuleServices(moduleManager.ModuleContext).ConfigureAwait(false);
+        }
+
+        private async Task ConfigureModuleServices(IMiCakeModuleContext moduleContext)
+        {
+            // Get a temporary logger factory for initialization
+            var tempServiceProvider = _services.BuildServiceProvider();
+            var loggerFactory = tempServiceProvider.GetService<ILoggerFactory>() 
+                                ?? Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
+            
+            var moduleBoot = new MiCakeModuleBoot(loggerFactory, moduleContext.MiCakeModules);
+            
+            // Auto register services
+            await moduleBoot.AddConfigService(AutoRegisterServices).ConfigureAwait(false);
+            
+            var configServiceContext = new ModuleConfigServiceContext(
+                _services,
+                moduleContext.MiCakeModules,
+                _options);
+            
+            // Execute ConfigureServices for all modules
+            await moduleBoot.ConfigServices(configServiceContext).ConfigureAwait(false);
+            
+            // Dispose temp service provider
+            (tempServiceProvider as IDisposable)?.Dispose();
+        }
+
+        private void AutoRegisterServices(ModuleConfigServiceContext context)
+        {
+            var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
+            if (_options.FindAutoServiceTypes != null)
+                serviceRegistrar.SetServiceTypesFinder(_options.FindAutoServiceTypes);
+
+            serviceRegistrar.Register(context.MiCakeModules);
+        }
+
+        private void RegisterMiCakeApplicationFactory()
+        {
+            // Register a factory that creates MiCakeApplication when needed
+            // At this point, all services from modules have been registered
             _services.AddSingleton<IMiCakeApplication>(sp =>
             {
-                // MiCakeApplication now gets IServiceProvider from DI container
-                var app = new MiCakeApplication(_services, sp, _options);
-                app.SetEntry(_entryType);
+                var moduleContext = sp.GetRequiredService<IMiCakeModuleContext>();
+                var entryInfo = sp.GetRequiredService<MiCakeModuleEntryInfo>();
+                var options = sp.GetRequiredService<MiCakeApplicationOptions>();
                 
-                // Initialize synchronously - this is a one-time operation
-                app.Initialize().GetAwaiter().GetResult();
+                var app = new MiCakeApplication(sp, moduleContext, options);
+                app.SetEntry(entryInfo.EntryType);
                 
                 return app;
             });
+        }
+    }
+    
+    /// <summary>
+    /// Internal class to store entry module information
+    /// </summary>
+    internal class MiCakeModuleEntryInfo
+    {
+        public Type EntryType { get; }
+        
+        public MiCakeModuleEntryInfo(Type entryType)
+        {
+            EntryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.Core.Modularity;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -18,7 +19,7 @@ namespace MiCake.Core.Tests
         }
 
         [Fact]
-        public async Task ApplicationOptions_AppointOptions_ShouldNotNull()
+        public void ApplicationOptions_AppointOptions_ShouldNotNull()
         {
             Assembly[] assemblies = { GetType().Assembly };
             MiCakeApplicationOptions options = new()
@@ -26,13 +27,12 @@ namespace MiCake.Core.Tests
                 DomainLayerAssemblies = assemblies
             };
 
-            var serviceProvider = Services.BuildServiceProvider();
-            MiCakeApplication miCakeApplication = new(Services, serviceProvider, options);
-            Services.AddSingleton<IMiCakeApplication>(miCakeApplication);
-            miCakeApplication.SetEntry(typeof(MiCakeCoreTestModule));
-            await miCakeApplication.Initialize();
+            // Use builder to configure
+            var builder = new MiCakeBuilder(Services, typeof(MiCakeCoreTestModule), options);
+            builder.Build();
 
-            var resolvedOptions = Services.BuildServiceProvider().GetService<IOptions<MiCakeApplicationOptions>>();
+            var serviceProvider = Services.BuildServiceProvider();
+            var resolvedOptions = serviceProvider.GetService<IOptions<MiCakeApplicationOptions>>();
 
             Assert.NotNull(resolvedOptions);
         }
