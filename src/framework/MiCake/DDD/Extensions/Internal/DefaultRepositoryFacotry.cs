@@ -8,6 +8,7 @@ namespace MiCake.DDD.Extensions.Internal
 {
     internal class DefaultRepositoryFacotry<TAggregateRoot, TKey> : IRepositoryFactory<TAggregateRoot, TKey>
          where TAggregateRoot : class, IAggregateRoot<TKey>
+         where TKey : notnull
     {
         private readonly List<AggregateRootDescriptor> _aggregateRootDescriptors;
         private readonly IRepositoryProvider<TAggregateRoot, TKey> _repositoryProvider;

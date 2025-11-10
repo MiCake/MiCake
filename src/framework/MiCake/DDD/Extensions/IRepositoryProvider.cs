@@ -7,6 +7,7 @@ namespace MiCake.DDD.Extensions
     /// </summary>
     public interface IRepositoryProvider<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>
+        where TKey : notnull
     {
         /// <summary>
         /// Get a instance of <see cref="IRepository{TAggregateRoot, TKey}"/>
