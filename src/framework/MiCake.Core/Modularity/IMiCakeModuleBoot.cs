@@ -1,31 +1,37 @@
 ﻿using System;
-using System.Threading.Tasks;
 
 namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// Micake module boot.use to initialization module and shutdown module.
+    /// MiCake module boot interface - Handles module lifecycle operations
     /// </summary>
     internal interface IMiCakeModuleBoot
     {
-        Task ConfigServices(ModuleConfigServiceContext context);
-
-        Task Initialization(ModuleLoadContext context);
-
-        Task ShutDown(ModuleLoadContext context);
+        /// <summary>
+        /// Configure services for all modules
+        /// </summary>
+        void ConfigServices(ModuleConfigServiceContext context);
 
         /// <summary>
-        /// Add other configservice actions. 
+        /// Initialize all modules
+        /// </summary>
+        void Initialization(ModuleInitializationContext context);
+
+        /// <summary>
+        /// Shutdown all modules
+        /// </summary>
+        void ShutDown(ModuleShutdownContext context);
+
+        /// <summary>
+        /// Add other config service actions. 
         /// This part of the operation will be called at the end of ConfigServices().
         /// </summary>
-        /// <param name="configServiceAction"></param>
-        Task AddConfigService(Action<ModuleConfigServiceContext> configServiceAction);
+        void AddConfigService(Action<ModuleConfigServiceContext> configServiceAction);
 
         /// <summary>
-        /// Add other initalzation actions. 
+        /// Add other initialization actions. 
         /// This part of the operation will be called at the end of Initialization().
         /// </summary>
-        /// <param name="initalzationAction"></param>
-        Task AddInitalzation(Action<ModuleLoadContext> initalzationAction);
+        void AddInitalzation(Action<ModuleInitializationContext> initalzationAction);
     }
 }

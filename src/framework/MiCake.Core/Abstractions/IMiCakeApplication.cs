@@ -1,43 +1,34 @@
 ﻿using MiCake.Core.Modularity;
 using System;
-using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
     /// <summary>
-    /// Represents a micake application.
+    /// Represents a MiCake application instance.
+    /// The application manages the module system and coordinates the application lifecycle.
     /// </summary>
-    public interface IMiCakeApplication : IAsyncDisposable
+    public interface IMiCakeApplication : IDisposable
     {
         /// <summary>
-        /// <see cref="MiCakeApplicationOptions"/>
+        /// Gets the application options
         /// </summary>
-        public MiCakeApplicationOptions ApplicationOptions { get; }
+        MiCakeApplicationOptions ApplicationOptions { get; }
 
         /// <summary>
-        /// <see cref="IMiCakeModuleManager"/>
+        /// Gets the module context (read-only access to loaded modules)
         /// </summary>
-        IMiCakeModuleManager ModuleManager { get; }
+        IMiCakeModuleContext ModuleContext { get; }
 
         /// <summary>
-        /// Set entry module to start micake.
+        /// Starts the MiCake application.
+        /// This executes the initialization lifecycle of all modules.
         /// </summary>
-        /// <param name="type"></param>
-        void SetEntry(Type type);
+        void Start();
 
         /// <summary>
-        /// Use to build micake modules and trigger config services lifetime.
+        /// Gracefully shuts down the application and all modules.
+        /// This executes the shutdown lifecycle of all modules in reverse order.
         /// </summary>
-        Task Initialize();
-
-        /// <summary>
-        /// Start micake appliction.
-        /// </summary>
-        Task Start();
-
-        /// <summary>
-        /// Used to gracefully shutdown the application and all modules.
-        /// </summary>
-        Task ShutDown();
+        void ShutDown();
     }
 }

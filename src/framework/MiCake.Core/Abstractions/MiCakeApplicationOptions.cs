@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
-using MiCake.Core.Handlers;
 using System.Reflection;
 
 namespace MiCake.Core
@@ -17,7 +16,7 @@ namespace MiCake.Core
         /// or <see cref="IScopedService"/> interface will be injected automatically.
         /// But we need to determine which type of service this class is.
         /// 
-        /// defalut: find class all interfaces.The service whose interface name contains the class name.
+        /// default: find class all interfaces. The service whose interface name contains the class name.
         /// </summary>
         public FindAutoServiceTypesDelegate FindAutoServiceTypes { get; set; }
 
@@ -28,15 +27,10 @@ namespace MiCake.Core
         public Assembly[] DomainLayerAssemblies { get; set; }
 
         /// <summary>
-        /// The collection for <see cref="IMiCakeHandler"/>.
+        /// A data stash that only exists during the build process.
+        /// It can be used to store data cross modules during the build phase.
         /// </summary>
-        public MiCakeHandlerCollection Handlers { get; set; } = [];
-
-        /// <summary>
-        /// Some additional information.
-        /// Be careful:These data will be released after the app is started
-        /// </summary>
-        public DataDepositPool ExtraDataStash { get; set; } = new DataDepositPool();
+        public DataDepositPool BuildTimeData { get; set; } = new DataDepositPool();
 
         /// <summary>
         /// Use given option value.
@@ -46,8 +40,7 @@ namespace MiCake.Core
         {
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
             DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
-            Handlers = applicationOptions.Handlers;
-            ExtraDataStash = applicationOptions.ExtraDataStash;
+            BuildTimeData = applicationOptions.BuildTimeData;
         }
     }
 }

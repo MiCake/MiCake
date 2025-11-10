@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Defined that the module has self inspection function.
@@ -12,6 +10,6 @@ namespace MiCake.Core.Modularity
         /// Execute the logic of self inspection. If there is any error, throw the corresponding exception
         /// </summary>
         /// <param name="context"><see cref="ModuleInspectionContext"/></param>
-        Task Inspect(ModuleInspectionContext context);
+        void Inspect(ModuleInspectionContext context);
     }
 }

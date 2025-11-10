@@ -24,7 +24,7 @@ namespace MiCake.Modules
 
         public override Task ConfigServices(ModuleConfigServiceContext context)
         {
-            var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.ExtraDataStash.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
+            var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
             var services = context.Services;
 
             if (auditOptions?.UseAudit == true)

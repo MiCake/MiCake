@@ -1,113 +1,51 @@
-﻿using System.Threading.Tasks;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// Base class for MiCake modules.
-    /// Modules are the building blocks of MiCake applications and follow a lifecycle pattern.
+    /// Base class for MiCake modules - Provides default implementation.
+    /// <para>
+    /// All MiCake modules should inherit from this base class.
+    /// For fine-grained lifecycle control, inherit from <see cref="MiCakeModuleAdvanced"/>.
+    /// </para>
     /// </summary>
     public abstract class MiCakeModule : IMiCakeModule
     {
         /// <summary>
-        /// Indicates whether this module is a framework-level module.
-        /// Framework level modules do not need to be traversed during auto-registration.
+        /// <inheritdoc/>
         /// </summary>
         public virtual bool IsFrameworkLevel => false;
 
         /// <summary>
-        /// Indicates whether services should be auto-registered to the dependency injection framework.
-        /// Services implementing ITransientService, IScopedService, or ISingletonService will be automatically registered.
+        /// <inheritdoc/>
         /// </summary>
         public virtual bool IsAutoRegisterServices => true;
 
-        public MiCakeModule()
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public virtual string Description => string.Empty;
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public virtual void ConfigureServices(ModuleConfigServiceContext context)
         {
+            // Default implementation - no services to configure
         }
 
         /// <summary>
-        /// Configure services in the dependency injection container.
-        /// This is the main place to register your services.
+        /// <inheritdoc/>
         /// </summary>
-        /// <param name="context">The module configuration context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task ConfigServices(ModuleConfigServiceContext context)
+        public virtual void OnApplicationInitialization(ModuleInitializationContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no initialization needed
         }
 
         /// <summary>
-        /// Initialize the module after all services have been configured.
-        /// Use this to perform initialization that requires services from the container.
+        /// <inheritdoc/>
         /// </summary>
-        /// <param name="context">The module load context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task Initialization(ModuleLoadContext context)
+        public virtual void OnApplicationShutdown(ModuleShutdownContext context)
         {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Hook executed after ConfigServices for all modules.
-        /// Use this for configuration that depends on services registered by other modules.
-        /// </summary>
-        /// <param name="context">The module configuration context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PostConfigServices(ModuleConfigServiceContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Hook executed after Initialization for all modules.
-        /// </summary>
-        /// <param name="context">The module load context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PostInitialization(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Hook executed before ConfigServices for all modules.
-        /// Use this for early configuration that other modules might depend on.
-        /// </summary>
-        /// <param name="context">The module configuration context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PreConfigServices(ModuleConfigServiceContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Hook executed before Initialization for all modules.
-        /// </summary>
-        /// <param name="context">The module load context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PreInitialization(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Hook executed before application shutdown.
-        /// Use this to prepare for graceful shutdown.
-        /// </summary>
-        /// <param name="context">The module load context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PreShutDown(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Called when the application is shutting down.
-        /// Use this to release resources and perform cleanup.
-        /// </summary>
-        /// <param name="context">The module load context</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task Shutdown(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
+            // Default implementation - no cleanup needed
         }
     }
 }

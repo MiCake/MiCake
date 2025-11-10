@@ -42,10 +42,12 @@ namespace MiCake
 
             configOptions?.Invoke(options);
 
-            return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder().ConfigureApplication((app, services) =>
-            {
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeEssentialModule));
-            });
+            var builder = new DefaultMiCakeBuilderProvider(services, entryModule, options).GetMiCakeBuilder();
+            
+            // Essential module is automatically added through module dependency discovery
+            // MiCakeEssentialModule should be marked with [RelyOn] by user modules
+            
+            return builder;
         }
 
         /// <summary>
@@ -79,33 +81,33 @@ namespace MiCake
 
         /// <summary>
         /// Start MiCake application.
+        /// This method initializes and starts all registered MiCake modules.
         /// </summary>
         /// <param name="applicationBuilder"><see cref="IApplicationBuilder"/></param>
         public static void StartMiCake(this IApplicationBuilder applicationBuilder)
         {
             var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
-                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
-                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
-
-            if (micakeApp is IDependencyReceiver<IServiceProvider> needServiceProvider)
-            {
-                needServiceProvider.AddDependency(applicationBuilder.ApplicationServices);
-            }
+                                    throw new InvalidOperationException(
+                                        $"Cannot find the instance of {nameof(IMiCakeApplication)}. " +
+                                        $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
             AddMiCakeCoreMiddleware(applicationBuilder);
 
+            // Start the application
             micakeApp.Start();
         }
 
         /// <summary>
         /// Shut down MiCake application.
+        /// This method gracefully shuts down all registered MiCake modules.
         /// </summary>
         /// <param name="applicationBuilder"><see cref="IApplicationBuilder"/></param>
         public static void ShutdownMiCake(this IApplicationBuilder applicationBuilder)
         {
             var micakeApp = applicationBuilder.ApplicationServices.GetService<IMiCakeApplication>() ??
-                                    throw new NullReferenceException($"Cannot find the instance of {nameof(IMiCakeApplication)}," +
-                                    $"Please Check your has already AddMiCake() in ConfigureServices method");
+                                    throw new InvalidOperationException(
+                                        $"Cannot find the instance of {nameof(IMiCakeApplication)}. " +
+                                        $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
             micakeApp.ShutDown();
         }

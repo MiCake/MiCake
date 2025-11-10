@@ -1,33 +1,23 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace MiCake.Core
 {
     /// <summary>
-    /// a builder for <see cref="IMiCakeApplication"/>
+    /// A builder for <see cref="IMiCakeApplication"/>
+    /// Configures MiCake services to be registered in the DI container
     /// </summary>
     public interface IMiCakeBuilder
     {
         /// <summary>
-        /// Build an <see cref="IMiCakeApplication"/>
+        /// Gets the service collection for registering additional services
         /// </summary>
-        /// <returns></returns>
-        IMiCakeApplication Build();
+        IServiceCollection Services { get; }
 
         /// <summary>
-        /// Adds a delegate for configuring micake application.
-        /// It will execute before application initialize.
+        /// Completes the MiCake builder configuration.
+        /// The actual IMiCakeApplication will be resolved from the DI container when needed.
         /// </summary>
-        /// <param name="configureApp">A delegate for configuring the <see cref="IMiCakeApplication"/>.</param>
-        /// <returns>The <see cref="IMiCakeBuilder"/>.</returns>
-        IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp);
-
-        /// <summary>
-        /// Adds a delegate for configuring micake application and services.
-        /// It will execute before application initialize.
-        /// </summary>
-        /// <param name="configureApp">A delegate for configuring the <see cref="IMiCakeApplication"/> and <see cref="IServiceCollection"/></param>
-        /// <returns><see cref="IMiCakeBuilder"/></returns>
-        IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication, IServiceCollection> configureApp);
+        /// <returns>The builder for chaining</returns>
+        IMiCakeBuilder Build();
     }
 }
