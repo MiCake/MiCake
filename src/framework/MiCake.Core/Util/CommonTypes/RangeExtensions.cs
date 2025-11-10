@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace MiCake.Core.Util.CommonTypes
+namespace MiCake.Core.Util
 {
     public static class RangeExtensions
     {
         /// <summary>
-        /// Judge whether a value is within the range
+        /// Checks if a given value is within the specified range.
         /// </summary>
         /// <param name="range">The given range</param>
         /// <param name="value">Comparison value</param>
