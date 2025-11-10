@@ -6,6 +6,7 @@ namespace MiCake.DDD.Tests.ProxyRepository
 {
     public class TestRepository<TAggregateRoot, TKey> : TestReadOnlyRepository<TAggregateRoot, TKey>, IRepository<TAggregateRoot, TKey>
            where TAggregateRoot : class, IAggregateRoot<TKey>
+           where TKey : notnull
     {
         public void Add(TAggregateRoot aggregateRoot)
         => Data.Add(aggregateRoot);

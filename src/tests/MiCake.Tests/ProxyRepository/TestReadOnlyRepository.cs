@@ -8,6 +8,7 @@ namespace MiCake.DDD.Tests.ProxyRepository
 {
     public class TestReadOnlyRepository<TAggregateRoot, TKey> : IReadOnlyRepository<TAggregateRoot, TKey>
           where TAggregateRoot : class, IAggregateRoot<TKey>
+          where TKey : notnull
     {
         protected List<TAggregateRoot> Data { get; set; }
 
@@ -16,10 +17,15 @@ namespace MiCake.DDD.Tests.ProxyRepository
             Data = new List<TAggregateRoot>();
         }
 
+        public IQueryable<TAggregateRoot> Query()
+        {
+            return Data.AsQueryable();
+        }
+
         public TAggregateRoot Find(TKey id)
         => Data.FirstOrDefault(s => s.Id.Equals(id));
 
-        public Task<TAggregateRoot> FindAsync(TKey id, CancellationToken cancellationToken = default)
+        public Task<TAggregateRoot?> FindAsync(TKey id, CancellationToken cancellationToken = default)
         {
             var result = Data.FirstOrDefault(s => s.Id.Equals(id));
             return Task.FromResult(result);
