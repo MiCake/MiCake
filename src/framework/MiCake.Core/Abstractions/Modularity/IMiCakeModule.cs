@@ -1,7 +1,7 @@
 ﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// MiCake module interface - Simplified 3-method lifecycle
+    /// MiCake module interface
     /// This is the standard interface that all MiCake modules should implement.
     /// For more fine-grained control, implement <see cref="IMiCakeModuleAdvanced"/> instead.
     /// </summary>

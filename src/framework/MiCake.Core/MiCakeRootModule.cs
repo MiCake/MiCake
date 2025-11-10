@@ -8,7 +8,6 @@ namespace MiCake.Core
     /// This is a framework-level module that handles core functionality like service auto-registration.
     /// All user modules should depend on this module (directly or indirectly).
     /// </summary>
-    [RelyOn]
     public class MiCakeRootModule : MiCakeModule
     {
         /// <summary>

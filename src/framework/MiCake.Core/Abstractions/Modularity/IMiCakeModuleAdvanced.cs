@@ -1,7 +1,7 @@
 namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// Advanced module interface - For scenarios requiring fine-grained control (optional implementation)
+    /// Advanced module interface
     /// Most modules should use <see cref="IMiCakeModule"/> instead.
     /// Only implement this interface when you need precise control over configuration order.
     /// </summary>

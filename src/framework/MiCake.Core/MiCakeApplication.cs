@@ -1,10 +1,9 @@
-﻿using MiCake.Core.Data;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using System;
-using System.Linq;
 
 namespace MiCake.Core
 {
@@ -50,13 +49,13 @@ namespace MiCake.Core
         public MiCakeApplication(
             IServiceProvider serviceProvider,
             IMiCakeModuleContext moduleContext,
-            MiCakeApplicationOptions options,
+            IOptions<MiCakeApplicationOptions> options,
             Type entryType)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _moduleContext = moduleContext ?? throw new ArgumentNullException(nameof(moduleContext));
             _entryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
-            ApplicationOptions = options ?? new MiCakeApplicationOptions();
+            ApplicationOptions = options.Value ?? new MiCakeApplicationOptions();
         }
 
         /// <summary>

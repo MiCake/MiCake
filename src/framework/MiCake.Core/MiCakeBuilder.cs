@@ -1,8 +1,8 @@
 ﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 
 namespace MiCake.Core
 {
@@ -51,12 +51,12 @@ namespace MiCake.Core
             // Initialize MiCake and configure all modules synchronously
             // This happens BEFORE the service provider is built
             InitializeMiCakeModules();
-            
+
             // Register the application factory - it will be resolved after ServiceProvider is built
             RegisterMiCakeApplicationFactory();
 
             _isBuilt = true;
-            
+
             return this;
         }
 
@@ -80,17 +80,16 @@ namespace MiCake.Core
         {
             // Create a temporary module manager to discover modules
             var moduleManager = new MiCakeModuleManager();
-            
+
             // Discover all modules starting from entry module
-            moduleManager.PopulateModules(_entryType).GetAwaiter().GetResult();
-            
+            moduleManager.PopulateModules(_entryType);
+
             // Register the module context as singleton
             _services.AddSingleton(moduleManager.ModuleContext);
-            
+
             // Store options for later
-            _services.AddSingleton(_options);
             _services.Configure<MiCakeApplicationOptions>(op => op.Apply(_options));
-            
+
             // Execute ConfigureServices lifecycle for all modules
             // This allows modules to register their services
             ConfigureModuleServices(moduleManager.ModuleContext);
@@ -100,19 +99,18 @@ namespace MiCake.Core
         {
             // Get a temporary logger factory for initialization
             var tempServiceProvider = _services.BuildServiceProvider();
-            var loggerFactory = tempServiceProvider.GetService<ILoggerFactory>() 
+            var loggerFactory = tempServiceProvider.GetService<ILoggerFactory>()
                                 ?? Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
-            
+
             var moduleBoot = new MiCakeModuleBoot(loggerFactory, moduleContext.MiCakeModules);
-            
+
             var configServiceContext = new ModuleConfigServiceContext(
                 _services,
                 moduleContext.MiCakeModules,
                 _options);
-            
-            // Execute ConfigureServices for all modules (including MiCakeRootModule which handles auto-registration)
+
             moduleBoot.ConfigServices(configServiceContext);
-            
+
             // Dispose temp service provider
             (tempServiceProvider as IDisposable)?.Dispose();
         }
@@ -124,11 +122,11 @@ namespace MiCake.Core
             _services.AddSingleton<IMiCakeApplication>(sp =>
             {
                 var moduleContext = sp.GetRequiredService<IMiCakeModuleContext>();
-                var options = sp.GetRequiredService<MiCakeApplicationOptions>();
-                
+                var options = sp.GetRequiredService<IOptions<MiCakeApplicationOptions>>();
+
                 // Create application with entry type in constructor
                 var app = new MiCakeApplication(sp, moduleContext, options, _entryType);
-                
+
                 return app;
             });
         }

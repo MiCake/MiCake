@@ -3,7 +3,6 @@ using MiCake.Core.Util.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MiCake.Core.Modularity
 {
@@ -39,20 +38,18 @@ namespace MiCake.Core.Modularity
         /// <param name="entryType">The entry module type</param>
         /// <exception cref="InvalidOperationException">When called more than once</exception>
         /// <exception cref="ArgumentNullException">When entryType is null</exception>
-        public Task PopulateModules(Type entryType)
+        public void PopulateModules(Type entryType)
         {
-            if (entryType == null)
-                throw new ArgumentNullException(nameof(entryType));
+            ArgumentNullException.ThrowIfNull(entryType);
 
             if (_isPopulated)
-                throw new InvalidOperationException(
-                    "PopulateModules can only be called once. Modules have already been populated.");
+                throw new InvalidOperationException("PopulateModules can only be called once. Modules have already been populated.");
 
             _isPopulated = true;
 
             // Find all modules recursively from entry module
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, entryType);
-            
+
             // Resolve and sort modules by dependencies
             IMiCakeModuleCollection modules = ResolvingMiCakeModules(_normalModulesTypes)
                 .ToMiCakeModuleCollection();
@@ -65,8 +62,6 @@ namespace MiCake.Core.Modularity
             }
 
             _moduleContext = new MiCakeModuleContext(modules);
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -88,14 +83,12 @@ namespace MiCake.Core.Modularity
         /// This method is typically used to add modules dynamically.
         /// </summary>
         /// <param name="moduleType">The module type to add</param>
-        public Task AddMiCakeModule(Type moduleType)
+        public void AddMiCakeModule(Type moduleType)
         {
             MiCakeModuleHelper.CheckModule(moduleType);
 
             // Add the module and all its dependencies
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, moduleType);
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -132,7 +125,7 @@ namespace MiCake.Core.Modularity
             foreach (var miCakeModuleDescriptor in miCakeModuleDescriptors)
             {
                 var dependencies = GetMiCakeModuleDescriptorDependencies(
-                    miCakeModuleDescriptors, 
+                    miCakeModuleDescriptors,
                     miCakeModuleDescriptor);
 
                 foreach (var dependency in dependencies)
