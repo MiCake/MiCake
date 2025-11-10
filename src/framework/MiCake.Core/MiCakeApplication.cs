@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
@@ -64,7 +63,7 @@ namespace MiCake.Core
         /// Start MiCake application.
         /// Executes the initialization lifecycle for all modules.
         /// </summary>
-        public virtual async Task Start()
+        public virtual void Start()
         {
             if (_isStarted)
                 throw new InvalidOperationException("MiCake has already started.");
@@ -87,13 +86,13 @@ namespace MiCake.Core
             foreach (var module in _moduleContext.MiCakeModules)
             {
                 if (module is IModuleSelfInspection selfInspection)
-                    await selfInspection.Inspect(inspectContext)
-                        .ConfigureAwait(false);
+                {
+                    selfInspection.Inspect(inspectContext).GetAwaiter().GetResult();
+                }
             }
 
             var context = new ModuleInitializationContext(AppServiceProvider, _moduleContext.MiCakeModules, ApplicationOptions);
-            await _miCakeModuleBoot.Initialization(context)
-                .ConfigureAwait(false);
+            _miCakeModuleBoot.Initialization(context);
 
             // Release options additional info
             ApplicationOptions.ExtraDataStash.Release();
@@ -105,7 +104,7 @@ namespace MiCake.Core
         /// <summary>
         /// Shutdown MiCake application
         /// </summary>
-        public virtual async Task ShutDown()
+        public virtual void ShutDown()
         {
             if (_isShutdown)
                 throw new InvalidOperationException("MiCake has already shutdown.");
@@ -115,22 +114,11 @@ namespace MiCake.Core
             if (_miCakeModuleBoot != null)
             {
                 var context = new ModuleShutdownContext(AppServiceProvider, _moduleContext.MiCakeModules, ApplicationOptions);
-                await _miCakeModuleBoot.ShutDown(context)
-                    .ConfigureAwait(false);
+                _miCakeModuleBoot.ShutDown(context);
             }
 
             _isShutdown = true;
             _logger?.LogInformation("MiCake Application Shutdown Completed.");
-        }
-
-        /// <summary>
-        /// Initialize MiCake services (deprecated - now handled by MiCakeBuilder)
-        /// </summary>
-        [Obsolete("Initialization is now handled by MiCakeBuilder. This method is kept for compatibility.")]
-        public Task Initialize()
-        {
-            // No-op - initialization is now done in MiCakeBuilder
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -142,10 +130,10 @@ namespace MiCake.Core
                 $"Entry module type cannot be null. Please provide a valid module type when calling AddMiCake().");
         }
 
-        public async ValueTask DisposeAsync()
+        public void Dispose()
         {
             if (!_isShutdown)
-                await ShutDown().ConfigureAwait(false);
+                ShutDown();
 
             ModuleManager = null;
         }
@@ -170,7 +158,7 @@ namespace MiCake.Core
         public IMiCakeModuleContext ModuleContext => _context;
         public bool IsPopulated => true;
         
-        public Task PopulateModules(Type entryType)
+        public System.Threading.Tasks.Task PopulateModules(Type entryType)
         {
             throw new InvalidOperationException("Modules are already populated.");
         }
@@ -180,7 +168,7 @@ namespace MiCake.Core
             return _context?.MiCakeModules.FirstOrDefault(s => s.ModuleType == moduleType);
         }
         
-        public Task AddMiCakeModule(Type moduleType)
+        public System.Threading.Tasks.Task AddMiCakeModule(Type moduleType)
         {
             throw new InvalidOperationException("Cannot add modules after initialization.");
         }

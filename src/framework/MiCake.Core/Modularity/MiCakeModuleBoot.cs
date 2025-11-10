@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace MiCake.Core.Modularity
 {
@@ -29,7 +27,7 @@ namespace MiCake.Core.Modularity
             _modules = modules;
         }
 
-        public async Task ConfigServices(ModuleConfigServiceContext context)
+        public void ConfigServices(ModuleConfigServiceContext context)
         {
             var services = context.Services ??
                 throw new ArgumentNullException(nameof(context.Services));
@@ -42,8 +40,7 @@ namespace MiCake.Core.Modularity
                 _moduleLogger.LogModuleInfo(module, "MiCake PreConfigureServices: ");
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
-                    await advancedModule.PreConfigureServices(context)
-                        .ConfigureAwait(false);
+                    advancedModule.PreConfigureServices(context);
                 }
             }
 
@@ -51,8 +48,7 @@ namespace MiCake.Core.Modularity
             foreach (var module in _modules)
             {
                 _moduleLogger.LogModuleInfo(module, "MiCake ConfigureServices: ");
-                await module.Instance.ConfigureServices(context)
-                    .ConfigureAwait(false);
+                module.Instance.ConfigureServices(context);
             }
 
             // Post-configure services (only for advanced modules)
@@ -61,8 +57,7 @@ namespace MiCake.Core.Modularity
                 _moduleLogger.LogModuleInfo(module, "MiCake PostConfigureServices: ");
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
-                    await advancedModule.PostConfigureServices(context)
-                        .ConfigureAwait(false);
+                    advancedModule.PostConfigureServices(context);
                 }
             }
 
@@ -71,7 +66,7 @@ namespace MiCake.Core.Modularity
             _logger.LogInformation("MiCake: Service Configuration Completed.");
         }
 
-        public async Task Initialization(ModuleInitializationContext context)
+        public void Initialization(ModuleInitializationContext context)
         {
             _logger.LogInformation("MiCake: Initializing Application......");
 
@@ -81,8 +76,7 @@ namespace MiCake.Core.Modularity
                 _moduleLogger.LogModuleInfo(module, "MiCake PreInitialization: ");
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
-                    await advancedModule.PreInitialization(context)
-                        .ConfigureAwait(false);
+                    advancedModule.PreInitialization(context);
                 }
             }
 
@@ -90,8 +84,7 @@ namespace MiCake.Core.Modularity
             foreach (var module in _modules)
             {
                 _moduleLogger.LogModuleInfo(module, "MiCake OnApplicationInitialization: ");
-                await module.Instance.OnApplicationInitialization(context)
-                    .ConfigureAwait(false);
+                module.Instance.OnApplicationInitialization(context);
             }
 
             // Post-initialization (only for advanced modules)
@@ -100,8 +93,7 @@ namespace MiCake.Core.Modularity
                 _moduleLogger.LogModuleInfo(module, "MiCake PostInitialization: ");
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
-                    await advancedModule.PostInitialization(context)
-                        .ConfigureAwait(false);
+                    advancedModule.PostInitialization(context);
                 }
             }
 
@@ -110,7 +102,7 @@ namespace MiCake.Core.Modularity
             _logger.LogInformation("MiCake: Application Initialization Completed.");
         }
 
-        public async Task ShutDown(ModuleShutdownContext context)
+        public void ShutDown(ModuleShutdownContext context)
         {
             _logger.LogInformation("MiCake: Shutting Down Application......");
 
@@ -120,8 +112,7 @@ namespace MiCake.Core.Modularity
                 _moduleLogger.LogModuleInfo(module, "MiCake PreShutdown: ");
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
-                    await advancedModule.PreShutdown(context)
-                        .ConfigureAwait(false);
+                    advancedModule.PreShutdown(context);
                 }
             }
 
@@ -129,23 +120,20 @@ namespace MiCake.Core.Modularity
             foreach (var module in _modules)
             {
                 _moduleLogger.LogModuleInfo(module, "MiCake OnApplicationShutdown: ");
-                await module.Instance.OnApplicationShutdown(context)
-                    .ConfigureAwait(false);
+                module.Instance.OnApplicationShutdown(context);
             }
 
             _logger.LogInformation("MiCake: Application Shutdown Completed.");
         }
 
-        public Task AddConfigService(Action<ModuleConfigServiceContext> configServiceAction)
+        public void AddConfigService(Action<ModuleConfigServiceContext> configServiceAction)
         {
             _configServiceActions += configServiceAction;
-            return Task.CompletedTask;
         }
 
-        public Task AddInitalzation(Action<ModuleInitializationContext> initalzationAction)
+        public void AddInitalzation(Action<ModuleInitializationContext> initalzationAction)
         {
             _initializationActions += initalzationAction;
-            return Task.CompletedTask;
         }
     }
 }

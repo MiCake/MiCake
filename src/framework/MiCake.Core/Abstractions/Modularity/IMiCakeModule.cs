@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// MiCake module interface - Simplified 3-method lifecycle
@@ -27,21 +25,24 @@ namespace MiCake.Core.Modularity
         string Description { get; }
 
         /// <summary>
-        /// Configure services - Register services to DI container during application startup
+        /// Configure services - Register services to DI container during application startup.
+        /// This method is called synchronously during the build phase.
         /// </summary>
         /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
-        Task ConfigureServices(ModuleConfigServiceContext context);
+        void ConfigureServices(ModuleConfigServiceContext context);
 
         /// <summary>
-        /// Application initialization - Execute after application startup is complete
+        /// Application initialization - Execute after application startup is complete.
+        /// This method is called synchronously when the application starts.
         /// </summary>
         /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
-        Task OnApplicationInitialization(ModuleInitializationContext context);
+        void OnApplicationInitialization(ModuleInitializationContext context);
 
         /// <summary>
-        /// Application shutdown - Execute cleanup work when application shuts down
+        /// Application shutdown - Execute cleanup work when application shuts down.
+        /// This method is called synchronously during application shutdown.
         /// </summary>
         /// <param name="context">Module shutdown context containing ServiceProvider, other modules, and application options</param>
-        Task OnApplicationShutdown(ModuleShutdownContext context);
+        void OnApplicationShutdown(ModuleShutdownContext context);
     }
 }

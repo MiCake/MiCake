@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Modularity;
 using System;
-using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
@@ -8,7 +7,7 @@ namespace MiCake.Core
     /// Represents a MiCake application instance.
     /// The application manages the module system and coordinates the application lifecycle.
     /// </summary>
-    public interface IMiCakeApplication : IAsyncDisposable
+    public interface IMiCakeApplication : IDisposable
     {
         /// <summary>
         /// Gets the application options
@@ -28,23 +27,15 @@ namespace MiCake.Core
         void SetEntry(Type type);
 
         /// <summary>
-        /// Initializes the MiCake application.
-        /// This discovers and configures all modules and their dependencies.
-        /// Must be called before <see cref="Start"/>.
-        /// </summary>
-        Task Initialize();
-
-        /// <summary>
         /// Starts the MiCake application.
         /// This executes the initialization lifecycle of all modules.
-        /// Must be called after <see cref="Initialize"/>.
         /// </summary>
-        Task Start();
+        void Start();
 
         /// <summary>
         /// Gracefully shuts down the application and all modules.
         /// This executes the shutdown lifecycle of all modules in reverse order.
         /// </summary>
-        Task ShutDown();
+        void ShutDown();
     }
 }

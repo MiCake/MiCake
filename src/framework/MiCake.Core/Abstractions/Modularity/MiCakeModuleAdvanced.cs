@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace MiCake.Core.Modularity
 {
     /// <summary>
@@ -14,10 +12,9 @@ namespace MiCake.Core.Modularity
         /// Use this for early configuration that other modules might depend on.
         /// </summary>
         /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PreConfigureServices(ModuleConfigServiceContext context)
+        public virtual void PreConfigureServices(ModuleConfigServiceContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no pre-configuration needed
         }
 
         /// <summary>
@@ -25,30 +22,27 @@ namespace MiCake.Core.Modularity
         /// Use this for configuration that depends on services registered by other modules.
         /// </summary>
         /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PostConfigureServices(ModuleConfigServiceContext context)
+        public virtual void PostConfigureServices(ModuleConfigServiceContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no post-configuration needed
         }
 
         /// <summary>
         /// Pre-initialization - Execute before OnApplicationInitialization
         /// </summary>
         /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PreInitialization(ModuleInitializationContext context)
+        public virtual void PreInitialization(ModuleInitializationContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no pre-initialization needed
         }
 
         /// <summary>
         /// Post-initialization - Execute after OnApplicationInitialization
         /// </summary>
         /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PostInitialization(ModuleInitializationContext context)
+        public virtual void PostInitialization(ModuleInitializationContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no post-initialization needed
         }
 
         /// <summary>
@@ -56,10 +50,9 @@ namespace MiCake.Core.Modularity
         /// Use this to prepare for graceful shutdown.
         /// </summary>
         /// <param name="context">Module shutdown context containing ServiceProvider, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task PreShutdown(ModuleShutdownContext context)
+        public virtual void PreShutdown(ModuleShutdownContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no pre-shutdown needed
         }
     }
 }

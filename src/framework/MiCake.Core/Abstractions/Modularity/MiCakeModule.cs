@@ -1,11 +1,9 @@
-﻿using System.Threading.Tasks;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
     /// <summary>
     /// Base class for MiCake modules - Provides default implementation
     /// All MiCake modules should inherit from this base class.
-    /// For fine-grained lifecycle control, override methods from <see cref="IMiCakeModuleAdvanced"/>.
+    /// For fine-grained lifecycle control, inherit from <see cref="MiCakeModuleAdvanced"/>.
     /// </summary>
     public abstract class MiCakeModule : IMiCakeModule
     {
@@ -31,10 +29,9 @@ namespace MiCake.Core.Modularity
         /// This is the main place to register your services.
         /// </summary>
         /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task ConfigureServices(ModuleConfigServiceContext context)
+        public virtual void ConfigureServices(ModuleConfigServiceContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no services to configure
         }
 
         /// <summary>
@@ -42,10 +39,9 @@ namespace MiCake.Core.Modularity
         /// Use this to perform initialization that requires services from the container.
         /// </summary>
         /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task OnApplicationInitialization(ModuleInitializationContext context)
+        public virtual void OnApplicationInitialization(ModuleInitializationContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no initialization needed
         }
 
         /// <summary>
@@ -53,10 +49,9 @@ namespace MiCake.Core.Modularity
         /// Use this to release resources and perform cleanup.
         /// </summary>
         /// <param name="context">Module shutdown context containing ServiceProvider, other modules, and application options</param>
-        /// <returns>A task representing the asynchronous operation</returns>
-        public virtual Task OnApplicationShutdown(ModuleShutdownContext context)
+        public virtual void OnApplicationShutdown(ModuleShutdownContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no cleanup needed
         }
     }
 }

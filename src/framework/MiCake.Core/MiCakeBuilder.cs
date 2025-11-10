@@ -1,9 +1,7 @@
-﻿using MiCake.Core.DependencyInjection;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
@@ -37,7 +35,7 @@ namespace MiCake.Core
         {
             // Initialize MiCake and configure all modules synchronously
             // This happens BEFORE the service provider is built
-            InitializeMiCakeModules().GetAwaiter().GetResult();
+            InitializeMiCakeModules();
             
             // Register the application factory - it will be resolved after ServiceProvider is built
             RegisterMiCakeApplicationFactory();
@@ -63,13 +61,13 @@ namespace MiCake.Core
             _services.AddSingleton<IMiCakeEnvironment>(environment);
         }
 
-        private async Task InitializeMiCakeModules()
+        private void InitializeMiCakeModules()
         {
             // Create a temporary module manager to discover modules
             var moduleManager = new MiCakeModuleManager();
             
             // Discover all modules starting from entry module
-            await moduleManager.PopulateModules(_entryType).ConfigureAwait(false);
+            moduleManager.PopulateModules(_entryType).GetAwaiter().GetResult();
             
             // Register the module context as singleton
             _services.AddSingleton(moduleManager.ModuleContext);
@@ -81,10 +79,10 @@ namespace MiCake.Core
             
             // Execute ConfigureServices lifecycle for all modules
             // This allows modules to register their services
-            await ConfigureModuleServices(moduleManager.ModuleContext).ConfigureAwait(false);
+            ConfigureModuleServices(moduleManager.ModuleContext);
         }
 
-        private async Task ConfigureModuleServices(IMiCakeModuleContext moduleContext)
+        private void ConfigureModuleServices(IMiCakeModuleContext moduleContext)
         {
             // Get a temporary logger factory for initialization
             var tempServiceProvider = _services.BuildServiceProvider();
@@ -93,28 +91,16 @@ namespace MiCake.Core
             
             var moduleBoot = new MiCakeModuleBoot(loggerFactory, moduleContext.MiCakeModules);
             
-            // Auto register services
-            await moduleBoot.AddConfigService(AutoRegisterServices).ConfigureAwait(false);
-            
             var configServiceContext = new ModuleConfigServiceContext(
                 _services,
                 moduleContext.MiCakeModules,
                 _options);
             
-            // Execute ConfigureServices for all modules
-            await moduleBoot.ConfigServices(configServiceContext).ConfigureAwait(false);
+            // Execute ConfigureServices for all modules (including MiCakeRootModule which handles auto-registration)
+            moduleBoot.ConfigServices(configServiceContext);
             
             // Dispose temp service provider
             (tempServiceProvider as IDisposable)?.Dispose();
-        }
-
-        private void AutoRegisterServices(ModuleConfigServiceContext context)
-        {
-            var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
-            if (_options.FindAutoServiceTypes != null)
-                serviceRegistrar.SetServiceTypesFinder(_options.FindAutoServiceTypes);
-
-            serviceRegistrar.Register(context.MiCakeModules);
         }
 
         private void RegisterMiCakeApplicationFactory()
