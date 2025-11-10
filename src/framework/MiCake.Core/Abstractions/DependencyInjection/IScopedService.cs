@@ -1,7 +1,8 @@
 ﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
-    /// mark a scoped service
+    /// Marker interface for scoped service registration.
+    /// Services implementing this interface will be automatically registered with scoped lifetime.
     /// </summary>
     public interface IScopedService : IAutoInjectService
     {

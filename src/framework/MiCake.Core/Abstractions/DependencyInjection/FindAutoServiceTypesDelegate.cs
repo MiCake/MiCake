@@ -4,12 +4,13 @@ using System.Collections.Generic;
 namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
-    /// When a class that implements an <see cref="ITransientService"/> or <see cref="ISingletonService"/>
-    /// or <see cref="IScopedService"/> interface will be injected automatically.
-    /// But we need to determine which type of service this class is.
+    /// Delegate for finding service types to register automatically.
+    /// When a class implements <see cref="ITransientService"/>, <see cref="ISingletonService"/>,
+    /// or <see cref="IScopedService"/> interface, this delegate determines which types (interfaces) 
+    /// should be registered for this class in the dependency injection container.
     /// </summary>
-    /// <param name="type">the class type</param>
+    /// <param name="type">The class type to register</param>
     /// <param name="inheritInterfaces">All interfaces inherited by this class</param>
-    /// <returns>service types</returns>
+    /// <returns>List of service types (interfaces) to register for this class</returns>
     public delegate List<Type> FindAutoServiceTypesDelegate(Type type, List<Type> inheritInterfaces);
 }

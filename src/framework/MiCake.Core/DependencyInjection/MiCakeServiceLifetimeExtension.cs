@@ -3,15 +3,15 @@
 namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
-    /// Extension for <see cref="MiCakeServiceLifetime"/>
+    /// Extension methods for <see cref="MiCakeServiceLifetime"/>.
     /// </summary>
     public static class MiCakeServiceLifetimeExtension
     {
         /// <summary>
-        /// Convert <see cref="MiCakeServiceLifetime"/> to microsoft di <see cref="ServiceLifetime"/>
+        /// Converts MiCake service lifetime to Microsoft.Extensions.DependencyInjection service lifetime.
         /// </summary>
-        /// <param name="miCakeServiceLifetime"></param>
-        /// <returns></returns>
+        /// <param name="miCakeServiceLifetime">The MiCake service lifetime to convert</param>
+        /// <returns>The corresponding <see cref="ServiceLifetime"/> value</returns>
         public static ServiceLifetime ConvertToMSLifetime(this MiCakeServiceLifetime miCakeServiceLifetime)
         {
             return miCakeServiceLifetime switch

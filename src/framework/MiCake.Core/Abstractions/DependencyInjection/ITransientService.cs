@@ -1,7 +1,8 @@
 ﻿namespace MiCake.Core.DependencyInjection
 {
     /// <summary>
-    /// mark a transient service
+    /// Marker interface for transient service registration.
+    /// Services implementing this interface will be automatically registered with transient lifetime.
     /// </summary>
     public interface ITransientService : IAutoInjectService
     {
