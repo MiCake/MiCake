@@ -60,10 +60,10 @@ public class GenericCircuitBreaker<TRequest, TResponse>
         switch (_config.SelectionStrategy)
         {
             case ProviderSelectionStrategy.ParallelRace:
-                return await ExecuteParallelRace(orderedProviders, request, cancellationToken);
+                return await ExecuteParallelRace(orderedProviders, request, cancellationToken).ConfigureAwait(false);
 
             default: // PriorityOrder, RoundRobin, LeastLoad all use sequential execution
-                return await ExecuteSequential(orderedProviders, request, cancellationToken);
+                return await ExecuteSequential(orderedProviders, request, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -89,7 +89,7 @@ public class GenericCircuitBreaker<TRequest, TResponse>
         {
             try
             {
-                var isAvailable = await provider.IsAvailableAsync(cancellationToken);
+                var isAvailable = await provider.IsAvailableAsync(cancellationToken).ConfigureAwait(false);
                 UpdateProviderAvailability(provider.ProviderName, isAvailable);
             }
             catch (Exception ex)
@@ -98,7 +98,7 @@ public class GenericCircuitBreaker<TRequest, TResponse>
             }
         });
 
-        await Task.WhenAll(tasks);
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -229,7 +229,7 @@ public class GenericCircuitBreaker<TRequest, TResponse>
 
                 try
                 {
-                    var result = await provider.ExecuteAsync(request, cancellationToken);
+                    var result = await provider.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
                     if (IsSuccessfulResponse(result))
                     {
@@ -281,7 +281,7 @@ public class GenericCircuitBreaker<TRequest, TResponse>
             {
                 try
                 {
-                    var result = await provider.ExecuteAsync(request, cancellationToken);
+                    var result = await provider.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
                     if (IsSuccessfulResponse(result))
                     {
@@ -303,7 +303,7 @@ public class GenericCircuitBreaker<TRequest, TResponse>
                 }
             });
 
-            var results = await Task.WhenAll(tasks);
+            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
             // Return first successful result, ordered by priority
             var successfulResults = results

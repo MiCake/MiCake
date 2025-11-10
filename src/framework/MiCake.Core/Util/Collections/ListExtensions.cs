@@ -1,5 +1,4 @@
-﻿using MiCake.Core.Util.CommonTypes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,7 +7,7 @@ namespace MiCake.Core.Util.Collections
     /// <summary>
     /// Extension methods for <see cref="IList{T}"/>.
     /// </summary>
-    public static class Listxtensions
+    public static class ListExtensions
     {
         public static int FindIndex<T>(this IList<T> source, Predicate<T> selector)
         {

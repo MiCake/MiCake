@@ -17,9 +17,10 @@ namespace MiCake.Core
         private readonly IServiceProvider _serviceProvider;
         private readonly IMiCakeModuleContext _moduleContext;
         private readonly Type _entryType;
-        
-        private IMiCakeModuleBoot _miCakeModuleBoot;
-        
+        private readonly ILogger _logger;
+
+        private MiCakeModuleBoot _miCakeModuleBoot;
+
         private bool _isStarted;
         private bool _isShutdown;
 
@@ -54,8 +55,10 @@ namespace MiCake.Core
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _moduleContext = moduleContext ?? throw new ArgumentNullException(nameof(moduleContext));
-            _entryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
             ApplicationOptions = options.Value ?? new MiCakeApplicationOptions();
+            _entryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
+
+            _logger = (_serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance).CreateLogger<MiCakeApplication>();
         }
 
         /// <summary>
@@ -75,8 +78,7 @@ namespace MiCake.Core
             // Initialize module boot if not already done
             if (_miCakeModuleBoot == null)
             {
-                var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() 
-                                    ?? NullLoggerFactory.Instance;
+                var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
                 _miCakeModuleBoot = new MiCakeModuleBoot(loggerFactory, _moduleContext.MiCakeModules);
             }
 
@@ -125,8 +127,5 @@ namespace MiCake.Core
             if (!_isShutdown)
                 ShutDown();
         }
-
-        private ILogger _logger => _serviceProvider?.GetService<ILoggerFactory>()
-            ?.CreateLogger<MiCakeApplication>();
     }
 }

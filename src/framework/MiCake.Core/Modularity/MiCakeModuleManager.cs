@@ -51,8 +51,7 @@ namespace MiCake.Core.Modularity
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, entryType);
 
             // Resolve and sort modules by dependencies
-            IMiCakeModuleCollection modules = ResolvingMiCakeModules(_normalModulesTypes)
-                .ToMiCakeModuleCollection();
+            IMiCakeModuleCollection modules = ResolvingMiCakeModules(_normalModulesTypes).ToMiCakeModuleCollection();
 
             // Ensure that the entry module is the last in the collection
             // This guarantees it runs after all its dependencies
@@ -71,11 +70,9 @@ namespace MiCake.Core.Modularity
         /// <returns>The module descriptor, or null if not found</returns>
         public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
         {
-            if (moduleType == null)
-                throw new ArgumentNullException(nameof(moduleType));
+            ArgumentNullException.ThrowIfNull(moduleType);
 
-            return _moduleContext?.MiCakeModules
-                .FirstOrDefault(s => s.ModuleType == moduleType);
+            return _moduleContext?.MiCakeModules.FirstOrDefault(s => s.ModuleType == moduleType);
         }
 
         /// <summary>
@@ -97,7 +94,7 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="moduleTypes">The list of module types to process</param>
         /// <returns>An enumerable of sorted module descriptors</returns>
-        private IEnumerable<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
+        private List<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
         {
             List<MiCakeModuleDescriptor> miCakeModuleDescriptors = new();
 
@@ -118,27 +115,14 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="miCakeModuleDescriptors">The list of module descriptors to sort</param>
         /// <returns>A sorted list of module descriptors</returns>
-        private List<MiCakeModuleDescriptor> SortModulesDependencies(
-            List<MiCakeModuleDescriptor> miCakeModuleDescriptors)
+        private static List<MiCakeModuleDescriptor> SortModulesDependencies(List<MiCakeModuleDescriptor> miCakeModuleDescriptors)
         {
-            // Build dependency relationships
             foreach (var miCakeModuleDescriptor in miCakeModuleDescriptors)
             {
-                var dependencies = GetMiCakeModuleDescriptorDependencies(
-                    miCakeModuleDescriptors,
-                    miCakeModuleDescriptor);
-
-                foreach (var dependency in dependencies)
-                {
-                    miCakeModuleDescriptor.AddDependency(dependency);
-                }
+                GetMiCakeModuleDescriptorDependencies(miCakeModuleDescriptors, miCakeModuleDescriptor);
             }
 
-            // Sort by dependencies using topological sort
-            miCakeModuleDescriptors = miCakeModuleDescriptors
-                .SortByDependencies(s => s.RelyOnModules);
-
-            return miCakeModuleDescriptors;
+            return miCakeModuleDescriptors.SortByDependencies(s => s.RelyOnModules);
         }
 
         /// <summary>
@@ -146,13 +130,8 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="modules">All available modules</param>
         /// <param name="moduleDescriptor">The module to find dependencies for</param>
-        /// <returns>A list of dependency descriptors</returns>
-        private static List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDependencies(
-            List<MiCakeModuleDescriptor> modules,
-            MiCakeModuleDescriptor moduleDescriptor)
+        private static void GetMiCakeModuleDescriptorDependencies(List<MiCakeModuleDescriptor> modules, MiCakeModuleDescriptor moduleDescriptor)
         {
-            List<MiCakeModuleDescriptor> descriptors = new();
-
             var dependencyTypes = MiCakeModuleHelper.FindDependedModuleTypes(moduleDescriptor.ModuleType);
 
             foreach (var dependencyType in dependencyTypes)
@@ -163,8 +142,6 @@ namespace MiCake.Core.Modularity
                     moduleDescriptor.AddDependency(existDescriptor);
                 }
             }
-
-            return descriptors;
         }
     }
 }

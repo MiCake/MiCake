@@ -76,7 +76,7 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
                 _logger.LogTrace("Making request {RequestCount} for {Identifier} at offset {Offset}",
                     currentPage + 1, identifier, currentOffset);
 
-                var response = await FetchPageAsync(paginationRequest, cancellationToken);
+                var response = await FetchPageAsync(paginationRequest, cancellationToken).ConfigureAwait(false);
 
                 if (!response.IsSuccess)
                 {
@@ -112,7 +112,7 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
                 // Respect rate limiting
                 if (hasMoreData && currentPage < config.MaxPages && config.DelayBetweenRequests > 0)
                 {
-                    await Task.Delay(config.DelayBetweenRequests, cancellationToken);
+                    await Task.Delay(config.DelayBetweenRequests, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)

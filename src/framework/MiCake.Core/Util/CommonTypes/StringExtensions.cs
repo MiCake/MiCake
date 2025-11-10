@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MiCake.Core.Util.CommonTypes
+namespace MiCake.Core.Util
 {
     public static class StringExtensions
     {
