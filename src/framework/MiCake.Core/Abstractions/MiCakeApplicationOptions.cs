@@ -1,6 +1,5 @@
 ﻿using MiCake.Core.Data;
 using MiCake.Core.DependencyInjection;
-using MiCake.Core.Handlers;
 using System.Reflection;
 
 namespace MiCake.Core
@@ -17,7 +16,7 @@ namespace MiCake.Core
         /// or <see cref="IScopedService"/> interface will be injected automatically.
         /// But we need to determine which type of service this class is.
         /// 
-        /// defalut: find class all interfaces.The service whose interface name contains the class name.
+        /// default: find class all interfaces. The service whose interface name contains the class name.
         /// </summary>
         public FindAutoServiceTypesDelegate FindAutoServiceTypes { get; set; }
 
@@ -26,11 +25,6 @@ namespace MiCake.Core
         /// Providing this parameter will facilitate micake to better scan related domain objects in the program.
         /// </summary>
         public Assembly[] DomainLayerAssemblies { get; set; }
-
-        /// <summary>
-        /// The collection for <see cref="IMiCakeHandler"/>.
-        /// </summary>
-        public MiCakeHandlerCollection Handlers { get; set; } = [];
 
         /// <summary>
         /// A data stash that only exists during the build process.
@@ -46,7 +40,6 @@ namespace MiCake.Core
         {
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
             DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
-            Handlers = applicationOptions.Handlers;
             BuildTimeData = applicationOptions.BuildTimeData;
         }
     }

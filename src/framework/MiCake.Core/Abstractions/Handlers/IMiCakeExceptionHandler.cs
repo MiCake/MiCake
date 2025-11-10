@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 namespace MiCake.Core.Handlers
 {
     /// <summary>
-    ///  Intercepting errors(<see cref="MiCakeException"/>).
+    /// Intercepting errors (<see cref="MiCakeException"/>).
     /// </summary>
-    public interface IMiCakeExceptionHandler : IMiCakeHandler
+    public interface IMiCakeExceptionHandler
     {
         /// <summary>
         /// Handle micake exception
