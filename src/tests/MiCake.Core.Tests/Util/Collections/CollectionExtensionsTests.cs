@@ -68,7 +68,7 @@ public class CollectionExtensionsTests
 
         // Assert
         Assert.True(result);
-        Assert.True(collection.Contains(item));
+        Assert.Contains(item, collection);
         Assert.Equal(4, collection.Count);
     }
 
@@ -117,7 +117,7 @@ public class CollectionExtensionsTests
 
         // Assert
         Assert.True(result);
-        Assert.True(collection.Contains(newItem));
+        Assert.Contains(newItem, collection);
         Assert.Equal(3, collection.Count);
     }
 
@@ -167,8 +167,8 @@ public class CollectionExtensionsTests
 
         // Assert
         Assert.Equal(2, addedItems.Count);
-        Assert.True(addedItems.Contains(4));
-        Assert.True(addedItems.Contains(5));
+        Assert.Contains(4, addedItems);
+        Assert.Contains(5, addedItems);
         Assert.Equal(5, collection.Count);
     }
 
@@ -210,7 +210,7 @@ public class CollectionExtensionsTests
         // Assert
         Assert.True(result);
         Assert.True(factoryCalled);
-        Assert.True(collection.Contains(4));
+        Assert.Contains(4, collection);
         Assert.Equal(4, collection.Count);
     }
 

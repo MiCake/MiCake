@@ -217,7 +217,7 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
         HttpRequestMessage httpRequest,
         CancellationToken cancellationToken)
     {
-        return await httpClient.SendAsync(httpRequest, cancellationToken);
+        return await httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -232,7 +232,7 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
         {
             try
             {
-                return await FetchPageWithoutRetryAsync(request, cancellationToken);
+                return await FetchPageWithoutRetryAsync(request, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -252,7 +252,7 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
             }
         }
 
-        return await ExecuteWithRetryAsync(request, cancellationToken);
+        return await ExecuteWithRetryAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -276,8 +276,8 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
                 httpRequest.Method, httpRequest.RequestUri, attemptNumber);
 
             // Use the virtual SendHttpRequestAsync method to allow customization
-            using var response = await SendHttpRequestAsync(httpClient, httpRequest, cancellationToken);
-            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var response = await SendHttpRequestAsync(httpClient, httpRequest, cancellationToken).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
             if (string.IsNullOrWhiteSpace(content))
             {

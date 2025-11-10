@@ -27,7 +27,7 @@ public abstract partial class HttpPaginationProvider<TData>
         {
             try
             {
-                var result = await FetchPageWithoutRetryAsync(request, cancellationToken, attemptNumber, healingState);
+                var result = await FetchPageWithoutRetryAsync(request, cancellationToken, attemptNumber, healingState).ConfigureAwait(false);
 
                 // On success, return immediately
                 if (result.IsSuccess)
@@ -49,7 +49,7 @@ public abstract partial class HttpPaginationProvider<TData>
                     }
 
                     // Attempt self-healing
-                    var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(lastException, request, attemptNumber, healingState);
+                    var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(lastException, request, attemptNumber, healingState).ConfigureAwait(false);
                     healingState = newHealingState;
                     
                     if (!continueRetry)
@@ -58,7 +58,7 @@ public abstract partial class HttpPaginationProvider<TData>
                     }
 
                     // Wait before next attempt
-                    await WaitBeforeRetryAsync(lastException, request, ++attemptNumber, cancellationToken);
+                    await WaitBeforeRetryAsync(lastException, request, ++attemptNumber, cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -77,7 +77,7 @@ public abstract partial class HttpPaginationProvider<TData>
                 }
 
                 // Attempt self-healing
-                var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(ex, request, attemptNumber, healingState);
+                var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(ex, request, attemptNumber, healingState).ConfigureAwait(false);
                 healingState = newHealingState;
                 
                 if (!continueRetry)
@@ -86,7 +86,7 @@ public abstract partial class HttpPaginationProvider<TData>
                 }
 
                 // Wait before next attempt
-                await WaitBeforeRetryAsync(ex, request, ++attemptNumber, cancellationToken);
+                await WaitBeforeRetryAsync(ex, request, ++attemptNumber, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -150,7 +150,7 @@ public abstract partial class HttpPaginationProvider<TData>
             State = healingState
         };
 
-        var healingResult = await AttemptSelfHealingAsync(healingContext);
+        var healingResult = await AttemptSelfHealingAsync(healingContext).ConfigureAwait(false);
 
         if (healingResult.IsSuccessful)
         {
@@ -187,7 +187,7 @@ public abstract partial class HttpPaginationProvider<TData>
 
         if (delay > 0)
         {
-            await Task.Delay(delay, cancellationToken);
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
         }
     }
 
