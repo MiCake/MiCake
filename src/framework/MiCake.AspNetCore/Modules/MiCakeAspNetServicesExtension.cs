@@ -42,10 +42,12 @@ namespace MiCake
 
             configOptions?.Invoke(options);
 
-            return new DefaultMiCakeBuilderProvider(services, entryModule, options, needNewScope).GetMiCakeBuilder().ConfigureApplication((app, services) =>
-            {
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeEssentialModule));
-            });
+            var builder = new DefaultMiCakeBuilderProvider(services, entryModule, options).GetMiCakeBuilder();
+            
+            // Essential module is automatically added through module dependency discovery
+            // MiCakeEssentialModule should be marked with [RelyOn] by user modules
+            
+            return builder;
         }
 
         /// <summary>
@@ -91,8 +93,8 @@ namespace MiCake
 
             AddMiCakeCoreMiddleware(applicationBuilder);
 
-            // Start the application asynchronously but block on it for compatibility
-            micakeApp.Start().GetAwaiter().GetResult();
+            // Start the application
+            micakeApp.Start();
         }
 
         /// <summary>
@@ -107,7 +109,7 @@ namespace MiCake
                                         $"Cannot find the instance of {nameof(IMiCakeApplication)}. " +
                                         $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
-            micakeApp.ShutDown().GetAwaiter().GetResult();
+            micakeApp.ShutDown();
         }
 
         /// <summary>

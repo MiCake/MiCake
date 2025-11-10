@@ -1,4 +1,5 @@
 ﻿using MiCake.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MiCake.Audit
@@ -20,9 +21,10 @@ namespace MiCake.Audit
             var options = new MiCakeAuditOptions();
             optionsConfig?.Invoke(options);
 
-            builder.ConfigureApplication((app, services) =>
+            // Store audit options in the application options for later use
+            builder.Services.Configure<MiCakeApplicationOptions>(appOptions =>
             {
-                app.ApplicationOptions.ExtraDataStash.Deposit(AuditForApplicationOptionsKey, options);
+                appOptions.BuildTimeData.Deposit(AuditForApplicationOptionsKey, options);
             });
 
             return builder;

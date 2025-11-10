@@ -9,6 +9,7 @@ using MiCake.EntityFrameworkCore.Options;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System;
 
 namespace MiCake.EntityFrameworkCore
@@ -127,24 +128,44 @@ namespace MiCake.EntityFrameworkCore
             MiCakeEFCoreOptions options = new(miCakeDbContextType);
             optionsBuilder?.Invoke(options);
 
-            builder.ConfigureApplication((app, services) =>
-            {
-                //register ef module to micake module collection
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeEFCoreModule));
+            // Register services directly on the builder's service collection
+            builder.Services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
+            
+            // Add EFCore UoW services
+            builder.Services.AddUowCoreServices(miCakeDbContextType);
 
-                services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
+            // Configure conventions
+            ConfigureConventionsDirectly(conventionBuilder, builder.Services);
 
-                //add efcore uow services.
-                services.AddUowCoreServices(miCakeDbContextType);
+            // Configure the MiCake interceptor factory
+            ConfigureInterceptorFactoryDirectly(builder.Services);
 
-                // Configure conventions
-                ConfigureConventions(conventionBuilder, app);
-
-                // Configure the MiCake interceptor factory using proper DI patterns
-                ConfigureInterceptorFactory(services, app);
-            });
+            // MiCakeEFCoreModule should be added through module dependency ([RelyOn] attribute)
 
             return builder;
+        }
+
+        /// <summary>
+        /// Configure conventions using service collection instead of application instance.
+        /// This allows convention setup during build phase without needing runtime application context.
+        /// </summary>
+        private static void ConfigureConventionsDirectly(Action<MiCakeEFCoreConventionOptions> conventionBuilder, IServiceCollection services)
+        {
+            var conventionOptions = new MiCakeEFCoreConventionOptions();
+
+            // Add default conventions if no custom configuration provided
+            if (conventionBuilder == null)
+            {
+                AddDefaultConventionsCore(conventionOptions, services);
+            }
+            else
+            {
+                conventionBuilder(conventionOptions);
+            }
+
+            // Create and configure the convention engine
+            var engine = CreateConventionEngine(conventionOptions);
+            MiCakeConventionEngineProvider.SetConventionEngine(engine);
         }
 
         private static void ConfigureConventions(Action<MiCakeEFCoreConventionOptions> conventionBuilder, IMiCakeApplication app)
@@ -172,9 +193,27 @@ namespace MiCake.EntityFrameworkCore
             return conventionOptions;
         }
 
+        private static void AddDefaultConventionsCore(MiCakeEFCoreConventionOptions conventionOptions, IServiceCollection services)
+        {
+            // Retrieve audit options from service collection via Configure pattern
+            // Note: This assumes options were configured via builder.Services.Configure<MiCakeApplicationOptions>
+            var serviceProvider = services.BuildServiceProvider();
+            var appOptions = serviceProvider.GetService<IOptions<MiCakeApplicationOptions>>();
+            
+            var auditOps = (MiCakeAuditOptions)appOptions?.Value.BuildTimeData.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
+
+            if (auditOps == null || !auditOps.UseAudit)
+                return;
+
+            conventionOptions.AddConvention(new AuditTimeConvention());
+
+            if (auditOps.UseSoftDeletion)
+                conventionOptions.AddConvention(new SoftDeletionConvention());
+        }
+
         private static void AddDefaultConventionsCore(MiCakeEFCoreConventionOptions conventionOptions, IMiCakeApplication app)
         {
-            var auditOps = (MiCakeAuditOptions)app.ApplicationOptions.ExtraDataStash.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
+            var auditOps = (MiCakeAuditOptions)app.ApplicationOptions.BuildTimeData.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
 
             if (auditOps == null || !auditOps.UseAudit)
                 return;
@@ -196,6 +235,18 @@ namespace MiCake.EntityFrameworkCore
             }
 
             return engine;
+        }
+
+        /// <summary>
+        /// Configure the MiCake interceptor factory during build phase.
+        /// This registers the factory directly without needing application instance.
+        /// </summary>
+        /// <param name="services">The service collection</param>
+        private static void ConfigureInterceptorFactoryDirectly(IServiceCollection services)
+        {
+            // Register the interceptor factory as a singleton service
+            // The factory will use the DI container properly without creating additional ServiceProviders
+            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
         }
 
         /// <summary>

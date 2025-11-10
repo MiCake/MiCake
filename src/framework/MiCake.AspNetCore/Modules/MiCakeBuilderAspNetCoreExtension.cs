@@ -28,14 +28,14 @@ namespace MiCake.AspNetCore
             this IMiCakeBuilder builder,
             Action<MiCakeAspNetOptions> optionsBulder)
         {
-            builder.ConfigureApplication((app, services) =>
+            // Configure services directly on the builder's service collection
+            builder.Services.Configure<MiCakeAspNetOptions>(options =>
             {
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeAspNetCoreModule));
-                services.Configure<MiCakeAspNetOptions>(options =>
-                {
-                    optionsBulder?.Invoke(options);
-                });
+                optionsBulder?.Invoke(options);
             });
+            
+            // MiCakeAspNetCoreModule should be added through module dependency ([RelyOn] attribute)
+            // by user's entry module if they want to use ASP.NET Core features
 
             return builder;
         }

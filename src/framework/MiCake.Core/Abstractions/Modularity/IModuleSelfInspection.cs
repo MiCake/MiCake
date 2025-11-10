@@ -12,6 +12,6 @@ namespace MiCake.Core.Modularity
         /// Execute the logic of self inspection. If there is any error, throw the corresponding exception
         /// </summary>
         /// <param name="context"><see cref="ModuleInspectionContext"/></param>
-        Task Inspect(ModuleInspectionContext context);
+        void Inspect(ModuleInspectionContext context);
     }
 }

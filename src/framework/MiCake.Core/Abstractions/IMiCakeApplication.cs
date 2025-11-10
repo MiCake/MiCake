@@ -15,16 +15,9 @@ namespace MiCake.Core
         MiCakeApplicationOptions ApplicationOptions { get; }
 
         /// <summary>
-        /// Gets the module manager responsible for module discovery and lifecycle
+        /// Gets the module context (read-only access to loaded modules)
         /// </summary>
-        IMiCakeModuleManager ModuleManager { get; }
-
-        /// <summary>
-        /// Sets the entry module type to start MiCake application.
-        /// The entry module serves as the root of the module dependency tree.
-        /// </summary>
-        /// <param name="type">The entry module type</param>
-        void SetEntry(Type type);
+        IMiCakeModuleContext ModuleContext { get; }
 
         /// <summary>
         /// Starts the MiCake application.

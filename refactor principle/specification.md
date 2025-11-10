@@ -64,43 +64,45 @@ namespace MiCake.Abstractions;  // 不创建新的顶层命名空间
 ```csharp
 namespace MiCake.Core.Modularity;
 
-/// <summary>
-/// MiCake模块接口 - 简化的3方法生命周期
-/// </summary>
 public interface IMiCakeModule
 {
     /// <summary>
-    /// 模块是否为框架级别（框架模块不需要用户显式声明依赖）
+    /// Indicates whether this module is a framework-level module.
+    /// Framework level modules do not need users to explicitly declare dependencies.
     /// </summary>
     bool IsFrameworkLevel { get; }
-    
+
     /// <summary>
-    /// 是否自动注册服务（通过InjectServiceAttribute或标记接口）
+    /// Indicates whether to automatically register services (via InjectServiceAttribute or marker interfaces).
+    /// When true, services implementing ITransientService, IScopedService, or ISingletonService will be auto-registered.
     /// </summary>
     bool IsAutoRegisterServices { get; }
 
     /// <summary>
-    /// 模块描述
+    /// Module description
     /// </summary>
     string Description { get; }
-    
+
     /// <summary>
-    /// 配置服务 - 在应用启动时注册服务到DI容器
+    /// Configure services - Register services to DI container during application startup.
+    /// This method is called synchronously during the build phase.
     /// </summary>
-    /// <param name="context">包含Services、其他模块、应用选项的上下文</param>
-    Task ConfigureServices(object context);
-    
+    /// <param name="context">Module configuration context containing Services, other modules, and application options</param>
+    void ConfigureServices(ModuleConfigServiceContext context);
+
     /// <summary>
-    /// 应用初始化 - 在应用启动完成后执行
+    /// Application initialization - Execute after application startup is complete.
+    /// This method is called synchronously when the application starts.
     /// </summary>
-    /// <param name="context">包含ServiceProvider、其他模块、应用选项的上下文</param>
-    Task OnApplicationInitialization(object context);
-    
+    /// <param name="context">Module initialization context containing ServiceProvider, other modules, and application options</param>
+    void OnApplicationInitialization(ModuleInitializationContext context);
+
     /// <summary>
-    /// 应用关闭 - 在应用关闭时执行清理工作
+    /// Application shutdown - Execute cleanup work when application shuts down.
+    /// This method is called synchronously during application shutdown.
     /// </summary>
-    /// <param name="context">包含ServiceProvider、其他模块、应用选项的上下文</param>
-    Task OnApplicationShutdown(object context);
+    /// <param name="context">Module shutdown context containing ServiceProvider, other modules, and application options</param>
+    void OnApplicationShutdown(ModuleShutdownContext context);
 }
 
 /// <summary>
@@ -109,24 +111,32 @@ public interface IMiCakeModule
 public interface IMiCakeModuleAdvanced : IMiCakeModule
 {
     /// <summary>
-    /// 配置服务前 - 在ConfigureServices之前执行
+    /// Pre-configure services - Execute before ConfigureServices
+    /// Use this for early configuration that other modules might depend on.
     /// </summary>
-    Task PreConfigureServices(object context);
-    
+    void PreConfigureServices(ModuleConfigServiceContext context);
+
     /// <summary>
-    /// 配置服务后 - 在ConfigureServices之后执行
+    /// Post-configure services - Execute after ConfigureServices
+    /// Use this for configuration that depends on services registered by other modules.
     /// </summary>
-    Task PostConfigureServices(object context);
-    
+    void PostConfigureServices(ModuleConfigServiceContext context);
+
     /// <summary>
-    /// 初始化前 - 在OnApplicationInitialization之前执行
+    /// Pre-initialization - Execute before OnApplicationInitialization
     /// </summary>
-    Task PreInitialization(object context);
-    
+    void PreInitialization(ModuleInitializationContext context);
+
     /// <summary>
-    /// 初始化后 - 在OnApplicationInitialization之后执行
+    /// Post-initialization - Execute after OnApplicationInitialization
     /// </summary>
-    Task PostInitialization(object context);
+    void PostInitialization(ModuleInitializationContext context);
+
+    /// <summary>
+    /// Pre-shutdown - Execute before OnApplicationShutdown
+    /// Use this to prepare for graceful shutdown.
+    /// </summary>
+    void PreShutdown(ModuleShutdownContext context);
 }
 ```
 
@@ -141,23 +151,22 @@ public interface IMiCakeModuleAdvanced : IMiCakeModule
 /// </summary>
 public abstract class MiCakeModule : IMiCakeModule
 {
-    public virtual string Description => string.Empty;
     public virtual bool IsFrameworkLevel => false;
+
     public virtual bool IsAutoRegisterServices => true;
 
-    public virtual Task ConfigureServices(object context)
+    public virtual string Description => string.Empty;
+
+    public virtual void ConfigureServices(ModuleConfigServiceContext context)
     {
-        return Task.CompletedTask;
     }
 
-    public virtual Task OnApplicationInitialization(object context)
+    public virtual void OnApplicationInitialization(ModuleInitializationContext context)
     {
-        return Task.CompletedTask;
     }
 
-    public virtual Task OnApplicationShutdown(object context)
+    public virtual void OnApplicationShutdown(ModuleShutdownContext context)
     {
-        return Task.CompletedTask;
     }
 }
 ```
@@ -169,14 +178,14 @@ public abstract class MiCakeModule : IMiCakeModule
 ```csharp
 // ✅ 正确：使用RelyOnAttribute声明依赖
 [RelyOn(typeof(MiCakeDomainModule), typeof(MiCakeEFCoreModule))]
-public class MyModule : MiCakeModuleBase
+public class MyModule : MiCakeModule
 {
 }
 
 // ❌ 错误：不在代码中手动检查依赖
-public class MyModule : MiCakeModuleBase
+public class MyModule : MiCakeModule
 {
-    public override Task ConfigureServices(ModuleConfigServiceContext context)
+    public override void ConfigureServices(ModuleConfigServiceContext context)
     {
         // ❌ 不要这样做
         if (!context.MiCakeModules.Any(m => m.ModuleType == typeof(OtherModule)))

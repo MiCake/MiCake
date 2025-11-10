@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 
 namespace MiCake.Core
 {
@@ -14,6 +15,12 @@ namespace MiCake.Core
         private readonly MiCakeApplicationOptions _options;
         private readonly Type _entryType;
         private readonly IServiceCollection _services;
+        private bool _isBuilt = false;
+
+        /// <summary>
+        /// Gets the service collection for registering additional services
+        /// </summary>
+        public IServiceCollection Services => _services;
 
         public MiCakeBuilder(
             IServiceCollection services,
@@ -30,28 +37,26 @@ namespace MiCake.Core
         /// <summary>
         /// Builds the MiCake configuration and registers all module services.
         /// This must be called to complete the setup and allow modules to register their services.
+        /// After calling Build(), no more configuration changes are allowed.
         /// </summary>
         public IMiCakeBuilder Build()
         {
+            if (_isBuilt)
+                throw new InvalidOperationException(
+                    "Build() can only be called once. The builder has already been built.");
+
+            // Validate configuration before building
+            ValidateConfiguration();
+
             // Initialize MiCake and configure all modules synchronously
             // This happens BEFORE the service provider is built
             InitializeMiCakeModules();
             
             // Register the application factory - it will be resolved after ServiceProvider is built
             RegisterMiCakeApplicationFactory();
+
+            _isBuilt = true;
             
-            return this;
-        }
-
-        public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication> configureApp)
-        {
-            // This can be stored and applied when the application is created
-            return this;
-        }
-
-        public IMiCakeBuilder ConfigureApplication(Action<IMiCakeApplication, IServiceCollection> configureApp)
-        {
-            // This can be stored and applied when the application is created
             return this;
         }
 
@@ -59,6 +64,16 @@ namespace MiCake.Core
         {
             var environment = new MiCakeEnvironment { EntryType = _entryType };
             _services.AddSingleton<IMiCakeEnvironment>(environment);
+        }
+
+        private void ValidateConfiguration()
+        {
+            if (_entryType == null)
+                throw new InvalidOperationException("Entry module type is required.");
+
+            if (!MiCakeModuleHelper.IsMiCakeModule(_entryType))
+                throw new InvalidOperationException(
+                    $"Entry type '{_entryType.Name}' must inherit from MiCakeModule.");
         }
 
         private void InitializeMiCakeModules()
@@ -72,9 +87,8 @@ namespace MiCake.Core
             // Register the module context as singleton
             _services.AddSingleton(moduleManager.ModuleContext);
             
-            // Store entry type and options for later
+            // Store options for later
             _services.AddSingleton(_options);
-            _services.AddSingleton(new MiCakeModuleEntryInfo(_entryType));
             _services.Configure<MiCakeApplicationOptions>(op => op.Apply(_options));
             
             // Execute ConfigureServices lifecycle for all modules
@@ -110,27 +124,13 @@ namespace MiCake.Core
             _services.AddSingleton<IMiCakeApplication>(sp =>
             {
                 var moduleContext = sp.GetRequiredService<IMiCakeModuleContext>();
-                var entryInfo = sp.GetRequiredService<MiCakeModuleEntryInfo>();
                 var options = sp.GetRequiredService<MiCakeApplicationOptions>();
                 
-                var app = new MiCakeApplication(sp, moduleContext, options);
-                app.SetEntry(entryInfo.EntryType);
+                // Create application with entry type in constructor
+                var app = new MiCakeApplication(sp, moduleContext, options, _entryType);
                 
                 return app;
             });
-        }
-    }
-    
-    /// <summary>
-    /// Internal class to store entry module information
-    /// </summary>
-    internal class MiCakeModuleEntryInfo
-    {
-        public Type EntryType { get; }
-        
-        public MiCakeModuleEntryInfo(Type entryType)
-        {
-            EntryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
         }
     }
 }
