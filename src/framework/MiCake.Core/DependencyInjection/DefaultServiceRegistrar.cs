@@ -78,7 +78,7 @@ namespace MiCake.Core.DependencyInjection
         private List<Type> GetInheritInterfaceServices(Type type)
         {
             if (!typeof(IAutoInjectService).IsAssignableFrom(type))
-                return null;
+                return [];
 
             var currentTypeInterfaces = type.GetInterfaces().AsEnumerable().ToList();
 
