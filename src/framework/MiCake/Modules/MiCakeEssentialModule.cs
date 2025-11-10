@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using MiCake.Audit;
 using MiCake.Audit.Core;
 using MiCake.Audit.Lifetime;
@@ -67,10 +68,16 @@ namespace MiCake.Modules
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
             services.AddScoped<IRepositoryPostSaveChanges, DomainEventCleanupLifetime>();
 
-            // UOW 
+            // Unit of Work - Register with options support
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            services.TryAddScoped(provider => provider.GetService<IUnitOfWorkManager>().Current);
-            context.Services.TryAddTransient<IUnitOfWork, UnitOfWork>();
+            
+            // Register current UoW accessor (returns Current from manager, may be null)
+            services.TryAddScoped(provider =>
+            {
+                var manager = provider.GetRequiredService<IUnitOfWorkManager>();
+                return manager.Current ?? throw new InvalidOperationException(
+                    "No active Unit of Work. Call IUnitOfWorkManager.Begin() to start a new Unit of Work.");
+            });
 
             //regiter all domain event handler to services
             services.RegisterDomainEventHandler(context.MiCakeModules);

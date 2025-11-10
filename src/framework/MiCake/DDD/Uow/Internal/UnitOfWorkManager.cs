@@ -7,51 +7,72 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Uow.Internal
 {
     /// <summary>
-    /// Clean implementation of Unit of Work Manager using AsyncLocal for context
+    /// Implementation of Unit of Work Manager with support for nested transactions using AsyncLocal
     /// </summary>
     internal class UnitOfWorkManager : IUnitOfWorkManager
     {
-        private static readonly AsyncLocal<IUnitOfWork> _current = new();
+        private static readonly AsyncLocal<IUnitOfWork?> _current = new();
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UnitOfWorkManager> _logger;
         private bool _disposed = false;
 
-        public IUnitOfWork Current => _current.Value;
+        public IUnitOfWork? Current => _current.Value;
 
         public UnitOfWorkManager(IServiceProvider serviceProvider, ILogger<UnitOfWorkManager> logger)
         {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IUnitOfWork Begin(bool requiresNew = false)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            return Begin(UnitOfWorkOptions.Default, requiresNew);
+        }
 
-            // If we already have a UOW and don't require a new one, return the current one
+        public IUnitOfWork Begin(UnitOfWorkOptions options, bool requiresNew = false)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(options);
+
+            // If we already have a UoW and don't require a new one, return nested UoW
             if (!requiresNew && _current.Value != null && !_current.Value.IsDisposed)
             {
-                _logger.LogDebug("Returning existing UnitOfWork {UnitOfWorkId}", _current.Value.Id);
-                return _current.Value;
+                var parentUow = _current.Value;
+                
+                _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUow.Id);
+
+                // Create nested UoW (inherits parent's options for isolation level)
+                var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
+                var nestedOptions = new UnitOfWorkOptions
+                {
+                    IsolationLevel = parentUow.IsolationLevel,
+                    AutoBeginTransaction = false,  // Nested doesn't manage transactions
+                    IsReadOnly = options.IsReadOnly
+                };
+                
+                var nestedUow = new UnitOfWork(logger, nestedOptions, parentUow);
+                
+                // Return wrapper that doesn't affect AsyncLocal
+                return new NestedUnitOfWorkWrapper(nestedUow, _logger);
             }
 
-            // Create a new unit of work
-            var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
-            var unitOfWork = new UnitOfWork(logger);
+            // Create a new root unit of work
+            var uowLogger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
+            var unitOfWork = new UnitOfWork(uowLogger, options, parent: null);
 
             // Set as current
             _current.Value = unitOfWork;
 
-            _logger.LogDebug("Created new UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
+            _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
             // Return a wrapper that clears the current UOW when disposed
-            return new UnitOfWorkWrapper(unitOfWork, () =>
+            return new RootUnitOfWorkWrapper(unitOfWork, () =>
             {
                 if (_current.Value == unitOfWork)
                 {
                     _current.Value = null;
                 }
-            });
+            }, _logger);
         }
 
         public void Dispose()
@@ -69,33 +90,65 @@ namespace MiCake.DDD.Uow.Internal
         }
 
         /// <summary>
-        /// Wrapper to handle cleanup of AsyncLocal context
+        /// Wrapper for root UnitOfWork to handle cleanup of AsyncLocal context
         /// </summary>
-        public class UnitOfWorkWrapper : IUnitOfWork
+        private class RootUnitOfWorkWrapper : UnitOfWorkWrapperBase
         {
-            private readonly UnitOfWork _inner;
             private readonly Action _onDispose;
 
-            public UnitOfWorkWrapper(UnitOfWork inner, Action onDispose)
+            public RootUnitOfWorkWrapper(UnitOfWork inner, Action onDispose, ILogger logger)
+                : base(inner, logger)
             {
-                _inner = inner;
                 _onDispose = onDispose;
+            }
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                _onDispose?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Wrapper for nested UnitOfWork (doesn't modify AsyncLocal)
+        /// </summary>
+        private class NestedUnitOfWorkWrapper : UnitOfWorkWrapperBase
+        {
+            public NestedUnitOfWorkWrapper(UnitOfWork inner, ILogger logger)
+                : base(inner, logger)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Base wrapper class for UnitOfWork
+        /// </summary>
+        private abstract class UnitOfWorkWrapperBase : IUnitOfWork
+        {
+            protected readonly UnitOfWork _inner;
+            protected readonly ILogger _logger;
+
+            protected UnitOfWorkWrapperBase(UnitOfWork inner, ILogger logger)
+            {
+                _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             }
 
             public Guid Id => _inner.Id;
             public bool IsDisposed => _inner.IsDisposed;
             public bool IsCompleted => _inner.IsCompleted;
-
-            public bool HasActiveTransactions => throw new NotImplementedException();
+            public bool HasActiveTransactions => _inner.HasActiveTransactions;
+            public System.Data.IsolationLevel? IsolationLevel => _inner.IsolationLevel;
+            public IUnitOfWork? Parent => _inner.Parent;
 
             public async Task CommitAsync(CancellationToken cancellationToken = default)
             {
-                await _inner.CommitAsync(cancellationToken);
+                await _inner.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
 
             public async Task RollbackAsync(CancellationToken cancellationToken = default)
             {
-                await _inner.RollbackAsync(cancellationToken);
+                await _inner.RollbackAsync(cancellationToken).ConfigureAwait(false);
             }
 
             public void RegisterDbContext(IDbContextWrapper wrapper)
@@ -103,15 +156,9 @@ namespace MiCake.DDD.Uow.Internal
                 _inner.RegisterDbContext(wrapper);
             }
 
-            public void Dispose()
+            public virtual void Dispose()
             {
                 _inner.Dispose();
-                _onDispose?.Invoke();
-            }
-
-            public Task BeginTransactionAsync(CancellationToken cancellationToken = default)
-            {
-                return _inner.BeginTransactionAsync(cancellationToken);
             }
 
             public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
