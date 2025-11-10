@@ -2,11 +2,14 @@
 
 namespace MiCake.DDD.Domain.Internal
 {
+    /// <summary>
+    /// Internal interface for domain event providers
+    /// </summary>
     public interface IDomainEventProvider
     {
         /// <summary>
-        /// Get All DomainEvents
+        /// Gets all domain events as a read-only collection
         /// </summary>
-        List<IDomainEvent> GetDomainEvents();
+        IReadOnlyCollection<IDomainEvent> DomainEvents { get; }
     }
 }

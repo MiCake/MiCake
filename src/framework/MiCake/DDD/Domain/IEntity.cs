@@ -2,21 +2,27 @@
 
 namespace MiCake.DDD.Domain
 {
+    /// <summary>
+    /// Base interface for entities
+    /// </summary>
     public interface IEntity : IDomainEventProvider
     {
-        void AddDomainEvent(IDomainEvent domainEvent);
-
-        void RemoveDomainEvent(IDomainEvent domainEvent);
+        /// <summary>
+        /// Clears all pending domain events
+        /// </summary>
+        void ClearDomainEvents();
     }
 
     /// <summary>
     /// Defines an entity with a single primary key with "Id" property.
     /// </summary>
-    public interface IEntity<TKey> : IEntity
+    /// <typeparam name="TKey">The type of the entity identifier</typeparam>
+    public interface IEntity<TKey> : IEntity where TKey : notnull
     {
         /// <summary>
         /// Unique identifier for this entity.
+        /// Using init ensures immutability after construction.
         /// </summary>
-        TKey Id { get; set; }
+        TKey Id { get; init; }
     }
 }

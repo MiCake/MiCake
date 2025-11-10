@@ -22,7 +22,7 @@ namespace MiCake.Modules
     {
         public override bool IsFrameworkLevel => true;
 
-        public override Task ConfigServices(ModuleConfigServiceContext context)
+        public override void ConfigureServices(ModuleConfigServiceContext context)
         {
             var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
             var services = context.Services;
@@ -76,8 +76,6 @@ namespace MiCake.Modules
             services.RegisterDomainEventHandler(context.MiCakeModules);
 
             services.AddScoped<IEventDispatcher, EventDispatcher>();
-
-            return Task.CompletedTask;
         }
     }
 }

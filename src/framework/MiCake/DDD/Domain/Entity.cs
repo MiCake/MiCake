@@ -1,4 +1,5 @@
 ﻿using MiCake.DDD.Domain.Helper;
+using MiCake.DDD.Domain.Internal;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -19,40 +20,48 @@ namespace MiCake.DDD.Domain
     /// </summary>
     /// <typeparam name="TKey">The type of the entity identifier</typeparam>
     [Serializable]
-    public abstract class Entity<TKey> : IEntity<TKey>
+    public abstract class Entity<TKey> : IEntity<TKey>, IDomainEventAccessor where TKey : notnull
     {
-        /// <summary>
-        /// Gets or sets the unique identifier for this entity.
-        /// </summary>
-        public virtual TKey Id { get; set; }
+        private readonly List<IDomainEvent> _domainEvents = [];
 
-        protected List<IDomainEvent> _domainEvents = [];
+        /// <summary>
+        /// Gets or init the unique identifier for this entity.
+        /// Using init ensures immutability after construction.
+        /// </summary>
+        public virtual TKey Id { get; init; } = default!;
+
+        /// <summary>
+        /// Gets all pending domain events for this entity as a read-only collection.
+        /// External code cannot modify the collection directly.
+        /// </summary>
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
         /// <summary>
         /// Adds a domain event to the entity.
         /// The event will be dispatched when changes are saved to the repository.
         /// </summary>
         /// <param name="domainEvent">The domain event to add</param>
-        public virtual void AddDomainEvent(IDomainEvent domainEvent)
-          => _domainEvents.Add(domainEvent);
+        /// <exception cref="ArgumentNullException">Thrown when domainEvent is null</exception>
+        protected void RaiseDomainEvent(IDomainEvent domainEvent)
+        {
+            ArgumentNullException.ThrowIfNull(domainEvent);
+            _domainEvents.Add(domainEvent);
+        }
 
         /// <summary>
-        /// Removes a domain event from the entity.
+        /// Clears all pending domain events.
+        /// This is typically called after events have been dispatched.
         /// </summary>
-        /// <param name="domainEvent">The domain event to remove</param>
-        public virtual void RemoveDomainEvent(IDomainEvent domainEvent)
-          => _domainEvents.Remove(domainEvent);
+        public void ClearDomainEvents()
+        {
+            _domainEvents.Clear();
+        }
 
         /// <summary>
-        /// Gets all pending domain events for this entity.
+        /// Gets all pending domain events for this entity (internal use).
+        /// Explicit interface implementation to hide from public API.
         /// </summary>
-        /// <returns>A list of domain events</returns>
-        /// <summary>
-        /// Gets all pending domain events for this entity.
-        /// </summary>
-        /// <returns>A list of domain events</returns>
-        public List<IDomainEvent> GetDomainEvents()
-          => _domainEvents;
+        List<IDomainEvent> IDomainEventAccessor.GetDomainEventsInternal() => _domainEvents;
 
         /// <summary>
         /// Determines whether the specified object is equal to the current entity.

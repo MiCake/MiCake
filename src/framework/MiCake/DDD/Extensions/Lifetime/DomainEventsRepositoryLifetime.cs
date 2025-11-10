@@ -30,10 +30,10 @@ namespace MiCake.DDD.Extensions.Lifetime
 
         public async ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
-            if (entity is not IDomainEventProvider domainEventProvider)
+            if (entity is not IDomainEventAccessor domainEventAccessor)
                 return entityState;
 
-            var entityEvents = domainEventProvider.GetDomainEvents();
+            var entityEvents = domainEventAccessor.GetDomainEventsInternal();
             if (entityEvents == null || entityEvents.Count == 0)
                 return entityState;
 

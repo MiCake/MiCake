@@ -1,4 +1,4 @@
-using MiCake.DDD.Domain.Internal;
+using MiCake.DDD.Domain;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,10 +13,9 @@ namespace MiCake.DDD.Extensions.Lifetime
 
         public ValueTask<RepositoryEntityState> PostSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
         {
-            if (entity is IDomainEventProvider domainEventProvider)
+            if (entity is IEntity domainEntity)
             {
-                var entityEvents = domainEventProvider.GetDomainEvents();
-                entityEvents?.Clear();
+                domainEntity.ClearDomainEvents();
             }
 
             return new ValueTask<RepositoryEntityState>(entityState);
