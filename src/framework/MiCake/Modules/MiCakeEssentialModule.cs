@@ -49,12 +49,11 @@ namespace MiCake.Modules
                 }
             }
 
-            services.AddSingleton<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
-            services.AddSingleton<DomainObjectFactory>();
+            // Domain Metadata - Simplified design
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
             services.AddSingleton(factory =>
             {
-                var provider = factory.GetService<IDomainMetadataProvider>();
+                var provider = factory.GetRequiredService<IDomainMetadataProvider>();
                 return provider.GetDomainMetadata();
             });
 

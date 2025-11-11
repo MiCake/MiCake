@@ -28,14 +28,14 @@ namespace MiCake.DDD.Domain
         /// Add a new aggregateRoot and return this aggregate. Sometimes can use this way to get primary key.
         /// 
         /// <para>
-        /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.
-        /// So,you need keep <paramref name="autoExecute"/> true.
+        /// For some types whose ID is self-increasing, the result can be obtained only after the database operation is performed.
+        /// So, you need to keep <paramref name="saveNow"/> true.
         /// </para>
         /// </summary>
         /// <param name="aggregateRoot">The aggregate root to be added.</param>
-        /// <param name="autoExecute">Auto execute save method(sql). Default value:true</param>
+        /// <param name="saveNow">Whether to immediately save changes to the database. Default value: true</param>
         /// <param name="cancellationToken"></param>
-        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default);
+        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool saveNow = true, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.

@@ -1,27 +1,81 @@
-﻿using System.Reflection;
+using MiCake.DDD.Domain;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace MiCake.DDD.Infrastructure.Metadata
 {
     /// <summary>
-    /// A metadata for micake domain layer.
+    /// Simplified domain metadata containing information about domain objects.
+    /// Provides fast lookup and discovery of entities, aggregates, and value objects.
     /// </summary>
     public class DomainMetadata
     {
+        private readonly Dictionary<Type, DomainObjectDescriptor> _descriptorCache = new();
+        
         /// <summary>
-        /// Assembly containing domain objects
+        /// Assemblies containing domain objects
         /// </summary>
-        public Assembly[] DomainLayerAssembly { get; }
-
+        public IReadOnlyCollection<Assembly> Assemblies { get; }
+        
         /// <summary>
-        /// Model for all domain object descriptor.
+        /// All aggregate root descriptors
         /// </summary>
-        public DomainObjectModel DomainObject { get; }
+        public IReadOnlyCollection<AggregateRootDescriptor> AggregateRoots { get; }
+        
+        /// <summary>
+        /// All entity descriptors (includes aggregate roots)
+        /// </summary>
+        public IReadOnlyCollection<EntityDescriptor> Entities { get; }
+        
+        /// <summary>
+        /// All value object descriptors
+        /// </summary>
+        public IReadOnlyCollection<ValueObjectDescriptor> ValueObjects { get; }
 
-        public DomainMetadata(Assembly[] assemblies, DomainObjectModel domainObjectModel)
+        internal DomainMetadata(
+            IEnumerable<Assembly> assemblies,
+            IEnumerable<AggregateRootDescriptor> aggregates,
+            IEnumerable<EntityDescriptor> entities,
+            IEnumerable<ValueObjectDescriptor> valueObjects)
         {
-            DomainLayerAssembly = assemblies;
+            Assemblies = assemblies.ToList().AsReadOnly();
+            AggregateRoots = aggregates.ToList().AsReadOnly();
+            Entities = entities.ToList().AsReadOnly();
+            ValueObjects = valueObjects.ToList().AsReadOnly();
+            
+            // Build cache for fast lookup
+            foreach (var descriptor in AggregateRoots)
+                _descriptorCache[descriptor.Type] = descriptor;
+            foreach (var descriptor in Entities)
+                _descriptorCache.TryAdd(descriptor.Type, descriptor);
+            foreach (var descriptor in ValueObjects)
+                _descriptorCache[descriptor.Type] = descriptor;
+        }
 
-            DomainObject = domainObjectModel;
+        /// <summary>
+        /// Gets the descriptor for a specific domain object type
+        /// </summary>
+        public DomainObjectDescriptor? GetDescriptor(Type type)
+        {
+            return _descriptorCache.TryGetValue(type, out var descriptor) ? descriptor : null;
+        }
+
+        /// <summary>
+        /// Gets the descriptor for a specific domain object type
+        /// </summary>
+        public TDescriptor? GetDescriptor<TDescriptor>(Type type) where TDescriptor : DomainObjectDescriptor
+        {
+            return GetDescriptor(type) as TDescriptor;
+        }
+
+        /// <summary>
+        /// Checks if the type is a registered domain object
+        /// </summary>
+        public bool IsDomainObject(Type type)
+        {
+            return _descriptorCache.ContainsKey(type);
         }
     }
 }
