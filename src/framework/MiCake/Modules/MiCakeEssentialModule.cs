@@ -9,7 +9,6 @@ using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
 using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Internal;
 using MiCake.DDD.Extensions.Lifetime;
 using MiCake.DDD.Extensions.Metadata;
 using MiCake.DDD.Uow;
@@ -60,9 +59,10 @@ namespace MiCake.Modules
                 return provider.GetDomainMetadata();
             });
 
-            services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
-            services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
-            services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
+            // Note: IRepository<,> and IReadOnlyRepository<,> are NO LONGER auto-registered
+            // Users should either:
+            // 1. Create custom repositories inheriting from persistence layer base (e.g., EFRepositoryBase)
+            // 2. Inject IRepositoryProvider<,> directly for simple cases
 
             //LifeTime
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();

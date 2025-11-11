@@ -141,6 +141,30 @@ namespace MiCake.DDD.Uow.Internal
             public System.Data.IsolationLevel? IsolationLevel => _inner.IsolationLevel;
             public IUnitOfWork? Parent => _inner.Parent;
 
+            public event EventHandler<UnitOfWorkEventArgs>? OnCommitting
+            {
+                add => _inner.OnCommitting += value;
+                remove => _inner.OnCommitting -= value;
+            }
+
+            public event EventHandler<UnitOfWorkEventArgs>? OnCommitted
+            {
+                add => _inner.OnCommitted += value;
+                remove => _inner.OnCommitted -= value;
+            }
+
+            public event EventHandler<UnitOfWorkEventArgs>? OnRollingBack
+            {
+                add => _inner.OnRollingBack += value;
+                remove => _inner.OnRollingBack -= value;
+            }
+
+            public event EventHandler<UnitOfWorkEventArgs>? OnRolledBack
+            {
+                add => _inner.OnRolledBack += value;
+                remove => _inner.OnRolledBack -= value;
+            }
+
             public async Task CommitAsync(CancellationToken cancellationToken = default)
             {
                 await _inner.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -151,19 +175,43 @@ namespace MiCake.DDD.Uow.Internal
                 await _inner.RollbackAsync(cancellationToken).ConfigureAwait(false);
             }
 
+            public void RegisterResource(IUnitOfWorkResource resource)
+            {
+                if (_inner is IUnitOfWorkInternal internalUow)
+                {
+                    internalUow.RegisterResource(resource);
+                }
+            }
+
+            [Obsolete("This method is deprecated. Use IUnitOfWorkInternal.RegisterResource instead.")]
             public void RegisterDbContext(IDbContextWrapper wrapper)
             {
                 _inner.RegisterDbContext(wrapper);
             }
 
-            public virtual void Dispose()
-            {
-                _inner.Dispose();
-            }
-
             public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
             {
                 return _inner.MarkAsCompletedAsync(cancellationToken);
+            }
+
+            public async Task<string> CreateSavepointAsync(string name, CancellationToken cancellationToken = default)
+            {
+                return await _inner.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+            }
+
+            public async Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default)
+            {
+                await _inner.RollbackToSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+            }
+
+            public async Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default)
+            {
+                await _inner.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+            }
+
+            public virtual void Dispose()
+            {
+                _inner.Dispose();
             }
         }
     }

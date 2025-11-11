@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,11 +12,11 @@ namespace MiCake.DDD.Uow.Internal
     /// Implementation of Unit of Work with nested transaction support.
     /// When created, the UoW is immediately active. Transactions are automatically started if configured.
     /// </summary>
-    internal class UnitOfWork : IUnitOfWork
+    internal class UnitOfWork : IUnitOfWork, IUnitOfWorkInternal
     {
         #region Fields
 
-        private readonly List<IDbContextWrapper> _dbContexts = [];
+        private readonly List<IUnitOfWorkResource> _resources = [];
         private readonly ILogger<UnitOfWork> _logger;
         private readonly UnitOfWorkOptions _options;
         private readonly Lock _lock = new();
@@ -36,6 +37,15 @@ namespace MiCake.DDD.Uow.Internal
         public bool HasActiveTransactions => _transactionsStarted;
         public IsolationLevel? IsolationLevel => _options.IsolationLevel;
         public IUnitOfWork? Parent { get; }
+
+        #endregion
+
+        #region Events
+
+        public event EventHandler<UnitOfWorkEventArgs>? OnCommitting;
+        public event EventHandler<UnitOfWorkEventArgs>? OnCommitted;
+        public event EventHandler<UnitOfWorkEventArgs>? OnRollingBack;
+        public event EventHandler<UnitOfWorkEventArgs>? OnRolledBack;
 
         #endregion
 
@@ -63,33 +73,33 @@ namespace MiCake.DDD.Uow.Internal
 
         #region Public Methods
 
-        public void RegisterDbContext(IDbContextWrapper dbContextWrapper)
+        public void RegisterResource(IUnitOfWorkResource resource)
         {
             ThrowIfDisposed();
-            ThrowIfCompleted("Cannot register DbContext after unit of work is completed");
-            ArgumentNullException.ThrowIfNull(dbContextWrapper);
+            ThrowIfCompleted("Cannot register resource after unit of work is completed");
+            ArgumentNullException.ThrowIfNull(resource);
 
             // If nested, register with parent instead
-            if (Parent != null)
+            if (Parent is IUnitOfWorkInternal parentInternal)
             {
-                Parent.RegisterDbContext(dbContextWrapper);
+                parentInternal.RegisterResource(resource);
                 return;
             }
 
             lock (_lock)
             {
-                if (TryFindExistingWrapper(dbContextWrapper.ContextIdentifier, out _))
+                if (TryFindExistingResource(resource.ResourceIdentifier, out _))
                 {
-                    _logger.LogDebug("DbContext with identifier {ContextIdentifier} already registered with UnitOfWork {UnitOfWorkId}",
-                        dbContextWrapper.ContextIdentifier, Id);
+                    _logger.LogDebug("Resource with identifier {ResourceIdentifier} already registered with UnitOfWork {UnitOfWorkId}",
+                        resource.ResourceIdentifier, Id);
                     return;
                 }
 
-                _dbContexts.Add(dbContextWrapper);
-                _logger.LogDebug("DbContext with identifier {ContextIdentifier} registered with UnitOfWork {UnitOfWorkId}",
-                    dbContextWrapper.ContextIdentifier, Id);
+                _resources.Add(resource);
+                _logger.LogDebug("Resource with identifier {ResourceIdentifier} registered with UnitOfWork {UnitOfWorkId}",
+                    resource.ResourceIdentifier, Id);
 
-                // Auto-begin transaction if configured and this is first context
+                // Auto-begin transaction if configured and this is first resource
                 if (_options.AutoBeginTransaction && !_transactionsStarted)
                 {
                     Task.Run(async () => await BeginTransactionsInternalAsync(default).ConfigureAwait(false))
@@ -99,50 +109,85 @@ namespace MiCake.DDD.Uow.Internal
             }
         }
 
+        [Obsolete("This method is deprecated. Use IUnitOfWorkInternal.RegisterResource instead.")]
+        public void RegisterDbContext(IDbContextWrapper wrapper)
+        {
+            // Convert old wrapper to new resource interface
+            if (wrapper is IUnitOfWorkResource resource)
+            {
+                RegisterResource(resource);
+            }
+            else
+            {
+                _logger.LogWarning("RegisterDbContext called with non-IUnitOfWorkResource wrapper. This is deprecated.");
+            }
+        }
+
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfCompleted("Unit of work has already been completed");
 
-            // If nested UoW, just mark as completed (parent will do actual commit)
-            if (Parent != null)
+            // Raise OnCommitting event
+            RaiseEvent(OnCommitting, new UnitOfWorkEventArgs(Id, Parent != null));
+
+            try
             {
-                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} completed successfully", Id);
-                MarkAsCompleted();
-                return;
-            }
-
-            // Root UoW: do actual commit
-            if (_skipCommit || _options.IsReadOnly)
-            {
-                _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (SkipCommit: {SkipCommit}, ReadOnly: {ReadOnly})",
-                    Id, _skipCommit, _options.IsReadOnly);
-                MarkAsCompleted();
-                return;
-            }
-
-            if (_shouldRollback)
-            {
-                _logger.LogWarning("UnitOfWork {UnitOfWorkId} marked for rollback by nested UoW, performing rollback", Id);
-                await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
-                throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
-            }
-
-            _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ContextCount} contexts", Id, _dbContexts.Count);
-
-            var exceptions = await ExecuteCommitOperationsAsync(cancellationToken).ConfigureAwait(false);
-
-            if (exceptions.Count > 0)
-            {
-                if (_transactionsStarted)
+                // If nested UoW, just mark as completed (parent will do actual commit)
+                if (Parent != null)
                 {
-                    await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                    _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} completed successfully", Id);
+                    MarkAsCompleted();
+                    
+                    // Raise OnCommitted event for nested UoW
+                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
+                    return;
                 }
-                throw new AggregateException("Failed to commit unit of work", exceptions);
-            }
 
-            MarkAsCompleted();
-            _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
+                // Root UoW: do actual commit
+                if (_skipCommit || _options.IsReadOnly)
+                {
+                    _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (SkipCommit: {SkipCommit}, ReadOnly: {ReadOnly})",
+                        Id, _skipCommit, _options.IsReadOnly);
+                    MarkAsCompleted();
+                    
+                    // Raise OnCommitted event even for skipped commit
+                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
+                    return;
+                }
+
+                if (_shouldRollback)
+                {
+                    _logger.LogWarning("UnitOfWork {UnitOfWorkId} marked for rollback by nested UoW, performing rollback", Id);
+                    await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                    throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
+                }
+
+                _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ResourceCount} resources", Id, _resources.Count);
+
+                var exceptions = await ExecuteCommitOperationsAsync(cancellationToken).ConfigureAwait(false);
+
+                if (exceptions.Count > 0)
+                {
+                    if (_transactionsStarted)
+                    {
+                        await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    throw new AggregateException("Failed to commit unit of work", exceptions);
+                }
+
+                MarkAsCompleted();
+                _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
+                
+                // Raise OnCommitted event
+                RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
+            }
+            catch (Exception ex)
+            {
+                // Raise OnRolledBack event with exception
+                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null, ex));
+                throw;
+            }
         }
 
         public async Task RollbackAsync(CancellationToken cancellationToken = default)
@@ -151,24 +196,42 @@ namespace MiCake.DDD.Uow.Internal
 
             ThrowIfCompleted("Cannot rollback a completed unit of work");
 
-            // If nested UoW, signal parent to rollback
-            if (Parent != null)
-            {
-                _logger.LogWarning("Nested UnitOfWork {UnitOfWorkId} requesting parent {ParentId} to rollback",
-                    Id, Parent.Id);
-                
-                // Signal parent via its internal state (we need to expose this through an internal method)
-                if (Parent is UnitOfWork parentUow)
-                {
-                    parentUow._shouldRollback = true;
-                }
-                
-                MarkAsCompleted();
-                return;
-            }
+            // Raise OnRollingBack event
+            RaiseEvent(OnRollingBack, new UnitOfWorkEventArgs(Id, Parent != null));
 
-            // Root UoW: do actual rollback
-            await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // If nested UoW, signal parent to rollback
+                if (Parent != null)
+                {
+                    _logger.LogWarning("Nested UnitOfWork {UnitOfWorkId} requesting parent {ParentId} to rollback",
+                        Id, Parent.Id);
+                    
+                    // Signal parent via its internal state
+                    if (Parent is UnitOfWork parentUow)
+                    {
+                        parentUow._shouldRollback = true;
+                    }
+                    
+                    MarkAsCompleted();
+                    
+                    // Raise OnRolledBack event for nested UoW
+                    RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
+                    return;
+                }
+
+                // Root UoW: do actual rollback
+                await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                
+                // Raise OnRolledBack event
+                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
+            }
+            catch (Exception ex)
+            {
+                // Raise OnRolledBack event with exception
+                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null, ex));
+                throw;
+            }
         }
 
         public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
@@ -186,6 +249,134 @@ namespace MiCake.DDD.Uow.Internal
             return Task.CompletedTask;
         }
 
+        #region Savepoint Support
+
+        public async Task<string> CreateSavepointAsync(string name, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot create savepoint after unit of work is completed");
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+            if (Parent != null)
+            {
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating savepoint creation to parent", Id);
+                return await Parent.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (!_transactionsStarted)
+            {
+                throw new InvalidOperationException("Cannot create savepoint: no active transaction");
+            }
+
+            _logger.LogDebug("Creating savepoint '{SavepointName}' in UnitOfWork {UnitOfWorkId}", name, Id);
+
+            var exceptions = new List<Exception>();
+            foreach (var resource in _resources)
+            {
+                try
+                {
+                    await resource.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    _logger.LogError(ex, "Failed to create savepoint '{SavepointName}' for resource {ResourceIdentifier}",
+                        name, resource.ResourceIdentifier);
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException($"Failed to create savepoint '{name}'", exceptions);
+            }
+
+            return name;
+        }
+
+        public async Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot rollback to savepoint after unit of work is completed");
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+            if (Parent != null)
+            {
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating savepoint rollback to parent", Id);
+                await Parent.RollbackToSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            if (!_transactionsStarted)
+            {
+                throw new InvalidOperationException("Cannot rollback to savepoint: no active transaction");
+            }
+
+            _logger.LogDebug("Rolling back to savepoint '{SavepointName}' in UnitOfWork {UnitOfWorkId}", name, Id);
+
+            var exceptions = new List<Exception>();
+            foreach (var resource in _resources)
+            {
+                try
+                {
+                    await resource.RollbackToSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    _logger.LogError(ex, "Failed to rollback to savepoint '{SavepointName}' for resource {ResourceIdentifier}",
+                        name, resource.ResourceIdentifier);
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException($"Failed to rollback to savepoint '{name}'", exceptions);
+            }
+        }
+
+        public async Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot release savepoint after unit of work is completed");
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+            if (Parent != null)
+            {
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating savepoint release to parent", Id);
+                await Parent.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            if (!_transactionsStarted)
+            {
+                throw new InvalidOperationException("Cannot release savepoint: no active transaction");
+            }
+
+            _logger.LogDebug("Releasing savepoint '{SavepointName}' in UnitOfWork {UnitOfWorkId}", name, Id);
+
+            var exceptions = new List<Exception>();
+            foreach (var resource in _resources)
+            {
+                try
+                {
+                    await resource.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    _logger.LogError(ex, "Failed to release savepoint '{SavepointName}' for resource {ResourceIdentifier}",
+                        name, resource.ResourceIdentifier);
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException($"Failed to release savepoint '{name}'", exceptions);
+            }
+        }
+
+        #endregion
+
         public void Dispose()
         {
             if (_disposed) return;
@@ -195,11 +386,11 @@ namespace MiCake.DDD.Uow.Internal
 
             HandleDisposalCleanup();
             
-            // Only dispose contexts if this is root UoW
+            // Only dispose resources if this is root UoW
             if (Parent == null)
             {
-                DisposeAllWrappers();
-                _dbContexts.Clear();
+                DisposeAllResources();
+                _resources.Clear();
             }
 
             _disposed = true;
@@ -222,10 +413,10 @@ namespace MiCake.DDD.Uow.Internal
                 throw new InvalidOperationException(message);
         }
 
-        private bool TryFindExistingWrapper(string contextIdentifier, out IDbContextWrapper? wrapper)
+        private bool TryFindExistingResource(string resourceIdentifier, out IUnitOfWorkResource? resource)
         {
-            wrapper = _dbContexts.Find(w => w.ContextIdentifier == contextIdentifier);
-            return wrapper != null;
+            resource = _resources.Find(w => w.ResourceIdentifier == resourceIdentifier);
+            return resource != null;
         }
 
         private void MarkAsCompleted()
@@ -233,17 +424,30 @@ namespace MiCake.DDD.Uow.Internal
             _completed = true;
         }
 
+        private void RaiseEvent(EventHandler<UnitOfWorkEventArgs>? eventHandler, UnitOfWorkEventArgs args)
+        {
+            try
+            {
+                eventHandler?.Invoke(this, args);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error raising event in UnitOfWork {UnitOfWorkId}", Id);
+                // Don't throw - event handler errors shouldn't break UoW flow
+            }
+        }
+
         private async Task BeginTransactionsInternalAsync(CancellationToken cancellationToken)
         {
             if (_transactionsStarted || _options.IsReadOnly)
                 return;
 
-            _logger.LogDebug("Beginning transactions for UnitOfWork {UnitOfWorkId} with {ContextCount} contexts (IsolationLevel: {IsolationLevel})",
-                Id, _dbContexts.Count, _options.IsolationLevel);
+            _logger.LogDebug("Beginning transactions for UnitOfWork {UnitOfWorkId} with {ResourceCount} resources (IsolationLevel: {IsolationLevel})",
+                Id, _resources.Count, _options.IsolationLevel);
 
-            var exceptions = await ExecuteOnAllWrappersAsync(
-                wrapper => wrapper.BeginTransactionAsync(_options.IsolationLevel, cancellationToken),
-                "Failed to begin transaction for DbContext {0} in UnitOfWork {1}").ConfigureAwait(false);
+            var exceptions = await ExecuteOnAllResourcesAsync(
+                resource => resource.BeginTransactionAsync(_options.IsolationLevel, cancellationToken),
+                "Failed to begin transaction for resource {0} in UnitOfWork {1}").ConfigureAwait(false);
 
             if (exceptions.Count > 0)
             {
@@ -255,22 +459,22 @@ namespace MiCake.DDD.Uow.Internal
             _logger.LogDebug("Successfully started transactions for UnitOfWork {UnitOfWorkId}", Id);
         }
 
-        private async Task<List<Exception>> ExecuteOnAllWrappersAsync(
-            Func<IDbContextWrapper, Task> action,
+        private async Task<List<Exception>> ExecuteOnAllResourcesAsync(
+            Func<IUnitOfWorkResource, Task> action,
             string errorMessageTemplate)
         {
             var exceptions = new List<Exception>();
 
-            foreach (var wrapper in _dbContexts)
+            foreach (var resource in _resources)
             {
                 try
                 {
-                    await action(wrapper).ConfigureAwait(false);
+                    await action(resource).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    _logger.LogError(ex, errorMessageTemplate, wrapper.ContextIdentifier, Id);
+                    _logger.LogError(ex, errorMessageTemplate, resource.ResourceIdentifier, Id);
                 }
             }
 
@@ -281,23 +485,23 @@ namespace MiCake.DDD.Uow.Internal
         {
             var exceptions = new List<Exception>();
 
-            foreach (var wrapper in _dbContexts)
+            foreach (var resource in _resources)
             {
                 try
                 {
-                    await wrapper.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    await resource.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
                     // Only commit transaction if we have active transactions
-                    if (_transactionsStarted && wrapper.HasActiveTransaction)
+                    if (_transactionsStarted && resource.HasActiveTransaction)
                     {
-                        await wrapper.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
+                        await resource.CommitAsync(cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    _logger.LogError(ex, "Failed to commit DbContext {ContextIdentifier} in UnitOfWork {UnitOfWorkId}",
-                        wrapper.ContextIdentifier, Id);
+                    _logger.LogError(ex, "Failed to commit resource {ResourceIdentifier} in UnitOfWork {UnitOfWorkId}",
+                        resource.ResourceIdentifier, Id);
                 }
             }
 
@@ -308,20 +512,20 @@ namespace MiCake.DDD.Uow.Internal
         {
             _logger.LogDebug("Rolling back UnitOfWork {UnitOfWorkId}", Id);
 
-            var exceptions = await ExecuteOnAllWrappersAsync(
-                async wrapper =>
+            var exceptions = await ExecuteOnAllResourcesAsync(
+                async resource =>
                 {
                     // Only rollback if we have active transactions
-                    if (_transactionsStarted && wrapper.HasActiveTransaction)
+                    if (_transactionsStarted && resource.HasActiveTransaction)
                     {
-                        await wrapper.RollbackTransactionAsync(cancellationToken).ConfigureAwait(false);
+                        await resource.RollbackAsync(cancellationToken).ConfigureAwait(false);
                     }
                 },
-                "Failed to rollback DbContext {0} in UnitOfWork {1}").ConfigureAwait(false);
+                "Failed to rollback resource {0} in UnitOfWork {1}").ConfigureAwait(false);
 
             if (exceptions.Count > 0)
             {
-                _logger.LogWarning("Some DbContexts failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
+                _logger.LogWarning("Some resources failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
             }
 
             _transactionsStarted = false;
@@ -349,17 +553,17 @@ namespace MiCake.DDD.Uow.Internal
             }
         }
 
-        private void DisposeAllWrappers()
+        private void DisposeAllResources()
         {
-            foreach (var wrapper in _dbContexts)
+            foreach (var resource in _resources)
             {
                 try
                 {
-                    wrapper.Dispose();
+                    resource.Dispose();
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to dispose DbContext wrapper in UnitOfWork {UnitOfWorkId}", Id);
+                    _logger.LogError(ex, "Failed to dispose resource in UnitOfWork {UnitOfWorkId}", Id);
                 }
             }
         }
