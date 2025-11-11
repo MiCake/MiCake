@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace MiCake.Core.Util.LinqFilter
+namespace MiCake.Util.LinqFilter
 {
     public static class LinqFilterExtensions
     {
@@ -16,7 +16,7 @@ namespace MiCake.Core.Util.LinqFilter
                 return query;
             }
 
-            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
+            ParameterExpression pe = System.Linq.Expressions.Expression.Parameter(typeof(T), "x");
 
             var expression = CreateFilterExpression<T>(filters, pe);
 
@@ -25,12 +25,12 @@ namespace MiCake.Core.Util.LinqFilter
                 return query;
             }
 
-            MethodCallExpression whereCallExpression = Expression.Call(
+            MethodCallExpression whereCallExpression = System.Linq.Expressions.Expression.Call(
                typeof(Queryable),
                "Where",
                [query.ElementType],
                query.Expression,
-               Expression.Lambda<Func<T, bool>>(expression, [pe]));
+               System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(expression, [pe]));
 
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
@@ -42,7 +42,7 @@ namespace MiCake.Core.Util.LinqFilter
                 return query;
             }
 
-            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
+            ParameterExpression pe = System.Linq.Expressions.Expression.Parameter(typeof(T), "x");
 
             var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FilterGroupJoinType);
 
@@ -51,12 +51,12 @@ namespace MiCake.Core.Util.LinqFilter
                 return query;
             }
 
-            MethodCallExpression whereCallExpression = Expression.Call(
+            MethodCallExpression whereCallExpression = System.Linq.Expressions.Expression.Call(
                typeof(Queryable),
                "Where",
                [query.ElementType],
                query.Expression,
-               Expression.Lambda<Func<T, bool>>(expression, [pe]));
+               System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(expression, [pe]));
 
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
@@ -68,8 +68,8 @@ namespace MiCake.Core.Util.LinqFilter
                 return query;
             }
 
-            Expression exp = null;
-            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
+            System.Linq.Expressions.Expression exp = null;
+            ParameterExpression pe = System.Linq.Expressions.Expression.Parameter(typeof(T), "x");
 
             foreach (var filterGroup in filterGroupsHolder.FilterGroups)
             {
@@ -92,12 +92,12 @@ namespace MiCake.Core.Util.LinqFilter
                 }
             }
 
-            MethodCallExpression whereCallExpression = Expression.Call(
+            MethodCallExpression whereCallExpression = System.Linq.Expressions.Expression.Call(
                typeof(Queryable),
                "Where",
                [query.ElementType],
                query.Expression,
-               Expression.Lambda<Func<T, bool>>(exp, [pe]));
+               System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(exp, [pe]));
 
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
@@ -109,19 +109,19 @@ namespace MiCake.Core.Util.LinqFilter
                 return null;
             }
 
-            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
+            ParameterExpression pe = System.Linq.Expressions.Expression.Parameter(typeof(T), "x");
 
             var expression = CreateFilterExpression<T>(filters, pe);
-            return Expression.Lambda<Func<T, bool>>(expression, pe);
+            return System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(expression, pe);
         }
 
-        private static Expression CreateFilterExpression<T>(List<Filter> filters, ParameterExpression pe, FilterJoinType filterGroupJoinType = FilterJoinType.And)
+        private static System.Linq.Expressions.Expression CreateFilterExpression<T>(List<Filter> filters, ParameterExpression pe, FilterJoinType filterGroupJoinType = FilterJoinType.And)
         {
-            Expression exp = null;
+            System.Linq.Expressions.Expression exp = null;
             foreach (var filter in filters)
             {
-                Expression left = ExpressionHelpers.BuildNestedPropertyExpression(pe, filter.PropertyName);
-                Expression builded = BuildFilterValuesExpression(left, filter.Value, filter.FilterValueJoinType);
+                System.Linq.Expressions.Expression left = ExpressionHelpers.BuildNestedPropertyExpression(pe, filter.PropertyName);
+                System.Linq.Expressions.Expression builded = BuildFilterValuesExpression(left, filter.Value, filter.FilterValueJoinType);
 
                 if (exp == null)
                 {
@@ -149,28 +149,28 @@ namespace MiCake.Core.Util.LinqFilter
                 if (IsNullable(newItemType))
                 {
                     var underlyingType = Nullable.GetUnderlyingType(newItemType);
-                    typedList.Add(Convert.ChangeType(item, underlyingType));
+                    typedList.Add(System.Convert.ChangeType(item, underlyingType));
                 }
                 else
                 {
-                    typedList.Add(Convert.ChangeType(item, newItemType));
+                    typedList.Add(System.Convert.ChangeType(item, newItemType));
                 }
             }
             return typedList;
         }
 
-        private static Expression BuildFilterValuesExpression(Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
+        private static System.Linq.Expressions.Expression BuildFilterValuesExpression(System.Linq.Expressions.Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
         {
-            Expression exp = null;
+            System.Linq.Expressions.Expression exp = null;
 
             foreach (var filterValue in filterValues)
             {
                 var valueType = filterValue.Value.GetType();
-                Expression right = null;
+                System.Linq.Expressions.Expression right = null;
                 if (valueType.IsGenericType && filterValue.Value is IList)
                 {
                     IList list = RemakeStaticListWithNewType(left.Type, filterValue.Value as IList);
-                    right = Expression.Constant(list);
+                    right = System.Linq.Expressions.Expression.Constant(list);
                 }
                 else
                 {
@@ -178,7 +178,7 @@ namespace MiCake.Core.Util.LinqFilter
                     {
                         var underlyingType = Nullable.GetUnderlyingType(left.Type);
                         Type type = typeof(Nullable<>).MakeGenericType(underlyingType);
-                        right = Expression.Convert(Expression.Constant(Convert.ChangeType(filterValue.Value, underlyingType)), type);
+                        right = System.Linq.Expressions.Expression.Convert(System.Linq.Expressions.Expression.Constant(System.Convert.ChangeType(filterValue.Value, underlyingType)), type);
                     }
                     else
                     {
@@ -189,13 +189,13 @@ namespace MiCake.Core.Util.LinqFilter
                         }
                         else
                         {
-                            exceptValue = Convert.ChangeType(filterValue.Value, left.Type);
+                            exceptValue = System.Convert.ChangeType(filterValue.Value, left.Type);
                         }
-                        right = Expression.Constant(exceptValue);
+                        right = System.Linq.Expressions.Expression.Constant(exceptValue);
                     }
                 }
 
-                Expression concatenated = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, filterValue.Operator);
+                System.Linq.Expressions.Expression concatenated = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, filterValue.Operator);
                 if (exp == null)
                 {
                     exp = concatenated;

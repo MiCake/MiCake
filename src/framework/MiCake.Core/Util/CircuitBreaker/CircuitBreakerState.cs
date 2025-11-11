@@ -1,6 +1,6 @@
 using System;
 
-namespace MiCake.Core.Util.CircuitBreaker;
+namespace MiCake.Util.CircuitBreaker;
 
 /// <summary>
 /// Circuit breaker states

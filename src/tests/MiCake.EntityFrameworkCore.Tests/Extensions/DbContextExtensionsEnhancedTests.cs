@@ -1,5 +1,5 @@
 using MiCake.Audit.Conventions;
-using MiCake.DDD.Extensions.Store;
+using MiCake.DDD.Infrastructure.Store;
 using Microsoft.EntityFrameworkCore;
 using System;
 using Xunit;

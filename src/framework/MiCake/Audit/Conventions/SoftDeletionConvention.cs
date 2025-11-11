@@ -1,5 +1,5 @@
 using MiCake.Audit.SoftDeletion;
-using MiCake.DDD.Extensions.Store;
+using MiCake.DDD.Infrastructure.Store;
 using System;
 using System.Linq.Expressions;
 
@@ -19,11 +19,9 @@ namespace MiCake.Audit.Conventions
         
         public void Configure(Type entityType, EntityConventionContext context)
         {
-            if (entityType == null)
-                throw new ArgumentNullException(nameof(entityType));
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
-                
+            ArgumentNullException.ThrowIfNull(entityType);
+            ArgumentNullException.ThrowIfNull(context);
+
             context.EnableSoftDeletion = true;
             context.EnableDirectDeletion = false;
             

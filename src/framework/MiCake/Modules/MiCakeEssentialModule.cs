@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Threading.Tasks;
 using MiCake.Audit;
 using MiCake.Audit.Core;
 using MiCake.Audit.Lifetime;
 using MiCake.Audit.SoftDeletion;
+using MiCake.Core;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
-using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Lifetime;
-using MiCake.DDD.Extensions.Metadata;
+using MiCake.DDD.Infrastructure.Lifetime;
+using MiCake.DDD.Infrastructure.Metadata;
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Modules
 {
+    [RelyOn(typeof(MiCakeRootModule))]
     public class MiCakeEssentialModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
@@ -59,13 +58,8 @@ namespace MiCake.Modules
                 return provider.GetDomainMetadata();
             });
 
-            // Note: IRepository<,> and IReadOnlyRepository<,> are NO LONGER auto-registered
-            // Users should either:
-            // 1. Create custom repositories inheriting from persistence layer base (e.g., EFRepositoryBase)
-            // 2. Inject IRepositoryProvider<,> directly for simple cases
-
             //LifeTime
-            services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+            services.AddScoped<IRepositoryPreSaveChanges, DomainEventDispatchLifetime>();
             services.AddScoped<IRepositoryPostSaveChanges, DomainEventCleanupLifetime>();
 
             // Unit of Work - Register with options support

@@ -124,7 +124,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 | -------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | MiCake.Core                | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core?label=MiCake.Core&logo=nuget)                               | MiCake 核心程序集               |
 | MiCake.DDD.Domain          | ![Nuget](https://img.shields.io/nuget/v/MiCake.DDD.Domain?label=MiCake.DDD.Domain&logo=nuget)                   | MiCake 对DDD领域层的实现程序集  |
-| MiCake.Core.Util           | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core.Util?label=MiCake.Core.Util&logo=nuget)                     | MiCake 提供的工具类程序集       |
+| MiCake.Util           | ![Nuget](https://img.shields.io/nuget/v/MiCake.Util?label=MiCake.Util&logo=nuget)                     | MiCake 提供的工具类程序集       |
 | MiCake.EntityFrameworkCore | ![Nuget](https://img.shields.io/nuget/v/MiCake.EntityFrameworkCore?label=MiCake.EntityFrameworkCore&logo=nuget) | MiCake 对EFCore的支持程序集     |
 | MiCake.AspNetCore          | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore?label=MiCake.AspNetCore&logo=nuget)                   | MiCake 对AspNetCore的支持程序集 |
 | MiCake.AspNetCore.Start    | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore.Start?label=MiCake.AspNetCore.Start&logo=nuget)       | MiCake 搭建起步程序所用的程序集 |

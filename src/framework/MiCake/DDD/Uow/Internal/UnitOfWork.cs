@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +24,7 @@ namespace MiCake.DDD.Uow.Internal
         private bool _completed = false;
         private bool _transactionsStarted = false;
         private bool _skipCommit = false;
-        private bool _shouldRollback = false;  // For nested UoW to signal parent to rollback
+        private bool _shouldRollback = false;
 
         #endregion
 
@@ -138,7 +137,7 @@ namespace MiCake.DDD.Uow.Internal
                 {
                     _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} completed successfully", Id);
                     MarkAsCompleted();
-                    
+
                     // Raise OnCommitted event for nested UoW
                     RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
                     return;
@@ -147,10 +146,9 @@ namespace MiCake.DDD.Uow.Internal
                 // Root UoW: do actual commit
                 if (_skipCommit || _options.IsReadOnly)
                 {
-                    _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (SkipCommit: {SkipCommit}, ReadOnly: {ReadOnly})",
-                        Id, _skipCommit, _options.IsReadOnly);
+                    _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (SkipCommit: {SkipCommit}, ReadOnly: {ReadOnly})", Id, _skipCommit, _options.IsReadOnly);
                     MarkAsCompleted();
-                    
+
                     // Raise OnCommitted event even for skipped commit
                     RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
                     return;
@@ -178,7 +176,7 @@ namespace MiCake.DDD.Uow.Internal
 
                 MarkAsCompleted();
                 _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
-                
+
                 // Raise OnCommitted event
                 RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
             }
@@ -206,15 +204,15 @@ namespace MiCake.DDD.Uow.Internal
                 {
                     _logger.LogWarning("Nested UnitOfWork {UnitOfWorkId} requesting parent {ParentId} to rollback",
                         Id, Parent.Id);
-                    
+
                     // Signal parent via its internal state
                     if (Parent is UnitOfWork parentUow)
                     {
                         parentUow._shouldRollback = true;
                     }
-                    
+
                     MarkAsCompleted();
-                    
+
                     // Raise OnRolledBack event for nested UoW
                     RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
                     return;
@@ -222,7 +220,7 @@ namespace MiCake.DDD.Uow.Internal
 
                 // Root UoW: do actual rollback
                 await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
-                
+
                 // Raise OnRolledBack event
                 RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
             }
@@ -385,7 +383,7 @@ namespace MiCake.DDD.Uow.Internal
                 Id, _completed, Parent != null);
 
             HandleDisposalCleanup();
-            
+
             // Only dispose resources if this is root UoW
             if (Parent == null)
             {

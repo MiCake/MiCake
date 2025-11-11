@@ -32,8 +32,7 @@ namespace MiCake.Core.Modularity
 
         public void AddModule(Type moduleType, Action<object> configureModule = null)
         {
-            if (moduleType == null)
-                throw new ArgumentNullException(nameof(moduleType));
+            ArgumentNullException.ThrowIfNull(moduleType);
 
             MiCakeModuleHelper.CheckModule(moduleType);
 

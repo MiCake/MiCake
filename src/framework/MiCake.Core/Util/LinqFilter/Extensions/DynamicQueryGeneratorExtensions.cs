@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace MiCake.Core.Util.LinqFilter;
+namespace MiCake.Util.LinqFilter;
 
 public static class DynamicQueryGeneratorExtensions
 {

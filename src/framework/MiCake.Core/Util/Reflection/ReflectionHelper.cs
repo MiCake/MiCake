@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace MiCake.Core.Util.Reflection
+namespace MiCake.Util.Reflection
 {
     /// <summary>
     /// Provides utility methods for common reflection operations.

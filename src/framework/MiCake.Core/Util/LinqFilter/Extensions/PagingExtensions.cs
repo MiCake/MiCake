@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace MiCake.Core.Util.LinqFilter
+namespace MiCake.Util.LinqFilter
 {
     public static class PagingExtensions
     {

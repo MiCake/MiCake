@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace MiCake.Core.Util.Reflection
+namespace MiCake.Util.Reflection
 {
     public static class AssemblyHelper
     {

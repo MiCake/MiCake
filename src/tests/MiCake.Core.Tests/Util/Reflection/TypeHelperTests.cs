@@ -1,4 +1,4 @@
-using MiCake.Core.Util.Reflection;
+using MiCake.Util.Reflection;
 using System;
 using Xunit;
 

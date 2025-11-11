@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MiCake.Core.Util.CircuitBreaker;
+namespace MiCake.Util.CircuitBreaker;
 
 /// <summary>
 /// Circuit breaker configuration

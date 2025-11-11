@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 
-namespace MiCake.Core.Util.Reflection
+namespace MiCake.Util.Reflection
 {
     /// <summary>
     /// Provides high-performance object instantiation using compiled expressions.
@@ -37,8 +37,7 @@ namespace MiCake.Core.Util.Reflection
         /// <exception cref="InvalidOperationException">Thrown when the type has no parameterless constructor</exception>
         public static object CreateInstance(Type type)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             var factory = _factoryCache.GetOrAdd(type, CreateFactory);
             return factory();
@@ -52,8 +51,7 @@ namespace MiCake.Core.Util.Reflection
         /// <returns>A new instance of the specified type</returns>
         public static object CreateInstance(Type type, params object[] args)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (args == null || args.Length == 0)
                 return CreateInstance(type);
@@ -86,9 +84,9 @@ namespace MiCake.Core.Util.Reflection
                     $"Ensure the type has a public or internal parameterless constructor.");
             }
 
-            var newExpression = Expression.New(constructor);
-            var lambda = Expression.Lambda<Func<object>>(
-                Expression.Convert(newExpression, typeof(object)));
+            var newExpression = System.Linq.Expressions.Expression.New(constructor);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object>>(
+                System.Linq.Expressions.Expression.Convert(newExpression, typeof(object)));
 
             return lambda.Compile();
         }
@@ -110,16 +108,16 @@ namespace MiCake.Core.Util.Reflection
                     $"Type '{type.FullName}' does not have a constructor with parameters: {string.Join(", ", parameterTypes.Select(t => t.Name))}");
             }
 
-            var argsParameter = Expression.Parameter(typeof(object[]), "args");
+            var argsParameter = System.Linq.Expressions.Expression.Parameter(typeof(object[]), "args");
             var parameterExpressions = constructor.GetParameters()
                 .Select((p, i) => Expression.Convert(
                     Expression.ArrayIndex(argsParameter, Expression.Constant(i)),
                     p.ParameterType))
                 .ToArray();
 
-            var newExpression = Expression.New(constructor, parameterExpressions);
-            var lambda = Expression.Lambda<Func<object[], object>>(
-                Expression.Convert(newExpression, typeof(object)),
+            var newExpression = System.Linq.Expressions.Expression.New(constructor, parameterExpressions);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object[], object>>(
+                System.Linq.Expressions.Expression.Convert(newExpression, typeof(object)),
                 argsParameter);
 
             return lambda.Compile();

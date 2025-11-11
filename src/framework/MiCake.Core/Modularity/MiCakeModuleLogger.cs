@@ -1,10 +1,10 @@
-﻿using MiCake.Core.Util;
+﻿using MiCake.Util.Diagnostics.Environment;
 using Microsoft.Extensions.Logging;
 
 namespace MiCake.Core.Modularity
 {
     /// <summary>
-    /// use to log module lifetime info
+    /// Logger for MiCake module system.
     /// </summary>
     internal class MiCakeModuleLogger(ILogger logger)
     {

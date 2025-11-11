@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MiCake.Core.Util.LinqFilter
+namespace MiCake.Util.LinqFilter
 {
     /// <summary>
     /// A filter group that contains a list of filters.

@@ -1,4 +1,4 @@
-﻿using MiCake.DDD.Extensions.Metadata;
+﻿using MiCake.DDD.Infrastructure.Metadata;
 using MiCake.DDD.Tests.Fakes.Entities;
 using System;
 using System.Linq;

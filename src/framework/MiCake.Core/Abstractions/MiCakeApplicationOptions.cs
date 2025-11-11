@@ -1,5 +1,5 @@
-﻿using MiCake.Core.Data;
-using MiCake.Core.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.Util.Store;
 using System.Reflection;
 
 namespace MiCake.Core

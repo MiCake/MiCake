@@ -1,4 +1,4 @@
-﻿using MiCake.Core.Util.Collections;
+﻿using MiCake.Util.Collection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -87,8 +87,7 @@ namespace MiCake.Core.Modularity
         /// <exception cref="ArgumentNullException">When moduleTypes or entryModule is null</exception>
         internal static void FindAllModulesFromEntry(ICollection<Type> moduleTypes, Type entryModule)
         {
-            if (moduleTypes == null)
-                throw new ArgumentNullException(nameof(moduleTypes));
+            ArgumentNullException.ThrowIfNull(moduleTypes);
 
             CheckModule(entryModule);
 

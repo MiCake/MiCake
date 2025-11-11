@@ -1,5 +1,5 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
-using MiCake.DDD.Extensions.Paging;
+using MiCake.DDD.Infrastructure.Paging;
 using System;
 
 namespace BaseMiCakeApplication.Domain.Repositories

@@ -1,6 +1,6 @@
 using System;
 
-namespace MiCake.Core.Util.LinqFilter;
+namespace MiCake.Util.LinqFilter;
 
 /// <summary>
 /// An attribute to mark properties for dynamic filtering in Linq queries.

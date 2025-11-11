@@ -1,4 +1,4 @@
-﻿namespace MiCake.Core.Util.LinqFilter
+﻿namespace MiCake.Util.LinqFilter
 {
     /// <summary>
     /// A filter value that represents a single value and its associated operator for filtering.

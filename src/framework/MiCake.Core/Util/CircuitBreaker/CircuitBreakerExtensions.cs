@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MiCake.Core.Util.CircuitBreaker;
+namespace MiCake.Util.CircuitBreaker;
 
 /// <summary>
 /// Helper class for configuring circuit breaker provider priorities

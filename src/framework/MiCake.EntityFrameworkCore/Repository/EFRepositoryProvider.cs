@@ -1,5 +1,5 @@
 ﻿using MiCake.Core.DependencyInjection;
-using MiCake.Core.Util.Reflection;
+using MiCake.Util.Reflection;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Extensions;
 using System;

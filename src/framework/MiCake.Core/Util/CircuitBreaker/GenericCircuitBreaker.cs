@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace MiCake.Core.Util.CircuitBreaker;
+namespace MiCake.Util.CircuitBreaker;
 
 /// <summary>
 /// Generic circuit breaker implementation that can be used with any provider

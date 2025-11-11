@@ -1,7 +1,7 @@
 ﻿namespace MiCake.DDD.Domain
 {
     /// <summary>
-    /// a base class for domain event
+    /// Base class for domain events.
     /// </summary>
     public abstract class DomainEvent : IDomainEvent
     {

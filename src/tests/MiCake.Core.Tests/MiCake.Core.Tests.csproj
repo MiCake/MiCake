@@ -6,4 +6,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake.Core\MiCake.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Util\Paging\Providers\" />
+  </ItemGroup>
 </Project>

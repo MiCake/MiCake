@@ -1,7 +1,7 @@
 using MiCake.Audit.Conventions;
 using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions.Store;
+using MiCake.DDD.Infrastructure.Store;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;

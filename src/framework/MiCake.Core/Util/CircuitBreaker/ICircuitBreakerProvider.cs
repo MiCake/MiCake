@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MiCake.Core.Util.CircuitBreaker;
+namespace MiCake.Util.CircuitBreaker;
 
 /// <summary>
 /// Generic interface for providers that can be used with circuit breaker

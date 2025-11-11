@@ -1,7 +1,7 @@
 ﻿namespace MiCake.Audit.Core
 {
     /// <summary>
-    /// Define a class  provide audit way.
+    /// Define a class provide audit way.
     /// </summary>
     public interface IAuditProvider
     {

@@ -1,4 +1,4 @@
-using MiCake.DDD.Extensions.Store;
+using MiCake.DDD.Infrastructure.Store;
 using System;
 
 namespace MiCake.Audit.Conventions
@@ -18,13 +18,10 @@ namespace MiCake.Audit.Conventions
         
         public void Configure(Type entityType, string propertyName, PropertyConventionContext context)
         {
-            if (entityType == null)
-                throw new ArgumentNullException(nameof(entityType));
-            if (propertyName == null)
-                throw new ArgumentNullException(nameof(propertyName));
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
-                
+            ArgumentNullException.ThrowIfNull(entityType);
+            ArgumentNullException.ThrowIfNull(propertyName);
+            ArgumentNullException.ThrowIfNull(context);
+
             // These properties should be handled by audit providers, not store defaults
             if (propertyName == nameof(IHasCreationTime.CreationTime) ||
                 propertyName == nameof(IHasModificationTime.ModificationTime))

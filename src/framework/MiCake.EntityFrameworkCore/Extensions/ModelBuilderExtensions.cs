@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using MiCake.DDD.Extensions.Store;
-using MiCake.Core.Util;
+using MiCake.DDD.Infrastructure.Store;
+using MiCake.Util;
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

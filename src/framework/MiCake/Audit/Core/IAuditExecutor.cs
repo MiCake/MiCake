@@ -1,4 +1,4 @@
-﻿using MiCake.DDD.Extensions;
+﻿using MiCake.DDD.Infrastructure;
 
 namespace MiCake.Audit.Core
 {

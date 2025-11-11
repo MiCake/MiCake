@@ -1,5 +1,5 @@
 ﻿using MiCake.Core;
-using MiCake.DDD.Extensions.Metadata;
+using MiCake.DDD.Infrastructure.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Reflection;
