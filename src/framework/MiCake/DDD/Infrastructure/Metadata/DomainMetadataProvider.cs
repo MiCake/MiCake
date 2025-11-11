@@ -1,10 +1,8 @@
 using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.Util.Reflection;
-using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.Helper;
 using Microsoft.Extensions.Options;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;

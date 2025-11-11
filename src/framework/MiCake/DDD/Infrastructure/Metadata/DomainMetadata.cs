@@ -1,4 +1,3 @@
-using MiCake.DDD.Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +11,7 @@ namespace MiCake.DDD.Infrastructure.Metadata
     /// </summary>
     public class DomainMetadata
     {
-        private readonly Dictionary<Type, DomainObjectDescriptor> _descriptorCache = new();
+        private readonly Dictionary<Type, DomainObjectDescriptor> _descriptorCache = [];
         
         /// <summary>
         /// Assemblies containing domain objects

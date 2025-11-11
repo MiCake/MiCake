@@ -49,13 +49,8 @@ namespace MiCake.Modules
                 }
             }
 
-            // Domain Metadata - Simplified design
+            // Domain Metadata
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
-            services.AddSingleton(factory =>
-            {
-                var provider = factory.GetRequiredService<IDomainMetadataProvider>();
-                return provider.GetDomainMetadata();
-            });
 
             //LifeTime
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventDispatchLifetime>();
@@ -72,7 +67,7 @@ namespace MiCake.Modules
                     "No active Unit of Work. Call IUnitOfWorkManager.Begin() to start a new Unit of Work.");
             });
 
-            //regiter all domain event handler to services
+            //register all domain event handler to services
             services.RegisterDomainEventHandler(context.MiCakeModules);
 
             services.AddScoped<IEventDispatcher, EventDispatcher>();
