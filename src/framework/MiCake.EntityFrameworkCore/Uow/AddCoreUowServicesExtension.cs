@@ -10,7 +10,7 @@ namespace MiCake.EntityFrameworkCore.Uow
     {
         /// <summary>
         /// Registers core Unit of Work services for the specified DbContext type.
-        /// This includes the context factory and repository dependencies wrapper.
+        /// This includes the context factory, repository dependencies wrapper, and DbContext type registration.
         /// </summary>
         /// <param name="services">The service collection</param>
         /// <param name="dbContextType">The DbContext type to register services for</param>
@@ -26,6 +26,15 @@ namespace MiCake.EntityFrameworkCore.Uow
             // This enables the dependency wrapper pattern for repositories
             var dependenciesType = typeof(Repository.EFRepositoryDependencies<>).MakeGenericType(dbContextType);
             services.AddScoped(dependenciesType);
+
+            // Register the DbContext type in the registry for immediate transaction initialization support
+            // This is done by ensuring the registry is available and registering the type
+            var sp = services.BuildServiceProvider();
+            var registry = sp.GetService<IDbContextTypeRegistry>();
+            if (registry != null)
+            {
+                registry.RegisterDbContextType(dbContextType);
+            }
 
             return services;
         }

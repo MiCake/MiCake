@@ -38,35 +38,26 @@ namespace MiCake.AspNetCore
     public class MiCakeAspNetUowOption
     {
         /// <summary>
-        /// Enables automatic creation of Unit of Work for each controller action.
-        /// When true, a new UoW is automatically started before action execution.
+        /// Enables automatic transaction management for controller actions.
+        /// When true, a Unit of Work is automatically created before action execution,
+        /// and committed after successful execution or rolled back on failure.
+        /// When false, you must manually manage transactions using IUnitOfWorkManager.
         /// Default: true
+        /// 
+        /// <para>
+        /// This can be overridden at the Controller or Action level using [UnitOfWork] attribute.
+        /// </para>
         /// </summary>
-        public bool IsAutoBeginEnabled { get; set; } = true;
+        public bool IsAutoTransactionEnabled { get; set; } = true;
 
         /// <summary>
-        /// Enables automatic commit of Unit of Work after successful action execution.
-        /// When true, UoW is committed automatically if the action completes without exceptions.
-        /// When false, you must manually commit the UoW in your action methods.
-        /// Default: true
-        /// </summary>
-        public bool IsAutoCommitEnabled { get; set; } = true;
-
-        /// <summary>
-        /// Match controller action name start keywords to skip auto-commit for read-only operations.
-        /// Actions starting with these keywords will have their UoW marked as completed without commit,
-        /// which improves performance for read-only operations.
+        /// Match controller action name start keywords to treat actions as read-only operations.
+        /// Actions starting with these keywords will have their UoW marked as read-only,
+        /// which improves performance by skipping transaction commit.
         /// <para>
         /// Default: [Find, Get, Query, Search]
         /// </para>
         /// </summary>
-        public List<string> KeyWordForCloseAutoCommit { get; set; } = ["Find", "Get", "Query", "Search"];
-
-        /// <summary>
-        /// Enables automatic rollback of Unit of Work when action execution fails.
-        /// When true and an exception occurs, the UoW will be rolled back automatically.
-        /// Default: true
-        /// </summary>
-        public bool IsAutoRollbackEnabled { get; set; } = true;
+        public List<string> ReadOnlyActionKeywords { get; set; } = ["Find", "Get", "Query", "Search"];
     }
 }

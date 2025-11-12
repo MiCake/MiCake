@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.Uow
@@ -12,6 +13,7 @@ namespace MiCake.AspNetCore.Uow
     /// <summary>
     /// Action filter that automatically manages Unit of Work for controller actions.
     /// Creates, commits or rolls back UoW based on action execution result and configured options.
+    /// Supports declarative configuration via [UnitOfWork] attribute.
     /// </summary>
     public class UnitOfWorkFilter : IAsyncActionFilter
     {
@@ -50,37 +52,55 @@ namespace MiCake.AspNetCore.Uow
                 return;
             }
 
-            // If auto-begin is disabled, skip UoW management
-            if (!_uowOptions.IsAutoBeginEnabled)
+            var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
+            
+            // Check for UnitOfWork attribute on action or controller
+            var uowAttribute = GetUnitOfWorkAttribute(controllerActionDes.MethodInfo, controllerActionDes.ControllerTypeInfo);
+            
+            // Determine if UoW should be enabled
+            bool isUowEnabled = uowAttribute?.IsEnabled ?? _uowOptions.IsAutoTransactionEnabled;
+            
+            if (!isUowEnabled)
             {
+                _logger.LogDebug("Unit of Work disabled for action {ActionName}", controllerActionDes.ActionName);
                 await next().ConfigureAwait(false);
                 return;
             }
 
-            var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
+            // Determine if this is a read-only action
+            bool isReadOnly = DetermineIfReadOnly(controllerActionDes.ActionName, uowAttribute);
             
-            // Check if this is a read-only action based on configured keywords
-            var isReadOnlyAction = _uowOptions.KeyWordForCloseAutoCommit.Any(keyWord =>
-                controllerActionDes.ActionName.StartsWith(keyWord, StringComparison.OrdinalIgnoreCase));
+            // Create UoW options
+            UnitOfWorkOptions options;
+            if (uowAttribute != null)
+            {
+                // Use attribute settings
+                options = uowAttribute.CreateOptions();
+                if (isReadOnly)
+                {
+                    options.IsReadOnly = true;
+                }
+            }
+            else
+            {
+                // Use default settings
+                options = isReadOnly 
+                    ? UnitOfWorkOptions.ReadOnly 
+                    : UnitOfWorkOptions.Default;
+            }
 
             IUnitOfWork? unitOfWork = null;
             try
             {
-                // Begin a new Unit of Work (transaction starts immediately in the new design)
-                unitOfWork = _unitOfWorkManager.Begin();
+                // Begin a new Unit of Work with configured options
+                unitOfWork = _unitOfWorkManager.Begin(options);
 
                 _logger.LogDebug(
-                    "Started Unit of Work {UowId} for action {ActionName}. IsReadOnly: {IsReadOnly}",
+                    "Started Unit of Work {UowId} for action {ActionName}. IsReadOnly: {IsReadOnly}, InitMode: {InitMode}",
                     unitOfWork.Id,
                     controllerActionDes.ActionName,
-                    isReadOnlyAction);
-
-                // If this is a read-only action, mark UoW as completed to skip commit
-                // This optimizes performance by avoiding unnecessary SaveChanges
-                if (isReadOnlyAction)
-                {
-                    await unitOfWork.MarkAsCompletedAsync().ConfigureAwait(false);
-                }
+                    isReadOnly,
+                    options.InitializationMode);
 
                 // Execute the action
                 var result = await next().ConfigureAwait(false);
@@ -88,8 +108,8 @@ namespace MiCake.AspNetCore.Uow
                 // Handle UoW based on action execution result
                 if (ActionSucceeded(result))
                 {
-                    // Action succeeded - commit if auto-commit is enabled and not read-only
-                    if (_uowOptions.IsAutoCommitEnabled && !isReadOnlyAction)
+                    // Action succeeded - commit unless read-only
+                    if (!isReadOnly)
                     {
                         await unitOfWork.CommitAsync().ConfigureAwait(false);
                         
@@ -98,10 +118,20 @@ namespace MiCake.AspNetCore.Uow
                             unitOfWork.Id,
                             controllerActionDes.ActionName);
                     }
+                    else
+                    {
+                        // Mark as completed for read-only (no actual commit needed)
+                        await unitOfWork.MarkAsCompletedAsync().ConfigureAwait(false);
+                        
+                        _logger.LogDebug(
+                            "Marked read-only Unit of Work {UowId} as completed for action {ActionName}",
+                            unitOfWork.Id,
+                            controllerActionDes.ActionName);
+                    }
                 }
-                else if (_uowOptions.IsAutoRollbackEnabled && result.Exception != null)
+                else if (result.Exception != null)
                 {
-                    // Action failed with exception - rollback if auto-rollback is enabled
+                    // Action failed with exception - rollback
                     await unitOfWork.RollbackAsync().ConfigureAwait(false);
                     
                     _logger.LogWarning(
@@ -113,8 +143,8 @@ namespace MiCake.AspNetCore.Uow
             }
             catch (Exception ex)
             {
-                // Exception during UoW management
-                if (unitOfWork != null && _uowOptions.IsAutoRollbackEnabled)
+                // Exception during UoW management - attempt rollback
+                if (unitOfWork != null && !unitOfWork.IsCompleted)
                 {
                     try
                     {
@@ -150,6 +180,40 @@ namespace MiCake.AspNetCore.Uow
         private static bool ActionSucceeded(ActionExecutedContext result)
         {
             return result.Exception == null || result.ExceptionHandled;
+        }
+
+        /// <summary>
+        /// Gets the UnitOfWork attribute from the action method or controller type.
+        /// Action-level attribute takes precedence over controller-level attribute.
+        /// </summary>
+        private static UnitOfWorkAttribute? GetUnitOfWorkAttribute(MethodInfo actionMethod, TypeInfo controllerType)
+        {
+            // Check action method first
+            var actionAttribute = actionMethod.GetCustomAttribute<UnitOfWorkAttribute>(inherit: true);
+            if (actionAttribute != null)
+            {
+                return actionAttribute;
+            }
+
+            // Check controller type
+            var controllerAttribute = controllerType.GetCustomAttribute<UnitOfWorkAttribute>(inherit: true);
+            return controllerAttribute;
+        }
+
+        /// <summary>
+        /// Determines if the action should be treated as read-only based on naming keywords or attribute.
+        /// </summary>
+        private bool DetermineIfReadOnly(string actionName, UnitOfWorkAttribute? attribute)
+        {
+            // Attribute explicitly sets read-only
+            if (attribute != null)
+            {
+                return attribute.IsReadOnly;
+            }
+
+            // Check if action name starts with read-only keywords
+            return _uowOptions.ReadOnlyActionKeywords.Any(keyword =>
+                actionName.StartsWith(keyword, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,7 +49,8 @@ namespace MiCake.DDD.Uow.Internal
                 {
                     IsolationLevel = parentUow.IsolationLevel,
                     AutoBeginTransaction = false,  // Nested doesn't manage transactions
-                    IsReadOnly = options.IsReadOnly
+                    IsReadOnly = options.IsReadOnly,
+                    InitializationMode = options.InitializationMode
                 };
                 
                 var nestedUow = new UnitOfWork(logger, nestedOptions, parentUow);
@@ -64,6 +67,31 @@ namespace MiCake.DDD.Uow.Internal
             _current.Value = unitOfWork;
 
             _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
+
+            // Call lifecycle hooks if configured for immediate initialization
+            if (options.InitializationMode == TransactionInitializationMode.Immediate)
+            {
+                var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>();
+                if (hooks.Any())
+                {
+                    foreach (var hook in hooks)
+                    {
+                        try
+                        {
+                            // Call hook synchronously to ensure initialization completes before returning
+                            Task.Run(async () => await hook.OnUnitOfWorkCreatedAsync(unitOfWork, options, default).ConfigureAwait(false))
+                                .GetAwaiter()
+                                .GetResult();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error calling lifecycle hook {HookType} for UnitOfWork {UnitOfWorkId}",
+                                hook.GetType().Name, unitOfWork.Id);
+                            throw;
+                        }
+                    }
+                }
+            }
 
             // Return a wrapper that clears the current UOW when disposed
             return new RootUnitOfWorkWrapper(unitOfWork, () =>
