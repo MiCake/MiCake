@@ -1,6 +1,4 @@
-﻿using MiCake.AspNetCore.ExceptionHandling;
-using MiCake.Core;
-using MiCake.Core.Data;
+﻿using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.Modules;
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +7,9 @@ using System;
 
 namespace MiCake
 {
+    /// <summary>
+    /// Extension methods for integrating MiCake with ASP.NET Core
+    /// </summary>
     public static class MiCakeAspNetServicesExtension
     {
         /// <summary>
@@ -91,8 +92,6 @@ namespace MiCake
                                         $"Cannot find the instance of {nameof(IMiCakeApplication)}. " +
                                         $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
-            AddMiCakeCoreMiddleware(applicationBuilder);
-
             // Start the application
             micakeApp.Start();
         }
@@ -110,16 +109,6 @@ namespace MiCake
                                         $"Please ensure you have called AddMiCake() in ConfigureServices method.");
 
             micakeApp.ShutDown();
-        }
-
-        /// <summary>
-        /// Add Core Middleware.
-        /// </summary>
-        public static IApplicationBuilder AddMiCakeCoreMiddleware(IApplicationBuilder applicationBuilder)
-        {
-            applicationBuilder.UseMiddleware<ExceptionHandlerMiddleware>();
-
-            return applicationBuilder;
         }
     }
 }

@@ -6,13 +6,13 @@ using System;
 using System.Linq;
 using Xunit;
 
-namespace MiCake.AspNetCore.Tests.ExceptionHandling
+namespace MiCake.AspNetCore.Tests.DataWrapper
 {
     /// <summary>
-    /// Unit tests for ExceptionHandlerMiddleware response wrapping.
-    /// Tests verify that custom response factories are applied consistently.
+    /// Unit tests for ResponseWrapperExecutor exception wrapping behavior.
+    /// Tests verify that custom response factories are applied consistently for exceptions.
     /// </summary>
-    public class ExceptionHandlerMiddleware_WrappingTests
+    public class ResponseWrapperExecutor_Exception_Tests
     {
         private readonly DataWrapperOptions _defaultOptions = new DataWrapperOptions();
 
