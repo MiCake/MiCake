@@ -1,6 +1,6 @@
 using System;
 using System.Threading;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -13,39 +13,35 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// </summary>
     internal sealed class MiCakeInterceptorFactory : IMiCakeInterceptorFactory
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IEFSaveChangesLifetime _saveChangesLifetime;
+        private readonly ILogger<MiCakeEFCoreInterceptor> _logger;
 
         /// <summary>
-        /// Initialize the factory with a service provider
+        /// Initialize the factory with required dependencies
         /// </summary>
-        /// <param name="serviceProvider">The service provider for resolving dependencies</param>
-        public MiCakeInterceptorFactory(IServiceProvider serviceProvider)
+        /// <param name="saveChangesLifetime">The singleton save changes lifetime service</param>
+        /// <param name="logger">Logger for the interceptor (optional)</param>
+        public MiCakeInterceptorFactory(
+            IEFSaveChangesLifetime saveChangesLifetime,
+            ILogger<MiCakeEFCoreInterceptor> logger = null)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _saveChangesLifetime = saveChangesLifetime ?? throw new ArgumentNullException(nameof(saveChangesLifetime));
+            _logger = logger ?? NullLogger<MiCakeEFCoreInterceptor>.Instance;
         }
 
         /// <summary>
-        /// Create a new interceptor instance using the singleton IEFSaveChangesLifetime service.
-        /// The service handles scoped dependency resolution internally.
+        /// Create a new interceptor instance using the injected dependencies.
         /// </summary>
         /// <returns>MiCake EF Core interceptor (never null)</returns>
-        public MiCakeEFCoreInterceptor CreateInterceptor()
+        public ISaveChangesInterceptor CreateInterceptor()
         {
-            // Resolve the singleton IEFSaveChangesLifetime service 
-            // This service uses lazy resolution for its scoped dependencies
-            var saveChangesLifetime = _serviceProvider.GetRequiredService<IEFSaveChangesLifetime>();
-            
-            // Logger is optional - uses NullLogger if not registered
-            var logger = _serviceProvider.GetService<ILogger<MiCakeEFCoreInterceptor>>() 
-                ?? NullLogger<MiCakeEFCoreInterceptor>.Instance;
-            
-            return new MiCakeEFCoreInterceptor(saveChangesLifetime, logger);
+            return new MiCakeEFCoreInterceptor(_saveChangesLifetime, _logger);
         }
 
         /// <summary>
         /// Check if the factory can create interceptors
         /// </summary>
-        public bool CanCreateInterceptor => _serviceProvider != null;
+        public bool CanCreateInterceptor => _saveChangesLifetime != null;
     }
 
     /// <summary>
@@ -74,7 +70,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// Create a new interceptor using the configured factory
         /// </summary>
         /// <returns>MiCake EF Core interceptor (never null if factory is configured)</returns>
-        internal static MiCakeEFCoreInterceptor CreateInterceptor()
+        internal static ISaveChangesInterceptor CreateInterceptor()
         {
             var factory = _factory; // Read volatile field once
             return factory?.CreateInterceptor();

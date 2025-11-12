@@ -13,14 +13,6 @@ namespace MiCake.EntityFrameworkCore.Repository
     /// Provides common functionality for accessing and manipulating entities through EF Core DbContext.
     /// This class follows the MiCake framework's dependency wrapper pattern for clean dependency injection.
     /// </summary>
-    /// <typeparam name="TDbContext">The Entity Framework DbContext type</typeparam>
-    /// <typeparam name="TEntity">The entity type that implements IEntity</typeparam>
-    /// <typeparam name="TKey">The primary key type of the entity</typeparam>
-    /// <remarks>
-    /// This base class manages DbContext lifecycle, Unit of Work integration, and provides
-    /// optimized caching for DbContext and DbSet instances per Unit of Work scope.
-    /// Derived classes should inherit from this to implement custom repository logic.
-    /// </remarks>
     public abstract class EFRepositoryBase<TDbContext, TEntity, TKey>
             where TEntity : class, IEntity<TKey>
             where TDbContext : DbContext

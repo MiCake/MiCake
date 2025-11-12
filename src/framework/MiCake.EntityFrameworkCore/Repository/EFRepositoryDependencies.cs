@@ -9,8 +9,6 @@ namespace MiCake.EntityFrameworkCore.Repository
 {
     /// <summary>
     /// Dependency wrapper for EF Core repositories.
-    /// Encapsulates all dependencies required by repository implementations to simplify constructor injection.
-    /// This follows the MiCake framework's dependency wrapper pattern for classes with multiple dependencies.
     /// </summary>
     /// <typeparam name="TDbContext">The DbContext type</typeparam>
     public class EFRepositoryDependencies<TDbContext> where TDbContext : DbContext
