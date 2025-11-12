@@ -1,5 +1,5 @@
-using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Lifetime;
+using MiCake.DDD.Infrastructure;
+using MiCake.DDD.Infrastructure.Lifetime;
 using MiCake.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;

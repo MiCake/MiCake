@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,9 +22,11 @@ namespace MiCake.DDD.Uow
         bool HasActiveTransaction { get; }
 
         /// <summary>
-        /// Begin a new transaction if one doesn't exist
+        /// Begin a new transaction with specified isolation level
         /// </summary>
-        Task BeginTransactionAsync(CancellationToken cancellationToken = default);
+        /// <param name="isolationLevel">The isolation level for the transaction</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        Task BeginTransactionAsync(IsolationLevel? isolationLevel = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Commit the current transaction

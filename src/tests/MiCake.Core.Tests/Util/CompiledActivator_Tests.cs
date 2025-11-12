@@ -1,5 +1,5 @@
 using System;
-using MiCake.Core.Util.Reflection;
+using MiCake.Util.Reflection;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util

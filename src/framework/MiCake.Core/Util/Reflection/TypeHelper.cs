@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace MiCake.Core.Util.Reflection
+namespace MiCake.Util.Reflection
 {
     /// <summary>
     /// Provides utility methods for type inspection and validation.

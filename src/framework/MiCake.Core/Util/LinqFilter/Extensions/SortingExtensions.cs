@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace MiCake.Core.Util.LinqFilter
+namespace MiCake.Util.LinqFilter
 {
     public static class SortingExtensions
     {
@@ -28,12 +28,12 @@ namespace MiCake.Core.Util.LinqFilter
                 return query;
             }
 
-            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
+            ParameterExpression pe = System.Linq.Expressions.Expression.Parameter(typeof(T), "x");
 
-            Expression property = ExpressionHelpers.BuildNestedPropertyExpression(pe, order.PropertyName);
+            System.Linq.Expressions.Expression property = ExpressionHelpers.BuildNestedPropertyExpression(pe, order.PropertyName);
 
-            var sortExpression = Expression.Lambda<Func<T, object>>
-                (Expression.Convert(property, typeof(object)), pe);
+            var sortExpression = System.Linq.Expressions.Expression.Lambda<Func<T, object>>
+                (System.Linq.Expressions.Expression.Convert(property, typeof(object)), pe);
 
             if (order.Ascending)
             {

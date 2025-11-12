@@ -2,9 +2,9 @@
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Dto;
 using MiCake.Core;
-using MiCake.Core.Util.LinqFilter;
+using MiCake.Util.LinqFilter;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions.Paging;
+using MiCake.DDD.Infrastructure.Paging;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;

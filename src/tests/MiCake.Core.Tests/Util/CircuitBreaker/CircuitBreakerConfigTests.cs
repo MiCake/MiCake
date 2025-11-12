@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using MiCake.Core.Util.CircuitBreaker;
+using MiCake.Util.CircuitBreaker;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.CircuitBreaker;

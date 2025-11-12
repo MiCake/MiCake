@@ -1,4 +1,4 @@
-using MiCake.Core.Util.LinqFilter;
+using MiCake.Util.LinqFilter;
 
 namespace BaseMiCakeApplication.Dto;
 

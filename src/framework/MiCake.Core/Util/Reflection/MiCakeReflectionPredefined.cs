@@ -1,4 +1,4 @@
-﻿namespace MiCake.Core.Util.Reflection
+﻿namespace MiCake.Util.Reflection
 {
     public class MiCakeReflectionPredefined
     {

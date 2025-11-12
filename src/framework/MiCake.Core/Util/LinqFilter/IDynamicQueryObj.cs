@@ -1,4 +1,4 @@
-namespace MiCake.Core.Util.LinqFilter;
+namespace MiCake.Util.LinqFilter;
 
 /// <summary>
 /// An interface for dynamic query objects that can be used with LinqFilter.

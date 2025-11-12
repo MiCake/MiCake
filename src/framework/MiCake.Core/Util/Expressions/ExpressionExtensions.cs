@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace MiCake.Core.Util.Expressions
+namespace MiCake.Util.Expressions
 {
     public static class ExpressionExtensions
     {

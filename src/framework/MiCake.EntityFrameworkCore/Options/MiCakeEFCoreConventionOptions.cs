@@ -1,5 +1,5 @@
-using MiCake.Core.Util.Collections;
-using MiCake.DDD.Extensions.Store;
+using MiCake.Util.Collection;
+using MiCake.DDD.Infrastructure.Store;
 using System;
 using System.Collections.Generic;
 
@@ -24,8 +24,7 @@ namespace MiCake.EntityFrameworkCore.Options
         /// <returns>This options instance for method chaining</returns>
         public MiCakeEFCoreConventionOptions AddConvention(IStoreConvention convention)
         {
-            if (convention == null)
-                throw new ArgumentNullException(nameof(convention));
+            ArgumentNullException.ThrowIfNull(convention);
 
             _conventions.AddIfNotContains(convention, c => c.GetType() == convention.GetType());
             return this;
@@ -38,8 +37,7 @@ namespace MiCake.EntityFrameworkCore.Options
         /// <returns>This options instance for method chaining</returns>
         public MiCakeEFCoreConventionOptions AddConventions(params IStoreConvention[] conventions)
         {
-            if (conventions == null)
-                throw new ArgumentNullException(nameof(conventions));
+            ArgumentNullException.ThrowIfNull(conventions);
 
             foreach (var convention in conventions)
             {

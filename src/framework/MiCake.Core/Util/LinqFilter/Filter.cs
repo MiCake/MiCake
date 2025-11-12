@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MiCake.Core.Util.LinqFilter
+namespace MiCake.Util.LinqFilter
 {
     /// <summary>
     /// A filter that represents a single property and its associated values for filtering.

@@ -1,5 +1,5 @@
-﻿using MiCake.Core.Util.Collections;
-using MiCake.Core.Util.Reflection;
+﻿using MiCake.Util.Collection;
+using MiCake.Util.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;

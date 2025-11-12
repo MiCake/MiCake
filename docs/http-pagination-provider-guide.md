@@ -996,7 +996,7 @@ public class CachedPaginationProvider : HttpPaginationProvider<Data>
 {
   "Logging": {
     "LogLevel": {
-      "MiCake.Core.Util.PaginationData": "Trace"  // 启用详细日志
+      "MiCake.Util.Paging.Providers": "Trace"  // 启用详细日志
     }
   }
 }

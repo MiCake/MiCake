@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MiCake.Core.Util
+namespace MiCake.Util
 {
     public class RandomHelper
     {

@@ -2,7 +2,7 @@
 using MiCake.Audit.Conventions;
 using MiCake.Core;
 using MiCake.Core.DependencyInjection;
-using MiCake.DDD.Extensions.Store;
+using MiCake.DDD.Infrastructure.Store;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Modules;
 using MiCake.EntityFrameworkCore.Options;

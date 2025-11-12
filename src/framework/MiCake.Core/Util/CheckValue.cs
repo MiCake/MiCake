@@ -1,8 +1,8 @@
-﻿using MiCake.Core.Util.Collections;
+﻿using MiCake.Util.Collection;
 using System;
 using System.Collections.Generic;
 
-namespace MiCake.Core.Util
+namespace MiCake.Util
 {
     /// <summary>
     /// Provides utility methods for validating method arguments and throwing appropriate exceptions.

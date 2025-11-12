@@ -1,6 +1,7 @@
-﻿using MiCake.Core.Util.LinqFilter;
+﻿using MiCake.Util.LinqFilter;
+using MiCake.Util.Paging;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Extensions.Paging;
+using MiCake.DDD.Infrastructure.Paging;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -21,16 +22,16 @@ namespace MiCake.EntityFrameworkCore.Repository
         {
         }
 
-        public async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync(PagingQueryModel queryModel, CancellationToken cancellationToken = default)
+        public async Task<PagingResponse<TAggregateRoot>> PagingQueryAsync(PagingRequest queryModel, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
             var result = await dbset.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             var count = await GetCountAsync(cancellationToken);
 
-            return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+            return new PagingResponse<TAggregateRoot>(queryModel.PageIndex, count, result);
         }
 
-        public async Task<PagingQueryResult<TAggregateRoot>> PagingQueryAsync<TOrderKey>(PagingQueryModel queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
+        public async Task<PagingResponse<TAggregateRoot>> PagingQueryAsync<TOrderKey>(PagingRequest queryModel, Expression<Func<TAggregateRoot, TOrderKey>> orderSelector, bool asc = true, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
 
@@ -45,27 +46,27 @@ namespace MiCake.EntityFrameworkCore.Repository
             }
             var count = await GetCountAsync(cancellationToken);
 
-            return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+            return new PagingResponse<TAggregateRoot>(queryModel.PageIndex, count, result);
         }
 
-        public async Task<PagingQueryResult<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingQueryModel queryModel, FilterGroup filterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
+        public async Task<PagingResponse<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingRequest queryModel, FilterGroup filterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
             var query = dbset.AsQueryable().Filter(filterGroup).Sort(sorts ?? [defaultSort]);
             var result = await query.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             var count = await query.CountAsync(cancellationToken);
 
-            return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+            return new PagingResponse<TAggregateRoot>(queryModel.PageIndex, count, result);
         }
 
-        public async Task<PagingQueryResult<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingQueryModel queryModel, CompositeFilterGroup compositeFilterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
+        public async Task<PagingResponse<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingRequest queryModel, CompositeFilterGroup compositeFilterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken);
             var query = dbset.AsQueryable().Filter(compositeFilterGroup).Sort(sorts ?? [defaultSort]);
             var result = await query.Skip(queryModel.CurrentStartNo).Take(queryModel.PageSize).ToListAsync(cancellationToken: cancellationToken);
             var count = await query.CountAsync(cancellationToken);
 
-            return new PagingQueryResult<TAggregateRoot>(queryModel.PageIndex, count, result);
+            return new PagingResponse<TAggregateRoot>(queryModel.PageIndex, count, result);
         }
 
         public async Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(FilterGroup filterGroup, List<Sort> sorts = null, CancellationToken cancellationToken = default)

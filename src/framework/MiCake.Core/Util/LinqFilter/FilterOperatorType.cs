@@ -1,4 +1,4 @@
-﻿namespace MiCake.Core.Util.LinqFilter
+﻿namespace MiCake.Util.LinqFilter
 {
     /// <summary>
     /// An enumeration that defines the operator types for filters.

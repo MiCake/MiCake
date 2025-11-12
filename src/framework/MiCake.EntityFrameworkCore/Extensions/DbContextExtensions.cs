@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MiCake.DDD.Domain.Helper;
 using MiCake.EntityFrameworkCore.Internal;
-using MiCake.Core.Util;
+using MiCake.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;

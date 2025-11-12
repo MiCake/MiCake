@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MiCake.Core.Util.LinqFilter
+namespace MiCake.Util.LinqFilter
 {
     /// <summary>
     /// A composite filter group that combines multiple <see cref="FilterGroup"/> instances.

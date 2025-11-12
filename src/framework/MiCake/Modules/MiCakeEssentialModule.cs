@@ -1,16 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using System;
 using MiCake.Audit;
 using MiCake.Audit.Core;
 using MiCake.Audit.Lifetime;
 using MiCake.Audit.SoftDeletion;
+using MiCake.Core;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
-using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Internal;
-using MiCake.DDD.Extensions.Lifetime;
-using MiCake.DDD.Extensions.Metadata;
+using MiCake.DDD.Infrastructure.Lifetime;
+using MiCake.DDD.Infrastructure.Metadata;
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,11 +16,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Modules
 {
+    [RelyOn(typeof(MiCakeRootModule))]
     public class MiCakeEssentialModule : MiCakeModule
     {
         public override bool IsFrameworkLevel => true;
 
-        public override Task ConfigServices(ModuleConfigServiceContext context)
+        public override void ConfigureServices(ModuleConfigServiceContext context)
         {
             var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
             var services = context.Services;
@@ -50,34 +49,28 @@ namespace MiCake.Modules
                 }
             }
 
-            services.AddSingleton<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
-            services.AddSingleton<DomainObjectFactory>();
+            // Domain Metadata
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
-            services.AddSingleton(factory =>
-            {
-                var provider = factory.GetService<IDomainMetadataProvider>();
-                return provider.GetDomainMetadata();
-            });
-
-            services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
-            services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
-            services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
 
             //LifeTime
-            services.AddScoped<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+            services.AddScoped<IRepositoryPreSaveChanges, DomainEventDispatchLifetime>();
             services.AddScoped<IRepositoryPostSaveChanges, DomainEventCleanupLifetime>();
 
-            // UOW 
+            // Unit of Work - Register with options support
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            services.TryAddScoped(provider => provider.GetService<IUnitOfWorkManager>().Current);
-            context.Services.TryAddTransient<IUnitOfWork, UnitOfWork>();
+            
+            // Register current UoW accessor (returns Current from manager, may be null)
+            services.TryAddScoped(provider =>
+            {
+                var manager = provider.GetRequiredService<IUnitOfWorkManager>();
+                return manager.Current ?? throw new InvalidOperationException(
+                    "No active Unit of Work. Call IUnitOfWorkManager.Begin() to start a new Unit of Work.");
+            });
 
-            //regiter all domain event handler to services
+            //register all domain event handler to services
             services.RegisterDomainEventHandler(context.MiCakeModules);
 
             services.AddScoped<IEventDispatcher, EventDispatcher>();
-
-            return Task.CompletedTask;
         }
     }
 }

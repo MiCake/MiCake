@@ -1,4 +1,4 @@
-using MiCake.Core.Util;
+using MiCake.Util;
 using System;
 using System.Collections.Generic;
 using Xunit;

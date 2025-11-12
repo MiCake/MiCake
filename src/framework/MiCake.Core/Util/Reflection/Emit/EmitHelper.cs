@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace MiCake.Core.Util.Reflection.Emit
+namespace MiCake.Util.Reflection.Emit
 {
     public static class EmitHelper
     {
