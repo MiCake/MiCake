@@ -1,9 +1,5 @@
-﻿using MiCake.Core.DependencyInjection;
-using MiCake.DDD.Domain;
-using MiCake.DDD.Uow;
-using MiCake.EntityFrameworkCore.Uow;
+﻿using MiCake.DDD.Domain;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -13,16 +9,19 @@ using System.Threading.Tasks;
 namespace MiCake.EntityFrameworkCore.Repository
 {
     /// <summary>
-    /// Base repository for EFCore.
+    /// Base repository class for Entity Framework Core implementations.
+    /// Provides common functionality for accessing and manipulating entities through EF Core DbContext.
+    /// This class follows the MiCake framework's dependency wrapper pattern for clean dependency injection.
     /// </summary>
     public abstract class EFRepositoryBase<TDbContext, TEntity, TKey>
             where TEntity : class, IEntity<TKey>
             where TDbContext : DbContext
+            where TKey : notnull
     {
-        private readonly IEFCoreContextFactory<TDbContext> _contextFactory;
-        private readonly IUnitOfWorkManager _unitOfWorkManager;
-        private readonly MiCakeEFCoreOptions _efCoreOptions;
-        protected readonly ILogger Logger;
+        /// <summary>
+        /// Gets the dependency wrapper containing all required services
+        /// </summary>
+        protected readonly EFRepositoryDependencies<TDbContext> Dependencies;
 
         private readonly AsyncLocal<CacheContext> _asyncLocalCache = new();
         private readonly SemaphoreSlim _initLock = new(1, 1);
@@ -36,57 +35,76 @@ namespace MiCake.EntityFrameworkCore.Repository
             public IQueryable<TEntity> EntitiesNoTracking { get; set; }
         }
 
-        protected EFRepositoryBase(IServiceProvider serviceProvider)
+        /// <summary>
+        /// Initializes a new instance of the repository base class.
+        /// </summary>
+        /// <param name="dependencies">The dependency wrapper containing all required services</param>
+        /// <exception cref="ArgumentNullException">Thrown when dependencies is null</exception>
+        protected EFRepositoryBase(EFRepositoryDependencies<TDbContext> dependencies)
         {
-            _contextFactory = serviceProvider.GetRequiredService<IEFCoreContextFactory<TDbContext>>();
-            _unitOfWorkManager = serviceProvider.GetRequiredService<IUnitOfWorkManager>();
-            _efCoreOptions = serviceProvider.GetRequiredService<IObjectAccessor<MiCakeEFCoreOptions>>().Value;
-            Logger = serviceProvider.GetRequiredService<ILogger<EFRepositoryBase<TDbContext, TEntity, TKey>>>();
+            Dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
         }
 
         /// <summary>
-        /// Gets the DbContext
+        /// Gets the DbContext instance for the current Unit of Work scope.
+        /// The DbContext is cached per Unit of Work to ensure consistent state within a transaction.
         /// </summary>
         protected TDbContext DbContext => GetOrCreateCacheContext().DbContext;
 
         /// <summary>
-        /// Gets the DbSet
+        /// Gets the DbSet for the entity type.
+        /// The DbSet is cached per Unit of Work for performance optimization.
         /// </summary>
         protected DbSet<TEntity> DbSet => GetOrCreateCacheContext().DbSet;
 
         /// <summary>
-        /// Gets entities with tracking
+        /// Gets an IQueryable for the entity with change tracking enabled.
+        /// Use this when you need to track changes to entities for updates.
         /// </summary>
         protected IQueryable<TEntity> Entities => GetOrCreateCacheContext().Entities;
 
         /// <summary>
-        /// Gets entities without tracking
+        /// Gets an IQueryable for the entity with change tracking disabled.
+        /// Use this for read-only queries to improve performance.
         /// </summary>
         protected IQueryable<TEntity> EntitiesNoTracking => GetOrCreateCacheContext().EntitiesNoTracking;
 
         /// <summary>
-        /// Async version for getting DbContext
+        /// Gets the logger instance for diagnostic logging
         /// </summary>
+        protected ILogger Logger => Dependencies.Logger;
+
+        /// <summary>
+        /// Asynchronously gets the DbContext instance for the current Unit of Work scope.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>A task that represents the DbContext</returns>
         protected Task<TDbContext> GetDbContextAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(_contextFactory.GetDbContext());
+            return Task.FromResult(Dependencies.ContextFactory.GetDbContext());
         }
 
         /// <summary>
-        /// Async version for getting DbSet
+        /// Asynchronously gets the DbSet for the entity type.
         /// </summary>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>A task that represents the DbSet</returns>
         protected Task<DbSet<TEntity>> GetDbSetAsync(CancellationToken cancellationToken = default)
         {
-            var context = _contextFactory.GetDbContext();
+            var context = Dependencies.ContextFactory.GetDbContext();
             return Task.FromResult(context.Set<TEntity>());
         }
 
         #region UoW-Aware Caching Implementation
 
+        /// <summary>
+        /// Gets or creates a cached context for the current Unit of Work.
+        /// This method ensures that DbContext and DbSet instances are reused within the same UoW scope.
+        /// </summary>
         private CacheContext GetOrCreateCacheContext()
         {
-            var currentUow = _unitOfWorkManager.Current;
-            var isUsingImplicitMode = _efCoreOptions.ImplicitModeForUow;
+            var currentUow = Dependencies.UnitOfWorkManager.Current;
+            var isUsingImplicitMode = Dependencies.Options.ImplicitModeForUow;
 
             if (currentUow == null && !isUsingImplicitMode)
             {
@@ -120,12 +138,15 @@ namespace MiCake.EntityFrameworkCore.Repository
             }
         }
 
+        /// <summary>
+        /// Creates a new cache context containing DbContext and DbSet instances.
+        /// </summary>
         private CacheContext CreateCacheContext(Guid uowId)
         {
             TDbContext dbContext;
             try
             {
-                dbContext = _contextFactory.GetDbContext();
+                dbContext = Dependencies.ContextFactory.GetDbContext();
             }
             catch (InvalidOperationException ex)
             {

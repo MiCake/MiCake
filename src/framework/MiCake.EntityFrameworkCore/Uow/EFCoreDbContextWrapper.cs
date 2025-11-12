@@ -1,17 +1,18 @@
-using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
     /// <summary>
-    /// EF Core specific implementation of IDbContextWrapper that handles DbContext lifecycle properly
+    /// EF Core specific implementation of IUnitOfWorkResource that handles DbContext lifecycle properly
     /// </summary>
-    public class EFCoreDbContextWrapper : IDbContextWrapper
+    public class EFCoreDbContextWrapper : IUnitOfWorkResource
     {
         private readonly DbContext _dbContext;
         private readonly ILogger<EFCoreDbContextWrapper> _logger;
@@ -20,10 +21,28 @@ namespace MiCake.EntityFrameworkCore.Uow
         private IDbContextTransaction _currentTransaction;
         private bool _disposed = false;
 
+        /// <summary>
+        /// Gets the underlying DbContext instance
+        /// </summary>
         public DbContext DbContext => _dbContext;
-        public string ContextIdentifier => $"{_dbContext.GetType().FullName}_{_dbContext.GetHashCode()}";
+        
+        /// <summary>
+        /// Gets the unique identifier for this resource instance
+        /// </summary>
+        public string ResourceIdentifier => $"{_dbContext.GetType().FullName}_{_dbContext.GetHashCode()}";
+        
+        /// <summary>
+        /// Indicates if there's an active transaction
+        /// </summary>
         public bool HasActiveTransaction => _currentTransaction != null;
 
+        /// <summary>
+        /// Creates a new EF Core DbContext wrapper
+        /// </summary>
+        /// <param name="dbContext">The DbContext instance to wrap</param>
+        /// <param name="logger">Logger for diagnostics</param>
+        /// <param name="options">EF Core options</param>
+        /// <param name="shouldDisposeDbContext">Whether to dispose DbContext when wrapper is disposed</param>
         public EFCoreDbContextWrapper(
             DbContext dbContext,
             ILogger<EFCoreDbContextWrapper> logger,
@@ -31,9 +50,9 @@ namespace MiCake.EntityFrameworkCore.Uow
             bool shouldDisposeDbContext = false)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _shouldDisposeDbContext = shouldDisposeDbContext;
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
 
             // Check if DbContext already has a transaction
             _currentTransaction = dbContext.Database.CurrentTransaction;
@@ -42,7 +61,10 @@ namespace MiCake.EntityFrameworkCore.Uow
                 _dbContext.GetType().Name, _shouldDisposeDbContext);
         }
 
-        public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Begin a new transaction with specified isolation level
+        /// </summary>
+        public async Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -59,11 +81,25 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
-            _logger.LogDebug("Beginning transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
-            _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            _logger.LogDebug("Beginning transaction for DbContext {DbContextType} with isolation level {IsolationLevel}", 
+                _dbContext.GetType().Name, isolationLevel);
+            
+            if (isolationLevel.HasValue)
+            {
+                _currentTransaction = await _dbContext.Database.BeginTransactionAsync(isolationLevel.Value, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
-        public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Commit the current transaction
+        /// </summary>
+        public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -83,7 +119,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             try
             {
                 _logger.LogDebug("Committing transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
-                await _currentTransaction.CommitAsync(cancellationToken);
+                await _currentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -92,7 +128,10 @@ namespace MiCake.EntityFrameworkCore.Uow
             }
         }
 
-        public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Rollback the current transaction
+        /// </summary>
+        public async Task RollbackAsync(CancellationToken cancellationToken = default)
         {
             if (_disposed)
                 return;
@@ -113,7 +152,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             try
             {
                 _logger.LogDebug("Rolling back transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
-                await _currentTransaction.RollbackAsync(cancellationToken);
+                await _currentTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -126,12 +165,67 @@ namespace MiCake.EntityFrameworkCore.Uow
             }
         }
 
-        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Save changes to the underlying data store
+        /// </summary>
+        public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             _logger.LogDebug("Saving changes for DbContext {DbContextType}", _dbContext.GetType().Name);
-            return await _dbContext.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Create a savepoint for partial rollback
+        /// </summary>
+        public async Task<string> CreateSavepointAsync(string name, CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (!HasActiveTransaction)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot create savepoint '{name}' - no active transaction exists for DbContext {_dbContext.GetType().Name}");
+            }
+
+            _logger.LogDebug("Creating savepoint '{SavepointName}' for DbContext {DbContextType}", name, _dbContext.GetType().Name);
+            await _currentTransaction!.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+            return name;
+        }
+
+        /// <summary>
+        /// Rollback to a specific savepoint
+        /// </summary>
+        public async Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (!HasActiveTransaction)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot rollback to savepoint '{name}' - no active transaction exists for DbContext {_dbContext.GetType().Name}");
+            }
+
+            _logger.LogDebug("Rolling back to savepoint '{SavepointName}' for DbContext {DbContextType}", name, _dbContext.GetType().Name);
+            await _currentTransaction!.RollbackToSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Release a savepoint
+        /// </summary>
+        public async Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (!HasActiveTransaction)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot release savepoint '{name}' - no active transaction exists for DbContext {_dbContext.GetType().Name}");
+            }
+
+            _logger.LogDebug("Releasing savepoint '{SavepointName}' for DbContext {DbContextType}", name, _dbContext.GetType().Name);
+            await _currentTransaction!.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
         }
 
         public void Dispose()

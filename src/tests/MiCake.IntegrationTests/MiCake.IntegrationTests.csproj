@@ -10,12 +10,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake\MiCake.csproj" />
-    <ProjectReference Include="..\..\framework\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
     <ProjectReference Include="..\..\framework\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
