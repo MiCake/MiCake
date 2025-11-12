@@ -66,7 +66,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
         {
             // Register options as singleton implementing IObjectAccessor
             _services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
-            
+
             // Register the dependencies wrapper
             _services.AddScoped<EFRepositoryDependencies<TestDbContext>>();
             _services.AddScoped<TestRepository>();
@@ -340,7 +340,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
                 base.OnModelCreating(modelBuilder);
-                
+
                 modelBuilder.Entity<TestEntity>(entity =>
                 {
                     entity.HasKey(e => e.Id);
@@ -371,10 +371,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             public DbSet<TestEntity> TestDbSet => DbSet;
             public IQueryable<TestEntity> TestEntities => Entities;
             public IQueryable<TestEntity> TestEntitiesNoTracking => EntitiesNoTracking;
-            
+
             public Task<TestDbContext> GetDbContextAsyncPublic(CancellationToken cancellationToken = default)
                 => GetDbContextAsync(cancellationToken);
-            
+
             public Task<DbSet<TestEntity>> GetDbSetAsyncPublic(CancellationToken cancellationToken = default)
                 => GetDbSetAsync(cancellationToken);
 

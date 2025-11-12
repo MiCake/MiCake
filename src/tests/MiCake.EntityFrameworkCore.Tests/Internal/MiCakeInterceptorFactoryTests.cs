@@ -1,6 +1,7 @@
 using MiCake.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -21,21 +22,20 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public void Constructor_WithNullServiceProvider_ShouldThrowArgumentNullException()
+        public void Constructor_WithNullSaveChangesLifetime_ShouldThrowArgumentNullException()
         {
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => new MiCakeInterceptorFactory(null));
         }
 
         [Fact]
-        public void Constructor_WithValidServiceProvider_ShouldSucceed()
+        public void Constructor_WithValidDependencies_ShouldSucceed()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
+            var mockLifetime = new MockEFSaveChangesLifetime();
 
             // Act
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
 
             // Assert
             Assert.NotNull(factory);
@@ -43,26 +43,22 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public void CanCreateInterceptor_WithValidServiceProvider_ShouldReturnTrue()
+        public void CanCreateInterceptor_WithValidDependencies_ShouldReturnTrue()
         {
             // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var mockLifetime = new MockEFSaveChangesLifetime();
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
 
             // Act & Assert
             Assert.True(factory.CanCreateInterceptor);
         }
 
         [Fact]
-        public void CreateInterceptor_WithAvailableLifetimeService_ShouldReturnInterceptor()
+        public void CreateInterceptor_WithValidDependencies_ShouldReturnInterceptor()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
 
             // Act
             var interceptor = factory.CreateInterceptor();
@@ -72,27 +68,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public void CreateInterceptor_WithoutLifetimeService_ShouldThrowException()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
-
-            // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() => factory.CreateInterceptor());
-            Assert.Contains("No service for type 'MiCake.EntityFrameworkCore.IEFSaveChangesLifetime' has been registered", exception.Message);
-        }
-
-        [Fact]
         public void CreateInterceptor_CalledMultipleTimes_ShouldReturnNewInstances()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
 
             // Act
             var interceptor1 = factory.CreateInterceptor();
@@ -102,20 +82,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             Assert.NotNull(interceptor1);
             Assert.NotNull(interceptor2);
             Assert.NotSame(interceptor1, interceptor2); // Should be different instances (not cached)
-        }
-
-        [Fact]
-        public void CreateInterceptor_WhenServiceResolutionFails_ShouldThrowException()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            serviceProvider.Dispose(); // Dispose to make service resolution fail
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
-
-            // Act & Assert
-            var exception = Assert.Throws<ObjectDisposedException>(() => factory.CreateInterceptor());
-            Assert.Contains("Cannot access a disposed object", exception.Message);
         }
 
         // Tests for MiCakeInterceptorFactoryHelper (backward compatibility static API)
@@ -131,11 +97,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         public void Helper_Configure_WithValidFactory_ShouldMarkAsConfigured()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
 
             // Act
             MiCakeInterceptorFactoryHelper.Configure(factory);
@@ -166,11 +129,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         public void Helper_CreateInterceptor_WhenConfiguredWithValidFactory_ShouldReturnInterceptor()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             // Act
@@ -184,26 +144,22 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         public void Helper_CreateInterceptor_WhenFactoryThrowsException_ShouldThrowException()
         {
             // Arrange
-            var services = new ServiceCollection();
-            // Don't register IEFSaveChangesLifetime so service resolution fails
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var mockLifetime = new MockEFSaveChangesLifetime();
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() => MiCakeInterceptorFactoryHelper.CreateInterceptor());
-            Assert.Contains("No service for type 'MiCake.EntityFrameworkCore.IEFSaveChangesLifetime' has been registered", exception.Message);
+            // Since we now inject dependencies directly, this test is no longer relevant
+            // The factory will always have valid dependencies when constructed
+            Assert.NotNull(MiCakeInterceptorFactoryHelper.CreateInterceptor());
         }
 
         [Fact]
         public void Helper_CreateInterceptor_CalledMultipleTimes_ShouldReturnNewInstances()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             // Act
@@ -220,11 +176,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         public void Helper_Reset_AfterConfiguration_ShouldClearConfiguration()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
             MiCakeInterceptorFactoryHelper.Configure(factory);
             Assert.True(MiCakeInterceptorFactoryHelper.IsConfigured);
 
@@ -240,17 +193,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         public void Helper_Configure_CalledTwice_ShouldReplaceExistingConfiguration()
         {
             // Arrange
-            var services1 = new ServiceCollection();
             var mockLifetime1 = new MockEFSaveChangesLifetime();
-            services1.AddSingleton<IEFSaveChangesLifetime>(mockLifetime1);
-            var serviceProvider1 = services1.BuildServiceProvider();
-            var factory1 = new MiCakeInterceptorFactory(serviceProvider1);
+            var factory1 = new MiCakeInterceptorFactory(mockLifetime1);
 
-            var services2 = new ServiceCollection();
             var mockLifetime2 = new MockEFSaveChangesLifetime();
-            services2.AddSingleton<IEFSaveChangesLifetime>(mockLifetime2);
-            var serviceProvider2 = services2.BuildServiceProvider();
-            var factory2 = new MiCakeInterceptorFactory(serviceProvider2);
+            var factory2 = new MiCakeInterceptorFactory(mockLifetime2);
 
             MiCakeInterceptorFactoryHelper.Configure(factory1);
             var interceptor1 = MiCakeInterceptorFactoryHelper.CreateInterceptor();
@@ -270,15 +217,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         public async Task Helper_CreateInterceptor_ConcurrentCalls_ShouldWorkCorrectly()
         {
             // Arrange
-            var services = new ServiceCollection();
             var mockLifetime = new MockEFSaveChangesLifetime();
-            services.AddSingleton<IEFSaveChangesLifetime>(mockLifetime);
-            var serviceProvider = services.BuildServiceProvider();
-            var factory = new MiCakeInterceptorFactory(serviceProvider);
+            var factory = new MiCakeInterceptorFactory(mockLifetime);
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
-            MiCakeEFCoreInterceptor interceptor1 = null;
-            MiCakeEFCoreInterceptor interceptor2 = null;
+            ISaveChangesInterceptor interceptor1 = null;
+            ISaveChangesInterceptor interceptor2 = null;
             var task1 = Task.Run(() => interceptor1 = MiCakeInterceptorFactoryHelper.CreateInterceptor());
             var task2 = Task.Run(() => interceptor2 = MiCakeInterceptorFactoryHelper.CreateInterceptor());
 
