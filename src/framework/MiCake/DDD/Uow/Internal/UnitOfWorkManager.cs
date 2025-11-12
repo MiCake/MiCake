@@ -44,12 +44,12 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUow.Id);
 
                 // Create nested UoW (inherits parent's options for isolation level)
+                // Nested UoW is read-only and doesn't manage its own transactions
                 var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
                 var nestedOptions = new UnitOfWorkOptions
                 {
                     IsolationLevel = parentUow.IsolationLevel,
-                    AutoBeginTransaction = false,  // Nested doesn't manage transactions
-                    IsReadOnly = options.IsReadOnly,
+                    IsReadOnly = true,  // Nested UoW doesn't manage transactions, effectively read-only
                     InitializationMode = options.InitializationMode
                 };
                 
@@ -69,6 +69,10 @@ namespace MiCake.DDD.Uow.Internal
             _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
             // Call lifecycle hooks if configured for immediate initialization
+            // Note: This uses Task.Run().GetAwaiter().GetResult() which can cause deadlocks in some contexts.
+            // Lifecycle hooks for immediate initialization should be designed to complete quickly and synchronously where possible.
+            // This is an acceptable trade-off for the immediate initialization feature which requires synchronous Begin() method
+            // to work with UoW setup before returning to the caller.
             if (options.InitializationMode == TransactionInitializationMode.Immediate)
             {
                 var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>();
@@ -78,7 +82,9 @@ namespace MiCake.DDD.Uow.Internal
                     {
                         try
                         {
-                            // Call hook synchronously to ensure initialization completes before returning
+                            // Execute hook - this is necessary to support immediate transaction initialization
+                            // from a synchronous Begin() method. The hook implementation (ImmediateTransactionInitializer)
+                            // is designed to be synchronous (returns Task.CompletedTask) to avoid actual async blocking.
                             Task.Run(async () => await hook.OnUnitOfWorkCreatedAsync(unitOfWork, options, default).ConfigureAwait(false))
                                 .GetAwaiter()
                                 .GetResult();

@@ -32,12 +32,6 @@ namespace MiCake.DDD.Uow
         public IsolationLevel? IsolationLevel { get; set; } = System.Data.IsolationLevel.ReadCommitted;
 
         /// <summary>
-        /// Whether to automatically begin a transaction when UoW is created.
-        /// Default is true.
-        /// </summary>
-        public bool AutoBeginTransaction { get; set; } = true;
-
-        /// <summary>
         /// Determines when transactions should be initialized.
         /// Default is Lazy (transactions start when first resource is accessed).
         /// Set to Immediate to start transactions as soon as UoW is created.
@@ -51,6 +45,7 @@ namespace MiCake.DDD.Uow
 
         /// <summary>
         /// Whether this is a read-only unit of work (optimization for queries).
+        /// When true, transactions will not be started.
         /// </summary>
         public bool IsReadOnly { get; set; } = false;
 
@@ -72,7 +67,6 @@ namespace MiCake.DDD.Uow
         /// </summary>
         public static UnitOfWorkOptions ReadOnly => new()
         {
-            AutoBeginTransaction = false,
             IsReadOnly = true
         };
     }

@@ -6,24 +6,12 @@ namespace MiCake.AspNetCore.Uow
 {
     /// <summary>
     /// Attribute to control Unit of Work behavior at Controller or Action level.
-    /// When applied, overrides the default automatic transaction behavior configured in MiCakeAspNetOptions.
+    /// Applying this attribute enables Unit of Work for the controller or action.
+    /// Use <see cref="DisableUnitOfWorkAttribute"/> to explicitly disable UoW.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class UnitOfWorkAttribute : Attribute
     {
-        /// <summary>
-        /// Whether to enable automatic transaction management for this controller/action.
-        /// When null, uses the default configuration from MiCakeAspNetOptions.
-        /// </summary>
-        public bool? IsEnabled { get; set; }
-
-        /// <summary>
-        /// Whether this is a read-only operation (optimization for queries).
-        /// Read-only operations will skip transaction commit to improve performance.
-        /// Default is false.
-        /// </summary>
-        public bool IsReadOnly { get; set; } = false;
-
         /// <summary>
         /// Transaction isolation level for this operation.
         /// Default is ReadCommitted.
@@ -44,32 +32,27 @@ namespace MiCake.AspNetCore.Uow
         }
 
         /// <summary>
-        /// Creates a new UnitOfWorkAttribute with specified enabled state
-        /// </summary>
-        /// <param name="isEnabled">Whether to enable UoW for this controller/action</param>
-        public UnitOfWorkAttribute(bool isEnabled)
-        {
-            IsEnabled = isEnabled;
-        }
-
-        /// <summary>
         /// Creates UnitOfWorkOptions based on this attribute's settings
         /// </summary>
         internal UnitOfWorkOptions CreateOptions()
         {
             return new UnitOfWorkOptions
             {
-                AutoBeginTransaction = IsEnabled ?? true,
-                IsReadOnly = IsReadOnly,
                 IsolationLevel = IsolationLevel,
-                InitializationMode = InitializationMode
+                InitializationMode = InitializationMode,
+                IsReadOnly = false
             };
         }
+
+        /// <summary>
+        /// Indicates whether this attribute enables UoW (true for base class, false for DisableUnitOfWorkAttribute)
+        /// </summary>
+        internal virtual bool IsUowEnabled => true;
     }
 
     /// <summary>
     /// Disables automatic Unit of Work management for the decorated controller or action.
-    /// Equivalent to [UnitOfWork(IsEnabled = false)]
+    /// Use this to explicitly opt-out of UoW when it's enabled globally.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class DisableUnitOfWorkAttribute : UnitOfWorkAttribute
@@ -77,8 +60,13 @@ namespace MiCake.AspNetCore.Uow
         /// <summary>
         /// Creates a new DisableUnitOfWorkAttribute
         /// </summary>
-        public DisableUnitOfWorkAttribute() : base(false)
+        public DisableUnitOfWorkAttribute()
         {
         }
+
+        /// <summary>
+        /// Indicates this attribute disables UoW
+        /// </summary>
+        internal override bool IsUowEnabled => false;
     }
 }

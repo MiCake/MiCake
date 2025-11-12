@@ -58,7 +58,9 @@ namespace MiCake.AspNetCore.Uow
             var uowAttribute = GetUnitOfWorkAttribute(controllerActionDes.MethodInfo, controllerActionDes.ControllerTypeInfo);
             
             // Determine if UoW should be enabled
-            bool isUowEnabled = uowAttribute?.IsEnabled ?? _uowOptions.IsAutoTransactionEnabled;
+            // If attribute is present, it determines enablement (including DisableUnitOfWorkAttribute)
+            // Otherwise, use global configuration
+            bool isUowEnabled = uowAttribute?.IsUowEnabled ?? _uowOptions.IsAutoTransactionEnabled;
             
             if (!isUowEnabled)
             {
@@ -67,8 +69,8 @@ namespace MiCake.AspNetCore.Uow
                 return;
             }
 
-            // Determine if this is a read-only action
-            bool isReadOnly = DetermineIfReadOnly(controllerActionDes.ActionName, uowAttribute);
+            // Determine if this is a read-only action based on naming convention
+            bool isReadOnly = DetermineIfReadOnly(controllerActionDes.ActionName);
             
             // Create UoW options
             UnitOfWorkOptions options;
@@ -201,16 +203,10 @@ namespace MiCake.AspNetCore.Uow
         }
 
         /// <summary>
-        /// Determines if the action should be treated as read-only based on naming keywords or attribute.
+        /// Determines if the action should be treated as read-only based on naming keywords.
         /// </summary>
-        private bool DetermineIfReadOnly(string actionName, UnitOfWorkAttribute? attribute)
+        private bool DetermineIfReadOnly(string actionName)
         {
-            // Attribute explicitly sets read-only
-            if (attribute != null)
-            {
-                return attribute.IsReadOnly;
-            }
-
             // Check if action name starts with read-only keywords
             return _uowOptions.ReadOnlyActionKeywords.Any(keyword =>
                 actionName.StartsWith(keyword, StringComparison.OrdinalIgnoreCase));

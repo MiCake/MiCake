@@ -65,8 +65,8 @@ namespace MiCake.DDD.Uow.Internal
             }
             else
             {
-                _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId} (IsolationLevel: {IsolationLevel}, AutoBegin: {AutoBegin})",
-                    Id, _options.IsolationLevel, _options.AutoBeginTransaction);
+                _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId} (IsolationLevel: {IsolationLevel}, InitMode: {InitMode}, ReadOnly: {ReadOnly})",
+                    Id, _options.IsolationLevel, _options.InitializationMode, _options.IsReadOnly);
             }
         }
 
@@ -98,13 +98,9 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Resource with identifier {ResourceIdentifier} registered with UnitOfWork {UnitOfWorkId}",
                     resource.ResourceIdentifier, Id);
 
-                // Auto-begin transaction if configured and this is first resource
-                if (_options.AutoBeginTransaction && !_transactionsStarted)
-                {
-                    Task.Run(async () => await BeginTransactionsInternalAsync(default).ConfigureAwait(false))
-                        .GetAwaiter()
-                        .GetResult();
-                }
+                // Note: Transactions are started lazily when first operation is performed,
+                // or immediately via lifecycle hooks for Immediate initialization mode.
+                // We no longer use GetAwaiter().GetResult() here to avoid synchronous blocking of async code.
             }
         }
 
@@ -146,6 +142,9 @@ namespace MiCake.DDD.Uow.Internal
                     await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
                     throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
                 }
+
+                // Ensure transactions are started (lazy initialization)
+                await EnsureTransactionsStartedAsync(cancellationToken).ConfigureAwait(false);
 
                 _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ResourceCount} resources", Id, _resources.Count);
 
@@ -421,6 +420,18 @@ namespace MiCake.DDD.Uow.Internal
             }
         }
 
+        /// <summary>
+        /// Ensures transactions are started (lazy initialization).
+        /// This is called before commit/rollback to ensure transactions exist.
+        /// </summary>
+        private async Task EnsureTransactionsStartedAsync(CancellationToken cancellationToken)
+        {
+            if (!_transactionsStarted && !_options.IsReadOnly && _resources.Count > 0)
+            {
+                await BeginTransactionsInternalAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         private async Task BeginTransactionsInternalAsync(CancellationToken cancellationToken)
         {
             if (_transactionsStarted || _options.IsReadOnly)
@@ -517,17 +528,19 @@ namespace MiCake.DDD.Uow.Internal
 
         private void HandleDisposalCleanup()
         {
-            // If not completed and not marked to skip commit, try to rollback
+            // If not completed and not marked to skip commit, log warning
+            // We cannot call async RollbackAsync from synchronous Dispose
+            // Users should explicitly call CommitAsync() or RollbackAsync() before disposal
             if (!_completed && !_skipCommit && Parent == null)
             {
-                try
-                {
-                    RollbackAsync().GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to rollback during disposal of UnitOfWork {UnitOfWorkId}", Id);
-                }
+                _logger.LogWarning(
+                    "UnitOfWork {UnitOfWorkId} disposed without being completed. " +
+                    "Transactions may not have been committed or rolled back. " +
+                    "Always explicitly call CommitAsync() or RollbackAsync() before disposal.",
+                    Id);
+                
+                // Mark as completed to prevent further operations
+                MarkAsCompleted();
             }
             else if (_skipCommit && !_completed)
             {
