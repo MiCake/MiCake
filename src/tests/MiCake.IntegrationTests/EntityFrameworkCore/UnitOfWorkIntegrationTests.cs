@@ -1,8 +1,6 @@
 using MiCake.Core;
 using MiCake.DDD.Uow;
-using MiCake.DDD.Uow.Internal;
 using MiCake.EntityFrameworkCore;
-using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Modules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -269,7 +267,7 @@ namespace MiCake.IntegrationTests.EntityFrameworkCore
 
                 // After inner UoW disposed, current should be outer again
                 var currentAfterInner = _uowManager.Current;
-                Assert.Equal(uow.Id, currentAfterInner.Id);
+                Assert.Equal(uow.Id, currentAfterInner?.Id);
             }
 
             // After all UoWs disposed
