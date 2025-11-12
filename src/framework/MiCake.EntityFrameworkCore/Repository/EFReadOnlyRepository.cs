@@ -1,6 +1,7 @@
 ﻿using MiCake.DDD.Domain;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,22 +15,39 @@ namespace MiCake.EntityFrameworkCore.Repository
         IReadOnlyRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>
         where TDbContext : DbContext
+        where TKey : notnull
     {
+        /// <summary>
+        /// Creates a new read-only repository instance
+        /// </summary>
         public EFReadOnlyRepository(IServiceProvider serviceProvider) : base(serviceProvider)
         {
         }
 
-
-        public virtual async Task<TAggregateRoot> FindAsync(TKey id, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Returns an IQueryable for complex queries
+        /// </summary>
+        public virtual IQueryable<TAggregateRoot> Query()
         {
-            var dbset = await GetDbSetAsync(cancellationToken);
-            return await dbset.FindAsync(new object[] { id }, cancellationToken);
+            return Entities;
         }
 
+        /// <summary>
+        /// Find an aggregate root by its primary key
+        /// </summary>
+        public virtual async Task<TAggregateRoot?> FindAsync(TKey id, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
+            return await dbset.FindAsync(new object[] { id }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Gets total count of all aggregate roots
+        /// </summary>
         public async Task<long> GetCountAsync(CancellationToken cancellationToken = default)
         {
-            var dbset = await GetDbSetAsync(cancellationToken);
-            return await dbset.LongCountAsync(cancellationToken);
+            var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
+            return await dbset.LongCountAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

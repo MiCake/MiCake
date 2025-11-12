@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MiCake.DDD.Infrastructure.Store;
-using MiCake.Util;
+using MiCake.Util.Cache;
 using System;
 using System.Linq;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MiCake.EntityFrameworkCore
 {

@@ -1,5 +1,6 @@
 using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -34,18 +35,24 @@ namespace MiCake.EntityFrameworkCore.Uow
         private readonly ILogger<EFCoreContextFactory<TDbContext>> _logger;
         private readonly MiCakeEFCoreOptions _efCoreOptions;
 
+        /// <summary>
+        /// Creates a new EF Core context factory
+        /// </summary>
         public EFCoreContextFactory(
             IServiceProvider serviceProvider,
             IUnitOfWorkManager unitOfWorkManager,
             ILogger<EFCoreContextFactory<TDbContext>> logger,
             IObjectAccessor<MiCakeEFCoreOptions> efCoreOptions)
         {
-            _serviceProvider = serviceProvider;
-            _unitOfWorkManager = unitOfWorkManager;
-            _logger = logger;
-            _efCoreOptions = efCoreOptions.Value;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _unitOfWorkManager = unitOfWorkManager ?? throw new ArgumentNullException(nameof(unitOfWorkManager));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _efCoreOptions = efCoreOptions?.Value ?? throw new ArgumentNullException(nameof(efCoreOptions));
         }
 
+        /// <summary>
+        /// Gets the DbContext for the current Unit of Work
+        /// </summary>
         public TDbContext GetDbContext()
         {
             var isUsingImplicitMode = _efCoreOptions.ImplicitModeForUow;
@@ -58,6 +65,9 @@ namespace MiCake.EntityFrameworkCore.Uow
             return (TDbContext)wrapper.DbContext;
         }
 
+        /// <summary>
+        /// Gets the DbContext wrapper for the current Unit of Work
+        /// </summary>
         public EFCoreDbContextWrapper GetDbContextWrapper()
         {
             var currentUow = _unitOfWorkManager.Current ?? throw new InvalidOperationException(
@@ -82,11 +92,18 @@ namespace MiCake.EntityFrameworkCore.Uow
             // Don't dispose DbContext since it's managed by DI container (could be singleton, scoped, etc.)
             var wrapper = new EFCoreDbContextWrapper(dbContext, wrapperLogger, _efCoreOptions, shouldDisposeDbContext: false);
 
-            // Register the wrapper with the current uow (will be skipped if already registered for same DbContext instance)
-            currentUow.RegisterDbContext(wrapper);
-
-            _logger.LogDebug("Retrieved EFCore DbContext wrapper for {DbContextType} with identifier {ContextIdentifier} in UoW {UowId}",
-                typeof(TDbContext).Name, wrapper.ContextIdentifier, currentUow.Id);
+            // Register the wrapper with the current UoW using internal interface
+            if (currentUow is IUnitOfWorkInternal internalUow)
+            {
+                internalUow.RegisterResource(wrapper);
+                
+                _logger.LogDebug("Registered EFCore DbContext wrapper for {DbContextType} with identifier {ResourceIdentifier} in UoW {UowId}",
+                    typeof(TDbContext).Name, wrapper.ResourceIdentifier, currentUow.Id);
+            }
+            else
+            {
+                _logger.LogWarning("Current UoW does not implement IUnitOfWorkInternal, DbContext wrapper not registered");
+            }
 
             return wrapper;
         }
