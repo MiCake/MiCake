@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,15 @@ namespace MiCake.DDD.Tests.Uow
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             _serviceProvider = services.BuildServiceProvider();
             _uowManager = _serviceProvider.GetRequiredService<IUnitOfWorkManager>();
+        }
+
+        /// <summary>
+        /// Helper method to create a UnitOfWork instance directly for testing internal behavior
+        /// </summary>
+        private UnitOfWork CreateUnitOfWork(UnitOfWorkOptions? options = null)
+        {
+            var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
+            return new UnitOfWork(logger, options);
         }
 
         #region Basic Operations
@@ -297,6 +307,263 @@ namespace MiCake.DDD.Tests.Uow
 
         // Note: Testing savepoints with actual resources requires EF Core integration
         // These tests verify the interface and basic validation
+
+        [Fact]
+        public async Task Savepoint_CanBeCreated_AfterRegisteringResource()
+        {
+            // Arrange
+            var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
+            using var uow = new UnitOfWork(logger);
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            mockResource.Setup(r => r.CreateSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync("test-savepoint");
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+            var savepointName = await uow.CreateSavepointAsync("test-savepoint");
+
+            // Assert
+            Assert.Equal("test-savepoint", savepointName);
+            mockResource.Verify(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockResource.Verify(r => r.CreateSavepointAsync("test-savepoint", It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Savepoint_CanBeRolledBack_AfterRegisteringResource()
+        {
+            // Arrange
+            var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
+            using var uow = new UnitOfWork(logger);
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            mockResource.Setup(r => r.RollbackToSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+            await uow.CreateSavepointAsync("test-savepoint");
+            await uow.RollbackToSavepointAsync("test-savepoint");
+
+            // Assert
+            mockResource.Verify(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockResource.Verify(r => r.RollbackToSavepointAsync("test-savepoint", It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Savepoint_CannotBeCreated_WithoutResourceRegistration()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork();
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => uow.CreateSavepointAsync("test-savepoint"));
+        }
+
+        [Fact]
+        public async Task Savepoint_CannotBeRolledBack_WithoutResourceRegistration()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork();
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => uow.RollbackToSavepointAsync("test-savepoint"));
+        }
+
+        #endregion
+
+        #region Lazy Transaction Initialization
+
+        [Fact]
+        public async Task LazyInitialization_TransactionsStarted_OnCommit_WithResource()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork();
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            mockResource.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            mockResource.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+            await uow.CommitAsync();
+
+            // Assert
+            Assert.True(uow.HasActiveTransactions);
+            mockResource.Verify(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockResource.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            mockResource.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task LazyInitialization_TransactionsNotStarted_OnCommit_ReadOnly()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork(UnitOfWorkOptions.ReadOnly);
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+            await uow.CommitAsync();
+
+            // Assert
+            Assert.False(uow.HasActiveTransactions);
+            mockResource.Verify(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task LazyInitialization_TransactionsNotStarted_OnCommit_WithoutResources()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork();
+
+            // Act
+            await uow.CommitAsync();
+
+            // Assert
+            Assert.False(uow.HasActiveTransactions);
+        }
+
+        #endregion
+
+        #region Transaction Initialization Modes
+
+        [Fact]
+        public async Task ImmediateInitializationMode_ShouldStartTransactions_OnResourceRegistration()
+        {
+            // Arrange
+            var options = new UnitOfWorkOptions
+            {
+                InitializationMode = TransactionInitializationMode.Immediate
+            };
+            using var uow = CreateUnitOfWork(options);
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+
+            // Assert - Transactions should be started immediately
+            Assert.True(uow.HasActiveTransactions);
+            mockResource.Verify(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task LazyInitializationMode_ShouldNotStartTransactions_OnResourceRegistration()
+        {
+            // Arrange
+            var options = new UnitOfWorkOptions
+            {
+                InitializationMode = TransactionInitializationMode.Lazy
+            };
+            using var uow = CreateUnitOfWork(options);
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+
+            // Assert - Transactions should NOT be started immediately
+            Assert.False(uow.HasActiveTransactions);
+            mockResource.Verify(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        #endregion
+
+        #region Isolation Level Consistency
+
+        [Fact]
+        public async Task IsolationLevel_AppliedCorrectly_OnTransactionStart()
+        {
+            // Arrange
+            var options = new UnitOfWorkOptions
+            {
+                IsolationLevel = IsolationLevel.Serializable
+            };
+            using var uow = CreateUnitOfWork(options);
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+            await uow.CommitAsync(); // This should start transactions
+
+            // Assert
+            mockResource.Verify(r => r.BeginTransactionAsync(IsolationLevel.Serializable, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task IsolationLevel_DefaultApplied_WhenNotSpecified()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork(); // Default options
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns("test-resource");
+            mockResource.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            uow.RegisterResource(mockResource.Object);
+            await uow.CommitAsync(); // This should start transactions
+
+            // Assert - Default isolation level should be ReadCommitted
+            mockResource.Verify(r => r.BeginTransactionAsync(IsolationLevel.ReadCommitted, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        #endregion
+
+        #region Concurrent Resource Registration
+
+        [Fact]
+        public async Task Concurrent_ResourceRegistration_ShouldHandleThreadSafety()
+        {
+            // Arrange
+            using var uow = CreateUnitOfWork();
+            var mockResource1 = new Mock<IUnitOfWorkResource>();
+            mockResource1.Setup(r => r.ResourceIdentifier).Returns("resource-1");
+            mockResource1.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource1.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var mockResource2 = new Mock<IUnitOfWorkResource>();
+            mockResource2.Setup(r => r.ResourceIdentifier).Returns("resource-2");
+            mockResource2.Setup(r => r.HasActiveTransaction).Returns(false);
+            mockResource2.Setup(r => r.BeginTransactionAsync(It.IsAny<IsolationLevel?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Act - Register resources concurrently
+            var task1 = Task.Run(() => uow.RegisterResource(mockResource1.Object));
+            var task2 = Task.Run(() => uow.RegisterResource(mockResource2.Object));
+            await Task.WhenAll(task1, task2);
+
+            // Assert - Both resources should be registered
+            Assert.Equal(2, uow.GetType().GetField("_resources", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                .GetValue(uow) is List<IUnitOfWorkResource> resources ? resources.Count : 0);
+        }
 
         #endregion
 
