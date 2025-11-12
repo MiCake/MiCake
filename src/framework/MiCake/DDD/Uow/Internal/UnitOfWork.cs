@@ -108,20 +108,6 @@ namespace MiCake.DDD.Uow.Internal
             }
         }
 
-        [Obsolete("This method is deprecated. Use IUnitOfWorkInternal.RegisterResource instead.")]
-        public void RegisterDbContext(IDbContextWrapper wrapper)
-        {
-            // Convert old wrapper to new resource interface
-            if (wrapper is IUnitOfWorkResource resource)
-            {
-                RegisterResource(resource);
-            }
-            else
-            {
-                _logger.LogWarning("RegisterDbContext called with non-IUnitOfWorkResource wrapper. This is deprecated.");
-            }
-        }
-
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();

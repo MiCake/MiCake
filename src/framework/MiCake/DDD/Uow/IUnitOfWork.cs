@@ -120,17 +120,5 @@ namespace MiCake.DDD.Uow
         event EventHandler<UnitOfWorkEventArgs>? OnRolledBack;
 
         #endregion
-
-        #region Legacy - To be removed
-
-        /// <summary>
-        /// [DEPRECATED] Register a DbContext wrapper with this unit of work.
-        /// This method is deprecated and will be removed in a future version.
-        /// Use IUnitOfWorkInternal.RegisterResource instead.
-        /// </summary>
-        [Obsolete("This method is deprecated. Use IUnitOfWorkInternal.RegisterResource instead. This will be removed in a future version.")]
-        void RegisterDbContext(IDbContextWrapper wrapper);
-
-        #endregion
     }
 }

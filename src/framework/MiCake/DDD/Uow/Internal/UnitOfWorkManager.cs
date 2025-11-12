@@ -211,12 +211,6 @@ namespace MiCake.DDD.Uow.Internal
                 }
             }
 
-            [Obsolete("This method is deprecated. Use IUnitOfWorkInternal.RegisterResource instead.")]
-            public void RegisterDbContext(IDbContextWrapper wrapper)
-            {
-                _inner.RegisterDbContext(wrapper);
-            }
-
             public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
             {
                 return _inner.MarkAsCompletedAsync(cancellationToken);
