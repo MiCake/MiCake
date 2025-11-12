@@ -67,9 +67,14 @@ namespace MiCake.IntegrationTests.EntityFrameworkCore
         {
             var services = new ServiceCollection();
 
-            // Configure in-memory database
+            // Configure SQLite in-memory database (better support than EF InMemory provider)
+            var dbName = $"DataSource=:memory:";
+            var connection = new Microsoft.Data.Sqlite.SqliteConnection(dbName);
+            connection.Open(); // Keep connection open for in-memory SQLite to persist
+
+            services.AddSingleton(connection);
             services.AddDbContext<TestDbContext>(options =>
-                options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}"));
+                options.UseSqlite(connection));
 
             // Add core services
             services.AddLogging();
@@ -86,7 +91,7 @@ namespace MiCake.IntegrationTests.EntityFrameworkCore
                 optionsBuilder: options =>
                 {
                     options.ImplicitModeForUow = false; // Explicit UoW mode
-                    options.WillOpenTransactionForUow = true;
+                    options.WillOpenTransactionForUow = true; // Enable transactions
                 });
 
             builder.Build();
@@ -96,6 +101,14 @@ namespace MiCake.IntegrationTests.EntityFrameworkCore
             services.AddScoped<ProductRepository>();
 
             _serviceProvider = services.BuildServiceProvider();
+            
+            // Create database schema
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+                dbContext.Database.EnsureCreated();
+            }
+
             _uowManager = _serviceProvider.GetRequiredService<IUnitOfWorkManager>();
         }
 
