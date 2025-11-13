@@ -1,13 +1,11 @@
-﻿using MiCake.Core;
-using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using System;
+using MiCake.Audit;
+using MiCake.Modules;
 
-namespace MiCake.Audit
+namespace MiCake.Core
 {
     public static class MiCakeBuilderAuditCoreExtension
     {
-        public const string AuditForApplicationOptionsKey = "MiCake.Audit.Key";
-
         /// <summary>
         /// Add MiCake Audit services.
         /// <para>
@@ -22,10 +20,7 @@ namespace MiCake.Audit
             optionsConfig?.Invoke(options);
 
             // Store audit options in the application options for later use
-            builder.Services.Configure<MiCakeApplicationOptions>(appOptions =>
-            {
-                appOptions.BuildTimeData.Deposit(AuditForApplicationOptionsKey, options);
-            });
+            builder.GetApplicationOptions().BuildTimeData.Deposit(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions, options);
 
             return builder;
         }

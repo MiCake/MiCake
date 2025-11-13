@@ -1,4 +1,3 @@
-using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Uow;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,7 +11,6 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// When a UoW is created with TransactionInitializationMode.Immediate,
     /// this hook will immediately initialize transactions for all registered DbContext types.
     /// </summary>
-    [InjectService(typeof(IUnitOfWorkLifecycleHook), Lifetime = MiCakeServiceLifetime.Scoped)]
     public class ImmediateTransactionLifecycleHook : IUnitOfWorkLifecycleHook
     {
         private readonly IImmediateTransactionInitializer _initializer;
@@ -34,9 +32,7 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
-            _logger.LogDebug(
-                "Immediate transaction initialization requested for UoW {UowId}",
-                unitOfWork.Id);
+            _logger.LogDebug("Immediate transaction initialization requested for UoW {UowId}", unitOfWork.Id);
 
             // Call the initializer to set up all registered DbContext types
             await _initializer.InitializeTransactionsAsync(unitOfWork, cancellationToken).ConfigureAwait(false);

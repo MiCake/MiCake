@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MiCake.DDD.Uow;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MiCake.EntityFrameworkCore.Uow
@@ -6,7 +7,7 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// <summary>
     /// Extension methods for registering EF Core Unit of Work services
     /// </summary>
-    public static class AddCoreUowServicesExtension
+    internal static class AddCoreUowServicesExtension
     {
         /// <summary>
         /// Registers core Unit of Work services for the specified DbContext type.
@@ -15,7 +16,7 @@ namespace MiCake.EntityFrameworkCore.Uow
         /// <param name="services">The service collection</param>
         /// <param name="dbContextType">The DbContext type to register services for</param>
         /// <returns>The service collection for method chaining</returns>
-        public static IServiceCollection AddUowCoreServices(this IServiceCollection services, Type dbContextType)
+        internal static IServiceCollection AddUowCoreServices(this IServiceCollection services, Type dbContextType)
         {
             // Register DbContext factory
             var interfaceType = typeof(IEFCoreContextFactory<>).MakeGenericType(dbContextType);
@@ -27,14 +28,8 @@ namespace MiCake.EntityFrameworkCore.Uow
             var dependenciesType = typeof(Repository.EFRepositoryDependencies<>).MakeGenericType(dbContextType);
             services.AddScoped(dependenciesType);
 
-            // Register the DbContext type in the registry for immediate transaction initialization support
-            // This is done by ensuring the registry is available and registering the type
-            var sp = services.BuildServiceProvider();
-            var registry = sp.GetService<IDbContextTypeRegistry>();
-            if (registry != null)
-            {
-                registry.RegisterDbContextType(dbContextType);
-            }
+            services.AddSingleton<IUnitOfWorkLifecycleHook, ImmediateTransactionLifecycleHook>();
+            services.AddScoped<IImmediateTransactionInitializer,ImmediateTransactionInitializer>();
 
             return services;
         }

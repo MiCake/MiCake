@@ -12,7 +12,7 @@ namespace MiCake.Core
     /// Manages the application lifecycle (initialization and shutdown).
     /// Module discovery and service configuration happens earlier in MiCakeBuilder.
     /// </summary>
-    public class MiCakeApplication : IMiCakeApplication
+    internal class MiCakeApplication : IMiCakeApplication
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IMiCakeModuleContext _moduleContext;

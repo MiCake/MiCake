@@ -1,12 +1,9 @@
 using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Uow;
-using MiCake.DDD.Uow.Internal;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,8 +32,8 @@ namespace MiCake.EntityFrameworkCore.Uow
     [InjectService(typeof(IDbContextTypeRegistry), Lifetime = MiCakeServiceLifetime.Singleton)]
     public class DbContextTypeRegistry : IDbContextTypeRegistry
     {
-        private readonly HashSet<Type> _registeredTypes = new();
-        private readonly object _lock = new();
+        private readonly HashSet<Type> _registeredTypes = [];
+        private readonly Lock _lock = new();
 
         public void RegisterDbContextType(Type dbContextType)
         {
@@ -59,7 +56,7 @@ namespace MiCake.EntityFrameworkCore.Uow
         {
             lock (_lock)
             {
-                return _registeredTypes.ToList();
+                return [.. _registeredTypes];
             }
         }
     }
@@ -68,7 +65,6 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// Implementation of immediate transaction initializer that creates DbContext wrappers
     /// for all registered types when UoW is configured with immediate initialization.
     /// </summary>
-    [InjectService(typeof(IImmediateTransactionInitializer), Lifetime = MiCakeServiceLifetime.Scoped)]
     public class ImmediateTransactionInitializer : IImmediateTransactionInitializer
     {
         private readonly IServiceProvider _serviceProvider;
@@ -120,7 +116,7 @@ namespace MiCake.EntityFrameworkCore.Uow
                     }
 
                     // Get the DbContext wrapper (this will register it with the UoW and start transaction if configured)
-                    var getWrapperMethod = factoryType.GetMethod(nameof(IEFCoreContextFactory<DbContext>.GetDbContextWrapper));
+                    var getWrapperMethod = factoryType.GetMethod(nameof(IEFCoreContextFactory<>.GetDbContextWrapper));
                     if (getWrapperMethod != null)
                     {
                         var wrapper = getWrapperMethod.Invoke(factory, null) as EFCoreDbContextWrapper;

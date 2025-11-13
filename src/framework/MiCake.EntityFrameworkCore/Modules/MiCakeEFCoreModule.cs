@@ -1,11 +1,19 @@
-﻿using MiCake.Core.Modularity;
+﻿using System;
+using MiCake.Core.DependencyInjection;
+using MiCake.Core.Modularity;
 using MiCake.EntityFrameworkCore.Internal;
+using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {
+    public class MiCakeEFCoreModuleInternalKeys
+    {
+        public const string DBContextType = "MiCake.Module.EFCore.DBContextType";
+    }
+
     /// <summary>
     /// MiCake Entity Framework Core module - Provides EF Core integration for MiCake framework
     /// </summary>
@@ -23,13 +31,14 @@ namespace MiCake.EntityFrameworkCore.Modules
         public override void ConfigureServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
-
-            // Register the lazy singleton version of IEFSaveChangesLifetime
-            // This allows the interceptor to work even when created at application startup
+            var dbContextType = context.MiCakeApplicationOptions.BuildTimeData.TakeOut<Type>(MiCakeEFCoreModuleInternalKeys.DBContextType)
+                                            ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
+           
             services.TryAddSingleton<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
-            
-            // Register the interceptor factory
             services.TryAddTransient<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+
+            // Add Uow related services
+            services.AddUowCoreServices(dbContextType);
         }
 
         /// <summary>
@@ -44,6 +53,12 @@ namespace MiCake.EntityFrameworkCore.Modules
             {
                 MiCakeInterceptorFactoryHelper.Configure(factory);
             }
+
+            var efcoreOptions = context.ServiceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>().Value
+                                        ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
+
+            var registry = context.ServiceProvider.GetService<IDbContextTypeRegistry>();
+            registry?.RegisterDbContextType(efcoreOptions.DbContextType);
         }
     }
 }

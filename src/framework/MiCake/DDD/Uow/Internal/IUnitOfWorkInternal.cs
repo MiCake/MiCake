@@ -7,7 +7,6 @@ namespace MiCake.DDD.Uow.Internal
 {
     /// <summary>
     /// Internal interface for framework components to register with UoW.
-    /// This is NOT exposed in the public API and should only be used by persistence layer implementations.
     /// </summary>
     public interface IUnitOfWorkInternal
     {
@@ -31,10 +30,6 @@ namespace MiCake.DDD.Uow.Internal
     /// <summary>
     /// Generic resource interface for UoW participation using two-phase registration pattern.
     /// Persistence layer implementations should implement this to integrate with UoW.
-    /// 
-    /// Two-Phase Pattern:
-    /// 1. Prepare Phase (Synchronous): Store configuration, no I/O operations
-    /// 2. Activate Phase (Asynchronous): Start actual database transactions
     /// </summary>
     public interface IUnitOfWorkResource : IDisposable
     {
@@ -72,8 +67,6 @@ namespace MiCake.DDD.Uow.Internal
         
         /// <summary>
         /// Begin a new transaction with specified isolation level.
-        /// This method combines PrepareForTransaction + ActivateTransactionAsync for backward compatibility.
-        /// For new code, prefer using the two-phase pattern directly.
         /// </summary>
         /// <param name="isolationLevel">The isolation level for the transaction</param>
         /// <param name="cancellationToken">Cancellation token</param>

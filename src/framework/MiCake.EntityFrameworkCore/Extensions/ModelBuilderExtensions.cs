@@ -160,7 +160,7 @@ namespace MiCake.EntityFrameworkCore
                 // Apply soft deletion query filter
                 if (entityContext.EnableSoftDeletion && entityContext.QueryFilter != null)
                 {
-                    var existingFilter = entityBuilder.Metadata.GetQueryFilter();
+                    var existingFilter = entityBuilder.Metadata.GetDeclaredQueryFilters();
                     if (existingFilter == null)
                     {
                         entityBuilder.HasQueryFilter(entityContext.QueryFilter);

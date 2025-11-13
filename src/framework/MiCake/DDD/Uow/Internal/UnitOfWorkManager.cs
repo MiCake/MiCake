@@ -26,89 +26,6 @@ namespace MiCake.DDD.Uow.Internal
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public IUnitOfWork Begin(bool requiresNew = false)
-        {
-            return Begin(UnitOfWorkOptions.Default, requiresNew);
-        }
-
-        public IUnitOfWork Begin(UnitOfWorkOptions options, bool requiresNew = false)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            ArgumentNullException.ThrowIfNull(options);
-
-            // If we already have a UoW and don't require a new one, return nested UoW
-            if (!requiresNew && _current.Value != null && !_current.Value.IsDisposed)
-            {
-                var parentUow = _current.Value;
-                
-                _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUow.Id);
-
-                // Create nested UoW (inherits parent's options for isolation level)
-                // Nested UoW is read-only and doesn't manage its own transactions
-                var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
-                var nestedOptions = new UnitOfWorkOptions
-                {
-                    IsolationLevel = parentUow.IsolationLevel,
-                    IsReadOnly = true,  // Nested UoW doesn't manage transactions, effectively read-only
-                    InitializationMode = options.InitializationMode
-                };
-                
-                var nestedUow = new UnitOfWork(logger, nestedOptions, parentUow);
-                
-                // Return wrapper that doesn't affect AsyncLocal
-                return new NestedUnitOfWorkWrapper(nestedUow, _logger);
-            }
-
-            // Create a new root unit of work
-            var uowLogger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
-            var unitOfWork = new UnitOfWork(uowLogger, options, parent: null);
-
-            // Set as current
-            _current.Value = unitOfWork;
-
-            _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
-
-            // Call lifecycle hooks if configured for immediate initialization
-            // Note: This uses Task.Run().GetAwaiter().GetResult() which can cause deadlocks in some contexts.
-            // Lifecycle hooks for immediate initialization should be designed to complete quickly and synchronously where possible.
-            // This is an acceptable trade-off for the immediate initialization feature which requires synchronous Begin() method
-            // to work with UoW setup before returning to the caller.
-            if (options.InitializationMode == TransactionInitializationMode.Immediate)
-            {
-                var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>();
-                if (hooks.Any())
-                {
-                    foreach (var hook in hooks)
-                    {
-                        try
-                        {
-                            // Execute hook - this is necessary to support immediate transaction initialization
-                            // from a synchronous Begin() method. The hook implementation (ImmediateTransactionInitializer)
-                            // is designed to be synchronous (returns Task.CompletedTask) to avoid actual async blocking.
-                            Task.Run(async () => await hook.OnUnitOfWorkCreatedAsync(unitOfWork, options, default).ConfigureAwait(false))
-                                .GetAwaiter()
-                                .GetResult();
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error calling lifecycle hook {HookType} for UnitOfWork {UnitOfWorkId}",
-                                hook.GetType().Name, unitOfWork.Id);
-                            throw;
-                        }
-                    }
-                }
-            }
-
-            // Return a wrapper that clears the current UOW when disposed
-            return new RootUnitOfWorkWrapper(unitOfWork, () =>
-            {
-                if (_current.Value == unitOfWork)
-                {
-                    _current.Value = null;
-                }
-            }, _logger);
-        }
-
         public Task<IUnitOfWork> BeginAsync(bool requiresNew = false, CancellationToken cancellationToken = default)
         {
             return BeginAsync(UnitOfWorkOptions.Default, requiresNew, cancellationToken);
@@ -151,10 +68,8 @@ namespace MiCake.DDD.Uow.Internal
 
             _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
-            // ✅ Properly handle async initialization for Immediate mode
             if (options.InitializationMode == TransactionInitializationMode.Immediate)
             {
-                // Call lifecycle hooks (properly async)
                 var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>();
                 foreach (var hook in hooks)
                 {
@@ -171,7 +86,6 @@ namespace MiCake.DDD.Uow.Internal
                     }
                 }
 
-                // ✅ Immediately activate all registered resources
                 if (unitOfWork is IUnitOfWorkInternal internalUow)
                 {
                     try

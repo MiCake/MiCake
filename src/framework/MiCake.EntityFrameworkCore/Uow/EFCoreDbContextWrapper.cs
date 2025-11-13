@@ -74,7 +74,7 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Prepares the resource for transaction (Phase 1 - Synchronous, no I/O).
+        /// Prepares the resource for transaction
         /// Just stores configuration, doesn't start actual transaction.
         /// </summary>
         public void PrepareForTransaction(IsolationLevel? isolationLevel)
@@ -114,7 +114,7 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Activates the transaction asynchronously (Phase 2 - May involve I/O).
+        /// Activates the transaction asynchronously
         /// This is where the actual database transaction is started.
         /// </summary>
         public async Task ActivateTransactionAsync(CancellationToken cancellationToken = default)
@@ -148,7 +148,6 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
-            // ✅ Start the actual transaction (async, may involve I/O)
             _logger.LogDebug("Activating transaction for resource {ResourceIdentifier} with isolation level {IsolationLevel}", 
                 ResourceIdentifier, _preparedIsolationLevel);
 
@@ -179,13 +178,11 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Begin a new transaction with specified isolation level (legacy support).
+        /// Begin a new transaction with specified isolation level.
         /// For new code, use PrepareForTransaction + ActivateTransactionAsync instead.
-        /// This combines both phases for backward compatibility.
         /// </summary>
         public async Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default)
         {
-            // Prepare + Activate in one call (for backward compatibility)
             PrepareForTransaction(isolationLevel);
             await ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
         }

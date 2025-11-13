@@ -10,7 +10,7 @@ namespace MiCake.Core
     /// A builder for <see cref="IMiCakeApplication"/>
     /// Configures MiCake modules and registers services before the DI container is built
     /// </summary>
-    public class MiCakeBuilder : IMiCakeBuilder
+    internal class MiCakeBuilder : IMiCakeBuilder
     {
         private readonly MiCakeApplicationOptions _options;
         private readonly Type _entryType;
@@ -129,6 +129,11 @@ namespace MiCake.Core
 
                 return app;
             });
+        }
+
+        public MiCakeApplicationOptions GetApplicationOptions()
+        {
+            return _options;
         }
     }
 }

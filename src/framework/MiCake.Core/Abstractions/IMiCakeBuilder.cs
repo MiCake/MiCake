@@ -19,5 +19,11 @@ namespace MiCake.Core
         /// </summary>
         /// <returns>The builder for chaining</returns>
         IMiCakeBuilder Build();
+
+        /// <summary>
+        /// Gets current application options for the MiCake application.
+        /// </summary>
+        /// <returns></returns>
+        MiCakeApplicationOptions GetApplicationOptions();
     }
 }
