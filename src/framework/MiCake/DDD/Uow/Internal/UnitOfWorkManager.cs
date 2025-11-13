@@ -12,7 +12,7 @@ namespace MiCake.DDD.Uow.Internal
     /// </summary>
     internal class UnitOfWorkManager : IUnitOfWorkManager
     {
-        private static readonly AsyncLocal<IUnitOfWork?> _current = new();
+        private readonly AsyncLocal<IUnitOfWork?> _current = new();
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UnitOfWorkManager> _logger;
         private bool _disposed = false;
@@ -30,7 +30,7 @@ namespace MiCake.DDD.Uow.Internal
             return BeginAsync(UnitOfWorkOptions.Default, requiresNew, cancellationToken);
         }
 
-        public async Task<IUnitOfWork> BeginAsync(UnitOfWorkOptions options, bool requiresNew = false, CancellationToken cancellationToken = default)
+        public Task<IUnitOfWork> BeginAsync(UnitOfWorkOptions options, bool requiresNew = false, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentNullException.ThrowIfNull(options);
@@ -38,38 +38,50 @@ namespace MiCake.DDD.Uow.Internal
             // If we already have a UoW and don't require a new one, return nested UoW
             if (!requiresNew && _current.Value != null && !_current.Value.IsDisposed)
             {
-                var parentUow = _current.Value;
+                var parentUowWrapper = _current.Value;  // This is the wrapper!
 
-                _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUow.Id);
+                _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUowWrapper.Id);
+
+                // Get the inner UnitOfWork from parent (for internal linking)
+                var parentInner = GetInnerUnitOfWork(parentUowWrapper);
 
                 // Create nested UoW (inherits parent's options for isolation level)
                 // Nested UoW is read-only and doesn't manage its own transactions
                 var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
                 var nestedOptions = new UnitOfWorkOptions
                 {
-                    IsolationLevel = parentUow.IsolationLevel,
+                    IsolationLevel = parentUowWrapper.IsolationLevel,
                     IsReadOnly = true,  // Nested UoW doesn't manage transactions
                     InitializationMode = options.InitializationMode
                 };
 
-                var nestedUow = new UnitOfWork(logger, nestedOptions, parentUow);
+                var nestedUow = new UnitOfWork(logger, nestedOptions, parentInner);
 
-                // Return wrapper that doesn't affect AsyncLocal
-                return new NestedUnitOfWorkWrapper(nestedUow, _logger);
+                // Return wrapper that stores parent wrapper reference and updates AsyncLocal
+                return Task.FromResult<IUnitOfWork>(new NestedUnitOfWorkWrapper(nestedUow, parentUowWrapper, _current, _logger));
             }
 
-            // Create a new root unit of work
             var uowLogger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
             var unitOfWork = new UnitOfWork(uowLogger, options, parent: null);
 
-            // Set as current
-            _current.Value = unitOfWork;
-
             _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
+            // Create wrapper and set AsyncLocal BEFORE any async operations
+            var wrapper = new RootUnitOfWorkWrapper(unitOfWork, _current, _logger);
 
-            // Get hooks applicable to Immediate mode
-            var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>().Where(h => h.ApplicableMode == null || h.ApplicableMode == options.InitializationMode);
+            return InitializeUnitOfWorkAsync(unitOfWork, wrapper, options, cancellationToken);
+        }
+
+        private async Task<IUnitOfWork> InitializeUnitOfWorkAsync(
+            UnitOfWork unitOfWork,
+            IUnitOfWork wrapper,
+            UnitOfWorkOptions options,
+            CancellationToken cancellationToken)
+        {
+            // Get hooks applicable to the initialization mode
+            var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>()
+                .Where(h => h.ApplicableMode == null || h.ApplicableMode == options.InitializationMode);
+            
             foreach (var hook in hooks)
             {
                 try
@@ -80,7 +92,7 @@ namespace MiCake.DDD.Uow.Internal
                 {
                     _logger.LogError(ex, "Error calling lifecycle hook {HookType} for UnitOfWork {UnitOfWorkId}",
                         hook.GetType().Name, unitOfWork.Id);
-                    unitOfWork.Dispose();
+                    wrapper.Dispose();
                     throw;
                 }
             }
@@ -99,20 +111,27 @@ namespace MiCake.DDD.Uow.Internal
                     {
                         _logger.LogError(ex, "Failed to activate resources during immediate initialization for UnitOfWork {UnitOfWorkId}",
                             unitOfWork.Id);
-                        unitOfWork.Dispose();
+                        wrapper.Dispose();
                         throw;
                     }
                 }
             }
 
-            // Return a wrapper that clears the current UOW when disposed
-            return new RootUnitOfWorkWrapper(unitOfWork, () =>
+            return wrapper;
+        }
+
+        /// <summary>
+        /// Extracts the inner UnitOfWork from a wrapper
+        /// </summary>
+        private static UnitOfWork GetInnerUnitOfWork(IUnitOfWork wrapper)
+        {
+            return wrapper switch
             {
-                if (_current.Value == unitOfWork)
-                {
-                    _current.Value = null;
-                }
-            }, _logger);
+                RootUnitOfWorkWrapper root => root.Inner,
+                NestedUnitOfWorkWrapper nested => nested.Inner,
+                UnitOfWork uow => uow,
+                _ => throw new InvalidOperationException($"Unknown wrapper type: {wrapper.GetType()}")
+            };
         }
 
         public void Dispose()
@@ -134,18 +153,29 @@ namespace MiCake.DDD.Uow.Internal
         /// </summary>
         private class RootUnitOfWorkWrapper : UnitOfWorkWrapperBase
         {
-            private readonly Action _onDispose;
+            private readonly AsyncLocal<IUnitOfWork?> _currentRef;
 
-            public RootUnitOfWorkWrapper(UnitOfWork inner, Action onDispose, ILogger logger)
+            public RootUnitOfWorkWrapper(UnitOfWork inner, AsyncLocal<IUnitOfWork?> currentRef, ILogger logger)
                 : base(inner, logger)
             {
-                _onDispose = onDispose;
+                _currentRef = currentRef;
+                
+                // CRITICAL: Set AsyncLocal value in constructor, which executes in caller's context
+                // Store THIS (the wrapper) as current, not the inner UnitOfWork
+                // This ensures the value persists after BeginAsync returns
+                _currentRef.Value = this;
             }
 
             public override void Dispose()
             {
                 base.Dispose();
-                _onDispose?.Invoke();
+                
+                // Clear current if this is still the current UoW
+                if (_currentRef.Value == this)
+                {
+                    _logger.LogDebug("Clearing current UoW {UowId}", _inner.Id);
+                    _currentRef.Value = null;
+                }
             }
         }
 
@@ -154,9 +184,29 @@ namespace MiCake.DDD.Uow.Internal
         /// </summary>
         private class NestedUnitOfWorkWrapper : UnitOfWorkWrapperBase
         {
-            public NestedUnitOfWorkWrapper(UnitOfWork inner, ILogger logger)
+            private readonly IUnitOfWork _parentWrapper;
+            private readonly AsyncLocal<IUnitOfWork?> _currentRef;
+
+            public NestedUnitOfWorkWrapper(UnitOfWork inner, IUnitOfWork parentWrapper, AsyncLocal<IUnitOfWork?> currentRef, ILogger logger)
                 : base(inner, logger)
             {
+                _parentWrapper = parentWrapper;
+                _currentRef = currentRef;
+                // Update current to point to this nested UoW
+                _currentRef.Value = this;
+            }
+
+            // Override Parent to return the wrapper instead of inner UoW
+            public override IUnitOfWork? Parent => _parentWrapper;
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                // Restore parent as current when this nested UoW is disposed
+                if (_currentRef.Value == this)
+                {
+                    _currentRef.Value = _parentWrapper;
+                }
             }
         }
 
@@ -174,12 +224,17 @@ namespace MiCake.DDD.Uow.Internal
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             }
 
+            /// <summary>
+            /// Exposes the inner UnitOfWork for wrapper type checking
+            /// </summary>
+            internal UnitOfWork Inner => _inner;
+
             public Guid Id => _inner.Id;
             public bool IsDisposed => _inner.IsDisposed;
             public bool IsCompleted => _inner.IsCompleted;
             public bool HasActiveTransactions => _inner.HasActiveTransactions;
             public System.Data.IsolationLevel? IsolationLevel => _inner.IsolationLevel;
-            public IUnitOfWork? Parent => _inner.Parent;
+            public virtual IUnitOfWork? Parent => _inner.Parent;
 
             public event EventHandler<UnitOfWorkEventArgs>? OnCommitting
             {

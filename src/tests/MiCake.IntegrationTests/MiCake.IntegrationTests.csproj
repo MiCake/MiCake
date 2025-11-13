@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\framework\MiCake\MiCake.csproj" />
     <ProjectReference Include="..\..\framework\MiCake.EntityFrameworkCore\MiCake.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\MiCake.EntityFrameworkCore.Tests\MiCake.EntityFrameworkCore.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

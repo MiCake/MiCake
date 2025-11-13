@@ -236,6 +236,12 @@ namespace MiCake.DDD.Uow.Internal
                     {
                         await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
                     }
+                    
+                    // If only one exception, unwrap it; otherwise wrap in aggregate
+                    if (exceptions.Count == 1)
+                    {
+                        throw exceptions[0];
+                    }
                     throw new AggregateException("Failed to commit unit of work", exceptions);
                 }
 
@@ -286,6 +292,8 @@ namespace MiCake.DDD.Uow.Internal
                 // Root UoW: do actual rollback
                 await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
 
+                MarkAsCompleted();
+
                 // Raise OnRolledBack event
                 RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
             }
@@ -307,8 +315,8 @@ namespace MiCake.DDD.Uow.Internal
                 return Task.CompletedTask;
             }
 
-            _skipCommit = true;
-            _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} to skip commit", Id);
+            MarkAsCompleted();
+            _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} as completed", Id);
             return Task.CompletedTask;
         }
 
@@ -318,7 +326,13 @@ namespace MiCake.DDD.Uow.Internal
         {
             ThrowIfDisposed();
             ThrowIfCompleted("Cannot create savepoint after unit of work is completed");
-            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            
+            // Generate a name if null or empty
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = $"sp_{Guid.NewGuid():N}";
+                _logger.LogDebug("Generated savepoint name: {SavepointName}", name);
+            }
 
             if (Parent != null)
             {
@@ -573,6 +587,13 @@ namespace MiCake.DDD.Uow.Internal
             if (exceptions.Count > 0)
             {
                 _logger.LogWarning("Some resources failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
+                
+                // If only one exception, unwrap it; otherwise wrap in aggregate
+                if (exceptions.Count == 1)
+                {
+                    throw exceptions[0];
+                }
+                throw new AggregateException("Failed to rollback unit of work", exceptions);
             }
 
             _transactionsStarted = false;

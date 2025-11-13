@@ -1,5 +1,6 @@
 ﻿using MiCake.AspNetCore.Helper;
 using MiCake.DDD.Uow;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -54,8 +55,17 @@ namespace MiCake.AspNetCore.Uow
 
             var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
 
-            // Check for UnitOfWork attribute on action or controller
-            var uowAttribute = GetUnitOfWorkAttribute(controllerActionDes.MethodInfo, controllerActionDes.ControllerTypeInfo);
+            // Check for UnitOfWork attribute on action, controller, or endpoint metadata
+            UnitOfWorkAttribute? uowAttribute = null;
+            try
+            {
+                uowAttribute = GetUnitOfWorkAttribute(controllerActionDes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting UnitOfWork attribute");
+                throw;
+            }
 
             // Determine if UoW should be enabled
             // If attribute is present, it determines enablement (including DisableUnitOfWorkAttribute)
@@ -180,25 +190,48 @@ namespace MiCake.AspNetCore.Uow
         /// <returns>True if action succeeded, false otherwise</returns>
         private static bool ActionSucceeded(ActionExecutedContext result)
         {
-            return result.Exception == null || result.ExceptionHandled;
+            return (result.Exception == null || result.ExceptionHandled) && !result.Canceled;
         }
 
         /// <summary>
-        /// Gets the UnitOfWork attribute from the action method or controller type.
-        /// Action-level attribute takes precedence over controller-level attribute.
+        /// Gets the UnitOfWork attribute from the action method, controller type, or endpoint metadata.
+        /// Action-level attribute takes precedence over controller-level, then endpoint metadata.
         /// </summary>
-        private static UnitOfWorkAttribute? GetUnitOfWorkAttribute(MethodInfo actionMethod, TypeInfo controllerType)
+        private static UnitOfWorkAttribute? GetUnitOfWorkAttribute(ControllerActionDescriptor controllerActionDes)
         {
             // Check action method first
-            var actionAttribute = actionMethod.GetCustomAttribute<UnitOfWorkAttribute>(inherit: true);
-            if (actionAttribute != null)
+            if (controllerActionDes.MethodInfo != null)
             {
-                return actionAttribute;
+                var actionAttribute = controllerActionDes.MethodInfo.GetCustomAttribute<UnitOfWorkAttribute>(inherit: true);
+                if (actionAttribute != null)
+                {
+                    return actionAttribute;
+                }
             }
 
             // Check controller type
-            var controllerAttribute = controllerType.GetCustomAttribute<UnitOfWorkAttribute>(inherit: true);
-            return controllerAttribute;
+            if (controllerActionDes.ControllerTypeInfo != null)
+            {
+                var controllerAttribute = controllerActionDes.ControllerTypeInfo.GetCustomAttribute<UnitOfWorkAttribute>(inherit: true);
+                if (controllerAttribute != null)
+                {
+                    return controllerAttribute;
+                }
+            }
+
+            // Check endpoint metadata
+            if (controllerActionDes.EndpointMetadata != null)
+            {
+                foreach (var metadata in controllerActionDes.EndpointMetadata)
+                {
+                    if (metadata is UnitOfWorkAttribute uowAttribute)
+                    {
+                        return uowAttribute;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

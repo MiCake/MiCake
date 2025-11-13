@@ -3,6 +3,7 @@ using MiCake.DDD.Uow;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -22,12 +24,14 @@ namespace MiCake.AspNetCore.Tests.Uow
     /// </summary>
     public class UnitOfWorkFilterTests
     {
+        private static readonly MethodInfo TestMethodInfo = typeof(object).GetMethod("ToString")!;
         private readonly Mock<IUnitOfWorkManager> _mockUowManager;
         private readonly Mock<ILogger<UnitOfWorkFilter>> _mockLogger;
         private readonly Mock<IOptions<MiCakeAspNetOptions>> _mockOptions;
         private readonly UnitOfWorkFilter _filter;
         private readonly ActionExecutingContext _executingContext;
         private readonly ActionExecutedContext _executedContext;
+        private readonly ActionContext _actionContext;
 
         public UnitOfWorkFilterTests()
         {
@@ -45,25 +49,33 @@ namespace MiCake.AspNetCore.Tests.Uow
             };
             _mockOptions.Setup(o => o.Value).Returns(aspNetOptions);
 
-            _filter = new UnitOfWorkFilter(_mockUowManager.Object, _mockLogger.Object, _mockOptions.Object);
+            _filter = new UnitOfWorkFilter(_mockUowManager.Object, _mockOptions.Object, _mockLogger.Object);
 
             // Setup contexts
             var httpContext = new DefaultHttpContext();
-            var actionContext = new ActionContext(
+            var controllerActionDescriptor = new ControllerActionDescriptor
+            {
+                ActionName = "TestAction",
+                ControllerName = "TestController",
+                MethodInfo = TestMethodInfo,
+                ControllerTypeInfo = typeof(UnitOfWorkFilterTests).GetTypeInfo()
+            };
+
+            _actionContext = new ActionContext(
                 httpContext,
                 new RouteData(),
-                new ActionDescriptor()
+                controllerActionDescriptor
             );
 
             _executingContext = new ActionExecutingContext(
-                actionContext,
+                _actionContext,
                 new List<IFilterMetadata>(),
                 new Dictionary<string, object>(),
                 new object()
             );
 
             _executedContext = new ActionExecutedContext(
-                actionContext,
+                _actionContext,
                 new List<IFilterMetadata>(),
                 new object()
             );
@@ -76,7 +88,7 @@ namespace MiCake.AspNetCore.Tests.Uow
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
 
             ActionExecutionDelegate next = () => Task.FromResult(_executedContext);
 
@@ -84,7 +96,7 @@ namespace MiCake.AspNetCore.Tests.Uow
             await _filter.OnActionExecutionAsync(_executingContext, next);
 
             // Assert
-            _mockUowManager.Verify(m => m.BeginAsync(false, default), Times.Once);
+            _mockUowManager.Verify(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default), Times.Once);
         }
 
         [Fact]
@@ -100,27 +112,33 @@ namespace MiCake.AspNetCore.Tests.Uow
             };
             _mockOptions.Setup(o => o.Value).Returns(options);
 
-            var filter = new UnitOfWorkFilter(_mockUowManager.Object, _mockLogger.Object, _mockOptions.Object);
+            var filter = new UnitOfWorkFilter(_mockUowManager.Object, _mockOptions.Object, _mockLogger.Object);
             ActionExecutionDelegate next = () => Task.FromResult(_executedContext);
 
             // Act
             await filter.OnActionExecutionAsync(_executingContext, next);
 
             // Assert
-            _mockUowManager.Verify(m => m.BeginAsync(It.IsAny<bool>(), It.IsAny<System.Threading.CancellationToken>()), Times.Never);
+            _mockUowManager.Verify(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), It.IsAny<bool>(), It.IsAny<System.Threading.CancellationToken>()), Times.Never);
         }
 
         [Fact]
         public async Task OnActionExecutionAsync_WithDisableUnitOfWorkAttribute_ShouldNotBeginUow()
         {
             // Arrange
-            var actionDescriptor = new ActionDescriptor();
-            actionDescriptor.EndpointMetadata = new List<object> { new DisableUnitOfWorkAttribute() };
+            var controllerActionDescriptor = new ControllerActionDescriptor
+            {
+                ActionName = "TestAction",
+                ControllerName = "TestController",
+                MethodInfo = TestMethodInfo,
+                ControllerTypeInfo = typeof(UnitOfWorkFilterTests).GetTypeInfo(),
+                EndpointMetadata = new List<object> { new DisableUnitOfWorkAttribute() }
+            };
             
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
                 new RouteData(),
-                actionDescriptor
+                controllerActionDescriptor
             );
 
             var executingContext = new ActionExecutingContext(
@@ -136,7 +154,7 @@ namespace MiCake.AspNetCore.Tests.Uow
             await _filter.OnActionExecutionAsync(executingContext, next);
 
             // Assert
-            _mockUowManager.Verify(m => m.BeginAsync(It.IsAny<bool>(), It.IsAny<System.Threading.CancellationToken>()), Times.Never);
+            _mockUowManager.Verify(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), It.IsAny<bool>(), It.IsAny<System.Threading.CancellationToken>()), Times.Never);
         }
 
         #endregion
@@ -153,13 +171,19 @@ namespace MiCake.AspNetCore.Tests.Uow
                 IsolationLevel = IsolationLevel.Serializable
             };
 
-            var actionDescriptor = new ActionDescriptor();
-            actionDescriptor.EndpointMetadata = new List<object> { attribute };
+            var controllerActionDescriptor = new ControllerActionDescriptor
+            {
+                ActionName = "TestAction",
+                ControllerName = "TestController",
+                MethodInfo = TestMethodInfo,
+                ControllerTypeInfo = typeof(UnitOfWorkFilterTests).GetTypeInfo(),
+                EndpointMetadata = new List<object> { attribute }
+            };
 
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
                 new RouteData(),
-                actionDescriptor
+                controllerActionDescriptor
             );
 
             var executingContext = new ActionExecutingContext(
@@ -170,7 +194,11 @@ namespace MiCake.AspNetCore.Tests.Uow
             );
 
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default))
+            _mockUowManager.Setup(m => m.BeginAsync(
+                It.Is<UnitOfWorkOptions>(o => 
+                    o.InitializationMode == TransactionInitializationMode.Immediate &&
+                    o.IsolationLevel == IsolationLevel.Serializable), 
+                false, default))
                 .ReturnsAsync(mockUow.Object);
 
             ActionExecutionDelegate next = () => Task.FromResult(_executedContext);
@@ -199,11 +227,19 @@ namespace MiCake.AspNetCore.Tests.Uow
         public async Task OnActionExecutionAsync_WithReadOnlyActionName_ShouldSkipCommit(string actionName)
         {
             // Arrange
-            var actionDescriptor = new ActionDescriptor { DisplayName = actionName };
+            var controllerActionDescriptor = new ControllerActionDescriptor
+            {
+                ActionName = actionName,
+                ControllerName = "TestController",
+                MethodInfo = TestMethodInfo,
+                ControllerTypeInfo = typeof(UnitOfWorkFilterTests).GetTypeInfo(),
+                DisplayName = actionName
+            };
+
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
                 new RouteData(),
-                actionDescriptor
+                controllerActionDescriptor
             );
 
             var executingContext = new ActionExecutingContext(
@@ -220,7 +256,7 @@ namespace MiCake.AspNetCore.Tests.Uow
             );
 
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
 
             ActionExecutionDelegate next = () => Task.FromResult(executedContext);
 
@@ -229,18 +265,26 @@ namespace MiCake.AspNetCore.Tests.Uow
 
             // Assert
             mockUow.Verify(u => u.CommitAsync(default), Times.Never);
-            mockUow.Verify(u => u.MarkAsCompleted(), Times.Once);
+            mockUow.Verify(u => u.MarkAsCompletedAsync(default), Times.Once);
         }
 
         [Fact]
         public async Task OnActionExecutionAsync_WithWriteActionName_ShouldCommit()
         {
             // Arrange
-            var actionDescriptor = new ActionDescriptor { DisplayName = "CreateOrder" };
+            var controllerActionDescriptor = new ControllerActionDescriptor
+            {
+                ActionName = "CreateOrder",
+                ControllerName = "TestController",
+                MethodInfo = TestMethodInfo,
+                ControllerTypeInfo = typeof(UnitOfWorkFilterTests).GetTypeInfo(),
+                DisplayName = "CreateOrder"
+            };
+
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
                 new RouteData(),
-                actionDescriptor
+                controllerActionDescriptor
             );
 
             var executingContext = new ActionExecutingContext(
@@ -257,7 +301,7 @@ namespace MiCake.AspNetCore.Tests.Uow
             );
 
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
             mockUow.Setup(u => u.CommitAsync(default)).Returns(Task.CompletedTask);
 
             ActionExecutionDelegate next = () => Task.FromResult(executedContext);
@@ -278,7 +322,7 @@ namespace MiCake.AspNetCore.Tests.Uow
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
             mockUow.Setup(u => u.CommitAsync(default)).Returns(Task.CompletedTask);
 
             ActionExecutionDelegate next = () => Task.FromResult(_executedContext);
@@ -295,11 +339,11 @@ namespace MiCake.AspNetCore.Tests.Uow
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
             mockUow.Setup(u => u.RollbackAsync(default)).Returns(Task.CompletedTask);
 
             var executedContextWithException = new ActionExecutedContext(
-                _executedContext.ActionContext,
+                _actionContext,
                 new List<IFilterMetadata>(),
                 new object()
             );
@@ -319,15 +363,16 @@ namespace MiCake.AspNetCore.Tests.Uow
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
             mockUow.Setup(u => u.RollbackAsync(default)).Returns(Task.CompletedTask);
 
             var executedContextCanceled = new ActionExecutedContext(
-                _executedContext.ActionContext,
+                _executingContext,
                 new List<IFilterMetadata>(),
                 new object()
             );
             executedContextCanceled.Canceled = true;
+            executedContextCanceled.Exception = new OperationCanceledException();
 
             ActionExecutionDelegate next = () => Task.FromResult(executedContextCanceled);
 
@@ -347,7 +392,7 @@ namespace MiCake.AspNetCore.Tests.Uow
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
             mockUow.Setup(u => u.CommitAsync(default)).Returns(Task.CompletedTask);
             mockUow.Setup(u => u.Dispose());
 
@@ -365,14 +410,10 @@ namespace MiCake.AspNetCore.Tests.Uow
         #region Edge Cases
 
         [Fact]
-        public async Task OnActionExecutionAsync_WithNullUowManager_ShouldThrowArgumentNullException()
+        public void Ctor_WithNullUowManager_ShouldThrowArgumentNullException()
         {
-            // Arrange
-            var filter = new UnitOfWorkFilter(null, _mockLogger.Object, _mockOptions.Object);
-            ActionExecutionDelegate next = () => Task.FromResult(_executedContext);
-
             // Act & Assert
-            await Assert.ThrowsAnyAsync<Exception>(() => filter.OnActionExecutionAsync(_executingContext, next));
+            Assert.Throws<ArgumentNullException>(() => new UnitOfWorkFilter(null, _mockOptions.Object, _mockLogger.Object));
         }
 
         [Fact]
@@ -380,7 +421,7 @@ namespace MiCake.AspNetCore.Tests.Uow
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
-            _mockUowManager.Setup(m => m.BeginAsync(false, default)).ReturnsAsync(mockUow.Object);
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), false, default)).ReturnsAsync(mockUow.Object);
             mockUow.Setup(u => u.CommitAsync(default))
                 .ThrowsAsync(new InvalidOperationException("Commit failed"));
 
