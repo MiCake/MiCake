@@ -326,6 +326,9 @@ namespace MiCake.DDD.Uow.Internal
                 return await Parent.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
             }
 
+            // ✅ Ensure transactions are activated before creating savepoint (fixes Lazy mode issue)
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
             if (!_transactionsStarted)
             {
                 throw new InvalidOperationException("Cannot create savepoint: no active transaction");
@@ -369,6 +372,9 @@ namespace MiCake.DDD.Uow.Internal
                 return;
             }
 
+            // ✅ Ensure transactions are activated before rolling back to savepoint (fixes Lazy mode issue)
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
             if (!_transactionsStarted)
             {
                 throw new InvalidOperationException("Cannot rollback to savepoint: no active transaction");
@@ -409,6 +415,9 @@ namespace MiCake.DDD.Uow.Internal
                 await Parent.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
                 return;
             }
+
+            // ✅ Ensure transactions are activated before releasing savepoint (fixes Lazy mode issue)
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
 
             if (!_transactionsStarted)
             {

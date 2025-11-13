@@ -68,9 +68,13 @@ namespace MiCake.DDD.Uow.Internal
 
             _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
+            // Call lifecycle hooks based on initialization mode
             if (options.InitializationMode == TransactionInitializationMode.Immediate)
             {
-                var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>();
+                // Get hooks applicable to Immediate mode
+                var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>()
+                    .Where(h => h.ApplicableMode == null || h.ApplicableMode == TransactionInitializationMode.Immediate);
+                    
                 foreach (var hook in hooks)
                 {
                     try
@@ -86,6 +90,7 @@ namespace MiCake.DDD.Uow.Internal
                     }
                 }
 
+                // ✅ Immediately activate all registered resources
                 if (unitOfWork is IUnitOfWorkInternal internalUow)
                 {
                     try

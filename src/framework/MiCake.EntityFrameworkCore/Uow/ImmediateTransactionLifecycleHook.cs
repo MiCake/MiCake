@@ -16,6 +16,11 @@ namespace MiCake.EntityFrameworkCore.Uow
         private readonly IImmediateTransactionInitializer _initializer;
         private readonly ILogger<ImmediateTransactionLifecycleHook> _logger;
 
+        /// <summary>
+        /// This hook applies only to Immediate initialization mode
+        /// </summary>
+        public TransactionInitializationMode? ApplicableMode => TransactionInitializationMode.Immediate;
+
         public ImmediateTransactionLifecycleHook(
             IImmediateTransactionInitializer initializer,
             ILogger<ImmediateTransactionLifecycleHook> logger)
@@ -26,12 +31,6 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         public async Task OnUnitOfWorkCreatedAsync(IUnitOfWork unitOfWork, UnitOfWorkOptions options, CancellationToken cancellationToken = default)
         {
-            // Only proceed if immediate initialization is requested
-            if (options.InitializationMode != TransactionInitializationMode.Immediate)
-            {
-                return;
-            }
-
             _logger.LogDebug("Immediate transaction initialization requested for UoW {UowId}", unitOfWork.Id);
 
             // Call the initializer to set up all registered DbContext types

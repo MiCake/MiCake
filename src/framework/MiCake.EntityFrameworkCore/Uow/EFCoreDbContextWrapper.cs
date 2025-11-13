@@ -74,7 +74,7 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Prepares the resource for transaction
+        /// Prepares the resource for transaction (Phase 1 - Synchronous, no I/O).
         /// Just stores configuration, doesn't start actual transaction.
         /// </summary>
         public void PrepareForTransaction(IsolationLevel? isolationLevel)
@@ -84,15 +84,6 @@ namespace MiCake.EntityFrameworkCore.Uow
             if (_isPrepared)
             {
                 _logger.LogDebug("Resource {ResourceIdentifier} already prepared", ResourceIdentifier);
-                return;
-            }
-
-            // Check configuration - if transactions are disabled
-            if (!_options.WillOpenTransactionForUow)
-            {
-                _logger.LogDebug("Transaction preparation skipped (WillOpenTransactionForUow = false) for {ResourceIdentifier}", 
-                    ResourceIdentifier);
-                _isPrepared = true;
                 return;
             }
 
@@ -114,7 +105,7 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Activates the transaction asynchronously
+        /// Activates the transaction asynchronously (Phase 2 - May involve I/O).
         /// This is where the actual database transaction is started.
         /// </summary>
         public async Task ActivateTransactionAsync(CancellationToken cancellationToken = default)
@@ -134,13 +125,6 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
-            // If transactions are disabled, just mark as initialized
-            if (!_options.WillOpenTransactionForUow)
-            {
-                _isInitialized = true;
-                return;
-            }
-
             // If user-managed transaction exists, just mark as initialized
             if (_currentTransaction != null)
             {
@@ -148,6 +132,7 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
+            // ✅ Start the actual transaction (async, may involve I/O)
             _logger.LogDebug("Activating transaction for resource {ResourceIdentifier} with isolation level {IsolationLevel}", 
                 ResourceIdentifier, _preparedIsolationLevel);
 
@@ -194,13 +179,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            // If transactions are disabled for UoW, nothing to commit
-            if (_options != null && !_options.WillOpenTransactionForUow)
-            {
-                _logger.LogDebug("Transaction commit skipped (WillOpenTransactionForUow = false) for DbContext {DbContextType}", _dbContext.GetType().Name);
-                return;
-            }
-
             if (!HasActiveTransaction)
             {
                 _logger.LogWarning("No active transaction to commit for DbContext {DbContextType}", _dbContext.GetType().Name);
@@ -226,13 +204,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         {
             if (_disposed)
                 return;
-
-            // If transactions are disabled for UoW, nothing to rollback
-            if (_options != null && !_options.WillOpenTransactionForUow)
-            {
-                _logger.LogDebug("Transaction rollback skipped (WillOpenTransactionForUow = false) for DbContext {DbContextType}", _dbContext.GetType().Name);
-                return;
-            }
 
             if (!HasActiveTransaction)
             {

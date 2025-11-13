@@ -10,8 +10,15 @@ namespace MiCake.DDD.Uow;
 public interface IUnitOfWorkLifecycleHook
 {
     /// <summary>
-    /// Called after a Unit of Work is created but before it's returned to the caller.
-    /// Can be used for immediate transaction initialization or other setup tasks.
+    /// Gets the initialization mode(s) this hook applies to.
+    /// If null, the hook applies to all modes.
+    /// </summary>
+    TransactionInitializationMode? ApplicableMode { get; }
+
+    /// <summary>
+    /// Called after a Unit of Work is created.
+    /// For Immediate mode: Called immediately after creation, before returning to caller.
+    /// For Lazy mode: Called before first transaction activation (before ActivatePendingResourcesAsync).
     /// </summary>
     /// <param name="unitOfWork">The newly created unit of work</param>
     /// <param name="options">The options used to create the unit of work</param>

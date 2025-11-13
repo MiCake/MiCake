@@ -104,17 +104,15 @@ namespace MiCake.EntityFrameworkCore.Repository
         private CacheContext GetOrCreateCacheContext()
         {
             var currentUow = Dependencies.UnitOfWorkManager.Current;
-            var isUsingImplicitMode = Dependencies.Options.ImplicitModeForUow;
 
-            if (currentUow == null && !isUsingImplicitMode)
+            if (currentUow == null)
             {
                 throw new InvalidOperationException(
                     $"Cannot access {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
-                    $"Please wrap your operation in: using var uow = unitOfWorkManager.Begin(); " +
-                    $"Or enable ImplicitModeForUow in MiCakeEFCoreOptions.");
+                    $"Please wrap your operation in: using var uow = unitOfWorkManager.BeginAsync(); ");
             }
 
-            var cacheKey = currentUow?.Id ?? Guid.Empty;
+            var cacheKey = currentUow.Id;
 
             var cached = _asyncLocalCache.Value;
             if (cached != null && cached.UowId == cacheKey)
