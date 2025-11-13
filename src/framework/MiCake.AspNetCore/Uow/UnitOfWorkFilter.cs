@@ -94,8 +94,9 @@ namespace MiCake.AspNetCore.Uow
             IUnitOfWork? unitOfWork = null;
             try
             {
-                // Begin a new Unit of Work with configured options
-                unitOfWork = _unitOfWorkManager.Begin(options);
+                // ✅ Begin a new Unit of Work asynchronously with configured options
+                unitOfWork = await _unitOfWorkManager.BeginAsync(options, requiresNew: false, context.HttpContext.RequestAborted)
+                    .ConfigureAwait(false);
 
                 _logger.LogDebug(
                     "Started Unit of Work {UowId} for action {ActionName}. IsReadOnly: {IsReadOnly}, InitMode: {InitMode}",

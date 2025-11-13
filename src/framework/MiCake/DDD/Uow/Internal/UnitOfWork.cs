@@ -98,10 +98,90 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Resource with identifier {ResourceIdentifier} registered with UnitOfWork {UnitOfWorkId}",
                     resource.ResourceIdentifier, Id);
 
-                // Note: Transactions are started lazily when first operation is performed,
-                // or immediately via lifecycle hooks for Immediate initialization mode.
-                // We no longer use GetAwaiter().GetResult() here to avoid synchronous blocking of async code.
+                // ✅ Two-Phase Registration: Phase 1 - Prepare (synchronous, no I/O)
+                // Store configuration for later activation
+                try
+                {
+                    resource.PrepareForTransaction(_options.IsolationLevel);
+                    _logger.LogDebug("Resource {ResourceIdentifier} prepared for transaction with isolation level {IsolationLevel}",
+                        resource.ResourceIdentifier, _options.IsolationLevel);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to prepare resource {ResourceIdentifier} for transaction", resource.ResourceIdentifier);
+                    _resources.Remove(resource);
+                    throw;
+                }
             }
+        }
+
+        /// <summary>
+        /// Activates all pending resources asynchronously (Phase 2 of two-phase registration).
+        /// This starts actual database transactions for all registered resources.
+        /// </summary>
+        public async Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            
+            if (_transactionsStarted)
+            {
+                _logger.LogDebug("Transactions already started for UnitOfWork {UnitOfWorkId}", Id);
+                return;
+            }
+
+            // Nested UoW: delegate to parent
+            if (Parent != null)
+            {
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating activation to parent {ParentId}", 
+                    Id, Parent.Id);
+                
+                if (Parent is IUnitOfWorkInternal parentInternal)
+                {
+                    await parentInternal.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                return;
+            }
+
+            // Skip activation for read-only UoW or if no resources
+            if (_options.IsReadOnly || _resources.Count == 0)
+            {
+                _logger.LogDebug("Skipping activation for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly}, Resources: {Count})", 
+                    Id, _options.IsReadOnly, _resources.Count);
+                return;
+            }
+
+            _logger.LogDebug("Activating {Count} pending resources for UnitOfWork {UnitOfWorkId}", 
+                _resources.Count, Id);
+
+            var exceptions = new List<Exception>();
+            
+            // Activate all resources that haven't been initialized yet
+            foreach (var resource in _resources)
+            {
+                if (!resource.IsInitialized)
+                {
+                    try
+                    {
+                        await resource.ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
+                        _logger.LogDebug("Successfully activated resource {ResourceIdentifier}", 
+                            resource.ResourceIdentifier);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                        _logger.LogError(ex, "Failed to activate resource {ResourceIdentifier} in UnitOfWork {UnitOfWorkId}",
+                            resource.ResourceIdentifier, Id);
+                    }
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("Failed to activate one or more resources", exceptions);
+            }
+
+            _transactionsStarted = true;
+            _logger.LogDebug("Successfully activated all resources for UnitOfWork {UnitOfWorkId}", Id);
         }
 
         public async Task CommitAsync(CancellationToken cancellationToken = default)
@@ -143,8 +223,8 @@ namespace MiCake.DDD.Uow.Internal
                     throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
                 }
 
-                // Ensure transactions are started (lazy initialization)
-                await EnsureTransactionsStartedAsync(cancellationToken).ConfigureAwait(false);
+                // ✅ Activate all pending resources (lazy initialization - Phase 2 of two-phase pattern)
+                await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
 
                 _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ResourceCount} resources", Id, _resources.Count);
 
@@ -418,40 +498,6 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogError(ex, "Error raising event in UnitOfWork {UnitOfWorkId}", Id);
                 // Don't throw - event handler errors shouldn't break UoW flow
             }
-        }
-
-        /// <summary>
-        /// Ensures transactions are started (lazy initialization).
-        /// This is called before commit/rollback to ensure transactions exist.
-        /// </summary>
-        private async Task EnsureTransactionsStartedAsync(CancellationToken cancellationToken)
-        {
-            if (!_transactionsStarted && !_options.IsReadOnly && _resources.Count > 0)
-            {
-                await BeginTransactionsInternalAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private async Task BeginTransactionsInternalAsync(CancellationToken cancellationToken)
-        {
-            if (_transactionsStarted || _options.IsReadOnly)
-                return;
-
-            _logger.LogDebug("Beginning transactions for UnitOfWork {UnitOfWorkId} with {ResourceCount} resources (IsolationLevel: {IsolationLevel})",
-                Id, _resources.Count, _options.IsolationLevel);
-
-            var exceptions = await ExecuteOnAllResourcesAsync(
-                resource => resource.BeginTransactionAsync(_options.IsolationLevel, cancellationToken),
-                "Failed to begin transaction for resource {0} in UnitOfWork {1}").ConfigureAwait(false);
-
-            if (exceptions.Count > 0)
-            {
-                await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
-                throw new AggregateException("Failed to begin transactions", exceptions);
-            }
-
-            _transactionsStarted = true;
-            _logger.LogDebug("Successfully started transactions for UnitOfWork {UnitOfWorkId}", Id);
         }
 
         private async Task<List<Exception>> ExecuteOnAllResourcesAsync(

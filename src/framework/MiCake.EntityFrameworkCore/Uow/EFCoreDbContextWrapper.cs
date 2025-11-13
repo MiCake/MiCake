@@ -10,16 +10,23 @@ using System.Threading.Tasks;
 namespace MiCake.EntityFrameworkCore.Uow
 {
     /// <summary>
-    /// EF Core specific implementation of IUnitOfWorkResource that handles DbContext lifecycle properly
+    /// EF Core specific implementation of IUnitOfWorkResource using two-phase registration pattern.
+    /// Phase 1 (Prepare): Store configuration synchronously
+    /// Phase 2 (Activate): Start database transaction asynchronously
     /// </summary>
     public class EFCoreDbContextWrapper : IUnitOfWorkResource
     {
         private readonly DbContext _dbContext;
         private readonly ILogger<EFCoreDbContextWrapper> _logger;
         private readonly bool _shouldDisposeDbContext;
-        private MiCakeEFCoreOptions _options;
-        private IDbContextTransaction _currentTransaction;
+        private readonly MiCakeEFCoreOptions _options;
+        private IDbContextTransaction? _currentTransaction;
         private bool _disposed = false;
+
+        // Two-phase registration state
+        private bool _isPrepared = false;
+        private bool _isInitialized = false;
+        private IsolationLevel? _preparedIsolationLevel = null;
 
         /// <summary>
         /// Gets the underlying DbContext instance
@@ -35,6 +42,11 @@ namespace MiCake.EntityFrameworkCore.Uow
         /// Indicates if there's an active transaction
         /// </summary>
         public bool HasActiveTransaction => _currentTransaction != null;
+
+        /// <summary>
+        /// Indicates if the resource has been initialized (prepared and activated)
+        /// </summary>
+        public bool IsInitialized => _isInitialized;
 
         /// <summary>
         /// Creates a new EF Core DbContext wrapper
@@ -54,7 +66,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _shouldDisposeDbContext = shouldDisposeDbContext;
             _options = options ?? throw new ArgumentNullException(nameof(options));
 
-            // Check if DbContext already has a transaction
+            // Check if DbContext already has a transaction (user-managed)
             _currentTransaction = dbContext.Database.CurrentTransaction;
 
             _logger.LogDebug("Created EFCoreDbContextWrapper for {DbContextType}, ShouldDispose: {ShouldDispose}",
@@ -62,38 +74,120 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Begin a new transaction with specified isolation level
+        /// Prepares the resource for transaction (Phase 1 - Synchronous, no I/O).
+        /// Just stores configuration, doesn't start actual transaction.
         /// </summary>
-        public async Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default)
+        public void PrepareForTransaction(IsolationLevel? isolationLevel)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            // Check if transactions are disabled for UoW to improve performance
-            if (_options != null && !_options.WillOpenTransactionForUow)
+            if (_isPrepared)
             {
-                _logger.LogDebug("Transaction creation disabled for UoW (WillOpenTransactionForUow = false) for DbContext {DbContextType}", _dbContext.GetType().Name);
+                _logger.LogDebug("Resource {ResourceIdentifier} already prepared", ResourceIdentifier);
                 return;
             }
 
-            if (HasActiveTransaction)
+            // Check configuration - if transactions are disabled
+            if (!_options.WillOpenTransactionForUow)
             {
-                _logger.LogDebug("Transaction already active for DbContext {DbContextType}", _dbContext.GetType().Name);
+                _logger.LogDebug("Transaction preparation skipped (WillOpenTransactionForUow = false) for {ResourceIdentifier}", 
+                    ResourceIdentifier);
+                _isPrepared = true;
                 return;
             }
 
-            _logger.LogDebug("Beginning transaction for DbContext {DbContextType} with isolation level {IsolationLevel}", 
-                _dbContext.GetType().Name, isolationLevel);
-            
-            if (isolationLevel.HasValue)
+            // Check if DbContext already has a transaction (user-managed)
+            if (_currentTransaction != null)
             {
-                _currentTransaction = await _dbContext.Database.BeginTransactionAsync(isolationLevel.Value, cancellationToken)
-                    .ConfigureAwait(false);
+                _logger.LogDebug("Resource {ResourceIdentifier} already has user-managed transaction", ResourceIdentifier);
+                _isPrepared = true;
+                _isInitialized = true;  // User-managed transaction counts as initialized
+                return;
             }
-            else
+
+            // Store isolation level for later activation
+            _preparedIsolationLevel = isolationLevel;
+            _isPrepared = true;
+
+            _logger.LogDebug("Resource {ResourceIdentifier} prepared for transaction with isolation level {IsolationLevel}", 
+                ResourceIdentifier, isolationLevel);
+        }
+
+        /// <summary>
+        /// Activates the transaction asynchronously (Phase 2 - May involve I/O).
+        /// This is where the actual database transaction is started.
+        /// </summary>
+        public async Task ActivateTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (!_isPrepared)
             {
-                _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken)
-                    .ConfigureAwait(false);
+                throw new InvalidOperationException(
+                    $"Resource {ResourceIdentifier} must be prepared before activation. " +
+                    "Call PrepareForTransaction() first.");
             }
+
+            if (_isInitialized)
+            {
+                _logger.LogDebug("Resource {ResourceIdentifier} already activated", ResourceIdentifier);
+                return;
+            }
+
+            // If transactions are disabled, just mark as initialized
+            if (!_options.WillOpenTransactionForUow)
+            {
+                _isInitialized = true;
+                return;
+            }
+
+            // If user-managed transaction exists, just mark as initialized
+            if (_currentTransaction != null)
+            {
+                _isInitialized = true;
+                return;
+            }
+
+            // ✅ Start the actual transaction (async, may involve I/O)
+            _logger.LogDebug("Activating transaction for resource {ResourceIdentifier} with isolation level {IsolationLevel}", 
+                ResourceIdentifier, _preparedIsolationLevel);
+
+            try
+            {
+                if (_preparedIsolationLevel.HasValue)
+                {
+                    _currentTransaction = await _dbContext.Database
+                        .BeginTransactionAsync(_preparedIsolationLevel.Value, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    _currentTransaction = await _dbContext.Database
+                        .BeginTransactionAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                _isInitialized = true;
+                
+                _logger.LogDebug("Successfully activated transaction for resource {ResourceIdentifier}", ResourceIdentifier);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to activate transaction for resource {ResourceIdentifier}", ResourceIdentifier);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Begin a new transaction with specified isolation level (legacy support).
+        /// For new code, use PrepareForTransaction + ActivateTransactionAsync instead.
+        /// This combines both phases for backward compatibility.
+        /// </summary>
+        public async Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default)
+        {
+            // Prepare + Activate in one call (for backward compatibility)
+            PrepareForTransaction(isolationLevel);
+            await ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
