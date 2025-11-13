@@ -33,7 +33,7 @@ namespace BaseMiCakeApplication
             services.AddDbContext<BaseAppDbContext>(options =>
             {
                 var connectionString = Configuration.GetConnectionString("DefaultConnection");
-                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), c =>
+                options.UseSqlServer(connectionString, c =>
                 {
                     c.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
                 });
