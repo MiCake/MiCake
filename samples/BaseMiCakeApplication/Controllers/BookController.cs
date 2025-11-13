@@ -4,11 +4,11 @@ using BaseMiCakeApplication.Dto;
 using MiCake.Core;
 using MiCake.Util.LinqFilter;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Infrastructure.Paging;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MiCake.Util.Paging;
 
 namespace BaseMiCakeApplication.Controllers
 {
@@ -75,7 +75,7 @@ namespace BaseMiCakeApplication.Controllers
         public async Task<IActionResult> GetBookList([FromQuery] BookFilterDto filterDto)
         {
             var filterGrp = filterDto.GenerateFilterGroup();
-            var books = await _bookRepositoryPaging.CommonFilterPagingQueryAsync(new PagingQueryModel(1, 10), filterGrp);
+            var books = await _bookRepositoryPaging.CommonFilterPagingQueryAsync(new PagingRequest(1, 10), filterGrp);
 
             return Ok(books);
         }

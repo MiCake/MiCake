@@ -7,7 +7,7 @@ namespace BaseMiCakeApplication.EFCore.Repositories;
 
 public class UserRepository : EFRepository<BaseAppDbContext, User, long>, IUserRepository
 {
-    public UserRepository(IServiceProvider serviceProvider) : base(serviceProvider)
+    public UserRepository(EFRepositoryDependencies<BaseAppDbContext> dependencies) : base(dependencies)
     {
     }
 }

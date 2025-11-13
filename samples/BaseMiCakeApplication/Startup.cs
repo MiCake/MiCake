@@ -1,5 +1,4 @@
 using BaseMiCakeApplication.EFCore;
-using BaseMiCakeApplication.Handlers;
 using FluentValidation;
 using MiCake;
 using Microsoft.AspNetCore.Builder;
@@ -9,10 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
 using System;
-using System.Collections.Generic;
 using FluentValidation.AspNetCore;
+using Microsoft.OpenApi;
 
 namespace BaseMiCakeApplication
 {
@@ -48,7 +46,7 @@ namespace BaseMiCakeApplication
             services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(
                 miCakeConfig: config =>
                 {
-                    config.Handlers.Add(new DemoExceptionHanlder());
+
                 },
                 miCakeAspNetConfig: options =>
                 {
@@ -65,17 +63,6 @@ namespace BaseMiCakeApplication
                     Name = "Authorization",
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.ApiKey
-                });
-
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        new List<string>()
-                    }
                 });
             });
         }

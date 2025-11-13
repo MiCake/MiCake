@@ -29,7 +29,8 @@ namespace MiCake.EntityFrameworkCore.Uow
             services.AddScoped(dependenciesType);
 
             services.AddSingleton<IUnitOfWorkLifecycleHook, ImmediateTransactionLifecycleHook>();
-            services.AddScoped<IImmediateTransactionInitializer,ImmediateTransactionInitializer>();
+            services.AddSingleton<IDbContextTypeRegistry, DbContextTypeRegistry>();
+            services.AddScoped<IImmediateTransactionInitializer, ImmediateTransactionInitializer>();
 
             return services;
         }

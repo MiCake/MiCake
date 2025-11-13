@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +39,7 @@ namespace MiCake.DDD.Uow.Internal
             if (!requiresNew && _current.Value != null && !_current.Value.IsDisposed)
             {
                 var parentUow = _current.Value;
-                
+
                 _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUow.Id);
 
                 // Create nested UoW (inherits parent's options for isolation level)
@@ -52,9 +51,9 @@ namespace MiCake.DDD.Uow.Internal
                     IsReadOnly = true,  // Nested UoW doesn't manage transactions
                     InitializationMode = options.InitializationMode
                 };
-                
+
                 var nestedUow = new UnitOfWork(logger, nestedOptions, parentUow);
-                
+
                 // Return wrapper that doesn't affect AsyncLocal
                 return new NestedUnitOfWorkWrapper(nestedUow, _logger);
             }
@@ -68,29 +67,27 @@ namespace MiCake.DDD.Uow.Internal
 
             _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
-            // Call lifecycle hooks based on initialization mode
+
+            // Get hooks applicable to Immediate mode
+            var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>().Where(h => h.ApplicableMode == null || h.ApplicableMode == options.InitializationMode);
+            foreach (var hook in hooks)
+            {
+                try
+                {
+                    await hook.OnUnitOfWorkCreatedAsync(unitOfWork, options, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error calling lifecycle hook {HookType} for UnitOfWork {UnitOfWorkId}",
+                        hook.GetType().Name, unitOfWork.Id);
+                    unitOfWork.Dispose();
+                    throw;
+                }
+            }
+
             if (options.InitializationMode == TransactionInitializationMode.Immediate)
             {
-                // Get hooks applicable to Immediate mode
-                var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>()
-                    .Where(h => h.ApplicableMode == null || h.ApplicableMode == TransactionInitializationMode.Immediate);
-                    
-                foreach (var hook in hooks)
-                {
-                    try
-                    {
-                        await hook.OnUnitOfWorkCreatedAsync(unitOfWork, options, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error calling lifecycle hook {HookType} for UnitOfWork {UnitOfWorkId}",
-                            hook.GetType().Name, unitOfWork.Id);
-                        unitOfWork.Dispose();
-                        throw;
-                    }
-                }
-
-                // ✅ Immediately activate all registered resources
+                // Immediately activate all registered resources
                 if (unitOfWork is IUnitOfWorkInternal internalUow)
                 {
                     try
@@ -100,7 +97,7 @@ namespace MiCake.DDD.Uow.Internal
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to activate resources during immediate initialization for UnitOfWork {UnitOfWorkId}", 
+                        _logger.LogError(ex, "Failed to activate resources during immediate initialization for UnitOfWork {UnitOfWorkId}",
                             unitOfWork.Id);
                         unitOfWork.Dispose();
                         throw;

@@ -1,4 +1,3 @@
-using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -29,7 +28,6 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// <summary>
     /// Default implementation of DbContext type registry
     /// </summary>
-    [InjectService(typeof(IDbContextTypeRegistry), Lifetime = MiCakeServiceLifetime.Singleton)]
     public class DbContextTypeRegistry : IDbContextTypeRegistry
     {
         private readonly HashSet<Type> _registeredTypes = [];

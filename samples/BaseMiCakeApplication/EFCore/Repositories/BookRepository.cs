@@ -7,7 +7,7 @@ namespace BaseMiCakeApplication.EFCore.Repositories
 {
     public class BookRepository : EFRepositoryHasPaging<BaseAppDbContext, Book, Guid>, IBookRepository
     {
-        public BookRepository(IServiceProvider serviceProvider) : base(serviceProvider)
+        public BookRepository(EFRepositoryDependencies<BaseAppDbContext> dependencies) : base(dependencies)
         {
         }
     }
