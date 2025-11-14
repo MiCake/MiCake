@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 
@@ -15,11 +16,13 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     {
         private readonly ResponseWrapperExecutor _executor;
         private readonly DataWrapperOptions _options;
+        private readonly ILogger<ExceptionDataWrapperFilter> _logger;
 
-        public ExceptionDataWrapperFilter(IOptions<MiCakeAspNetOptions> options)
+        public ExceptionDataWrapperFilter(IOptions<MiCakeAspNetOptions> options, ILogger<ExceptionDataWrapperFilter> logger)
         {
             _options = options.Value?.DataWrapperOptions ?? new DataWrapperOptions();
             _executor = new ResponseWrapperExecutor(_options);
+            _logger = logger;
         }
 
         public Task OnExceptionAsync(ExceptionContext context)
@@ -48,6 +51,8 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
 
                 return Task.CompletedTask;
             }
+
+            _logger.LogError(exception, "An unhandled exception occurred.");
 
             var statusCode = DetermineStatusCode(exception);
             var errorData = _executor.WrapError(

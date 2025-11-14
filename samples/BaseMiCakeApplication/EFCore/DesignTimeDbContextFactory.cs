@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace BaseMiCakeApplication.EFCore
 {
@@ -9,7 +10,13 @@ namespace BaseMiCakeApplication.EFCore
         {
             var builder = new DbContextOptionsBuilder<BaseAppDbContext>();
 
-            var connectionString = "Server=localhost;Database=MiCakeApp;User Id=sa;Password=a12345;";
+            // get from the configuration file or environment variables in real scenarios
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var connectionString = config.GetConnectionString("DefaultConnection");
             builder.UseSqlServer(connectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure());
 
             return new BaseAppDbContext(builder.Options);

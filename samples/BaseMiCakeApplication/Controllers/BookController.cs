@@ -24,29 +24,17 @@ namespace BaseMiCakeApplication.Controllers
     /// 4. Exception handling (MiCakeException, SlightMiCakeException)
     /// 5. Proper async/await patterns
     /// </remarks>
+    /// <remarks>
+    /// Initializes a new instance of the BookController.
+    /// </remarks>
+    /// <param name="bookRepositoryPaging">The book repository with pagination support</param>
+    /// <param name="logger">The logger</param>
     [ApiController]
     [Route("api/[controller]/[action]")]
-    public class BookController : ControllerBase
+    public class BookController(IBookRepository bookRepositoryPaging, ILogger<BookController> logger) : ControllerBase
     {
-        private readonly IRepository<Book, Guid> _bookRepository;
-        private readonly IBookRepository _bookRepositoryPaging;
-        private readonly ILogger<BookController> _logger;
-
-        /// <summary>
-        /// Initializes a new instance of the BookController.
-        /// </summary>
-        /// <param name="repository">The generic book repository</param>
-        /// <param name="bookRepositoryPaging">The book repository with pagination support</param>
-        /// <param name="logger">The logger</param>
-        public BookController(
-            IRepository<Book, Guid> repository,
-            IBookRepository bookRepositoryPaging,
-            ILogger<BookController> logger)
-        {
-            _bookRepository = repository;
-            _bookRepositoryPaging = bookRepositoryPaging;
-            _logger = logger;
-        }
+        private readonly IBookRepository _bookRepositoryPaging = bookRepositoryPaging;
+        private readonly ILogger<BookController> _logger = logger;
 
         /// <summary>
         /// Gets a book by its ID.
@@ -57,7 +45,7 @@ namespace BaseMiCakeApplication.Controllers
         public async Task<ActionResult<Book>> GetBook(Guid bookId)
         {
             _logger.LogInformation($"Getting book with ID: {bookId}");
-            var book = await _bookRepository.FindAsync(bookId);
+            var book = await _bookRepositoryPaging.FindAsync(bookId);
 
             if (book == null)
                 return NotFound("Book not found");
@@ -104,7 +92,7 @@ namespace BaseMiCakeApplication.Controllers
                 if (bookDto.PublicationYear.HasValue)
                     book.SetPublicationYear(bookDto.PublicationYear.Value);
 
-                await _bookRepository.AddAsync(book);
+                await _bookRepositoryPaging.AddAsync(book);
 
                 return CreatedAtAction(nameof(GetBook), new { bookId = book.Id }, book.Id);
             }
@@ -125,11 +113,11 @@ namespace BaseMiCakeApplication.Controllers
         {
             _logger.LogInformation($"Updating author for book: {bookDto.BookID}");
 
-            var bookInfo = await _bookRepository.FindAsync(bookDto.BookID)
+            var bookInfo = await _bookRepositoryPaging.FindAsync(bookDto.BookID)
                 ?? throw new SlightMiCakeException("Book not found");
 
             bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
-            await _bookRepository.SaveChangesAsync();
+            await _bookRepositoryPaging.SaveChangesAsync();
 
             return Ok(true);
         }

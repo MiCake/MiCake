@@ -21,14 +21,8 @@ namespace BaseMiCakeApplication.Dto
         /// <summary>
         /// Gets or sets the author first name filter (Contains comparison).
         /// </summary>
-        [DynamicFilter(OperatorType = FilterOperatorType.Contains)]
+        [DynamicFilter(OperatorType = FilterOperatorType.Contains, PropertyName = "Author.FirstName")]
         public string AuthorFirstName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the author last name filter (Contains comparison).
-        /// </summary>
-        [DynamicFilter(OperatorType = FilterOperatorType.Contains)]
-        public string AuthorLastName { get; set; }
 
         /// <summary>
         /// Gets or sets the page number for pagination (default: 1).

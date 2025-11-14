@@ -1,7 +1,6 @@
 using BaseMiCakeApplication.EFCore;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using MiCake;
 using MiCake.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -81,13 +80,13 @@ namespace BaseMiCakeApplication
             services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(options =>
             {
                 // Configure MiCake application options
-                options.AppConfig = config =>
+                options.AppConfig = app =>
                 {
                     // Application configuration
                 };
 
                 // Configure MiCake ASP.NET Core options
-                options.AspNetConfig = aspNetConfig =>
+                options.AspNetConfig = asp =>
                 {
                     // ASP.NET Core configuration
                 };

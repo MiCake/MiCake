@@ -28,7 +28,7 @@ namespace MiCake.Core
         public Action<MiCakeAspNetOptions> AspNetConfig { get; set; }
     }
 
-    public static class MiCakeAspNetCoreStart_ServiceCollectionExtension
+    public static class MiCakeAspNetCoreStartExtension
     {
         /// <summary>
         /// Adds MiCake with default configuration for ASP.NET Core applications.
