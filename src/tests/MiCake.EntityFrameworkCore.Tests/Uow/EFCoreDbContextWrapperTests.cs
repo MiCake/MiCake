@@ -1,4 +1,5 @@
 using MiCake.EntityFrameworkCore.Uow;
+using MiCake.Core.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
@@ -69,7 +70,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
             
             // Act
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Assert
             // Verify transaction was started (implementation detail)
@@ -84,7 +85,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
             
             // Act
-            await _wrapper.BeginTransactionAsync(isolationLevel, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions { IsolationLevel = isolationLevel }, cancellationToken);
 
             // Assert
             Assert.NotNull(_wrapper.DbContext);
@@ -97,8 +98,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
             
             // Act
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Assert - no exception thrown
             Assert.NotNull(_wrapper.DbContext);
@@ -116,7 +117,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
             
             // Start transaction first
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act
             var result = await _wrapper.CreateSavepointAsync(savepointName, cancellationToken);
@@ -130,7 +131,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(
@@ -142,7 +143,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(
@@ -154,7 +155,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(
@@ -167,7 +168,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange
             var savepointName = "TestSavepoint";
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
             await _wrapper.CreateSavepointAsync(savepointName, cancellationToken);
 
             // Act & Assert - should not throw
@@ -179,7 +180,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(
@@ -192,7 +193,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange
             var savepointName = "TestSavepoint";
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
             await _wrapper.CreateSavepointAsync(savepointName, cancellationToken);
 
             // Act & Assert - should not throw
@@ -204,7 +205,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentException>(
@@ -220,7 +221,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act
             await _wrapper.CommitAsync(cancellationToken);
@@ -244,7 +245,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act
             await _wrapper.RollbackAsync(cancellationToken);
@@ -342,7 +343,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange
             var savepointName = "Checkpoint";
             var cancellationToken = CancellationToken.None;
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
 
             // Act
             var name1 = await _wrapper.CreateSavepointAsync(savepointName, cancellationToken);
@@ -363,7 +364,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
 
             // Act
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
             await _wrapper.SaveChangesAsync(cancellationToken);
             await _wrapper.CommitAsync(cancellationToken);
 
@@ -378,7 +379,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
 
             // Act
-            await _wrapper.BeginTransactionAsync(null, cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
             await _wrapper.SaveChangesAsync(cancellationToken);
             await _wrapper.RollbackAsync(cancellationToken);
 

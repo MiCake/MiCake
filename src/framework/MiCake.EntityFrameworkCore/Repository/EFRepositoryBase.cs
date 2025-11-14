@@ -100,6 +100,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// Gets or creates a cached context for the current Unit of Work.
         /// This method ensures that DbContext and DbSet instances are reused within the same UoW scope.
+        /// If no active Unit of Work exists, falls back to directly injected DbContext from DI container.
         /// </summary>
         private CacheContext GetOrCreateCacheContext()
         {
@@ -107,9 +108,40 @@ namespace MiCake.EntityFrameworkCore.Repository
 
             if (currentUow == null)
             {
-                throw new InvalidOperationException(
-                    $"Cannot access {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
-                    $"Please wrap your operation in: using var uow = unitOfWorkManager.BeginAsync(); ");
+                // Fallback to DI DbContext when no UoW is active
+                // This allows repository usage without forcing UoW requirement
+                Logger.LogDebug("No active Unit of Work, using directly injected DbContext for {RepositoryType}",
+                    typeof(EFRepositoryBase<TDbContext, TEntity, TKey>).Name);
+
+                try
+                {
+                    TDbContext dbContext = Dependencies.ContextFactory.GetDbContext();
+                    
+                    if (dbContext == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"DbContext of type {typeof(TDbContext).Name} is not registered in the service container. " +
+                            $"Please either: (1) wrap your operation in a Unit of Work using 'using var uow = unitOfWorkManager.BeginAsync();' " +
+                            $"or (2) ensure your DbContext is properly registered with the service provider using AddDbContext or AddDbContextPool.");
+                    }
+
+                    return new CacheContext
+                    {
+                        UowId = Guid.Empty,  // Special marker for non-UoW access
+                        DbContext = dbContext,
+                        DbSet = dbContext.Set<TEntity>(),
+                        Entities = dbContext.Set<TEntity>().AsQueryable(),
+                        EntitiesNoTracking = dbContext.Set<TEntity>().AsNoTracking()
+                    };
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to access DbContext for {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
+                        $"Please either: (1) wrap your operation in a Unit of Work using 'using var uow = unitOfWorkManager.BeginAsync();' " +
+                        $"or (2) ensure your DbContext is properly registered with the service provider using AddDbContext or AddDbContextPool.",
+                        ex);
+                }
             }
 
             var cacheKey = currentUow.Id;

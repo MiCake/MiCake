@@ -27,6 +27,11 @@ namespace MiCake.DDD.Uow
     public class UnitOfWorkOptions
     {
         /// <summary>
+        /// Defines the persistence strategy for how data changes are persisted.
+        /// </summary>
+        public PersistenceStrategy Strategy { get; set; } = PersistenceStrategy.OptimizeForSingleWrite;
+
+        /// <summary>
         /// Transaction isolation level. Default is ReadCommitted.
         /// </summary>
         public IsolationLevel? IsolationLevel { get; set; } = System.Data.IsolationLevel.ReadCommitted;
@@ -50,20 +55,28 @@ namespace MiCake.DDD.Uow
         public bool IsReadOnly { get; set; } = false;
 
         /// <summary>
-        /// Creates default options with lazy initialization
+        /// Creates default options with OptimizeForSingleWrite strategy and lazy initialization.
+        /// This is the recommended default for most operations.
         /// </summary>
-        public static UnitOfWorkOptions Default => new();
+        public static UnitOfWorkOptions Default => new()
+        {
+            Strategy = PersistenceStrategy.OptimizeForSingleWrite,
+            InitializationMode = TransactionInitializationMode.Lazy
+        };
 
         /// <summary>
-        /// Creates options with immediate transaction initialization
+        /// Creates options with TransactionManaged strategy and immediate transaction initialization.
+        /// Use this for complex multi-operation scenarios requiring explicit transaction control.
         /// </summary>
         public static UnitOfWorkOptions Immediate => new()
         {
+            Strategy = PersistenceStrategy.TransactionManaged,
             InitializationMode = TransactionInitializationMode.Immediate
         };
 
         /// <summary>
-        /// Creates read-only options (no transaction, optimized for queries)
+        /// Creates read-only options (no transaction, optimized for queries).
+        /// Useful for read-only operations that don't require transaction protection.
         /// </summary>
         public static UnitOfWorkOptions ReadOnly => new()
         {

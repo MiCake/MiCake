@@ -65,13 +65,13 @@ namespace MiCake.Tests.Uow
             // Arrange
             var uow = new UnitOfWork(_logger, _defaultOptions, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
 
             // Act
             uow.RegisterResource(mockResource.Object);
 
             // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(_defaultOptions.IsolationLevel), Times.Once);
+            mockResource.Verify(r => r.PrepareForTransaction(_defaultOptions), Times.Once);
         }
 
         [Fact]
@@ -81,14 +81,14 @@ namespace MiCake.Tests.Uow
             var parent = new UnitOfWork(_logger, _defaultOptions, null);
             var child = new UnitOfWork(_logger, _defaultOptions, parent);
             var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
 
             // Act
             child.RegisterResource(mockResource.Object);
 
             // Assert
             // Resource should be registered to parent
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()), Times.Once);
+            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
         }
 
         [Fact]
@@ -97,14 +97,14 @@ namespace MiCake.Tests.Uow
             // Arrange
             var uow = new UnitOfWork(_logger, _defaultOptions, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
 
             // Act
             uow.RegisterResource(mockResource.Object);
             uow.RegisterResource(mockResource.Object);
 
             // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()), Times.Once);
+            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
         }
 
         #endregion
@@ -122,7 +122,7 @@ namespace MiCake.Tests.Uow
             var uow = new UnitOfWork(_logger, options, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.IsInitialized).Returns(false);
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))
                 .Callback(() => mockResource.Setup(r => r.IsInitialized).Returns(true))
                 .Returns(Task.CompletedTask);
@@ -162,7 +162,7 @@ namespace MiCake.Tests.Uow
             };
             var uow = new UnitOfWork(_logger, options, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
             uow.RegisterResource(mockResource.Object);
@@ -281,7 +281,7 @@ namespace MiCake.Tests.Uow
             // Arrange
             var uow = new UnitOfWork(_logger, _defaultOptions, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource.Setup(r => r.IsInitialized).Returns(true);
             mockResource.Setup(r => r.RollbackToSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
@@ -302,7 +302,7 @@ namespace MiCake.Tests.Uow
             // Arrange
             var uow = new UnitOfWork(_logger, _defaultOptions, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource.Setup(r => r.IsInitialized).Returns(true);
             mockResource.Setup(r => r.ReleaseSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
@@ -435,8 +435,8 @@ namespace MiCake.Tests.Uow
             mockResource1.Setup(r => r.ResourceIdentifier).Returns("resource1");
             mockResource2.Setup(r => r.ResourceIdentifier).Returns("resource2");
             
-            mockResource1.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
-            mockResource2.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource1.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
+            mockResource2.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             
             // Ensure rollback is called by setting HasActiveTransaction to true
             mockResource1.Setup(r => r.HasActiveTransaction).Returns(true);
@@ -472,7 +472,7 @@ namespace MiCake.Tests.Uow
             
             // Set up default behaviors
             mock.Setup(r => r.ResourceIdentifier).Returns(uniqueId);
-            mock.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mock.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mock.Setup(r => r.IsInitialized).Returns(true);
             mock.Setup(r => r.HasActiveTransaction).Returns(false);
             mock.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);

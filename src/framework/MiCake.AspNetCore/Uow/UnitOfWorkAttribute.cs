@@ -40,6 +40,7 @@ namespace MiCake.AspNetCore.Uow
             {
                 IsolationLevel = IsolationLevel,
                 InitializationMode = InitializationMode,
+                Strategy = PersistenceStrategy.TransactionManaged,  
                 IsReadOnly = false
             };
         }

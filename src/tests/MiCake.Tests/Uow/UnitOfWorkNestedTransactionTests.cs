@@ -213,7 +213,7 @@ namespace MiCake.Tests.Uow
             child.RegisterResource(mockResource.Object);
 
             // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()), Times.Once);
+            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
         }
 
         [Fact]
@@ -231,7 +231,7 @@ namespace MiCake.Tests.Uow
             child2.RegisterResource(mockResource.Object);
 
             // Assert - Should only prepare once (deduplicated by resource identifier)
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()), Times.Once);
+            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
         }
 
         #endregion
@@ -396,7 +396,7 @@ namespace MiCake.Tests.Uow
             var uniqueId = Guid.NewGuid().ToString();
             
             mock.Setup(r => r.ResourceIdentifier).Returns(uniqueId);
-            mock.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mock.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mock.Setup(r => r.IsInitialized).Returns(true);
             mock.Setup(r => r.HasActiveTransaction).Returns(false);
             mock.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);

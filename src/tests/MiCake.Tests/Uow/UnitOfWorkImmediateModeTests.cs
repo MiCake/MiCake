@@ -340,7 +340,7 @@ namespace MiCake.Tests.Uow
             var uniqueId = Guid.NewGuid().ToString();
             
             mock.Setup(r => r.ResourceIdentifier).Returns(uniqueId);
-            mock.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mock.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mock.Setup(r => r.IsInitialized).Returns(true);
             mock.Setup(r => r.HasActiveTransaction).Returns(false);
             mock.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);

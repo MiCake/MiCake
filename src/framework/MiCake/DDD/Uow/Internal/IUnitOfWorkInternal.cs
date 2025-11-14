@@ -49,12 +49,12 @@ namespace MiCake.DDD.Uow.Internal
         bool IsInitialized { get; }
 
         /// <summary>
-        /// Prepares the resource for transaction (synchronous, lightweight).
-        /// This is called during registration and should NOT perform I/O operations.
-        /// Only stores configuration like isolation level for later activation.
+        /// Prepares the resource for transaction (Phase 1 - Synchronous, lightweight).
+        /// This is called during resource registration and should NOT perform I/O operations.
+        /// Receives the complete UoW configuration to adapt resource behavior accordingly.
         /// </summary>
-        /// <param name="isolationLevel">The isolation level to use for the transaction</param>
-        void PrepareForTransaction(IsolationLevel? isolationLevel);
+        /// <param name="options">The complete Unit of Work options containing all configuration</param>
+        void PrepareForTransaction(UnitOfWorkOptions options);
 
         /// <summary>
         /// Activates the transaction asynchronously (may involve I/O).
@@ -66,11 +66,11 @@ namespace MiCake.DDD.Uow.Internal
         Task ActivateTransactionAsync(CancellationToken cancellationToken = default);
         
         /// <summary>
-        /// Begin a new transaction with specified isolation level.
-        /// </summary>
-        /// <param name="isolationLevel">The isolation level for the transaction</param>
+        /// Begin a new transaction with the specified UoW configuration.
+         /// </summary>
+        /// <param name="options">The Unit of Work options containing configuration like isolation level and persistence strategy</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default);
+        Task BeginTransactionAsync(UnitOfWorkOptions options, CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Commit the current transaction

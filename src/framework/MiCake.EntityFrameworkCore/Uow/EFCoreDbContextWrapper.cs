@@ -1,3 +1,4 @@
+using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -27,17 +28,18 @@ namespace MiCake.EntityFrameworkCore.Uow
         private bool _isPrepared = false;
         private bool _isInitialized = false;
         private IsolationLevel? _preparedIsolationLevel = null;
+        private PersistenceStrategy _persistenceStrategy = PersistenceStrategy.OptimizeForSingleWrite;
 
         /// <summary>
         /// Gets the underlying DbContext instance
         /// </summary>
         public DbContext DbContext => _dbContext;
-        
+
         /// <summary>
         /// Gets the unique identifier for this resource instance
         /// </summary>
         public string ResourceIdentifier => $"{_dbContext.GetType().FullName}_{_dbContext.GetHashCode()}";
-        
+
         /// <summary>
         /// Indicates if there's an active transaction
         /// </summary>
@@ -75,11 +77,13 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         /// <summary>
         /// Prepares the resource for transaction (Phase 1 - Synchronous, no I/O).
-        /// Just stores configuration, doesn't start actual transaction.
+        /// Receives complete UoW options and stores them for later activation.
+        /// Does not start actual database transaction (that happens in ActivateTransactionAsync).
         /// </summary>
-        public void PrepareForTransaction(IsolationLevel? isolationLevel)
+        public void PrepareForTransaction(UnitOfWorkOptions options)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (_isPrepared)
             {
@@ -96,17 +100,20 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
-            // Store isolation level for later activation
-            _preparedIsolationLevel = isolationLevel;
+            // Store configuration for later activation (Phase 2)
+            _persistenceStrategy = options.Strategy;
+            _preparedIsolationLevel = options.IsolationLevel;
             _isPrepared = true;
 
-            _logger.LogDebug("Resource {ResourceIdentifier} prepared for transaction with isolation level {IsolationLevel}", 
-                ResourceIdentifier, isolationLevel);
+            _logger.LogDebug("Resource {ResourceIdentifier} prepared with PersistenceStrategy={Strategy}, IsolationLevel={IsolationLevel}",
+                ResourceIdentifier, options.Strategy, options.IsolationLevel);
         }
 
         /// <summary>
         /// Activates the transaction asynchronously (Phase 2 - May involve I/O).
-        /// This is where the actual database transaction is started.
+        /// This is where the actual database transaction is started based on the prepared configuration.
+        /// When PersistenceStrategy is OptimizeForSingleWrite, skips explicit transaction
+        /// to allow EF Core to handle implicit transactions via SaveChangesAsync().
         /// </summary>
         public async Task ActivateTransactionAsync(CancellationToken cancellationToken = default)
         {
@@ -132,43 +139,59 @@ namespace MiCake.EntityFrameworkCore.Uow
                 return;
             }
 
-            // ✅ Start the actual transaction (async, may involve I/O)
-            _logger.LogDebug("Activating transaction for resource {ResourceIdentifier} with isolation level {IsolationLevel}", 
-                ResourceIdentifier, _preparedIsolationLevel);
+            // Handle persistence strategy
+            switch (_persistenceStrategy)
+            {
+                case PersistenceStrategy.OptimizeForSingleWrite:
+                    // Skip explicit transaction, let EF Core handle it implicitly via SaveChangesAsync()
+                    _logger.LogDebug("Skipping explicit transaction for resource {ResourceIdentifier} (PersistenceStrategy=OptimizeForSingleWrite)",
+                        ResourceIdentifier);
+                    _isInitialized = true;
+                    return;
+
+                case PersistenceStrategy.TransactionManaged:
+                    // Start explicit transaction with configured isolation level
+                    await StartExplicitTransactionAsync(cancellationToken).ConfigureAwait(false);
+                    return;
+
+                default:
+                    throw new InvalidOperationException($"Unknown persistence strategy: {_persistenceStrategy}");
+            }
+        }
+
+        /// <summary>
+        /// Starts an explicit database transaction with the configured isolation level.
+        /// </summary>
+        private async Task StartExplicitTransactionAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogDebug("Starting explicit transaction for resource {ResourceIdentifier} (IsolationLevel={IsolationLevel})",
+                ResourceIdentifier, _preparedIsolationLevel ?? System.Data.IsolationLevel.Unspecified);
 
             try
             {
-                if (_preparedIsolationLevel.HasValue)
-                {
-                    _currentTransaction = await _dbContext.Database
-                        .BeginTransactionAsync(_preparedIsolationLevel.Value, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    _currentTransaction = await _dbContext.Database
-                        .BeginTransactionAsync(cancellationToken)
-                        .ConfigureAwait(false);
-                }
+                _currentTransaction = _preparedIsolationLevel.HasValue
+                    ? await _dbContext.Database.BeginTransactionAsync(_preparedIsolationLevel.Value, cancellationToken).ConfigureAwait(false)
+                    : await _dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
                 _isInitialized = true;
-                
-                _logger.LogDebug("Successfully activated transaction for resource {ResourceIdentifier}", ResourceIdentifier);
+                _logger.LogDebug("Successfully started transaction for resource {ResourceIdentifier}", ResourceIdentifier);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to activate transaction for resource {ResourceIdentifier}", ResourceIdentifier);
+                _logger.LogError(ex, "Failed to start transaction for resource {ResourceIdentifier}", ResourceIdentifier);
                 throw;
             }
         }
 
         /// <summary>
-        /// Begin a new transaction with specified isolation level.
-        /// For new code, use PrepareForTransaction + ActivateTransactionAsync instead.
+        /// Begin a new transaction with the specified UoW configuration.
+        /// This is a convenience method that combines PrepareForTransaction + ActivateTransactionAsync.
+        /// Primarily used for backward compatibility and direct transaction creation outside the UoW framework.
         /// </summary>
-        public async Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default)
+        public async Task BeginTransactionAsync(UnitOfWorkOptions options, CancellationToken cancellationToken = default)
         {
-            PrepareForTransaction(isolationLevel);
+            ArgumentNullException.ThrowIfNull(options);
+            PrepareForTransaction(options);
             await ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
         }
 

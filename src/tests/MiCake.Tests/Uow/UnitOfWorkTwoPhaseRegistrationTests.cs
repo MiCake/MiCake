@@ -33,20 +33,20 @@ namespace MiCake.Tests.Uow
             var uow = new UnitOfWork(_logger, UnitOfWorkOptions.Default, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
 
             // Act
             uow.RegisterResource(mockResource.Object);
 
             // Assert
             mockResource.Verify(
-                r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()), 
+                r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), 
                 Times.Once,
                 "Phase 1: PrepareForTransaction should be called synchronously during registration");
         }
 
         [Fact]
-        public void RegisterResource_ShouldPassIsolationLevel()
+        public void RegisterResource_ShouldPassOptions()
         {
             // Arrange
             var options = new UnitOfWorkOptions
@@ -56,16 +56,16 @@ namespace MiCake.Tests.Uow
             var uow = new UnitOfWork(_logger, options, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
 
             // Act
             uow.RegisterResource(mockResource.Object);
 
             // Assert
             mockResource.Verify(
-                r => r.PrepareForTransaction(IsolationLevel.Serializable), 
+                r => r.PrepareForTransaction(options), 
                 Times.Once,
-                "IsolationLevel should be passed to PrepareForTransaction");
+                "UnitOfWorkOptions should be passed to PrepareForTransaction");
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace MiCake.Tests.Uow
             var uow = new UnitOfWork(_logger, UnitOfWorkOptions.Default, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
@@ -144,7 +144,7 @@ namespace MiCake.Tests.Uow
             var uow = new UnitOfWork(_logger, UnitOfWorkOptions.Default, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource.Setup(r => r.IsInitialized).Returns(true);  // Already initialized
             mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
@@ -291,10 +291,8 @@ namespace MiCake.Tests.Uow
             var uow = new UnitOfWork(_logger, UnitOfWorkOptions.Default, null);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()))
-                .Throws(new InvalidOperationException("Prepare failed"));
-
-            // Act & Assert
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>())) 
+                .Throws(new InvalidOperationException("Prepare failed"));            // Act & Assert
             Assert.Throws<InvalidOperationException>(() => uow.RegisterResource(mockResource.Object));
         }
 
@@ -307,7 +305,7 @@ namespace MiCake.Tests.Uow
             var mockResource2 = new Mock<IUnitOfWorkResource>();
             
             mockResource2.Setup(r => r.ResourceIdentifier).Returns("resource2");
-            mockResource2.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource2.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mockResource2.Setup(r => r.IsInitialized).Returns(false);
             mockResource2.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Activation failed"));
@@ -332,14 +330,14 @@ namespace MiCake.Tests.Uow
             var child = new UnitOfWork(_logger, UnitOfWorkOptions.Default, parent);
             var mockResource = new Mock<IUnitOfWorkResource>();
             mockResource.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
 
             // Act
             child.RegisterResource(mockResource.Object);
 
             // Assert
             mockResource.Verify(
-                r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()), 
+                r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), 
                 Times.Once,
                 "Child UoW should prepare resource through parent");
         }
@@ -374,7 +372,7 @@ namespace MiCake.Tests.Uow
             var mock = new Mock<IUnitOfWorkResource>();
             
             mock.Setup(r => r.ResourceIdentifier).Returns(identifier);
-            mock.Setup(r => r.PrepareForTransaction(It.IsAny<IsolationLevel?>()));
+            mock.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
             mock.Setup(r => r.IsInitialized).Returns(false);
             mock.Setup(r => r.HasActiveTransaction).Returns(false);
             mock.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))

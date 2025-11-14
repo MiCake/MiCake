@@ -98,13 +98,12 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Resource with identifier {ResourceIdentifier} registered with UnitOfWork {UnitOfWorkId}",
                     resource.ResourceIdentifier, Id);
 
-                // ✅ Two-Phase Registration: Phase 1 - Prepare (synchronous, no I/O)
-                // Store configuration for later activation
+                // Phase 1 - Prepare: Let resource store complete UoW configuration (synchronous, no I/O)
                 try
                 {
-                    resource.PrepareForTransaction(_options.IsolationLevel);
-                    _logger.LogDebug("Resource {ResourceIdentifier} prepared for transaction with isolation level {IsolationLevel}",
-                        resource.ResourceIdentifier, _options.IsolationLevel);
+                    resource.PrepareForTransaction(_options);
+                    _logger.LogDebug("Resource {ResourceIdentifier} prepared with Strategy={Strategy}, IsolationLevel={IsolationLevel}",
+                        resource.ResourceIdentifier, _options.Strategy, _options.IsolationLevel);
                 }
                 catch (Exception ex)
                 {
@@ -122,7 +121,7 @@ namespace MiCake.DDD.Uow.Internal
         public async Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            
+
             if (_transactionsStarted)
             {
                 _logger.LogDebug("Transactions already started for UnitOfWork {UnitOfWorkId}", Id);
@@ -132,9 +131,9 @@ namespace MiCake.DDD.Uow.Internal
             // Nested UoW: delegate to parent
             if (Parent != null)
             {
-                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating activation to parent {ParentId}", 
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating activation to parent {ParentId}",
                     Id, Parent.Id);
-                
+
                 if (Parent is IUnitOfWorkInternal parentInternal)
                 {
                     await parentInternal.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
@@ -145,16 +144,16 @@ namespace MiCake.DDD.Uow.Internal
             // Skip activation for read-only UoW or if no resources
             if (_options.IsReadOnly || _resources.Count == 0)
             {
-                _logger.LogDebug("Skipping activation for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly}, Resources: {Count})", 
+                _logger.LogDebug("Skipping activation for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly}, Resources: {Count})",
                     Id, _options.IsReadOnly, _resources.Count);
                 return;
             }
 
-            _logger.LogDebug("Activating {Count} pending resources for UnitOfWork {UnitOfWorkId}", 
+            _logger.LogDebug("Activating {Count} pending resources for UnitOfWork {UnitOfWorkId}",
                 _resources.Count, Id);
 
             var exceptions = new List<Exception>();
-            
+
             // Activate all resources that haven't been initialized yet
             foreach (var resource in _resources)
             {
@@ -163,7 +162,7 @@ namespace MiCake.DDD.Uow.Internal
                     try
                     {
                         await resource.ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
-                        _logger.LogDebug("Successfully activated resource {ResourceIdentifier}", 
+                        _logger.LogDebug("Successfully activated resource {ResourceIdentifier}",
                             resource.ResourceIdentifier);
                     }
                     catch (Exception ex)
@@ -223,7 +222,7 @@ namespace MiCake.DDD.Uow.Internal
                     throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
                 }
 
-                // ✅ Activate all pending resources (lazy initialization - Phase 2 of two-phase pattern)
+                //  Activate all pending resources (lazy initialization - Phase 2 of two-phase pattern)
                 await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
 
                 _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ResourceCount} resources", Id, _resources.Count);
@@ -236,7 +235,7 @@ namespace MiCake.DDD.Uow.Internal
                     {
                         await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
                     }
-                    
+
                     // If only one exception, unwrap it; otherwise wrap in aggregate
                     if (exceptions.Count == 1)
                     {
@@ -326,7 +325,7 @@ namespace MiCake.DDD.Uow.Internal
         {
             ThrowIfDisposed();
             ThrowIfCompleted("Cannot create savepoint after unit of work is completed");
-            
+
             // Generate a name if null or empty
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -587,7 +586,7 @@ namespace MiCake.DDD.Uow.Internal
             if (exceptions.Count > 0)
             {
                 _logger.LogWarning("Some resources failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
-                
+
                 // If only one exception, unwrap it; otherwise wrap in aggregate
                 if (exceptions.Count == 1)
                 {
@@ -611,7 +610,7 @@ namespace MiCake.DDD.Uow.Internal
                     "Transactions may not have been committed or rolled back. " +
                     "Always explicitly call CommitAsync() or RollbackAsync() before disposal.",
                     Id);
-                
+
                 // Mark as completed to prevent further operations
                 MarkAsCompleted();
             }
