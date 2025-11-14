@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    
-    <Description>EFCore extension for MiCake</Description>
+    <Description>EF Core integration utilities for MiCake.</Description>
   </PropertyGroup>
 
   <ItemGroup>

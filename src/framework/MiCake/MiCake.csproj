@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    
-    <Description>MiCake's implementation support for DDD.</Description>
+    <Description>Core DDD utilities and abstractions for MiCake.</Description>
   </PropertyGroup>
 
   <ItemGroup>

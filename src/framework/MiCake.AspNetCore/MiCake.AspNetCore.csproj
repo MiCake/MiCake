@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>AspNetCore extension for MiCake</Description>
+    <Description>ASP.NET Core integration extensions for MiCake.</Description>
   </PropertyGroup>
 
   <ItemGroup>
