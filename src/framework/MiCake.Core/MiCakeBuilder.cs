@@ -92,17 +92,22 @@ namespace MiCake.Core
 
             // Execute ConfigureServices lifecycle for all modules
             // This allows modules to register their services
-            ConfigureModuleServices(moduleManager.ModuleContext);
+            // Reuse the dependency resolver from the module manager to avoid recreating it
+            ConfigureModuleServices(moduleManager.ModuleContext, moduleManager.DependencyResolver);
         }
 
-        private void ConfigureModuleServices(IMiCakeModuleContext moduleContext)
+        private void ConfigureModuleServices(IMiCakeModuleContext moduleContext, ModuleDependencyResolver dependencyResolver)
         {
             // Get a temporary logger factory for initialization
             var tempServiceProvider = _services.BuildServiceProvider();
             var loggerFactory = tempServiceProvider.GetService<ILoggerFactory>()
                                 ?? Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
 
-            var moduleBoot = new MiCakeModuleBoot(loggerFactory, moduleContext.MiCakeModules);
+            var moduleBoot = new MiCakeModuleBoot(
+                loggerFactory,
+                moduleContext.MiCakeModules,
+                dependencyResolver,
+                _options);
 
             var configServiceContext = new ModuleConfigServiceContext(
                 _services,

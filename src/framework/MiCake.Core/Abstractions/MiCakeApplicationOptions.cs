@@ -27,6 +27,11 @@ namespace MiCake.Core
         public Assembly[] DomainLayerAssemblies { get; set; }
 
         /// <summary>
+        /// Configuration options for printing module information during initialization.
+        /// </summary>
+        public PrintingOptions Printing { get; set; } = new PrintingOptions();
+
+        /// <summary>
         /// A data stash that only exists during the build process.
         /// It can be used to store data cross modules during the build phase.
         /// </summary>
@@ -40,7 +45,53 @@ namespace MiCake.Core
         {
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
             DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
+            Printing = applicationOptions.Printing ?? new PrintingOptions();
             BuildTimeData = applicationOptions.BuildTimeData;
+        }
+
+
+        /// <summary>
+        /// Configuration options for printing module information during initialization.
+        /// </summary>
+        public class PrintingOptions
+        {
+            /// <summary>
+            /// Whether to print the welcome brand string during module initialization.
+            /// Default is true.
+            /// </summary>
+            public bool WelcomeBrand { get; set; } = true;
+
+            /// <summary>
+            /// Whether to print the module dependency graph during module initialization.
+            /// Default is true.
+            /// </summary>
+            public bool DependencyGraph { get; set; } = true;
+
+            /// <summary>
+            /// Creates a new instance of PrintingOptions with all printing enabled.
+            /// </summary>
+            /// <returns>A new PrintingOptions instance with all features enabled</returns>
+            public static PrintingOptions EnableAll()
+            {
+                return new PrintingOptions
+                {
+                    WelcomeBrand = true,
+                    DependencyGraph = true
+                };
+            }
+
+            /// <summary>
+            /// Creates a new instance of PrintingOptions with all printing disabled.
+            /// </summary>
+            /// <returns>A new PrintingOptions instance with all features disabled</returns>
+            public static PrintingOptions DisableAll()
+            {
+                return new PrintingOptions
+                {
+                    WelcomeBrand = false,
+                    DependencyGraph = false
+                };
+            }
         }
     }
 }

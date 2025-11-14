@@ -28,7 +28,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             var dependenciesType = typeof(Repository.EFRepositoryDependencies<>).MakeGenericType(dbContextType);
             services.AddScoped(dependenciesType);
 
-            services.AddSingleton<IUnitOfWorkLifecycleHook, ImmediateTransactionLifecycleHook>();
+            services.AddScoped<IUnitOfWorkLifecycleHook, ImmediateTransactionLifecycleHook>();
             services.AddSingleton<IDbContextTypeRegistry, DbContextTypeRegistry>();
             services.AddScoped<IImmediateTransactionInitializer, ImmediateTransactionInitializer>();
 

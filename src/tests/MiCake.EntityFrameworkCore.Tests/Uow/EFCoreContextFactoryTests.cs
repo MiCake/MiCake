@@ -1,0 +1,305 @@
+using MiCake.Core.DependencyInjection;
+using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Internal;
+using MiCake.EntityFrameworkCore.Uow;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace MiCake.EntityFrameworkCore.Tests.Uow
+{
+    /// <summary>
+    /// Unit tests for EFCoreContextFactory
+    /// Tests DbContext creation and wrapper registration with Unit of Work
+    /// </summary>
+    public class EFCoreContextFactoryTests
+    {
+        private readonly Mock<IServiceProvider> _mockServiceProvider;
+        private readonly Mock<IUnitOfWorkManager> _mockUnitOfWorkManager;
+        private readonly Mock<ILogger<EFCoreContextFactory<TestDbContext>>> _mockLogger;
+        private readonly MiCakeEFCoreOptions _efCoreOptions;
+        private readonly EFCoreContextFactory<TestDbContext> _factory;
+
+        public EFCoreContextFactoryTests()
+        {
+            _mockServiceProvider = new Mock<IServiceProvider>();
+            _mockUnitOfWorkManager = new Mock<IUnitOfWorkManager>();
+            _mockLogger = new Mock<ILogger<EFCoreContextFactory<TestDbContext>>>();
+            _efCoreOptions = new MiCakeEFCoreOptions();
+
+            var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(_efCoreOptions);
+
+            _factory = new EFCoreContextFactory<TestDbContext>(
+                _mockServiceProvider.Object,
+                _mockUnitOfWorkManager.Object,
+                _mockLogger.Object,
+                optionsAccessor);
+        }
+
+        #region Constructor Tests
+
+        [Fact]
+        public void Constructor_WithNullServiceProvider_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(_efCoreOptions);
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() =>
+                new EFCoreContextFactory<TestDbContext>(null, _mockUnitOfWorkManager.Object, _mockLogger.Object, optionsAccessor));
+        }
+
+        [Fact]
+        public void Constructor_WithNullUnitOfWorkManager_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(_efCoreOptions);
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() =>
+                new EFCoreContextFactory<TestDbContext>(_mockServiceProvider.Object, null, _mockLogger.Object, optionsAccessor));
+        }
+
+        [Fact]
+        public void Constructor_WithNullLogger_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(_efCoreOptions);
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() =>
+                new EFCoreContextFactory<TestDbContext>(_mockServiceProvider.Object, _mockUnitOfWorkManager.Object, null, optionsAccessor));
+        }
+
+        [Fact]
+        public void Constructor_WithNullOptions_ShouldThrowArgumentNullException()
+        {
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() =>
+                new EFCoreContextFactory<TestDbContext>(_mockServiceProvider.Object, _mockUnitOfWorkManager.Object, _mockLogger.Object, null));
+        }
+
+        #endregion
+
+        #region GetDbContext Tests
+
+        [Fact]
+        public void GetDbContext_WithValidSetup_ShouldReturnDbContext()
+        {
+            // Arrange
+            var dbContext = CreateTestDbContext();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<TestDbContext>())
+                .Returns(dbContext);
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
+
+            // Act
+            var result = _factory.GetDbContext();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<TestDbContext>(result);
+            Assert.Same(dbContext, result);
+        }
+
+        [Fact]
+        public void GetDbContext_WithoutActiveUnitOfWork_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => _factory.GetDbContext());
+            Assert.Contains("No active Unit of Work", exception.Message);
+            Assert.Contains("TestDbContext", exception.Message);
+        }
+
+        [Fact]
+        public void GetDbContext_WhenServiceProviderThrows_ShouldPropagateException()
+        {
+            // Arrange
+            var expectedException = new InvalidOperationException("Service not registered");
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<TestDbContext>())
+                .Throws(expectedException);
+
+            var mockUow = new Mock<IUnitOfWork>();
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => _factory.GetDbContext());
+            Assert.Contains("Failed to resolve TestDbContext", exception.Message);
+            Assert.Contains("dependency injection", exception.Message.ToLower());
+        }
+
+        #endregion
+
+        #region GetDbContextWrapper Tests
+
+        [Fact]
+        public void GetDbContextWrapper_WithValidSetup_ShouldReturnWrapperAndRegisterWithUow()
+        {
+            // Arrange
+            var dbContext = CreateTestDbContext();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<TestDbContext>())
+                .Returns(dbContext);
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
+
+            var mockInternalUow = mockUow.As<IUnitOfWorkInternal>();
+            var mockLogger = new Mock<ILogger<EFCoreDbContextWrapper>>();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<ILogger<EFCoreDbContextWrapper>>())
+                .Returns(mockLogger.Object);
+
+            // Act
+            var wrapper = _factory.GetDbContextWrapper();
+
+            // Assert
+            Assert.NotNull(wrapper);
+            Assert.IsType<EFCoreDbContextWrapper>(wrapper);
+            Assert.Same(dbContext, wrapper.DbContext);
+
+            // Verify registration with UoW
+            mockInternalUow.Verify(u => u.RegisterResource(It.IsAny<EFCoreDbContextWrapper>()), Times.Once);
+        }
+
+        [Fact]
+        public void GetDbContextWrapper_WithoutActiveUnitOfWork_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => _factory.GetDbContextWrapper());
+            Assert.Contains("No active Unit of Work", exception.Message);
+        }
+
+        [Fact]
+        public void GetDbContextWrapper_WhenUowDoesNotImplementInternalInterface_ShouldLogWarning()
+        {
+            // Arrange
+            var dbContext = CreateTestDbContext();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<TestDbContext>())
+                .Returns(dbContext);
+
+            var mockUow = new Mock<IUnitOfWork>(); // Not implementing IUnitOfWorkInternal
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
+
+            var mockLogger = new Mock<ILogger<EFCoreDbContextWrapper>>();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<ILogger<EFCoreDbContextWrapper>>())
+                .Returns(mockLogger.Object);
+
+            // Act
+            var wrapper = _factory.GetDbContextWrapper();
+
+            // Assert
+            Assert.NotNull(wrapper);
+            // Should log warning about not implementing IUnitOfWorkInternal
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("does not implement IUnitOfWorkInternal")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
+        }
+
+        #endregion
+
+        #region Integration Scenario Tests
+
+        [Fact]
+        public void IntegrationScenario_RepositoryAccessWithinUow_ShouldWorkCorrectly()
+        {
+            // Arrange: Simulate repository accessing DbContext within UoW scope
+            var dbContext = CreateTestDbContext();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<TestDbContext>())
+                .Returns(dbContext);
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
+
+            var mockInternalUow = mockUow.As<IUnitOfWorkInternal>();
+            var mockLogger = new Mock<ILogger<EFCoreDbContextWrapper>>();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<ILogger<EFCoreDbContextWrapper>>())
+                .Returns(mockLogger.Object);
+
+            // Act: Repository gets DbContext for operations
+            var context = _factory.GetDbContext();
+            var wrapper = _factory.GetDbContextWrapper();
+
+            // Assert: Both should return the same DbContext instance
+            Assert.Same(dbContext, context);
+            Assert.Same(dbContext, wrapper.DbContext);
+
+            // Verify wrapper was registered
+            mockInternalUow.Verify(u => u.RegisterResource(It.IsAny<EFCoreDbContextWrapper>()), Times.Once);
+        }
+
+        [Fact]
+        public void IntegrationScenario_MultipleFactoryCalls_ShouldReuseDbContextWithinSameUow()
+        {
+            // Arrange
+            var dbContext = CreateTestDbContext();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<TestDbContext>())
+                .Returns(dbContext);
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
+
+            var mockInternalUow = mockUow.As<IUnitOfWorkInternal>();
+            var mockLogger = new Mock<ILogger<EFCoreDbContextWrapper>>();
+            _mockServiceProvider.Setup(sp => sp.GetRequiredService<ILogger<EFCoreDbContextWrapper>>())
+                .Returns(mockLogger.Object);
+
+            // Act: Multiple calls to get DbContext
+            var context1 = _factory.GetDbContext();
+            var context2 = _factory.GetDbContext();
+            var wrapper1 = _factory.GetDbContextWrapper();
+            var wrapper2 = _factory.GetDbContextWrapper();
+
+            // Assert: All should return the same DbContext instance
+            Assert.Same(dbContext, context1);
+            Assert.Same(dbContext, context2);
+            Assert.Same(dbContext, wrapper1.DbContext);
+            Assert.Same(dbContext, wrapper2.DbContext);
+
+            // Verify wrapper was registered only once (since it's the same resource)
+            mockInternalUow.Verify(u => u.RegisterResource(It.IsAny<EFCoreDbContextWrapper>()), Times.Exactly(2));
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private TestDbContext CreateTestDbContext()
+        {
+            var options = new DbContextOptionsBuilder<TestDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            return new TestDbContext(options);
+        }
+
+        #endregion
+
+        #region Test Classes
+
+        private class TestDbContext : DbContext
+        {
+            public TestDbContext(DbContextOptions<TestDbContext> options) : base(options) { }
+        }
+
+        #endregion
+    }
+}

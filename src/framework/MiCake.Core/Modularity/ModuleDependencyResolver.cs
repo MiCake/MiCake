@@ -11,6 +11,7 @@ namespace MiCake.Core.Modularity
     internal class ModuleDependencyResolver
     {
         private readonly Dictionary<Type, ModuleNode> _moduleNodes = [];
+        private bool _isGraphBuilt = false;
 
         /// <summary>
         /// Registers a module descriptor for dependency resolution.
@@ -26,6 +27,82 @@ namespace MiCake.Core.Modularity
         }
 
         /// <summary>
+        /// Gets the dependency graph as a formatted string showing module relationships.
+        /// Format: ModuleA -> ModuleB -> ModuleC
+        /// </summary>
+        /// <returns>A string representation of the dependency graph</returns>
+        public string GetDependencyGraph()
+        {
+            if (_moduleNodes.Count == 0)
+                return string.Empty;
+
+            if (!_isGraphBuilt)
+                BuildDependencyGraph();
+
+            // Build the graph by traversing from leaf nodes (those with no dependents)
+            // A leaf node is one that no other module depends on
+            var leafNodes = _moduleNodes.Values.Where(n => n.Dependents.Count == 0).ToList();
+
+            if (leafNodes.Count == 0)
+            {
+                // If no leaf nodes found, this might indicate a cycle or single module
+                // Fallback to all nodes
+                leafNodes = _moduleNodes.Values.ToList();
+            }
+
+            var chains = new List<string>();
+            foreach (var leaf in leafNodes)
+            {
+                var chain = BuildDependencyChainFromLeaf(leaf);
+                if (!string.IsNullOrEmpty(chain))
+                {
+                    chains.Add(chain);
+                }
+            }
+
+            return string.Join(" -> ", chains);
+        }
+
+        /// <summary>
+        /// Builds a dependency chain starting from a leaf node (no dependents) and tracing back to roots.
+        /// This correctly represents: Root -> ... -> Dependency -> Leaf
+        /// </summary>
+        private string BuildDependencyChainFromLeaf(ModuleNode leafNode)
+        {
+            var chain = new List<string>();
+            var visited = new HashSet<ModuleNode>();
+
+            TraceBackToRoot(leafNode, chain, visited);
+            
+            // Reverse because we traced backward from leaf to root
+            chain.Reverse();
+            
+            return string.Join(" -> ", chain);
+        }
+
+        /// <summary>
+        /// Recursively traces back from a node to its root dependencies.
+        /// </summary>
+        private static void TraceBackToRoot(ModuleNode node, List<string> chain, HashSet<ModuleNode> visited)
+        {
+            if (visited.Contains(node))
+                return;
+
+            visited.Add(node);
+
+            var moduleName = node.Descriptor.ModuleType?.Name ?? "Unknown";
+            var isFrameworkLevel = node.Descriptor.Instance.IsFrameworkLevel;
+            
+            chain.Add(isFrameworkLevel ? $"*{moduleName}" : moduleName);
+
+            // Trace back through dependencies
+            foreach (var dependency in node.Dependencies)
+            {
+                TraceBackToRoot(dependency, chain, visited);
+            }
+        }
+
+        /// <summary>
         /// Resolves the module load order using topological sorting.
         /// Uses Kahn's algorithm for clear and efficient dependency resolution.
         /// </summary>
@@ -33,8 +110,8 @@ namespace MiCake.Core.Modularity
         /// <exception cref="InvalidOperationException">When circular dependency is detected</exception>
         public List<MiCakeModuleDescriptor> ResolveLoadOrder()
         {
-            // Build dependency graph
-            BuildDependencyGraph();
+            if (!_isGraphBuilt)
+                BuildDependencyGraph();
 
             // Use Kahn's algorithm for topological sorting
             var sorted = new List<MiCakeModuleDescriptor>();
@@ -98,6 +175,8 @@ namespace MiCake.Core.Modularity
                     }
                 }
             }
+
+            _isGraphBuilt = true;
         }
 
         /// <summary>

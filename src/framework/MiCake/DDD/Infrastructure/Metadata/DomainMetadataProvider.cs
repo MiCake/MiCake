@@ -34,12 +34,18 @@ namespace MiCake.DDD.Infrastructure.Metadata
             IMiCakeModuleContext moduleContext,
             IOptions<MiCakeApplicationOptions> appOptions)
         {
-            var userModules = moduleContext.MiCakeModules
-                .Where(s => !s.Instance.IsFrameworkLevel)
-                .ToMiCakeModuleCollection();
+            System.ArgumentNullException.ThrowIfNull(moduleContext);
+            System.ArgumentNullException.ThrowIfNull(appOptions);
 
-            _assemblies = appOptions.Value.DomainLayerAssemblies 
-                ?? DiscoverDomainAssemblies(userModules);
+            var userModules = new MiCakeModuleCollection();
+            foreach (var descriptor in moduleContext.MiCakeModules.Where(s => !s.Instance.IsFrameworkLevel))
+            {
+                userModules.Add(descriptor);
+            }
+
+            _assemblies = (appOptions.Value.DomainLayerAssemblies != null && appOptions.Value.DomainLayerAssemblies.Length > 0)
+                ? appOptions.Value.DomainLayerAssemblies
+                : DiscoverDomainAssemblies(userModules);
         }
 
         public DomainMetadata GetDomainMetadata()

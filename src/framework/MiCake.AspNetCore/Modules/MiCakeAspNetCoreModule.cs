@@ -11,7 +11,7 @@ namespace MiCake.AspNetCore.Modules
     /// MiCake ASP.NET Core module - Provides integration between MiCake framework and ASP.NET Core.
     /// This module registers filters for data wrapping and unit of work management.
     /// </summary>
-    [RelyOn(typeof(MiCakeEssentialModule), typeof(MiCakeEFCoreModule))]
+    [RelyOn(typeof(MiCakeEFCoreModule), typeof(MiCakeEssentialModule))]
     public class MiCakeAspNetCoreModule : MiCakeModule
     {
         /// <summary>

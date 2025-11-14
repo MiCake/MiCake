@@ -14,6 +14,7 @@ namespace MiCake.Core.Modularity
         private MiCakeModuleContext _moduleContext;
         private bool _isPopulated;
         private readonly List<Type> _normalModulesTypes = [];
+        private ModuleDependencyResolver _dependencyResolver;
 
         /// <summary>
         /// Function used to create module instances.
@@ -30,6 +31,11 @@ namespace MiCake.Core.Modularity
         /// Indicates whether modules have been populated.
         /// </summary>
         public bool IsPopulated => _isPopulated;
+
+        /// <summary>
+        /// Gets the module dependency resolver (available after PopulateModules is called).
+        /// </summary>
+        internal ModuleDependencyResolver DependencyResolver => _dependencyResolver;
 
         /// <summary>
         /// Discovers and registers all modules starting from the entry module.
@@ -96,18 +102,18 @@ namespace MiCake.Core.Modularity
         /// <returns>A sorted list of module descriptors in dependency order</returns>
         private List<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
         {
-            var resolver = new ModuleDependencyResolver();
+            _dependencyResolver = new ModuleDependencyResolver();
 
             // Create instances and register all modules
             foreach (var moduleType in moduleTypes)
             {
                 MiCakeModule instance = (MiCakeModule)ServiceCtor(moduleType);
                 var descriptor = new MiCakeModuleDescriptor(moduleType, instance);
-                resolver.RegisterModule(descriptor);
+                _dependencyResolver.RegisterModule(descriptor);
             }
 
             // Resolve and return sorted modules
-            return resolver.ResolveLoadOrder();
+            return _dependencyResolver.ResolveLoadOrder();
         }
     }
 }
