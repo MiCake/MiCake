@@ -70,7 +70,7 @@ namespace MiCake.AspNetCore.Uow
             // Determine if UoW should be enabled
             // If attribute is present, it determines enablement (including DisableUnitOfWorkAttribute)
             // Otherwise, use global configuration
-            bool isUowEnabled = uowAttribute?.IsUowEnabled ?? _uowOptions.IsAutoTransactionEnabled;
+            bool isUowEnabled = uowAttribute?.IsUowEnabled ?? _uowOptions.IsAutoUowEnabled;
 
             if (!isUowEnabled)
             {

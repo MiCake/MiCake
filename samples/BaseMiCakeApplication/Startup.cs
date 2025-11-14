@@ -1,6 +1,7 @@
 using BaseMiCakeApplication.EFCore;
 using FluentValidation;
 using MiCake;
+using MiCake.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -43,14 +44,14 @@ namespace BaseMiCakeApplication
             services.AddFluentValidationAutoValidation();
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(
-                miCakeConfig: config =>
-                {
+            services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(options => {
+                options.AppConfig = config => {
 
-                },
-                miCakeAspNetConfig: options =>
-                {
-                })
+                };
+                options.AspNetConfig = aspNetConfig => {
+
+                };
+            })
                 .Build();
 
             // Swagger

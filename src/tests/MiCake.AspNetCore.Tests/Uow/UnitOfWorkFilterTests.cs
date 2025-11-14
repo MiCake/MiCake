@@ -43,7 +43,7 @@ namespace MiCake.AspNetCore.Tests.Uow
             {
                 UnitOfWork = new MiCakeAspNetUowOption
                 {
-                    IsAutoTransactionEnabled = true,
+                    IsAutoUowEnabled = true,
                     ReadOnlyActionKeywords = new List<string> { "Get", "Find", "Query", "Search" }
                 }
             };
@@ -107,7 +107,7 @@ namespace MiCake.AspNetCore.Tests.Uow
             {
                 UnitOfWork = new MiCakeAspNetUowOption
                 {
-                    IsAutoTransactionEnabled = false
+                    IsAutoUowEnabled = false
                 }
             };
             _mockOptions.Setup(o => o.Value).Returns(options);

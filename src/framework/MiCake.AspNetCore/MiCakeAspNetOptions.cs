@@ -1,4 +1,5 @@
 ﻿using MiCake.AspNetCore.DataWrapper;
+using MiCake.DDD.Uow;
 using System.Collections.Generic;
 
 namespace MiCake.AspNetCore
@@ -38,17 +39,17 @@ namespace MiCake.AspNetCore
     public class MiCakeAspNetUowOption
     {
         /// <summary>
-        /// Enables automatic transaction management for controller actions.
+        /// Enables automatic Unit of Work management for controller actions.
         /// When true, a Unit of Work is automatically created before action execution,
         /// and committed after successful execution or rolled back on failure.
-        /// When false, you must manually manage transactions using IUnitOfWorkManager.
-        /// Default: true
-        /// 
         /// <para>
-        /// This can be overridden at the Controller or Action level using [UnitOfWork] attribute.
+        /// It will be use <see cref="UnitOfWorkOptions.Default"/> as the default configuration for created UoW.
+        /// </para>
+        /// <para>
+        /// Default: true. This can be overridden at the Controller or Action level using [UnitOfWork] attribute.
         /// </para>
         /// </summary>
-        public bool IsAutoTransactionEnabled { get; set; } = true;
+        public bool IsAutoUowEnabled { get; set; } = true;
 
         /// <summary>
         /// Match controller action name start keywords to treat actions as read-only operations.
