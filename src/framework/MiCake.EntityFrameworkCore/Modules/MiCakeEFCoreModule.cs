@@ -1,6 +1,7 @@
 ﻿using System;
 using MiCake.Core.DependencyInjection;
 using MiCake.Core.Modularity;
+using MiCake.DDD.Infrastructure.Store;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Modules;
@@ -33,7 +34,7 @@ namespace MiCake.EntityFrameworkCore.Modules
             var services = context.Services;
             var dbContextType = context.MiCakeApplicationOptions.BuildTimeData.TakeOut<Type>(MiCakeEFCoreModuleInternalKeys.DBContextType)
                                             ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
-           
+
             services.TryAddSingleton<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
             services.TryAddTransient<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
 
@@ -47,7 +48,6 @@ namespace MiCake.EntityFrameworkCore.Modules
         public override void OnApplicationInitialization(ModuleInitializationContext context)
         {
             // Configure the interceptor factory helper with the factory from DI container
-            // This ensures proper dependency injection without using ServiceLocator anti-pattern
             var factory = context.ServiceProvider.GetService<IMiCakeInterceptorFactory>();
             if (factory != null)
             {
@@ -59,6 +59,20 @@ namespace MiCake.EntityFrameworkCore.Modules
 
             var registry = context.ServiceProvider.GetService<IDbContextTypeRegistry>();
             registry?.RegisterDbContextType(efcoreOptions.DbContextType);
+
+            var storeConventionRegistry = context.ApplicationOptions.BuildTimeData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
+            RegisterMiCakeConventions(storeConventionRegistry);
+        }
+
+        // Registers the MiCake store conventions into the convention engine(static class)
+        private static void RegisterMiCakeConventions(StoreConventionRegistry conventionRegistry)
+        {
+            var engine = new StoreConventionEngine();
+            foreach (var convention in conventionRegistry.Conventions)
+            {
+                engine.AddConvention(convention);
+            }
+            MiCakeConventionEngineProvider.SetConventionEngine(engine);
         }
     }
 }

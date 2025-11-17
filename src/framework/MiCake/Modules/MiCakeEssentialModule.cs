@@ -86,24 +86,5 @@ namespace MiCake.Modules
             // Store Convention Registry to build chain
             context.MiCakeApplicationOptions.BuildTimeData.Deposit(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry, storeConventionRegistry);
         }
-
-        public override void PostConfigureServices(ModuleConfigServiceContext context)
-        {
-             var storeConventionRegistry = context.MiCakeApplicationOptions.BuildTimeData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
-            CreateConventionEngine(storeConventionRegistry);
-        }
-
-        private static StoreConventionEngine CreateConventionEngine(StoreConventionRegistry conventionRegistry)
-        {
-            var engine = new StoreConventionEngine();
-
-            // Register all configured conventions
-            foreach (var convention in conventionRegistry.Conventions)
-            {
-                engine.AddConvention(convention);
-            }
-
-            return engine;
-        }
     }
 }

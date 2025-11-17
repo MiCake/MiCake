@@ -19,6 +19,7 @@ namespace MiCake.EntityFrameworkCore.Internal
     internal class LazyEFSaveChangesLifetime : IEFSaveChangesLifetime
     {
         private readonly IServiceScopeFactory _serviceScopeFactory;
+        private IServiceScope? _currentScope;
 
         public LazyEFSaveChangesLifetime(IServiceScopeFactory serviceScopeFactory)
         {
@@ -36,6 +37,7 @@ namespace MiCake.EntityFrameworkCore.Internal
 
                     await ProcessPostSaveHandlersAsync(entries, handlers, token);
                 },
+                isPreSave: false,
                 cancellationToken);
         }
 
@@ -50,6 +52,7 @@ namespace MiCake.EntityFrameworkCore.Internal
 
                     await ProcessPreSaveHandlersAsync(entries, handlers, token);
                 },
+                isPreSave: true,
                 cancellationToken);
         }
 
@@ -59,19 +62,41 @@ namespace MiCake.EntityFrameworkCore.Internal
         private async Task ExecuteWithScopeAsync(
             IEnumerable<EntityEntry> entityEntries,
             Func<IReadOnlyList<EntityEntry>, IServiceProvider, CancellationToken, Task> processor,
+            bool isPreSave,
             CancellationToken cancellationToken)
         {
             // Convert to list once to avoid multiple enumeration
             var entries = entityEntries as IReadOnlyList<EntityEntry> ?? [.. entityEntries];
-            
+
             if (entries.Count == 0)
                 return;
 
-            // Create a scope to safely resolve scoped services
-            using var scope = _serviceScopeFactory.CreateScope();
-            
-            await processor(entries, scope.ServiceProvider, cancellationToken);
-            // The scope will be disposed here, properly cleaning up scoped services
+            IServiceScope scope;
+            if (isPreSave)
+            {
+                // Create scope for Pre-save, store it for potential reuse in Post-save
+                _currentScope = _serviceScopeFactory.CreateScope();
+                scope = _currentScope;
+            }
+            else
+            {
+                // Use existing scope from Pre-save, or create new if none
+                scope = _currentScope ?? _serviceScopeFactory.CreateScope();
+            }
+
+            try
+            {
+                await processor(entries, scope.ServiceProvider, cancellationToken);
+            }
+            finally
+            {
+                if (!isPreSave)
+                {
+                    // Dispose scope after Post-save
+                    scope.Dispose();
+                    _currentScope = null;
+                }
+            }
         }
 
         /// <summary>
@@ -96,7 +121,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             foreach (var handler in handlers)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                
+
                 for (int i = 0; i < entityStates.Length; i++)
                 {
                     var (_, entity, state) = entityStates[i];
@@ -122,15 +147,15 @@ namespace MiCake.EntityFrameworkCore.Internal
             foreach (var handler in handlers)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                
+
                 // Process each entity for this handler
                 foreach (var entry in entries)
                 {
                     var originalEFState = entry.State;
                     var state = originalEFState.ToRepositoryState();
-                    
+
                     state = await handler.PreSaveChangesAsync(state, entry.Entity, cancellationToken).ConfigureAwait(false);
-                    
+
                     var newEFState = state.ToEFState();
                     if (newEFState != originalEFState)
                     {

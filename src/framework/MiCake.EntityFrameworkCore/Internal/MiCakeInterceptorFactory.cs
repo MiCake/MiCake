@@ -8,8 +8,6 @@ namespace MiCake.EntityFrameworkCore.Internal
 {
     /// <summary>
     /// Factory for creating MiCake interceptors using proper dependency injection patterns.
-    /// Follows MiCake's lightweight and non-intrusive design principles.
-    /// Avoids memory leaks by using the DI container correctly.
     /// </summary>
     internal sealed class MiCakeInterceptorFactory : IMiCakeInterceptorFactory
     {
@@ -46,13 +44,11 @@ namespace MiCake.EntityFrameworkCore.Internal
 
     /// <summary>
     /// Static helper for backward compatibility and easy access to interceptor creation.
-    /// This class maintains the original API while using proper DI internally.
-    /// Thread-safe implementation for multi-threaded scenarios.
     /// </summary>
     public static class MiCakeInterceptorFactoryHelper
     {
         private static volatile IMiCakeInterceptorFactory _factory;
-        private static readonly Lock _lock = new Lock();
+        private static readonly Lock _lock = new();
 
         /// <summary>
         /// Configure the factory instance (called during DI setup)
@@ -72,7 +68,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// <returns>MiCake EF Core interceptor (never null if factory is configured)</returns>
         internal static ISaveChangesInterceptor CreateInterceptor()
         {
-            var factory = _factory; // Read volatile field once
+            var factory = _factory;
             return factory?.CreateInterceptor();
         }
 
@@ -83,7 +79,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         {
             get
             {
-                var factory = _factory; // Read volatile field once
+                var factory = _factory;
                 return factory?.CanCreateInterceptor == true;
             }
         }

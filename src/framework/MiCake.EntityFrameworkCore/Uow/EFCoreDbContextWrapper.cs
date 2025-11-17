@@ -210,12 +210,6 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             try
             {
-                if (_dbContext.ChangeTracker.HasChanges())
-                {
-                    _logger.LogDebug("Auto-saving pending changes before committing transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
-                    await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                }
-
                 _logger.LogDebug("Committing transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
                 await _currentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }

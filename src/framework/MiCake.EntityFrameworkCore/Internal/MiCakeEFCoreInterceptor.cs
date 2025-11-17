@@ -161,8 +161,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             {
                 var state = entry.State;
 
-                // Bitwise check is faster than multiple OR conditions
-                if ((state & (EntityState.Added | EntityState.Modified | EntityState.Deleted)) != 0)
+                if (state == EntityState.Added || state == EntityState.Modified || state == EntityState.Deleted)
                 {
                     changedEntries.Add(entry);
                 }
