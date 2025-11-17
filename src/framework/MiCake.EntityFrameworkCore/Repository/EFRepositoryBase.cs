@@ -1,7 +1,9 @@
 ﻿using MiCake.DDD.Domain;
+using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,8 +25,23 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         protected readonly EFRepositoryDependencies<TDbContext> Dependencies;
 
-        private readonly AsyncLocal<CacheContext> _asyncLocalCache = new();
-        private readonly SemaphoreSlim _initLock = new(1, 1);
+        /// <summary>
+        /// Per-repository instance cache of DbContext/DbSet per Unit of Work ID.
+        /// Keyed by UnitOfWorkId to support multiple concurrent or nested UoWs.
+        /// </summary>
+        private readonly Dictionary<Guid, CacheContext> _contextCache = [];
+        
+        /// <summary>
+        /// Protects the cache dictionary and the subscription set during concurrent access.
+        /// Uses ReaderWriterLockSlim for better performance with many readers and few writers.
+        /// </summary>
+        private readonly ReaderWriterLockSlim _cacheLock = new();
+        
+        /// <summary>
+        /// Tracks which UoW instances we've already subscribed to for cleanup events.
+        /// Prevents duplicate event handler registration when accessing same UoW multiple times.
+        /// </summary>
+        private readonly HashSet<Guid> _subscribedUowIds = new();
 
         private class CacheContext
         {
@@ -99,73 +116,104 @@ namespace MiCake.EntityFrameworkCore.Repository
 
         /// <summary>
         /// Gets or creates a cached context for the current Unit of Work.
-        /// This method ensures that DbContext and DbSet instances are reused within the same UoW scope.
-        /// If no active Unit of Work exists, falls back to directly injected DbContext from DI container.
+        /// Uses Dictionary keyed by UoW ID, with read-write lock for thread-safe concurrent access.
+        /// Automatically subscribes to UoW cleanup events to remove stale caches.
         /// </summary>
         private CacheContext GetOrCreateCacheContext()
         {
             var currentUow = Dependencies.UnitOfWorkManager.Current;
-
+            
+            // If no active UoW, create a temporary cache without storing it
             if (currentUow == null)
             {
-                // Fallback to DI DbContext when no UoW is active
-                // This allows repository usage without forcing UoW requirement
-                Logger.LogDebug("No active Unit of Work, using directly injected DbContext for {RepositoryType}",
-                    typeof(EFRepositoryBase<TDbContext, TEntity, TKey>).Name);
-
-                try
-                {
-                    TDbContext dbContext = Dependencies.ContextFactory.GetDbContext();
-                    
-                    if (dbContext == null)
-                    {
-                        throw new InvalidOperationException(
-                            $"DbContext of type {typeof(TDbContext).Name} is not registered in the service container. " +
-                            $"Please either: (1) wrap your operation in a Unit of Work using 'using var uow = unitOfWorkManager.BeginAsync();' " +
-                            $"or (2) ensure your DbContext is properly registered with the service provider using AddDbContext or AddDbContextPool.");
-                    }
-
-                    return new CacheContext
-                    {
-                        UowId = Guid.Empty,  // Special marker for non-UoW access
-                        DbContext = dbContext,
-                        DbSet = dbContext.Set<TEntity>(),
-                        Entities = dbContext.Set<TEntity>().AsQueryable(),
-                        EntitiesNoTracking = dbContext.Set<TEntity>().AsNoTracking()
-                    };
-                }
-                catch (InvalidOperationException ex)
-                {
-                    throw new InvalidOperationException(
-                        $"Failed to access DbContext for {typeof(TDbContext).Name} outside of a Unit of Work scope. " +
-                        $"Please either: (1) wrap your operation in a Unit of Work using 'using var uow = unitOfWorkManager.BeginAsync();' " +
-                        $"or (2) ensure your DbContext is properly registered with the service provider using AddDbContext or AddDbContextPool.",
-                        ex);
-                }
+                var tempCache = CreateCacheContext(Guid.Empty);
+                return tempCache;
             }
 
             var cacheKey = currentUow.Id;
 
-            var cached = _asyncLocalCache.Value;
-            if (cached != null && cached.UowId == cacheKey)
-                return cached;
-
-            _initLock.Wait();
+            _cacheLock.EnterReadLock();
             try
             {
-                // Double-check after acquiring lock
-                cached = _asyncLocalCache.Value;
-                if (cached != null && cached.UowId == cacheKey)
+                if (_contextCache.TryGetValue(cacheKey, out var cached))
+                {
                     return cached;
-
-                cached = CreateCacheContext(cacheKey);
-                _asyncLocalCache.Value = cached;
-                return cached;
+                }
             }
             finally
             {
-                _initLock.Release();
+                _cacheLock.ExitReadLock();
             }
+
+            _cacheLock.EnterWriteLock();
+            try
+            {
+                if (_contextCache.TryGetValue(cacheKey, out var cached))
+                {
+                    return cached;
+                }
+
+                // Create new cache context
+                var newCache = CreateCacheContext(cacheKey);
+                _contextCache[cacheKey] = newCache;
+
+                // Subscribe to cleanup events (only once per UoW instance)
+                // Check if we haven't already subscribed to this specific UoW
+                if (!_subscribedUowIds.Contains(cacheKey))
+                {
+                    SubscribeToUowCleanup(currentUow, cacheKey);
+                    _subscribedUowIds.Add(cacheKey);
+                }
+
+                return newCache;
+            }
+            finally
+            {
+                _cacheLock.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to UoW commit/rollback events to clean up the cache.
+        /// This ensures that after a UoW completes, its cached context is removed,
+        /// allowing fresh contexts to be created for the next UoW.
+        /// </summary>
+        private void SubscribeToUowCleanup(IUnitOfWork uow, Guid uowId)
+        {
+            // Create a delegate that can be stored for later unsubscription
+            EventHandler<UnitOfWorkEventArgs>? cleanupHandler = null;
+            
+            cleanupHandler = (sender, args) =>
+            {
+                if (args.UnitOfWorkId == uowId && cleanupHandler != null)
+                {
+                    _cacheLock.EnterWriteLock();
+                    try
+                    {
+                        _contextCache.Remove(uowId);
+                        _subscribedUowIds.Remove(uowId);
+                    }
+                    finally
+                    {
+                        _cacheLock.ExitWriteLock();
+                    }
+                    
+                    // Unsubscribe after cleanup to prevent memory leaks
+                    try
+                    {
+                        uow.OnCommitted -= cleanupHandler;
+                        uow.OnRolledBack -= cleanupHandler;
+                    }
+                    catch
+                    {
+                        // Ignore errors during unsubscribe (may happen if uow is already disposed)
+                    }
+                }
+            };
+
+            // Subscribe to both commit and rollback events
+            uow.OnCommitted += cleanupHandler;
+            uow.OnRolledBack += cleanupHandler;
         }
 
         /// <summary>
@@ -177,6 +225,13 @@ namespace MiCake.EntityFrameworkCore.Repository
             try
             {
                 dbContext = Dependencies.ContextFactory.GetDbContext();
+
+                if (dbContext == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to create a DbContext for {typeof(TDbContext).Name}. " +
+                        "Please ensure you've registered your DbContext with the service provider using AddDbContext or AddDbContextPool.");
+                }
             }
             catch (InvalidOperationException ex)
             {

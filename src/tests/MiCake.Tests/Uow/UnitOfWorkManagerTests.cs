@@ -289,6 +289,70 @@ namespace MiCake.Tests.Uow
             Assert.Same(uow, current);
         }
 
+        [Fact]
+        public async Task BeginAsync_LazyMode_ReturnsWrapper_IsInternal()
+        {
+            // Arrange & Act
+            var uow = await _manager.BeginAsync(); // Lazy mode by default
+
+            Assert.True(uow is IUnitOfWorkInternal);
+            Assert.NotNull(uow);
+            await uow.MarkAsCompletedAsync();
+        }
+
+        [Fact]
+        public async Task RegisterResource_OnManager_ShouldRegisterWithInnerUow()
+        {
+            // Arrange
+            using var uow = await _manager.BeginAsync();
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns(Guid.NewGuid().ToString());
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>())).Verifiable();
+
+            // Act
+            (uow as IUnitOfWorkInternal).RegisterResource(mockResource.Object);
+
+            // Assert
+            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RegisterResource_DuplicateResource_ShouldNotCallPrepareTwice()
+        {
+            // Arrange
+            using var uow = await _manager.BeginAsync();
+            var mockResource = new Mock<IUnitOfWorkResource>();
+            var id = Guid.NewGuid().ToString();
+            mockResource.Setup(r => r.ResourceIdentifier).Returns(id);
+            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>())).Verifiable();
+
+            // Act
+            (uow as IUnitOfWorkInternal).RegisterResource(mockResource.Object);
+            (uow as IUnitOfWorkInternal).RegisterResource(mockResource.Object);
+
+            // Assert
+            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UnitOfWork_OnCommitting_OnCommitted_ShouldFireEvents()
+        {
+            // Arrange
+            using var uow = await _manager.BeginAsync();
+            var onCommittingCalled = false;
+            var onCommittedCalled = false;
+
+            uow.OnCommitting += (s, e) => { onCommittingCalled = true; };
+            uow.OnCommitted += (s, e) => { onCommittedCalled = true; };
+
+            // Act
+            await uow.CommitAsync();
+
+            // Assert
+            Assert.True(onCommittingCalled);
+            Assert.True(onCommittedCalled);
+        }
+
         #endregion
 
         #region Edge Cases

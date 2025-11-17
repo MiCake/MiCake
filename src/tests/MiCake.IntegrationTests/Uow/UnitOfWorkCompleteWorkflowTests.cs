@@ -5,11 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace MiCake.IntegrationTests.Uow
 {
@@ -64,6 +61,7 @@ namespace MiCake.IntegrationTests.Uow
     {
         private readonly ServiceProvider _serviceProvider;
         private readonly TestDbContext _dbContext;
+        private readonly IUnitOfWorkManager _uowManager;
 
         public UnitOfWorkCompleteWorkflowTests()
         {
@@ -79,9 +77,18 @@ namespace MiCake.IntegrationTests.Uow
             });
             
             services.AddLogging();
+
+            // Register UnitOfWork manager (internal class) via reflection
+            var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
+            services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType);
+
+            // Register EF Core factories & MiCake EF options so that EF factories can register resources with UoW
+            services.AddScoped(typeof(EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>), typeof(EntityFrameworkCore.Uow.EFCoreContextFactory<TestDbContext>));
+            services.AddSingleton<Core.DependencyInjection.IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(TestDbContext)));
             
             _serviceProvider = services.BuildServiceProvider();
             _dbContext = _serviceProvider.GetRequiredService<TestDbContext>();
+            _uowManager = _serviceProvider.GetRequiredService<IUnitOfWorkManager>();
         }
 
         #region Transaction Commit Tests
@@ -90,13 +97,22 @@ namespace MiCake.IntegrationTests.Uow
         public async Task Transaction_BasicCommit_ShouldPersistChanges()
         {
             // Arrange
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            var options = new UnitOfWorkOptions
+            {
+                Strategy = PersistenceStrategy.TransactionManaged,
+                InitializationMode = TransactionInitializationMode.Lazy
+            };
+
+            using var uow = await _uowManager.BeginAsync(options);
+
+            // Register EF resource with UoW using EF factory
+            var factory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+            var wrapper = factory.GetDbContextWrapper();
             var aggregate = new WorkflowTestAggregate("Transaction Test");
 
             // Act
             _dbContext.TestAggregates.Add(aggregate);
-            await _dbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await uow.CommitAsync();
 
             // Assert
             _dbContext.ChangeTracker.Clear();
@@ -105,17 +121,46 @@ namespace MiCake.IntegrationTests.Uow
             Assert.Equal("Transaction Test", saved.Name);
         }
 
+        [Fact]
+        public async Task Transaction_ImmediateCommit_ShouldPersistChanges()
+        {
+            // Arrange - immediate mode
+            var options = new UnitOfWorkOptions
+            {
+                Strategy = PersistenceStrategy.TransactionManaged,
+                InitializationMode = TransactionInitializationMode.Immediate
+            };
+
+            using var uow = await _uowManager.BeginAsync(options);
+
+            // Use factory to register wrapper
+            var factory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+            var wrapper = factory.GetDbContextWrapper();
+
+            var aggregate = new WorkflowTestAggregate("Immediate Transaction Test");
+
+            // Act
+            _dbContext.TestAggregates.Add(aggregate);
+            await uow.CommitAsync();
+
+            // Assert
+            _dbContext.ChangeTracker.Clear();
+            var saved = await _dbContext.TestAggregates.FindAsync(aggregate.Id);
+            Assert.NotNull(saved);
+            Assert.Equal("Immediate Transaction Test", saved.Name);
+        }
+
         [Fact(Skip = "In-memory database doesn't support real transaction rollback. Requires real database for integration testing.")]
         public async Task Transaction_Rollback_ShouldDiscardChanges()
         {
             // Arrange
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            using var uow = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
             var aggregate = new WorkflowTestAggregate("Should Be Rolled Back");
 
             // Act
             _dbContext.TestAggregates.Add(aggregate);
             await _dbContext.SaveChangesAsync();
-            await transaction.RollbackAsync();
+            await uow.RollbackAsync();
 
             // Assert
             _dbContext.ChangeTracker.Clear();
@@ -131,7 +176,7 @@ namespace MiCake.IntegrationTests.Uow
         public async Task Transaction_WithSavepoint_RollbackToSavepoint_ShouldWork()
         {
             // Arrange
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            using var uow = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
             
             // Add first aggregate
             var agg1 = new WorkflowTestAggregate("First");
@@ -139,7 +184,7 @@ namespace MiCake.IntegrationTests.Uow
             await _dbContext.SaveChangesAsync();
             
             // Create savepoint
-            await transaction.CreateSavepointAsync("sp1");
+            await uow.CreateSavepointAsync("sp1");
             
             // Add second aggregate
             var agg2 = new WorkflowTestAggregate("Second");
@@ -147,14 +192,14 @@ namespace MiCake.IntegrationTests.Uow
             await _dbContext.SaveChangesAsync();
             
             // Act - Rollback to savepoint
-            await transaction.RollbackToSavepointAsync("sp1");
+            await uow.RollbackToSavepointAsync("sp1");
             
             // Add third aggregate after rollback
             var agg3 = new WorkflowTestAggregate("Third");
             _dbContext.TestAggregates.Add(agg3);
             await _dbContext.SaveChangesAsync();
             
-            await transaction.CommitAsync();
+            await uow.CommitAsync();
 
             // Assert
             _dbContext.ChangeTracker.Clear();
@@ -169,17 +214,17 @@ namespace MiCake.IntegrationTests.Uow
         public async Task Transaction_ReleaseSavepoint_ShouldSucceed()
         {
             // Arrange
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            using var uow = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
             
             var agg1 = new WorkflowTestAggregate("Test");
             _dbContext.TestAggregates.Add(agg1);
             await _dbContext.SaveChangesAsync();
             
-            await transaction.CreateSavepointAsync("sp1");
+            await uow.CreateSavepointAsync("sp1");
 
             // Act
-            await transaction.ReleaseSavepointAsync("sp1");
-            await transaction.CommitAsync();
+            await uow.ReleaseSavepointAsync("sp1");
+            await uow.CommitAsync();
 
             // Assert
             var count = await _dbContext.TestAggregates.CountAsync();
@@ -212,23 +257,23 @@ namespace MiCake.IntegrationTests.Uow
         public async Task MultipleTransactions_Sequential_ShouldWorkIndependently()
         {
             // Transaction 1
-            using (var transaction1 = await _dbContext.Database.BeginTransactionAsync())
+            using (var uow1 = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged }))
             {
                 var agg1 = new WorkflowTestAggregate("Transaction 1");
                 _dbContext.TestAggregates.Add(agg1);
                 await _dbContext.SaveChangesAsync();
-                await transaction1.CommitAsync();
+                await uow1.CommitAsync();
             }
 
             _dbContext.ChangeTracker.Clear();
 
             // Transaction 2
-            using (var transaction2 = await _dbContext.Database.BeginTransactionAsync())
+            using (var uow2 = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged }))
             {
                 var agg2 = new WorkflowTestAggregate("Transaction 2");
                 _dbContext.TestAggregates.Add(agg2);
                 await _dbContext.SaveChangesAsync();
-                await transaction2.CommitAsync();
+                await uow2.CommitAsync();
             }
 
             // Assert
@@ -237,31 +282,138 @@ namespace MiCake.IntegrationTests.Uow
             Assert.Equal(2, count);
         }
 
+        [Fact]
+        public async Task UoW_Commit_AutoSavesMultipleEntities()
+        {
+            // Arrange - register UoW
+            using var uow = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
+            var factory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+            var wrapper = factory.GetDbContextWrapper();
+
+            // Act - add entities without calling SaveChanges
+            _dbContext.TestAggregates.Add(new WorkflowTestAggregate("A"));
+            _dbContext.TestAggregates.Add(new WorkflowTestAggregate("B"));
+
+            // Commit should auto-save pending changes
+            await uow.CommitAsync();
+
+            // Assert
+            _dbContext.ChangeTracker.Clear();
+            var count = await _dbContext.TestAggregates.CountAsync();
+            Assert.Equal(2, count);
+        }
+
+        [Fact]
+        public async Task BeginAsync_RequiresNew_ResourceRegistration_Isolation()
+        {
+            // Arrange
+            var factory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+
+            using var outer = await _uowManager.BeginAsync();
+            var outerWrapper = factory.GetDbContextWrapper();
+            _dbContext.TestAggregates.Add(new WorkflowTestAggregate("Outer"));
+            await _dbContext.SaveChangesAsync();
+            await outer.CommitAsync();
+
+            using var newRoot = await _uowManager.BeginAsync(requiresNew: true);
+            var newWrapper = factory.GetDbContextWrapper();
+            _dbContext.TestAggregates.Add(new WorkflowTestAggregate("NewRoot"));
+            await _dbContext.SaveChangesAsync();
+            await newRoot.CommitAsync();
+
+            _dbContext.ChangeTracker.Clear();
+            var list = await _dbContext.TestAggregates.ToListAsync();
+            Assert.Contains(list, a => a.Name == "Outer");
+            Assert.Contains(list, a => a.Name == "NewRoot");
+        }
+
+        [Fact]
+        public async Task NestedUoW_InnerRollback_ShouldMarkParentForRollback()
+        {
+            // Arrange
+            var options = new UnitOfWorkOptions { InitializationMode = TransactionInitializationMode.Lazy, Strategy = PersistenceStrategy.TransactionManaged };
+            using var outer = await _uowManager.BeginAsync(options);
+
+            var factory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+            var wrapper = factory.GetDbContextWrapper();
+
+            // Add outer entity and save
+            _dbContext.TestAggregates.Add(new WorkflowTestAggregate("Outer"));
+            await _dbContext.SaveChangesAsync();
+
+            // Act - nested uow
+            using (var inner = await _uowManager.BeginAsync(options))
+            {
+                // nested registration delegates to parent via factory
+                var innerFactory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+                var innerWrapper = innerFactory.GetDbContextWrapper();
+                _dbContext.TestAggregates.Add(new WorkflowTestAggregate("Inner"));
+                await _dbContext.SaveChangesAsync();
+
+                // inner rollback should mark parent for rollback
+                await inner.RollbackAsync();
+            }
+
+            // Assert - commit outer should fail
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await outer.CommitAsync());
+        }
+
+        [Fact]
+        public async Task NestedUoW_RegistrationViaFactory_DelegatesToParent_PersistOnCommit()
+        {
+            // Arrange
+            var options = new UnitOfWorkOptions { InitializationMode = TransactionInitializationMode.Lazy, Strategy = PersistenceStrategy.TransactionManaged };
+            using var outer = await _uowManager.BeginAsync(options);
+            var factory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+            var wrapperOuter = factory.GetDbContextWrapper();
+
+            _dbContext.TestAggregates.Add(new WorkflowTestAggregate("Outer"));
+            await _dbContext.SaveChangesAsync();
+
+            // Act - nested uow
+            using (var inner = await _uowManager.BeginAsync(options))
+            {
+                var innerFactory = _serviceProvider.GetRequiredService<EntityFrameworkCore.Uow.IEFCoreContextFactory<TestDbContext>>();
+                var innerWrapper = innerFactory.GetDbContextWrapper();
+                _dbContext.TestAggregates.Add(new WorkflowTestAggregate("Inner"));
+                await _dbContext.SaveChangesAsync();
+                await inner.CommitAsync();
+            }
+
+            // Outer commit should persist both Outer and Inner
+            await outer.CommitAsync();
+
+            _dbContext.ChangeTracker.Clear();
+            var list = await _dbContext.TestAggregates.ToListAsync();
+            Assert.Contains(list, a => a.Name == "Outer");
+            Assert.Contains(list, a => a.Name == "Inner");
+        }
+
         [Fact(Skip = "In-memory database doesn't support savepoints. Requires real database for integration testing.")]
         public async Task Transaction_MultipleSavepoints_ShouldWorkSequentially()
         {
             // Arrange
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            using var uow = await _uowManager.BeginAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
             
             var agg1 = new WorkflowTestAggregate("First");
             _dbContext.TestAggregates.Add(agg1);
             await _dbContext.SaveChangesAsync();
             
-            await transaction.CreateSavepointAsync("sp1");
+            await uow.CreateSavepointAsync("sp1");
             
             var agg2 = new WorkflowTestAggregate("Second");
             _dbContext.TestAggregates.Add(agg2);
             await _dbContext.SaveChangesAsync();
             
-            await transaction.CreateSavepointAsync("sp2");
+            await uow.CreateSavepointAsync("sp2");
             
             var agg3 = new WorkflowTestAggregate("Third");
             _dbContext.TestAggregates.Add(agg3);
             await _dbContext.SaveChangesAsync();
             
             // Act - Rollback to first savepoint
-            await transaction.RollbackToSavepointAsync("sp1");
-            await transaction.CommitAsync();
+            await uow.RollbackToSavepointAsync("sp1");
+            await uow.CommitAsync();
 
             // Assert
             _dbContext.ChangeTracker.Clear();

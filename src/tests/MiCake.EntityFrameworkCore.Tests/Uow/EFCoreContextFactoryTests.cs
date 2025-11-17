@@ -21,7 +21,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         private readonly Mock<IServiceProvider> _mockServiceProvider;
         private readonly Mock<IUnitOfWorkManager> _mockUnitOfWorkManager;
         private readonly Mock<ILogger<EFCoreContextFactory<TestDbContext>>> _mockLogger;
-        private readonly MiCakeEFCoreOptions _efCoreOptions;
+            var wrapper = _factory.GetDbContextWrapper();
         private readonly EFCoreContextFactory<TestDbContext> _factory;
 
         public EFCoreContextFactoryTests()
@@ -29,7 +29,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             _mockServiceProvider = new Mock<IServiceProvider>();
             _mockUnitOfWorkManager = new Mock<IUnitOfWorkManager>();
             _mockLogger = new Mock<ILogger<EFCoreContextFactory<TestDbContext>>>();
-            _efCoreOptions = new MiCakeEFCoreOptions();
+            _mockUnitOfWorkManager.Verify(m => m.RegisterResource(It.IsAny<IUnitOfWorkResource>()), Times.Once);
 
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(_efCoreOptions);
 
@@ -84,6 +84,73 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         #endregion
+
+        [Fact]
+        public async Task GetDbContextWrapper_WithRealUnitOfWork_LazyMode_ShouldAutoRegister()
+        {
+            // Arrange: use real UoW manager via DI to return wrapper
+            var services = new ServiceCollection();
+            var dbName = Guid.NewGuid().ToString();
+            services.AddDbContext<TestDbContext>(opt => opt.UseInMemoryDatabase(dbName));
+            services.AddLogging();
+
+            var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
+            services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType);
+            services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
+            services.AddSingleton<Core.DependencyInjection.IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(TestDbContext)));
+
+            var provider = services.BuildServiceProvider();
+
+            var factory = provider.GetRequiredService<IEFCoreContextFactory<TestDbContext>>();
+            var manager = provider.GetRequiredService<IUnitOfWorkManager>();
+            var context = provider.GetRequiredService<TestDbContext>();
+
+            // Act
+            using (var uow = await manager.BeginAsync()) // lazy mode
+            {
+                var wrapper = factory.GetDbContextWrapper();
+
+                context.Set<SampleEntity>().Add(new SampleEntity { Name = "Lazy" });
+                await uow.CommitAsync();
+            }
+
+            // Assert: registration happened in lazy mode; commit should persist via wrapper
+            var count = await context.Set<SampleEntity>().CountAsync();
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
+        public async Task GetDbContextWrapper_WithRealUnitOfWork_ImmediateMode_ShouldAutoRegister()
+        {
+            var services = new ServiceCollection();
+            var dbName = Guid.NewGuid().ToString();
+            services.AddDbContext<TestDbContext>(opt => opt.UseInMemoryDatabase(dbName));
+            services.AddLogging();
+
+            var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
+            services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType);
+            services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
+            services.AddSingleton<Core.DependencyInjection.IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(TestDbContext)));
+
+            var provider = services.BuildServiceProvider();
+
+            var factory = provider.GetRequiredService<IEFCoreContextFactory<TestDbContext>>();
+            var manager = provider.GetRequiredService<IUnitOfWorkManager>();
+            var context = provider.GetRequiredService<TestDbContext>();
+
+            // Act - Immediate mode initialization should register resources automatically
+            using (var uow = await manager.BeginAsync(new UnitOfWorkOptions { InitializationMode = TransactionInitializationMode.Immediate }))
+            {
+                // The immediate initializer should have called factory.GetDbContextWrapper for registered types
+                var wrapper = factory.GetDbContextWrapper();
+                context.Set<SampleEntity>().Add(new SampleEntity { Name = "Immediate" });
+                await uow.CommitAsync();
+            }
+
+            // Assert: With immediate mode, registration happened earlier, so commit should persist
+            var count = await context.Set<SampleEntity>().CountAsync();
+            Assert.Equal(1, count);
+        }
 
         #region GetDbContext Tests
 

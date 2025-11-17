@@ -81,7 +81,7 @@ namespace MiCake.DDD.Uow.Internal
             // Get hooks applicable to the initialization mode
             var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>()
                 .Where(h => h.ApplicableMode == null || h.ApplicableMode == options.InitializationMode);
-            
+
             foreach (var hook in hooks)
             {
                 try
@@ -159,7 +159,7 @@ namespace MiCake.DDD.Uow.Internal
                 : base(inner, logger)
             {
                 _currentRef = currentRef;
-                
+
                 // CRITICAL: Set AsyncLocal value in constructor, which executes in caller's context
                 // Store THIS (the wrapper) as current, not the inner UnitOfWork
                 // This ensures the value persists after BeginAsync returns
@@ -169,7 +169,7 @@ namespace MiCake.DDD.Uow.Internal
             public override void Dispose()
             {
                 base.Dispose();
-                
+
                 // Clear current if this is still the current UoW
                 if (_currentRef.Value == this)
                 {
@@ -213,7 +213,7 @@ namespace MiCake.DDD.Uow.Internal
         /// <summary>
         /// Base wrapper class for UnitOfWork
         /// </summary>
-        private abstract class UnitOfWorkWrapperBase : IUnitOfWork
+        private abstract class UnitOfWorkWrapperBase : IUnitOfWork, IUnitOfWorkInternal
         {
             protected readonly UnitOfWork _inner;
             protected readonly ILogger _logger;
@@ -301,6 +301,15 @@ namespace MiCake.DDD.Uow.Internal
             public virtual void Dispose()
             {
                 _inner.Dispose();
+            }
+
+            public Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)
+            {
+                if (_inner is IUnitOfWorkInternal internalUow)
+                {
+                    return internalUow.ActivatePendingResourcesAsync(cancellationToken);
+                }
+                return Task.CompletedTask;
             }
         }
     }

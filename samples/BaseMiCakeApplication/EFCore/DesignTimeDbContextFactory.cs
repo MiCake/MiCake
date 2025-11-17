@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
@@ -17,6 +18,7 @@ namespace BaseMiCakeApplication.EFCore
                 .Build();
 
             var connectionString = config.GetConnectionString("DefaultConnection");
+            Console.WriteLine(connectionString);
             builder.UseSqlServer(connectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure());
 
             return new BaseAppDbContext(builder.Options);

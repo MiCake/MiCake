@@ -364,12 +364,51 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var cancellationToken = CancellationToken.None;
 
             // Act
-            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions(), cancellationToken);
+            await _wrapper.BeginTransactionAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged }, cancellationToken);
             await _wrapper.SaveChangesAsync(cancellationToken);
             await _wrapper.CommitAsync(cancellationToken);
 
             // Assert - completed successfully
             Assert.NotNull(_wrapper.DbContext);
+        }
+
+        [Fact]
+        public async Task CommitAsync_ShouldAutoSavePendingChanges_WhenTransactionActive()
+        {
+            // Arrange
+            var options = new DbContextOptionsBuilder<TestEntityContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+
+            await using var localContext = new TestEntityContext(options);
+            var wrapper = new EFCoreDbContextWrapper(localContext);
+
+            // Start manual transaction managed by wrapper
+            await wrapper.BeginTransactionAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
+
+            // Add entity, but do NOT call SaveChanges
+            localContext.Set<TestEntity>().Add(new TestEntity { Name = "AutoSave" });
+
+            // Act - commit should auto-save before commit
+            await wrapper.CommitAsync();
+
+            // Assert
+            var saved = await localContext.Set<TestEntity>().FirstAsync();
+            Assert.Equal("AutoSave", saved.Name);
+        }
+
+        // Simple test-specific DbContext and entity
+        private class TestEntityContext : DbContext
+        {
+            public TestEntityContext(DbContextOptions options) : base(options) { }
+
+            public DbSet<TestEntity> TestEntities { get; set; }
+        }
+
+        private class TestEntity
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
         }
 
         [Fact]
