@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -98,6 +99,29 @@ namespace MiCake.EntityFrameworkCore
             }
 
             var interceptor = MiCakeInterceptorFactoryHelper.CreateInterceptor();
+            if (interceptor != null)
+            {
+                optionsBuilder.AddInterceptors(interceptor);
+            }
+
+            return optionsBuilder;
+        }
+
+        /// <summary>
+        /// Configure DbContextOptionsBuilder to use MiCake interceptors using a DI-resolved factory.
+        /// This overload is preferred when the DbContext is configured via AddDbContext((sp, options) => ...)
+        /// and you have access to the IServiceProvider.
+        /// </summary>
+        /// <param name="optionsBuilder">The DbContextOptionsBuilder instance.</param>
+        /// <param name="serviceProvider">The service provider from AddDbContext delegate.</param>
+        /// <returns>The same DbContextOptionsBuilder for chaining</returns>
+        public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder, IServiceProvider serviceProvider)
+        {
+            if (serviceProvider == null)
+                return optionsBuilder;
+
+            var factory = serviceProvider.GetService<IMiCakeInterceptorFactory>();
+            var interceptor = factory?.CreateInterceptor() ?? MiCakeInterceptorFactoryHelper.CreateInterceptor();
             if (interceptor != null)
             {
                 optionsBuilder.AddInterceptors(interceptor);

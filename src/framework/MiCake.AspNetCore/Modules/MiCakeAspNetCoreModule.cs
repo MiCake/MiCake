@@ -12,7 +12,7 @@ namespace MiCake.AspNetCore.Modules
     /// This module registers filters for data wrapping and unit of work management.
     /// </summary>
     [RelyOn(typeof(MiCakeEFCoreModule), typeof(MiCakeEssentialModule))]
-    public class MiCakeAspNetCoreModule : MiCakeModule
+    public class MiCakeAspNetCoreModule : MiCakeModuleAdvanced
     {
         /// <summary>
         /// <inheritdoc/>
@@ -22,7 +22,7 @@ namespace MiCake.AspNetCore.Modules
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public override void ConfigureServices(ModuleConfigServiceContext context)
+        public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
 

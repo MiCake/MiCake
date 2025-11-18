@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace MiCake.IntegrationTests.Uow
 {

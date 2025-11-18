@@ -29,7 +29,7 @@ namespace MiCake.Modules
     {
         public override bool IsFrameworkLevel => true;
 
-        public override void ConfigureServices(ModuleConfigServiceContext context)
+        public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
             var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions);
             var services = context.Services;

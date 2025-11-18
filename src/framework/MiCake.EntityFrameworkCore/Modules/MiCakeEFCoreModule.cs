@@ -19,7 +19,7 @@ namespace MiCake.EntityFrameworkCore.Modules
     /// MiCake Entity Framework Core module - Provides EF Core integration for MiCake framework
     /// </summary>
     [RelyOn(typeof(MiCakeEssentialModule))]
-    public class MiCakeEFCoreModule : MiCakeModule
+    public class MiCakeEFCoreModule : MiCakeModuleAdvanced
     {
         /// <summary>
         /// Indicates this is a framework-level module
@@ -29,14 +29,14 @@ namespace MiCake.EntityFrameworkCore.Modules
         /// <summary>
         /// Configure services for EF Core module
         /// </summary>
-        public override void ConfigureServices(ModuleConfigServiceContext context)
+        public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
             var dbContextType = context.MiCakeApplicationOptions.BuildTimeData.TakeOut<Type>(MiCakeEFCoreModuleInternalKeys.DBContextType)
                                             ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
             services.TryAddSingleton<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
-            services.TryAddTransient<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.TryAddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
 
             // Add Uow related services
             services.AddUowCoreServices(dbContextType);
@@ -62,6 +62,12 @@ namespace MiCake.EntityFrameworkCore.Modules
 
             var storeConventionRegistry = context.ApplicationOptions.BuildTimeData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
             RegisterMiCakeConventions(storeConventionRegistry);
+        }
+
+        public override void OnApplicationShutdown(ModuleShutdownContext context)
+        {
+            MiCakeInterceptorFactoryHelper.Reset();
+            base.OnApplicationShutdown(context);
         }
 
         // Registers the MiCake store conventions into the convention engine(static class)
