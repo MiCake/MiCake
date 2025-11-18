@@ -55,12 +55,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         /// </summary>
         public TDbContext GetDbContext()
         {
-            var isUsingImplicitMode = _efCoreOptions.ImplicitModeForUow;
-            if (isUsingImplicitMode && _unitOfWorkManager.Current == null)
-            {
-                return _serviceProvider.GetRequiredService<TDbContext>();
-            }
-
             var wrapper = GetDbContextWrapper();
             return (TDbContext)wrapper.DbContext;
         }

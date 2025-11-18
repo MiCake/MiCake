@@ -1,3 +1,4 @@
+using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -10,31 +11,44 @@ using System.Threading.Tasks;
 namespace MiCake.EntityFrameworkCore.Uow
 {
     /// <summary>
-    /// EF Core specific implementation of IUnitOfWorkResource that handles DbContext lifecycle properly
+    /// EF Core specific implementation of IUnitOfWorkResource using two-phase registration pattern.
+    /// Phase 1 (Prepare): Store configuration synchronously
+    /// Phase 2 (Activate): Start database transaction asynchronously
     /// </summary>
     public class EFCoreDbContextWrapper : IUnitOfWorkResource
     {
         private readonly DbContext _dbContext;
         private readonly ILogger<EFCoreDbContextWrapper> _logger;
         private readonly bool _shouldDisposeDbContext;
-        private MiCakeEFCoreOptions _options;
-        private IDbContextTransaction _currentTransaction;
+        private readonly MiCakeEFCoreOptions _options;
+        private IDbContextTransaction? _currentTransaction;
         private bool _disposed = false;
+
+        // Two-phase registration state
+        private bool _isPrepared = false;
+        private bool _isInitialized = false;
+        private IsolationLevel? _preparedIsolationLevel = null;
+        private PersistenceStrategy _persistenceStrategy = PersistenceStrategy.OptimizeForSingleWrite;
 
         /// <summary>
         /// Gets the underlying DbContext instance
         /// </summary>
         public DbContext DbContext => _dbContext;
-        
+
         /// <summary>
         /// Gets the unique identifier for this resource instance
         /// </summary>
         public string ResourceIdentifier => $"{_dbContext.GetType().FullName}_{_dbContext.GetHashCode()}";
-        
+
         /// <summary>
         /// Indicates if there's an active transaction
         /// </summary>
         public bool HasActiveTransaction => _currentTransaction != null;
+
+        /// <summary>
+        /// Indicates if the resource has been initialized (prepared and activated)
+        /// </summary>
+        public bool IsInitialized => _isInitialized;
 
         /// <summary>
         /// Creates a new EF Core DbContext wrapper
@@ -54,7 +68,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _shouldDisposeDbContext = shouldDisposeDbContext;
             _options = options ?? throw new ArgumentNullException(nameof(options));
 
-            // Check if DbContext already has a transaction
+            // Check if DbContext already has a transaction (user-managed)
             _currentTransaction = dbContext.Database.CurrentTransaction;
 
             _logger.LogDebug("Created EFCoreDbContextWrapper for {DbContextType}, ShouldDispose: {ShouldDispose}",
@@ -62,38 +76,123 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         /// <summary>
-        /// Begin a new transaction with specified isolation level
+        /// Prepares the resource for transaction (Phase 1 - Synchronous, no I/O).
+        /// Receives complete UoW options and stores them for later activation.
+        /// Does not start actual database transaction (that happens in ActivateTransactionAsync).
         /// </summary>
-        public async Task BeginTransactionAsync(IsolationLevel? isolationLevel, CancellationToken cancellationToken = default)
+        public void PrepareForTransaction(UnitOfWorkOptions options)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(options);
+
+            if (_isPrepared)
+            {
+                _logger.LogDebug("Resource {ResourceIdentifier} already prepared", ResourceIdentifier);
+                return;
+            }
+
+            // Check if DbContext already has a transaction (user-managed)
+            if (_currentTransaction != null)
+            {
+                _logger.LogDebug("Resource {ResourceIdentifier} already has user-managed transaction", ResourceIdentifier);
+                _isPrepared = true;
+                _isInitialized = true;  // User-managed transaction counts as initialized
+                return;
+            }
+
+            // Store configuration for later activation (Phase 2)
+            _persistenceStrategy = options.Strategy;
+            _preparedIsolationLevel = options.IsolationLevel;
+            _isPrepared = true;
+
+            _logger.LogDebug("Resource {ResourceIdentifier} prepared with PersistenceStrategy={Strategy}, IsolationLevel={IsolationLevel}",
+                ResourceIdentifier, options.Strategy, options.IsolationLevel);
+        }
+
+        /// <summary>
+        /// Activates the transaction asynchronously (Phase 2 - May involve I/O).
+        /// This is where the actual database transaction is started based on the prepared configuration.
+        /// When PersistenceStrategy is OptimizeForSingleWrite, skips explicit transaction
+        /// to allow EF Core to handle implicit transactions via SaveChangesAsync().
+        /// </summary>
+        public async Task ActivateTransactionAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            // Check if transactions are disabled for UoW to improve performance
-            if (_options != null && !_options.WillOpenTransactionForUow)
+            if (!_isPrepared)
             {
-                _logger.LogDebug("Transaction creation disabled for UoW (WillOpenTransactionForUow = false) for DbContext {DbContextType}", _dbContext.GetType().Name);
+                throw new InvalidOperationException(
+                    $"Resource {ResourceIdentifier} must be prepared before activation. " +
+                    "Call PrepareForTransaction() first.");
+            }
+
+            if (_isInitialized)
+            {
+                _logger.LogDebug("Resource {ResourceIdentifier} already activated", ResourceIdentifier);
                 return;
             }
 
-            if (HasActiveTransaction)
+            // If user-managed transaction exists, just mark as initialized
+            if (_currentTransaction != null)
             {
-                _logger.LogDebug("Transaction already active for DbContext {DbContextType}", _dbContext.GetType().Name);
+                _isInitialized = true;
                 return;
             }
 
-            _logger.LogDebug("Beginning transaction for DbContext {DbContextType} with isolation level {IsolationLevel}", 
-                _dbContext.GetType().Name, isolationLevel);
-            
-            if (isolationLevel.HasValue)
+            // Handle persistence strategy
+            switch (_persistenceStrategy)
             {
-                _currentTransaction = await _dbContext.Database.BeginTransactionAsync(isolationLevel.Value, cancellationToken)
-                    .ConfigureAwait(false);
+                case PersistenceStrategy.OptimizeForSingleWrite:
+                    // Skip explicit transaction, let EF Core handle it implicitly via SaveChangesAsync()
+                    _logger.LogDebug("Skipping explicit transaction for resource {ResourceIdentifier} (PersistenceStrategy=OptimizeForSingleWrite)",
+                        ResourceIdentifier);
+                    _isInitialized = true;
+                    return;
+
+                case PersistenceStrategy.TransactionManaged:
+                    // Start explicit transaction with configured isolation level
+                    await StartExplicitTransactionAsync(cancellationToken).ConfigureAwait(false);
+                    return;
+
+                default:
+                    throw new InvalidOperationException($"Unknown persistence strategy: {_persistenceStrategy}");
             }
-            else
+        }
+
+        /// <summary>
+        /// Starts an explicit database transaction with the configured isolation level.
+        /// </summary>
+        private async Task StartExplicitTransactionAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogDebug("Starting explicit transaction for resource {ResourceIdentifier} (IsolationLevel={IsolationLevel})",
+                ResourceIdentifier, _preparedIsolationLevel ?? System.Data.IsolationLevel.Unspecified);
+
+            try
             {
-                _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken)
-                    .ConfigureAwait(false);
+                _currentTransaction = _preparedIsolationLevel.HasValue
+                    ? await _dbContext.Database.BeginTransactionAsync(_preparedIsolationLevel.Value, cancellationToken).ConfigureAwait(false)
+                    : await _dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+                _isInitialized = true;
+                _logger.LogDebug("Successfully started transaction for resource {ResourceIdentifier}", ResourceIdentifier);
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start transaction for resource {ResourceIdentifier}", ResourceIdentifier);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Begin a new transaction with the specified UoW configuration.
+        /// This is a convenience method that combines PrepareForTransaction + ActivateTransactionAsync.
+        /// Primarily used for backward compatibility and direct transaction creation outside the UoW framework.
+        /// </summary>
+        public async Task BeginTransactionAsync(UnitOfWorkOptions options, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            PrepareForTransaction(options);
+            await ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -102,13 +201,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
-            // If transactions are disabled for UoW, nothing to commit
-            if (_options != null && !_options.WillOpenTransactionForUow)
-            {
-                _logger.LogDebug("Transaction commit skipped (WillOpenTransactionForUow = false) for DbContext {DbContextType}", _dbContext.GetType().Name);
-                return;
-            }
 
             if (!HasActiveTransaction)
             {
@@ -135,13 +227,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         {
             if (_disposed)
                 return;
-
-            // If transactions are disabled for UoW, nothing to rollback
-            if (_options != null && !_options.WillOpenTransactionForUow)
-            {
-                _logger.LogDebug("Transaction rollback skipped (WillOpenTransactionForUow = false) for DbContext {DbContextType}", _dbContext.GetType().Name);
-                return;
-            }
 
             if (!HasActiveTransaction)
             {

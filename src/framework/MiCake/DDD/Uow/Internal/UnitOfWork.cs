@@ -65,8 +65,8 @@ namespace MiCake.DDD.Uow.Internal
             }
             else
             {
-                _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId} (IsolationLevel: {IsolationLevel}, AutoBegin: {AutoBegin})",
-                    Id, _options.IsolationLevel, _options.AutoBeginTransaction);
+                _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId} (IsolationLevel: {IsolationLevel}, InitMode: {InitMode}, ReadOnly: {ReadOnly})",
+                    Id, _options.IsolationLevel, _options.InitializationMode, _options.IsReadOnly);
             }
         }
 
@@ -98,28 +98,89 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Resource with identifier {ResourceIdentifier} registered with UnitOfWork {UnitOfWorkId}",
                     resource.ResourceIdentifier, Id);
 
-                // Auto-begin transaction if configured and this is first resource
-                if (_options.AutoBeginTransaction && !_transactionsStarted)
+                // Phase 1 - Prepare: Let resource store complete UoW configuration (synchronous, no I/O)
+                try
                 {
-                    Task.Run(async () => await BeginTransactionsInternalAsync(default).ConfigureAwait(false))
-                        .GetAwaiter()
-                        .GetResult();
+                    resource.PrepareForTransaction(_options);
+                    _logger.LogDebug("Resource {ResourceIdentifier} prepared with Strategy={Strategy}, IsolationLevel={IsolationLevel}",
+                        resource.ResourceIdentifier, _options.Strategy, _options.IsolationLevel);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to prepare resource {ResourceIdentifier} for transaction", resource.ResourceIdentifier);
+                    _resources.Remove(resource);
+                    throw;
                 }
             }
         }
 
-        [Obsolete("This method is deprecated. Use IUnitOfWorkInternal.RegisterResource instead.")]
-        public void RegisterDbContext(IDbContextWrapper wrapper)
+        /// <summary>
+        /// Activates all pending resources asynchronously (Phase 2 of two-phase registration).
+        /// This starts actual database transactions for all registered resources.
+        /// </summary>
+        public async Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)
         {
-            // Convert old wrapper to new resource interface
-            if (wrapper is IUnitOfWorkResource resource)
+            ThrowIfDisposed();
+
+            if (_transactionsStarted)
             {
-                RegisterResource(resource);
+                _logger.LogDebug("Transactions already started for UnitOfWork {UnitOfWorkId}", Id);
+                return;
             }
-            else
+
+            // Nested UoW: delegate to parent
+            if (Parent != null)
             {
-                _logger.LogWarning("RegisterDbContext called with non-IUnitOfWorkResource wrapper. This is deprecated.");
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating activation to parent {ParentId}",
+                    Id, Parent.Id);
+
+                if (Parent is IUnitOfWorkInternal parentInternal)
+                {
+                    await parentInternal.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                return;
             }
+
+            // Skip activation for read-only UoW or if no resources
+            if (_options.IsReadOnly || _resources.Count == 0)
+            {
+                _logger.LogDebug("Skipping activation for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly}, Resources: {Count})",
+                    Id, _options.IsReadOnly, _resources.Count);
+                return;
+            }
+
+            _logger.LogDebug("Activating {Count} pending resources for UnitOfWork {UnitOfWorkId}",
+                _resources.Count, Id);
+
+            var exceptions = new List<Exception>();
+
+            // Activate all resources that haven't been initialized yet
+            foreach (var resource in _resources)
+            {
+                if (!resource.IsInitialized)
+                {
+                    try
+                    {
+                        await resource.ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
+                        _logger.LogDebug("Successfully activated resource {ResourceIdentifier}",
+                            resource.ResourceIdentifier);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                        _logger.LogError(ex, "Failed to activate resource {ResourceIdentifier} in UnitOfWork {UnitOfWorkId}",
+                            resource.ResourceIdentifier, Id);
+                    }
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("Failed to activate one or more resources", exceptions);
+            }
+
+            _transactionsStarted = true;
+            _logger.LogDebug("Successfully activated all resources for UnitOfWork {UnitOfWorkId}", Id);
         }
 
         public async Task CommitAsync(CancellationToken cancellationToken = default)
@@ -161,6 +222,9 @@ namespace MiCake.DDD.Uow.Internal
                     throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
                 }
 
+                //  Activate all pending resources (lazy initialization - Phase 2 of two-phase pattern)
+                await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
                 _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ResourceCount} resources", Id, _resources.Count);
 
                 var exceptions = await ExecuteCommitOperationsAsync(cancellationToken).ConfigureAwait(false);
@@ -170,6 +234,12 @@ namespace MiCake.DDD.Uow.Internal
                     if (_transactionsStarted)
                     {
                         await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    // If only one exception, unwrap it; otherwise wrap in aggregate
+                    if (exceptions.Count == 1)
+                    {
+                        throw exceptions[0];
                     }
                     throw new AggregateException("Failed to commit unit of work", exceptions);
                 }
@@ -221,6 +291,8 @@ namespace MiCake.DDD.Uow.Internal
                 // Root UoW: do actual rollback
                 await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
 
+                MarkAsCompleted();
+
                 // Raise OnRolledBack event
                 RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
             }
@@ -242,8 +314,8 @@ namespace MiCake.DDD.Uow.Internal
                 return Task.CompletedTask;
             }
 
-            _skipCommit = true;
-            _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} to skip commit", Id);
+            MarkAsCompleted();
+            _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} as completed", Id);
             return Task.CompletedTask;
         }
 
@@ -253,13 +325,21 @@ namespace MiCake.DDD.Uow.Internal
         {
             ThrowIfDisposed();
             ThrowIfCompleted("Cannot create savepoint after unit of work is completed");
-            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+            // Generate a name if null or empty
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = $"sp_{Guid.NewGuid():N}";
+                _logger.LogDebug("Generated savepoint name: {SavepointName}", name);
+            }
 
             if (Parent != null)
             {
                 _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating savepoint creation to parent", Id);
                 return await Parent.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
             }
+
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
 
             if (!_transactionsStarted)
             {
@@ -304,6 +384,8 @@ namespace MiCake.DDD.Uow.Internal
                 return;
             }
 
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
             if (!_transactionsStarted)
             {
                 throw new InvalidOperationException("Cannot rollback to savepoint: no active transaction");
@@ -344,6 +426,8 @@ namespace MiCake.DDD.Uow.Internal
                 await Parent.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
                 return;
             }
+
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
 
             if (!_transactionsStarted)
             {
@@ -435,28 +519,6 @@ namespace MiCake.DDD.Uow.Internal
             }
         }
 
-        private async Task BeginTransactionsInternalAsync(CancellationToken cancellationToken)
-        {
-            if (_transactionsStarted || _options.IsReadOnly)
-                return;
-
-            _logger.LogDebug("Beginning transactions for UnitOfWork {UnitOfWorkId} with {ResourceCount} resources (IsolationLevel: {IsolationLevel})",
-                Id, _resources.Count, _options.IsolationLevel);
-
-            var exceptions = await ExecuteOnAllResourcesAsync(
-                resource => resource.BeginTransactionAsync(_options.IsolationLevel, cancellationToken),
-                "Failed to begin transaction for resource {0} in UnitOfWork {1}").ConfigureAwait(false);
-
-            if (exceptions.Count > 0)
-            {
-                await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
-                throw new AggregateException("Failed to begin transactions", exceptions);
-            }
-
-            _transactionsStarted = true;
-            _logger.LogDebug("Successfully started transactions for UnitOfWork {UnitOfWorkId}", Id);
-        }
-
         private async Task<List<Exception>> ExecuteOnAllResourcesAsync(
             Func<IUnitOfWorkResource, Task> action,
             string errorMessageTemplate)
@@ -524,6 +586,13 @@ namespace MiCake.DDD.Uow.Internal
             if (exceptions.Count > 0)
             {
                 _logger.LogWarning("Some resources failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
+
+                // If only one exception, unwrap it; otherwise wrap in aggregate
+                if (exceptions.Count == 1)
+                {
+                    throw exceptions[0];
+                }
+                throw new AggregateException("Failed to rollback unit of work", exceptions);
             }
 
             _transactionsStarted = false;
@@ -531,17 +600,19 @@ namespace MiCake.DDD.Uow.Internal
 
         private void HandleDisposalCleanup()
         {
-            // If not completed and not marked to skip commit, try to rollback
+            // If not completed and not marked to skip commit, log warning
+            // We cannot call async RollbackAsync from synchronous Dispose
+            // Users should explicitly call CommitAsync() or RollbackAsync() before disposal
             if (!_completed && !_skipCommit && Parent == null)
             {
-                try
-                {
-                    RollbackAsync().GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to rollback during disposal of UnitOfWork {UnitOfWorkId}", Id);
-                }
+                _logger.LogWarning(
+                    "UnitOfWork {UnitOfWorkId} disposed without being completed. " +
+                    "Transactions may not have been committed or rolled back. " +
+                    "Always explicitly call CommitAsync() or RollbackAsync() before disposal.",
+                    Id);
+
+                // Mark as completed to prevent further operations
+                MarkAsCompleted();
             }
             else if (_skipCommit && !_completed)
             {

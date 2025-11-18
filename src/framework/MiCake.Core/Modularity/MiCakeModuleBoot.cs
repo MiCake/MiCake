@@ -13,17 +13,23 @@ namespace MiCake.Core.Modularity
         private readonly ILogger _logger;
         private readonly IMiCakeModuleCollection _modules;
         private readonly MiCakeModuleLogger _moduleLogger;
+        private readonly ModuleDependencyResolver _dependencyResolver;
+        private readonly MiCakeApplicationOptions _applicationOptions;
 
         private Action<ModuleConfigServiceContext> _configServiceActions;
         private Action<ModuleInitializationContext> _initializationActions;
 
         public MiCakeModuleBoot(
             ILoggerFactory loggerFactory,
-            IMiCakeModuleCollection modules)
+            IMiCakeModuleCollection modules,
+            ModuleDependencyResolver dependencyResolver = null,
+            MiCakeApplicationOptions applicationOptions = null)
         {
             _logger = loggerFactory.CreateLogger("MiCake.Core.Modularity.MiCakeModuleBoot");
             _moduleLogger = new MiCakeModuleLogger(_logger);
             _modules = modules;
+            _dependencyResolver = dependencyResolver;
+            _applicationOptions = applicationOptions ?? new MiCakeApplicationOptions();
         }
 
         public void ConfigServices(ModuleConfigServiceContext context)
@@ -31,34 +37,44 @@ namespace MiCake.Core.Modularity
             var services = context.Services ??
                 throw new ArgumentNullException(nameof(context.Services));
 
+            // Print welcome brand and dependency graph on first lifecycle call
+            if (_dependencyResolver != null && _applicationOptions != null)
+            {
+                _moduleLogger.LogWelcomeAndDependencyGraph(_modules, _dependencyResolver, _applicationOptions);
+            }
+
             _logger.LogInformation("MiCake: Configuring Services......");
 
             // Pre-configure services (only for advanced modules)
+            var preConfigModules = new System.Collections.Generic.List<MiCakeModuleDescriptor>();
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake PreConfigureServices: ");
+                preConfigModules.Add(module);
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
                     advancedModule.PreConfigureServices(context);
                 }
             }
+            _moduleLogger.LogModuleLifecycle(preConfigModules, "PreConfigureServices");
 
             // Configure services (standard lifecycle method)
+            _moduleLogger.LogModuleLifecycle(_modules, "ConfigureServices");
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake ConfigureServices: ");
                 module.Instance.ConfigureServices(context);
             }
 
             // Post-configure services (only for advanced modules)
+            var postConfigModules = new System.Collections.Generic.List<MiCakeModuleDescriptor>();
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake PostConfigureServices: ");
+                postConfigModules.Add(module);
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
                     advancedModule.PostConfigureServices(context);
                 }
             }
+            _moduleLogger.LogModuleLifecycle(postConfigModules, "PostConfigureServices");
 
             _configServiceActions?.Invoke(context);
 
@@ -70,31 +86,35 @@ namespace MiCake.Core.Modularity
             _logger.LogInformation("MiCake: Initializing Application......");
 
             // Pre-initialization (only for advanced modules)
+            var preInitModules = new System.Collections.Generic.List<MiCakeModuleDescriptor>();
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake PreInitialization: ");
+                preInitModules.Add(module);
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
                     advancedModule.PreInitialization(context);
                 }
             }
+            _moduleLogger.LogModuleLifecycle(preInitModules, "PreInitialization");
 
             // Application initialization (standard lifecycle method)
+            _moduleLogger.LogModuleLifecycle(_modules, "OnApplicationInitialization");
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake OnApplicationInitialization: ");
                 module.Instance.OnApplicationInitialization(context);
             }
 
             // Post-initialization (only for advanced modules)
+            var postInitModules = new System.Collections.Generic.List<MiCakeModuleDescriptor>();
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake PostInitialization: ");
+                postInitModules.Add(module);
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
                     advancedModule.PostInitialization(context);
                 }
             }
+            _moduleLogger.LogModuleLifecycle(postInitModules, "PostInitialization");
 
             _initializationActions?.Invoke(context);
 
@@ -106,19 +126,21 @@ namespace MiCake.Core.Modularity
             _logger.LogInformation("MiCake: Shutting Down Application......");
 
             // Pre-shutdown (only for advanced modules)
+            var preShutdownModules = new System.Collections.Generic.List<MiCakeModuleDescriptor>();
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake PreShutdown: ");
+                preShutdownModules.Add(module);
                 if (module.Instance is IMiCakeModuleAdvanced advancedModule)
                 {
                     advancedModule.PreShutdown(context);
                 }
             }
+            _moduleLogger.LogModuleLifecycle(preShutdownModules, "PreShutdown");
 
             // Application shutdown (standard lifecycle method)
+            _moduleLogger.LogModuleLifecycle(_modules, "OnApplicationShutdown");
             foreach (var module in _modules)
             {
-                _moduleLogger.LogModuleInfo(module, "MiCake OnApplicationShutdown: ");
                 module.Instance.OnApplicationShutdown(context);
             }
 

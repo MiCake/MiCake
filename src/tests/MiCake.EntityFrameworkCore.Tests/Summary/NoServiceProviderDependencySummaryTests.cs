@@ -14,11 +14,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Summary
         [Fact]
         public void MiCakeDbContext_NoLongerRequiresServiceProvider_SuccessfullyCompleted()
         {
-            // ✅ BEFORE: MiCakeDbContext required IServiceProvider in constructor
-            // ❌ public MiCakeDbContext(DbContextOptions options, IServiceProvider serviceProvider)
+            //  BEFORE: MiCakeDbContext required IServiceProvider in constructor
+            //  public MiCakeDbContext(DbContextOptions options, IServiceProvider serviceProvider)
             
-            // ✅ AFTER: MiCakeDbContext only requires DbContextOptions
-            // ✅ public MiCakeDbContext(DbContextOptions options)
+            //  AFTER: MiCakeDbContext only requires DbContextOptions
+            //  public MiCakeDbContext(DbContextOptions options)
             
             // Arrange: Create context without any IServiceProvider dependency
             var options = new DbContextOptionsBuilder<TestMiCakeDbContext>()
@@ -42,7 +42,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Summary
         [Fact]
         public void MiCakeDbContext_StaticFactoryPattern_EliminatesServiceProviderDependency()
         {
-            // ✅ IMPLEMENTATION DETAILS:
+            //  IMPLEMENTATION DETAILS:
             // 1. Created MiCakeInterceptorFactory static factory
             // 2. Added parameterless UseMiCakeInterceptors() extension method
             // 3. Modified MiCakeDbContext.OnConfiguring to use parameterless version
@@ -78,7 +78,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Summary
         [Fact]
         public void ParameterlessConstructor_AlsoWorksWithoutServiceProvider()
         {
-            // ✅ BONUS: Parameterless constructor also works without dependency injection
+            //  BONUS: Parameterless constructor also works without dependency injection
             using var context = new TestMiCakeDbContextWithParameterlessConstructor();
             
             context.TestEntities.Add(new TestEntity { Name = "Parameterless Test" });
@@ -94,7 +94,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Summary
         {
             public TestMiCakeDbContext(DbContextOptions options) : base(options)
             {
-                // ✅ No IServiceProvider required anymore!
+                //  No IServiceProvider required anymore!
             }
 
             public DbSet<TestEntity> TestEntities { get; set; }
@@ -111,7 +111,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Summary
                 {
                     optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
                 }
-                base.OnConfiguring(optionsBuilder); // ✅ Uses parameterless UseMiCakeInterceptors()
+                base.OnConfiguring(optionsBuilder); //  Uses parameterless UseMiCakeInterceptors()
             }
 
             public DbSet<TestEntity> TestEntities { get; set; }

@@ -10,7 +10,7 @@ namespace MiCake.Core
     /// A builder for <see cref="IMiCakeApplication"/>
     /// Configures MiCake modules and registers services before the DI container is built
     /// </summary>
-    public class MiCakeBuilder : IMiCakeBuilder
+    internal class MiCakeBuilder : IMiCakeBuilder
     {
         private readonly MiCakeApplicationOptions _options;
         private readonly Type _entryType;
@@ -92,17 +92,22 @@ namespace MiCake.Core
 
             // Execute ConfigureServices lifecycle for all modules
             // This allows modules to register their services
-            ConfigureModuleServices(moduleManager.ModuleContext);
+            // Reuse the dependency resolver from the module manager to avoid recreating it
+            ConfigureModuleServices(moduleManager.ModuleContext, moduleManager.DependencyResolver);
         }
 
-        private void ConfigureModuleServices(IMiCakeModuleContext moduleContext)
+        private void ConfigureModuleServices(IMiCakeModuleContext moduleContext, ModuleDependencyResolver dependencyResolver)
         {
             // Get a temporary logger factory for initialization
             var tempServiceProvider = _services.BuildServiceProvider();
             var loggerFactory = tempServiceProvider.GetService<ILoggerFactory>()
                                 ?? Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
 
-            var moduleBoot = new MiCakeModuleBoot(loggerFactory, moduleContext.MiCakeModules);
+            var moduleBoot = new MiCakeModuleBoot(
+                loggerFactory,
+                moduleContext.MiCakeModules,
+                dependencyResolver,
+                _options);
 
             var configServiceContext = new ModuleConfigServiceContext(
                 _services,
@@ -129,6 +134,11 @@ namespace MiCake.Core
 
                 return app;
             });
+        }
+
+        public MiCakeApplicationOptions GetApplicationOptions()
+        {
+            return _options;
         }
     }
 }

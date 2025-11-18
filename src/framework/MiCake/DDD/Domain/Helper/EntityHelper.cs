@@ -6,16 +6,6 @@ namespace MiCake.DDD.Domain.Helper
 {
     public static class EntityHelper
     {
-        public static bool IsEntity(Type type)
-        {
-            return typeof(IEntity).IsAssignableFrom(type);
-        }
-
-        public static bool IsAggregateRoot(Type type)
-        {
-            return typeof(IAggregateRoot).IsAssignableFrom(type);
-        }
-
         public static bool HasDefaultId<TKey>(IEntity<TKey> entity)
         {
             if (EqualityComparer<TKey>.Default.Equals(entity.Id, default))

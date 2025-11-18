@@ -15,9 +15,15 @@ namespace MiCake.Core
 
         /// <summary>
         /// Completes the MiCake builder configuration.
-        /// The actual IMiCakeApplication will be resolved from the DI container when needed.
+        /// The MiCake system will be registered into the DI container.
         /// </summary>
         /// <returns>The builder for chaining</returns>
         IMiCakeBuilder Build();
+
+        /// <summary>
+        /// Gets current application options for the MiCake application.
+        /// </summary>
+        /// <returns></returns>
+        MiCakeApplicationOptions GetApplicationOptions();
     }
 }

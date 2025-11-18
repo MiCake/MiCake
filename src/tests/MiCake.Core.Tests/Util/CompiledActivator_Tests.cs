@@ -7,6 +7,7 @@ namespace MiCake.Core.Tests.Util
     /// <summary>
     /// Comprehensive tests for CompiledActivator to ensure proper cache behavior and performance
     /// </summary>
+    [Collection("ReflectionTests")]
     public class CompiledActivator_Tests
     {
         // Test classes for instantiation

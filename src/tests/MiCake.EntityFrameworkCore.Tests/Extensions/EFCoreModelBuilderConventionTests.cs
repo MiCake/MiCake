@@ -51,7 +51,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
             var softDeletableType = model.FindEntityType(typeof(TestSoftDeletableDbEntity));
             Assert.NotNull(softDeletableType);
             
-            var queryFilter = softDeletableType.GetQueryFilter();
+            var queryFilter = softDeletableType.GetDeclaredQueryFilters();
             Assert.NotNull(queryFilter);
         }
         

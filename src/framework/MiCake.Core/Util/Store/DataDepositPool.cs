@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
+using MiCake.Util.Collection;
+using MiCake.Util.Reflection;
 
 namespace MiCake.Util.Store
 {
@@ -55,13 +58,53 @@ namespace MiCake.Util.Store
         }
 
         /// <summary>
+        /// Get the stored data according to the key
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public T? TakeOut<T>(string key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            if (!_cachePool.TryGetValue(key, out var result))
+                return default;
+
+            return (T)result;
+        }
+
+
+        /// <summary>
+        /// Get the stored data according to the key type
+        /// </summary>
+        /// <param name="type">The type of the stored data</param>
+        /// <returns></returns>
+        public List<object> TakeOutByType(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+
+            var results = new List<object>();
+
+            foreach (var item in _cachePool.Values)
+            {
+                if (TypeHelper.IsInheritedFrom(item.GetType(), type))
+                {
+                    results.Add(item);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
         /// Deposit required data.
         /// </summary>
         /// <param name="key">The unique key for the data</param>
         /// <param name="dataInfo">Data information to store</param>
+        /// <param name="isReplace">Whether to replace the existing data with the same key</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
         /// <exception cref="InvalidOperationException">Thrown when the key already exists or capacity is exceeded</exception>
-        public void Deposit(string key, object dataInfo)
+        public void Deposit(string key, object dataInfo, bool isReplace = false)
         {
             ArgumentNullException.ThrowIfNull(key);
 
@@ -74,12 +117,15 @@ namespace MiCake.Util.Store
                         $"Please increase the capacity or remove existing items before adding new ones.");
                 }
 
-                if (!_cachePool.TryAdd(key, dataInfo))
+                if (!isReplace)
                 {
-                    throw new InvalidOperationException(
-                        $"The key '{key}' already exists in DataDepositPool. " +
-                        $"Please remove the existing item first using TakeOut or Release before adding a new one.");
+                    if (_cachePool.ContainsKey(key))
+                        throw new InvalidOperationException(
+                            $"The key '{key}' already exists in DataDepositPool. " +
+                            $"Please remove the existing item first using TakeOut or Release before adding a new one.");
                 }
+
+                _cachePool[key] = dataInfo;
             }
         }
 

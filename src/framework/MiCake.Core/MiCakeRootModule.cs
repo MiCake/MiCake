@@ -8,7 +8,7 @@ namespace MiCake.Core
     /// This is a framework-level module that handles core functionality like service auto-registration.
     /// All user modules should depend on this module (directly or indirectly).
     /// </summary>
-    public class MiCakeRootModule : MiCakeModule
+    public class MiCakeRootModule : MiCakeModuleAdvanced
     {
         /// <summary>
         /// This is a framework-level module
@@ -28,7 +28,7 @@ namespace MiCake.Core
         /// <summary>
         /// Configure core services
         /// </summary>
-        public override void ConfigureServices(ModuleConfigServiceContext context)
+        public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
             // Auto-register services from all modules
             AutoRegisterServices(context);

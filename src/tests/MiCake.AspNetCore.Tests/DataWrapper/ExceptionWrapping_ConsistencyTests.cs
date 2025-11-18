@@ -9,8 +9,8 @@ using Xunit;
 namespace MiCake.AspNetCore.Tests.DataWrapper
 {
     /// <summary>
-    /// Integration tests for consistency between ExceptionDataWrapperFilter and ExceptionHandlerMiddleware.
-    /// Verifies that both components use SlightException handling consistently.
+    /// Integration tests for consistency of exception wrapping behavior.
+    /// Verifies that ExceptionDataWrapperFilter uses SlightException handling correctly.
     /// </summary>
     public class ExceptionWrapping_ConsistencyTests
     {

@@ -73,6 +73,7 @@ namespace MiCake.Core.Tests
             
             // Act & Assert - Should not throw
             app.Start();
+            app.ShutDown();
         }
         
         [Fact]
@@ -111,6 +112,7 @@ namespace MiCake.Core.Tests
             
             // Act & Assert
             Assert.Throws<InvalidOperationException>(() => app.Start());
+            app.ShutDown();
         }
         
         [Fact]

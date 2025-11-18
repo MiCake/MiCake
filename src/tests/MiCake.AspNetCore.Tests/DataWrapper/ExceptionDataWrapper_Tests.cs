@@ -1,10 +1,13 @@
-﻿using MiCake.AspNetCore.DataWrapper;
+﻿using Castle.Core.Logging;
+using MiCake.AspNetCore.DataWrapper;
 using MiCake.AspNetCore.DataWrapper.Internals;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -29,7 +32,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 DataWrapperOptions = new DataWrapperOptions()
             });
             var exceptionContext = GetExceptionContext(httpContext, new SlightMiCakeException("MiCake"));
-            var wrapperFilter = new ExceptionDataWrapperFilter(options);
+            var wrapperFilter = new ExceptionDataWrapperFilter(options, NullLoggerFactory.Instance.CreateLogger<ExceptionDataWrapperFilter>());
 
             //action
             await wrapperFilter.OnExceptionAsync(exceptionContext);
@@ -54,7 +57,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 DataWrapperOptions = new DataWrapperOptions()
             });
             var exceptionContext = GetExceptionContext(httpContext, new MiCakeException("MiCake"));
-            var wrapperFilter = new ExceptionDataWrapperFilter(options);
+            var wrapperFilter = new ExceptionDataWrapperFilter(options, NullLoggerFactory.Instance.CreateLogger<ExceptionDataWrapperFilter>());
 
             //action
             await wrapperFilter.OnExceptionAsync(exceptionContext);
@@ -63,7 +66,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var result = exceptionContext.Result as ObjectResult;
             Assert.True(exceptionContext.ExceptionHandled);
             Assert.NotNull(result);
-            
+
             var errorResponse = result.Value as ErrorResponse;
             Assert.NotNull(errorResponse);
             Assert.Equal("MiCake", errorResponse.Message);
@@ -79,7 +82,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 DataWrapperOptions = new DataWrapperOptions()
             });
             var exceptionContext = GetExceptionContext(httpContext, new SlightMiCakeException("MiCake"), true);
-            var wrapperFilter = new ExceptionDataWrapperFilter(options);
+            var wrapperFilter = new ExceptionDataWrapperFilter(options, NullLoggerFactory.Instance.CreateLogger<ExceptionDataWrapperFilter>());
 
             //action
             await wrapperFilter.OnExceptionAsync(exceptionContext);

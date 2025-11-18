@@ -8,8 +8,6 @@ namespace MiCake.EntityFrameworkCore.Internal
 {
     /// <summary>
     /// Factory for creating MiCake interceptors using proper dependency injection patterns.
-    /// Follows MiCake's lightweight and non-intrusive design principles.
-    /// Avoids memory leaks by using the DI container correctly.
     /// </summary>
     internal sealed class MiCakeInterceptorFactory : IMiCakeInterceptorFactory
     {
@@ -45,14 +43,33 @@ namespace MiCake.EntityFrameworkCore.Internal
     }
 
     /// <summary>
-    /// Static helper for backward compatibility and easy access to interceptor creation.
-    /// This class maintains the original API while using proper DI internally.
-    /// Thread-safe implementation for multi-threaded scenarios.
+    /// Static helper for easy access to interceptor creation when configuring DbContextOptionsBuilder.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This helper creates an <see cref="IMiCakeInterceptorFactory"/> instance from the DI container during application initialization
+    /// and stores it statically for later use when configuring DbContextOptionsBuilder.
+    /// It works well in single-startup scenarios like ASP.NET Core, but caution is advised in cross-application or cross-test lifetime scenarios.
+    /// </para>
+    /// <para>
+    /// This helper exists for backwards compatibility and convenience, but using the
+    /// static API can cause cross-test or cross-application lifetime issues because it
+    /// stores a reference to an <see cref="IMiCakeInterceptorFactory"/> instance which is
+    /// created from the DI container.
+    /// </para>
+    /// <para>
+    /// Preferred approach: use dependency injection (DI) to obtain an
+    /// <see cref="IMiCakeInterceptorFactory"/> instance (or register the factory as a
+    /// singleton) and call <c>options.UseMiCakeInterceptors(sp)</c> from
+    /// <c>AddDbContext((sp, options) => ...)</c>. That is DI-first and avoids relying
+    /// on a global statically stored factory. The DI approach prevents holding onto a
+    /// disposed service provider across test or application boundaries.
+    /// </para>
+    /// </remarks>
     public static class MiCakeInterceptorFactoryHelper
     {
         private static volatile IMiCakeInterceptorFactory _factory;
-        private static readonly Lock _lock = new Lock();
+        private static readonly Lock _lock = new();
 
         /// <summary>
         /// Configure the factory instance (called during DI setup)
@@ -72,8 +89,18 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// <returns>MiCake EF Core interceptor (never null if factory is configured)</returns>
         internal static ISaveChangesInterceptor CreateInterceptor()
         {
-            var factory = _factory; // Read volatile field once
-            return factory?.CreateInterceptor();
+            var factory = _factory;
+            try
+            {
+                return factory?.CreateInterceptor();
+            }
+            catch (ObjectDisposedException)
+            {
+                // If the underlying service provider was disposed, clear the reference
+                // to avoid throwing in future calls and let callers fallback to DI.
+                Reset();
+                return null;
+            }
         }
 
         /// <summary>
@@ -83,8 +110,16 @@ namespace MiCake.EntityFrameworkCore.Internal
         {
             get
             {
-                var factory = _factory; // Read volatile field once
-                return factory?.CanCreateInterceptor == true;
+                try
+                {
+                    var factory = _factory;
+                    return factory?.CanCreateInterceptor == true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    Reset();
+                    return false;
+                }
             }
         }
 
