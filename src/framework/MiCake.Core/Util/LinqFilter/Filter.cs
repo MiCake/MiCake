@@ -10,7 +10,7 @@ namespace MiCake.Util.LinqFilter
     /// </summary>
     public class Filter
     {
-        public string PropertyName { get; set; }
+        public required string PropertyName { get; set; }
 
         public List<FilterValue> Value { get; set; } = [];
 
