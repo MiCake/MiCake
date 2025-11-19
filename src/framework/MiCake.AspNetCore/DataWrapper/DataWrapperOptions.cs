@@ -30,7 +30,7 @@ namespace MiCake.AspNetCore.DataWrapper
         /// Custom factory for creating response wrappers.
         /// If not set, uses the default StandardResponse and ErrorResponse models.
         /// </summary>
-        public ResponseWrapperFactory WrapperFactory { get; set; }
+        public ResponseWrapperFactory? WrapperFactory { get; set; }
 
         /// <summary>
         /// Default status codes used in wrapped responses.

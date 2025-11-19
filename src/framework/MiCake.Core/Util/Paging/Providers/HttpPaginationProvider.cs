@@ -74,6 +74,8 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
     {
         ArgumentNullException.ThrowIfNull(httpClient);
 
+        ValidateHttpClientSecurity(httpClient);
+
         // Only dispose if we own the client
         if (_httpClient != null && _ownsHttpClient)
         {
@@ -83,6 +85,18 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
         _httpClient = httpClient;
         _ownsHttpClient = false; // We don't own externally provided clients
         _logger.LogInformation("HttpClient has been replaced with a new instance");
+    }
+
+    private static void ValidateHttpClientSecurity(HttpClient client)
+    {
+        // Ensure finite timeout
+        if (client.Timeout == Timeout.InfiniteTimeSpan)
+        {
+            throw new ArgumentException(
+                "HttpClient must have a finite timeout to prevent hanging requests. " +
+                "Set Timeout property to a reasonable value (e.g., 30 seconds).",
+                nameof(client));
+        }
     }
 
     /// <summary>

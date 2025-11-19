@@ -41,7 +41,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// Wraps an error response using the configured factory.
         /// </summary>
-        public object WrapError(Exception exception, HttpContext httpContext, int statusCode, object originalData = null)
+        public object WrapError(Exception exception, HttpContext httpContext, int statusCode, object? originalData = null)
         {
             var context = new ErrorWrapperContext(httpContext, statusCode, originalData, exception);
             return _options.GetOrCreateFactory().ErrorFactory(context);
@@ -62,16 +62,16 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// Business operation status code from the exception.
         /// </summary>
-        public string Code { get; set; }
+        public string? Code { get; set; }
 
         /// <summary>
         /// Exception message.
         /// </summary>
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
         /// <summary>
         /// Additional details from the exception.
         /// </summary>
-        public object Details { get; set; }
+        public object? Details { get; set; }
     }
 }

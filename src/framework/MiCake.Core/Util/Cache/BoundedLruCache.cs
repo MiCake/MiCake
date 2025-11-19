@@ -11,13 +11,14 @@ namespace MiCake.Util.Cache
     /// </summary>
     /// <typeparam name="TKey">The type of cache keys</typeparam>
     /// <typeparam name="TValue">The type of cache values</typeparam>
-    public sealed class BoundedLruCache<TKey, TValue> : IDisposable
+    public sealed class BoundedLruCache<TKey, TValue> : IDisposable where TKey : notnull
     {
         private readonly int _maxSize;
         private readonly ConcurrentDictionary<TKey, LinkedListNode<CacheItem>> _cache;
         private readonly LinkedList<CacheItem> _accessOrder;
         private readonly Lock _lock = new();
         private volatile bool _disposed;
+        private int _accessCount;
 
         /// <summary>
         /// Initialize a new bounded LRU cache
@@ -81,7 +82,7 @@ namespace MiCake.Util.Cache
                 return true;
             }
 
-            value = default;
+            value = default!;
             return false;
         }
 
@@ -205,12 +206,17 @@ namespace MiCake.Util.Cache
             if (_disposed)
                 return;
 
+            if (Interlocked.Increment(ref _accessCount) % 10 != 0)
+                return;
+
             lock (_lock)
             {
                 if (_disposed || node.List != _accessOrder)
                     return;
 
-                // Move to front (most recently used)
+                if (node == _accessOrder.First)
+                    return;
+
                 _accessOrder.Remove(node);
                 _accessOrder.AddFirst(node);
             }
@@ -225,9 +231,9 @@ namespace MiCake.Util.Cache
             {
                 if (_disposed)
                     return;
-                    
+
                 _disposed = true;
-                
+
                 // Clear cache after setting disposed flag
                 _cache.Clear();
                 _accessOrder.Clear();

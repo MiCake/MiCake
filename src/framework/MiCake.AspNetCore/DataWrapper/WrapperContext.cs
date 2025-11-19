@@ -21,9 +21,9 @@ namespace MiCake.AspNetCore.DataWrapper
         /// The original data to be wrapped.
         /// The value may be null.
         /// </summary>
-        public object OriginalData { get; }
+        public object? OriginalData { get; }
 
-        public WrapperContext(HttpContext httpContext, int statusCode, object originalData)
+        public WrapperContext(HttpContext httpContext, int statusCode, object? originalData)
         {
             HttpContext = httpContext;
             StatusCode = statusCode;
@@ -41,7 +41,7 @@ namespace MiCake.AspNetCore.DataWrapper
         /// </summary>
         public System.Exception Exception { get; }
 
-        public ErrorWrapperContext(HttpContext httpContext, int statusCode, object originalData, System.Exception exception)
+        public ErrorWrapperContext(HttpContext httpContext, int statusCode, object? originalData, System.Exception exception)
             : base(httpContext, statusCode, originalData)
         {
             Exception = exception;
