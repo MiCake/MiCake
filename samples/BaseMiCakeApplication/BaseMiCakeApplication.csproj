@@ -5,7 +5,7 @@
     <UserSecretsId>57fb7dcf-2972-447d-a456-4628a7feb2b8</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <IsPackable>false</IsPackable>
-    <Nullable>false</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

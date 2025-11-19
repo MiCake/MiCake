@@ -1,7 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>false</Nullable>
+    <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
