@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace MiCake.AspNetCore.DataWrapper
+namespace MiCake.AspNetCore.Responses
 {
     /// <summary>
     /// Context information passed to wrapper factory delegates.

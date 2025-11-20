@@ -1,4 +1,4 @@
-namespace MiCake.AspNetCore.DataWrapper
+namespace MiCake.AspNetCore.Responses
 {
     /// <summary>
     /// Standard response wrapper model for error responses.

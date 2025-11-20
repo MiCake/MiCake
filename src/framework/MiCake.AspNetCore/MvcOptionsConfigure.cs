@@ -1,4 +1,4 @@
-﻿using MiCake.AspNetCore.DataWrapper.Internals;
+﻿using MiCake.AspNetCore.Responses.Internals;
 using MiCake.AspNetCore.Uow;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;

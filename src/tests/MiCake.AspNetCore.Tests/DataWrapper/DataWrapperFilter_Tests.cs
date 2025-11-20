@@ -1,5 +1,5 @@
-﻿using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.DataWrapper.Internals;
+﻿using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Responses.Internals;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -23,7 +23,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var options = Options.Create(new MiCakeAspNetOptions()
             {
                 UseDataWrapper = true,
-                DataWrapperOptions = new DataWrapperOptions()
+                DataWrapperOptions = new ResponseWrapperOptions()
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
@@ -54,7 +54,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var options = Options.Create(new MiCakeAspNetOptions()
             {
                 UseDataWrapper = true,
-                DataWrapperOptions = new DataWrapperOptions()
+                DataWrapperOptions = new ResponseWrapperOptions()
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, contentResult);
@@ -85,7 +85,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var options = Options.Create(new MiCakeAspNetOptions()
             {
                 UseDataWrapper = true,
-                DataWrapperOptions = new DataWrapperOptions()
+                DataWrapperOptions = new ResponseWrapperOptions()
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
@@ -112,7 +112,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var options = Options.Create(new MiCakeAspNetOptions()
             {
                 UseDataWrapper = true,
-                DataWrapperOptions = new DataWrapperOptions()
+                DataWrapperOptions = new ResponseWrapperOptions()
                 {
                     IgnoreStatusCodes = new List<int> { 404 }
                 }

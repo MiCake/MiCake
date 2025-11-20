@@ -1,7 +1,7 @@
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 
-namespace MiCake.AspNetCore.DataWrapper.Internals
+namespace MiCake.AspNetCore.Responses.Internals
 {
     /// <summary>
     /// Extension methods for HttpContext to manage SlightException handling.

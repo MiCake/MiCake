@@ -2,15 +2,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
-namespace MiCake.AspNetCore.DataWrapper.Internals
+namespace MiCake.AspNetCore.Responses.Internals
 {
     /// <summary>
     /// Simplified executor for wrapping responses.
     /// Focuses solely on wrapping logic using factory pattern.
     /// </summary>
-    internal class ResponseWrapperExecutor(DataWrapperOptions options)
+    internal class ResponseWrapperExecutor(ResponseWrapperOptions options)
     {
-        private readonly DataWrapperOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+        private readonly ResponseWrapperOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
         /// <summary>
         /// Wraps a successful response using the configured factory.

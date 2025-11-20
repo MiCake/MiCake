@@ -1,4 +1,4 @@
-namespace MiCake.AspNetCore.DataWrapper
+namespace MiCake.AspNetCore.Responses
 {
     /// <summary>
     /// Marker interface for response wrapper models.

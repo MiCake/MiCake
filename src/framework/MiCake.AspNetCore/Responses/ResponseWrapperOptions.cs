@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace MiCake.AspNetCore.DataWrapper
+namespace MiCake.AspNetCore.Responses
 {
     /// <summary>
     /// Configuration options for response data wrapping.
     /// </summary>
-    public class DataWrapperOptions
+    public class ResponseWrapperOptions
     {
         /// <summary>
         /// Shows the stack trace information in error responses.

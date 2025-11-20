@@ -2,7 +2,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MiCake.AspNetCore.DataWrapper
+namespace MiCake.AspNetCore.Responses
 {
     /// <summary>
     /// Factory delegate for creating success response wrappers.
@@ -37,7 +37,7 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// Creates a default factory using StandardResponse and ErrorResponse.
         /// </summary>
-        public static ResponseWrapperFactory CreateDefault(DataWrapperOptions options)
+        public static ResponseWrapperFactory CreateDefault(ResponseWrapperOptions options)
         {
             return new ResponseWrapperFactory
             {

@@ -1,4 +1,4 @@
-using MiCake.AspNetCore.DataWrapper;
+using MiCake.AspNetCore.Responses;
 using System.Linq;
 using Xunit;
 
@@ -16,7 +16,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Constructor_WrapProblemDetails_DefaultIsTrue()
         {
             // Arrange & Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.True(options.WrapProblemDetails);
@@ -26,7 +26,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Constructor_ShowStackTraceWhenError_DefaultIsFalse()
         {
             // Arrange & Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.False(options.ShowStackTraceWhenError);
@@ -36,7 +36,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Constructor_IgnoreStatusCodes_DefaultContains201_202_404()
         {
             // Arrange & Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.NotNull(options.IgnoreStatusCodes);
@@ -49,7 +49,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Constructor_DefaultCodeSetting_NotNull()
         {
             // Arrange & Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.NotNull(options.DefaultCodeSetting);
@@ -63,7 +63,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_CanBeSetToTrue()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
 
             // Assert
             Assert.True(options.WrapProblemDetails);
@@ -73,7 +73,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_CanBeSetToFalse()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
 
             // Assert
             Assert.False(options.WrapProblemDetails);
@@ -83,8 +83,8 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_UnifiedFlagControlsBothTypes()
         {
             // Arrange
-            var options1 = new DataWrapperOptions { WrapProblemDetails = true };
-            var options2 = new DataWrapperOptions { WrapProblemDetails = false };
+            var options1 = new ResponseWrapperOptions { WrapProblemDetails = true };
+            var options2 = new ResponseWrapperOptions { WrapProblemDetails = false };
 
             // Assert - Both types are controlled by the same flag
             Assert.True(options1.WrapProblemDetails);
@@ -100,11 +100,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapValidationProblemDetails_PropertyDoesNotExist()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             
             // Act & Assert
             // Verify the property doesn't exist by checking type info
-            var propertyInfo = typeof(DataWrapperOptions).GetProperty("WrapValidationProblemDetails");
+            var propertyInfo = typeof(ResponseWrapperOptions).GetProperty("WrapValidationProblemDetails");
             Assert.Null(propertyInfo);
         }
 
@@ -112,11 +112,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void SimplifiedAPI_OnlyHasWrapProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             
             // Act
-            var wrapProblemDetailsProperty = typeof(DataWrapperOptions).GetProperty("WrapProblemDetails");
-            var wrapValidationProblemDetailsProperty = typeof(DataWrapperOptions).GetProperty("WrapValidationProblemDetails");
+            var wrapProblemDetailsProperty = typeof(ResponseWrapperOptions).GetProperty("WrapProblemDetails");
+            var wrapValidationProblemDetailsProperty = typeof(ResponseWrapperOptions).GetProperty("WrapValidationProblemDetails");
 
             // Assert
             Assert.NotNull(wrapProblemDetailsProperty);
@@ -131,7 +131,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultCodeSetting_SuccessCodeIsZero()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.Equal("0", options.DefaultCodeSetting.Success);
@@ -141,7 +141,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultCodeSetting_ProblemDetailsCodeIs9998()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.Equal("9998", options.DefaultCodeSetting.ProblemDetails);
@@ -151,7 +151,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultCodeSetting_ErrorCodeIs9999()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.Equal("9999", options.DefaultCodeSetting.Error);
@@ -167,7 +167,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 Error = "500",
                 ProblemDetails = "400"
             };
-            var options = new DataWrapperOptions { DefaultCodeSetting = customCodes };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodes };
 
             // Assert
             Assert.Equal("200", options.DefaultCodeSetting.Success);
@@ -183,7 +183,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapperFactory_DefaultIsNull()
         {
             // Arrange & Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.Null(options.WrapperFactory);
@@ -198,7 +198,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 SuccessFactory = ctx => "custom",
                 ErrorFactory = ctx => "error"
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
 
             // Assert
             Assert.Same(customFactory, options.WrapperFactory);
@@ -208,7 +208,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void GetOrCreateFactory_WithNoFactory_CreatesDefault()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             var factory = options.GetOrCreateFactory();
@@ -228,7 +228,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 SuccessFactory = ctx => "custom",
                 ErrorFactory = ctx => "error"
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
 
             // Act
             var factory = options.GetOrCreateFactory();
@@ -245,7 +245,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IgnoreStatusCodes_CanBeModified()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             options.IgnoreStatusCodes.Add(500);
@@ -258,7 +258,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IgnoreStatusCodes_CanBeCleared()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             options.IgnoreStatusCodes.Clear();
@@ -271,7 +271,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IgnoreStatusCodes_CanBeReplaced()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             options.IgnoreStatusCodes = [200, 204];
@@ -291,7 +291,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Scenario_AllDefaults_WorksTogether()
         {
             // Arrange & Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert
             Assert.True(options.WrapProblemDetails);
@@ -312,7 +312,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var customStatusCodes = new System.Collections.Generic.List<int> { 400, 500 };
 
             // Act
-            var options = new DataWrapperOptions
+            var options = new ResponseWrapperOptions
             {
                 WrapProblemDetails = false,
                 ShowStackTraceWhenError = true,
@@ -334,8 +334,8 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Scenario_DualWrapperUsage_DifferentConfigurations()
         {
             // Arrange
-            var optionsWrapAll = new DataWrapperOptions { WrapProblemDetails = true };
-            var optionsWrapNone = new DataWrapperOptions { WrapProblemDetails = false };
+            var optionsWrapAll = new ResponseWrapperOptions { WrapProblemDetails = true };
+            var optionsWrapNone = new ResponseWrapperOptions { WrapProblemDetails = false };
 
             // Act
             var factoryWrapAll = optionsWrapAll.GetOrCreateFactory();
@@ -355,7 +355,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void APISimplification_NoRedundantProperties()
         {
             // Arrange
-            var properties = typeof(DataWrapperOptions).GetProperties();
+            var properties = typeof(ResponseWrapperOptions).GetProperties();
 
             // Act
             var propertyNames = properties.Select(p => p.Name).ToList();
@@ -379,7 +379,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             // New approach uses one unified flag
 
             // Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             options.WrapProblemDetails = true; // Controls both ProblemDetails and ValidationProblemDetails
 
             // Assert
@@ -398,7 +398,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             // Now both are controlled by one flag defaulting to true
 
             // Act
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Assert - Both types are wrapped by default
             Assert.True(options.WrapProblemDetails);
@@ -411,7 +411,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             // Arrange - Fewer options means simpler configuration
 
             // Act
-            var options = new DataWrapperOptions
+            var options = new ResponseWrapperOptions
             {
                 WrapProblemDetails = false,
                 ShowStackTraceWhenError = true,

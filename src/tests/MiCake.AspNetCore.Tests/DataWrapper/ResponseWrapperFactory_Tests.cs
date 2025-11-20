@@ -1,4 +1,4 @@
-using MiCake.AspNetCore.DataWrapper;
+using MiCake.AspNetCore.Responses;
 using Xunit;
 
 namespace MiCake.AspNetCore.Tests.DataWrapper
@@ -9,7 +9,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void CreateDefault_ReturnsValidFactory()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             var factory = ResponseWrapperFactory.CreateDefault(options);
@@ -24,7 +24,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultSuccessFactory_CreatesStandardResponse()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var context = new WrapperContext(null, 200, "test data");
 
@@ -42,7 +42,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultErrorFactory_CreatesErrorResponse()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var exception = new System.Exception("Test error");
             var context = new ErrorWrapperContext(null, 500, null, exception);
@@ -79,7 +79,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void GetOrCreateFactory_NoFactory_CreatesDefault()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             var factory = options.GetOrCreateFactory();
@@ -99,7 +99,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 SuccessFactory = ctx => "custom",
                 ErrorFactory = ctx => "error"
             };
-            var options = new DataWrapperOptions
+            var options = new ResponseWrapperOptions
             {
                 WrapperFactory = customFactory
             };

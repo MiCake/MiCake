@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 
-namespace MiCake.AspNetCore.DataWrapper.Internals
+namespace MiCake.AspNetCore.Responses.Internals
 {
     /// <summary>
     /// Filter to wrap exception responses.
@@ -15,12 +15,12 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     internal class ExceptionDataWrapperFilter : IAsyncExceptionFilter
     {
         private readonly ResponseWrapperExecutor _executor;
-        private readonly DataWrapperOptions _options;
+        private readonly ResponseWrapperOptions _options;
         private readonly ILogger<ExceptionDataWrapperFilter> _logger;
 
         public ExceptionDataWrapperFilter(IOptions<MiCakeAspNetOptions> options, ILogger<ExceptionDataWrapperFilter> logger)
         {
-            _options = options.Value?.DataWrapperOptions ?? new DataWrapperOptions();
+            _options = options.Value?.DataWrapperOptions ?? new ResponseWrapperOptions();
             _executor = new ResponseWrapperExecutor(_options);
             _logger = logger;
         }

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MiCake.AspNetCore.DataWrapper.Internals
+namespace MiCake.AspNetCore.Responses.Internals
 {
     /// <summary>
     /// Filter to wrap successful HTTP responses.
@@ -13,11 +13,11 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
     internal class DataWrapperFilter : IAsyncResultFilter
     {
         private readonly ResponseWrapperExecutor _executor;
-        private readonly DataWrapperOptions _options;
+        private readonly ResponseWrapperOptions _options;
 
         public DataWrapperFilter(IOptions<MiCakeAspNetOptions> options)
         {
-            _options = options.Value?.DataWrapperOptions ?? new DataWrapperOptions();
+            _options = options.Value?.DataWrapperOptions ?? new ResponseWrapperOptions();
             _executor = new ResponseWrapperExecutor(_options);
         }
 
