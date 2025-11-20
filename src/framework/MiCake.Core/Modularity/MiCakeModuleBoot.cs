@@ -13,17 +13,17 @@ namespace MiCake.Core.Modularity
         private readonly ILogger _logger;
         private readonly IMiCakeModuleCollection _modules;
         private readonly MiCakeModuleLogger _moduleLogger;
-        private readonly ModuleDependencyResolver _dependencyResolver;
+        private readonly ModuleDependencyResolver? _dependencyResolver;
         private readonly MiCakeApplicationOptions _applicationOptions;
 
-        private Action<ModuleConfigServiceContext> _configServiceActions;
-        private Action<ModuleInitializationContext> _initializationActions;
+        private Action<ModuleConfigServiceContext>? _configServiceActions;
+        private Action<ModuleInitializationContext>? _initializationActions;
 
         public MiCakeModuleBoot(
             ILoggerFactory loggerFactory,
             IMiCakeModuleCollection modules,
-            ModuleDependencyResolver dependencyResolver = null,
-            MiCakeApplicationOptions applicationOptions = null)
+            ModuleDependencyResolver? dependencyResolver = null,
+            MiCakeApplicationOptions? applicationOptions = null)
         {
             _logger = loggerFactory.CreateLogger("MiCake.Core.Modularity.MiCakeModuleBoot");
             _moduleLogger = new MiCakeModuleLogger(_logger);

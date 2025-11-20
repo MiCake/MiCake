@@ -25,12 +25,12 @@ namespace MiCake.Core.Modularity
             Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public void AddModule<TModule>(Action<object> configureModule = null) where TModule : MiCakeModule
+        public void AddModule<TModule>(Action<object>? configureModule = null) where TModule : MiCakeModule
         {
             AddModule(typeof(TModule), configureModule);
         }
 
-        public void AddModule(Type moduleType, Action<object> configureModule = null)
+        public void AddModule(Type moduleType, Action<object>? configureModule = null)
         {
             ArgumentNullException.ThrowIfNull(moduleType);
 
@@ -45,8 +45,8 @@ namespace MiCake.Core.Modularity
 
         internal class ModuleRegistration
         {
-            public Type ModuleType { get; set; }
-            public Action<object> ConfigureAction { get; set; }
+            public required Type ModuleType { get; set; }
+            public Action<object>? ConfigureAction { get; set; }
         }
     }
 }

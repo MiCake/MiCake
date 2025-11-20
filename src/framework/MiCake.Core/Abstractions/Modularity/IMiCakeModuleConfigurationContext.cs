@@ -13,14 +13,14 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <typeparam name="TModule">The module type</typeparam>
         /// <param name="configureModule">Optional module configuration action</param>
-        void AddModule<TModule>(Action<object> configureModule = null) where TModule : MiCakeModule;
+        void AddModule<TModule>(Action<object>? configureModule = null) where TModule : MiCakeModule;
 
         /// <summary>
         /// Register a module by type with optional configuration
         /// </summary>
         /// <param name="moduleType">The module type</param>
         /// <param name="configureModule">Optional module configuration action</param>
-        void AddModule(Type moduleType, Action<object> configureModule = null);
+        void AddModule(Type moduleType, Action<object>? configureModule = null);
 
         /// <summary>
         /// Get the application options for configuration

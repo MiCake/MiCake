@@ -35,7 +35,7 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Gets the module dependency resolver (available after PopulateModules is called).
         /// </summary>
-        internal ModuleDependencyResolver DependencyResolver => _dependencyResolver;
+        internal ModuleDependencyResolver? DependencyResolver => _dependencyResolver;
 
         /// <summary>
         /// Discovers and registers all modules starting from the entry module.
@@ -74,7 +74,7 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="moduleType">The module type to find</param>
         /// <returns>The module descriptor, or null if not found</returns>
-        public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
+        public MiCakeModuleDescriptor? GetMiCakeModule(Type moduleType)
         {
             ArgumentNullException.ThrowIfNull(moduleType);
 
