@@ -16,7 +16,7 @@ namespace MiCake.Util.Reflection
     public static class CompiledActivator
     {
         private const int MaxParameterizedCacheSize = 256;
-        
+
         private static readonly ConcurrentDictionary<Type, Func<object>> _factoryCache = new();
         private static readonly ConcurrentDictionary<string, CacheEntry> _parameterizedFactoryCache = new();
         private static readonly LinkedList<string> _lruList = new();
@@ -24,8 +24,8 @@ namespace MiCake.Util.Reflection
 
         private class CacheEntry
         {
-            public Func<object[], object> Factory { get; set; }
-            public LinkedListNode<string> LruNode { get; set; }
+            public Func<object[], object> Factory { get; set; } = null!;
+            public LinkedListNode<string> LruNode { get; set; } = null!;
         }
 
         /// <summary>
@@ -84,9 +84,9 @@ namespace MiCake.Util.Reflection
                     $"Ensure the type has a public or internal parameterless constructor.");
             }
 
-            var newExpression = System.Linq.Expressions.Expression.New(constructor);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object>>(
-                System.Linq.Expressions.Expression.Convert(newExpression, typeof(object)));
+            var newExpression = Expression.New(constructor);
+            var lambda = Expression.Lambda<Func<object>>(
+                Expression.Convert(newExpression, typeof(object)));
 
             return lambda.Compile();
         }
@@ -108,16 +108,16 @@ namespace MiCake.Util.Reflection
                     $"Type '{type.FullName}' does not have a constructor with parameters: {string.Join(", ", parameterTypes.Select(t => t.Name))}");
             }
 
-            var argsParameter = System.Linq.Expressions.Expression.Parameter(typeof(object[]), "args");
+            var argsParameter = Expression.Parameter(typeof(object[]), "args");
             var parameterExpressions = constructor.GetParameters()
                 .Select((p, i) => Expression.Convert(
                     Expression.ArrayIndex(argsParameter, Expression.Constant(i)),
                     p.ParameterType))
                 .ToArray();
 
-            var newExpression = System.Linq.Expressions.Expression.New(constructor, parameterExpressions);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object[], object>>(
-                System.Linq.Expressions.Expression.Convert(newExpression, typeof(object)),
+            var newExpression = Expression.New(constructor, parameterExpressions);
+            var lambda = Expression.Lambda<Func<object[], object>>(
+                Expression.Convert(newExpression, typeof(object)),
                 argsParameter);
 
             return lambda.Compile();
@@ -130,7 +130,7 @@ namespace MiCake.Util.Reflection
         {
             _factoryCache.Clear();
             _parameterizedFactoryCache.Clear();
-            
+
             _lruLock.EnterWriteLock();
             try
             {
@@ -161,17 +161,16 @@ namespace MiCake.Util.Reflection
         private static string BuildCacheKey(Type type, Type[] argTypes)
         {
             // Pre-calculate capacity to avoid reallocations
-            // Format: "TypeFullName_ArgType1_ArgType2_..."
-            var capacity = type.FullName.Length + 1; // +1 for underscore
+            var capacity = type?.FullName?.Length + 1; // +1 for underscore
             for (int i = 0; i < argTypes.Length; i++)
             {
-                capacity += argTypes[i].FullName.Length;
+                capacity += argTypes[i]?.FullName?.Length ?? 0;
                 if (i < argTypes.Length - 1)
                     capacity += 1; // underscore between types
             }
 
-            var sb = new StringBuilder(capacity);
-            sb.Append(type.FullName);
+            var sb = new StringBuilder(capacity ?? 0);
+            sb.Append(type?.FullName);
             sb.Append('_');
 
             for (int i = 0; i < argTypes.Length; i++)
@@ -250,8 +249,9 @@ namespace MiCake.Util.Reflection
             var lruNode = _lruList.First;
             _lruList.RemoveFirst();
 
-            var cacheKey = lruNode.Value;
-            _parameterizedFactoryCache.TryRemove(cacheKey, out _);
+            var cacheKey = lruNode?.Value;
+            if (cacheKey != null)
+                _parameterizedFactoryCache.TryRemove(cacheKey, out _);
         }
     }
 }

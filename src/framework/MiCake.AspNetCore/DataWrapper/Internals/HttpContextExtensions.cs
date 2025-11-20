@@ -19,7 +19,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
         /// <param name="exception">The SlightException to store.</param>
-        public static void SetSlightException(this HttpContext httpContext, SlightMiCakeException exception)
+        public static void SetSlightException(this HttpContext httpContext, ISlightException exception)
         {
             if (httpContext?.Items != null)
             {
@@ -33,7 +33,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <param name="httpContext">The current HTTP context.</param>
         /// <param name="exception">The SlightException if found; otherwise null.</param>
         /// <returns>True if a SlightException was found; otherwise false.</returns>
-        public static bool TryGetSlightException(this HttpContext httpContext, out SlightMiCakeException exception)
+        public static bool TryGetSlightException(this HttpContext httpContext, out ISlightException? exception)
         {
             exception = null;
 
@@ -41,7 +41,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                 return false;
 
             if (httpContext.Items.TryGetValue(SlightExceptionKey, out var item) &&
-                item is SlightMiCakeException slightEx)
+                item is ISlightException slightEx)
             {
                 exception = slightEx;
                 return true;
@@ -65,7 +65,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
         /// <returns>The stored SlightException, or null if not found.</returns>
-        public static SlightMiCakeException GetSlightException(this HttpContext httpContext)
+        public static ISlightException? GetSlightException(this HttpContext httpContext)
         {
             TryGetSlightException(httpContext, out var exception);
             return exception;

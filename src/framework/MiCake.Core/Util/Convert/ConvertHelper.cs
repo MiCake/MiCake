@@ -12,11 +12,11 @@ namespace MiCake.Util.Convert
         /// <typeparam name="TDestination">destination type</typeparam>
         /// <param name="source">source value</param>
         /// <returns>if cannot convert,return defalut value.</returns>
-        public static TDestination ConvertValue<TSource, TDestination>(TSource source)
+        public static TDestination? ConvertValue<TSource, TDestination>(TSource source) where TSource : notnull where TDestination : notnull
         {
             try
             {
-                TDestination result = default;
+                TDestination? result = default;
 
                 foreach (var converter in GetConverters<TSource, TDestination>())
                 {
@@ -34,7 +34,7 @@ namespace MiCake.Util.Convert
             }
         }
 
-        private static IEnumerable<IValueConvert<TSource, TDestination>> GetConverters<TSource, TDestination>()
+        private static IEnumerable<IValueConvert<TSource, TDestination>> GetConverters<TSource, TDestination>() where TSource : notnull where TDestination : notnull
         {
             if (typeof(TDestination) == typeof(Guid))
             {

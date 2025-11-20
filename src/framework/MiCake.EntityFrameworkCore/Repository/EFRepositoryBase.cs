@@ -46,10 +46,8 @@ namespace MiCake.EntityFrameworkCore.Repository
         private class CacheContext
         {
             public Guid UowId { get; set; }
-            public TDbContext DbContext { get; set; }
-            public DbSet<TEntity> DbSet { get; set; }
-            public IQueryable<TEntity> Entities { get; set; }
-            public IQueryable<TEntity> EntitiesNoTracking { get; set; }
+            public required TDbContext DbContext { get; set; }
+            public required DbSet<TEntity> DbSet { get; set; }
         }
 
         /// <summary>
@@ -78,13 +76,13 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// Gets an IQueryable for the entity with change tracking enabled.
         /// Use this when you need to track changes to entities for updates.
         /// </summary>
-        protected IQueryable<TEntity> Entities => GetOrCreateCacheContext().Entities;
+        protected IQueryable<TEntity> Entities => GetOrCreateCacheContext().DbSet.AsQueryable();
 
         /// <summary>
         /// Gets an IQueryable for the entity with change tracking disabled.
         /// Use this for read-only queries to improve performance.
         /// </summary>
-        protected IQueryable<TEntity> EntitiesNoTracking => GetOrCreateCacheContext().EntitiesNoTracking;
+        protected IQueryable<TEntity> EntitiesNoTracking => GetOrCreateCacheContext().DbSet.AsNoTracking();
 
         /// <summary>
         /// Gets the logger instance for diagnostic logging
@@ -247,8 +245,6 @@ namespace MiCake.EntityFrameworkCore.Repository
                 DbContext = dbContext,
                 DbSet = dbContext.Set<TEntity>(),
             };
-            cache.Entities = cache.DbSet.AsQueryable();
-            cache.EntitiesNoTracking = cache.DbSet.AsNoTracking();
 
             return cache;
         }

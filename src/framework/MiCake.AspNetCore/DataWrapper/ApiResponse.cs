@@ -4,32 +4,32 @@ namespace MiCake.AspNetCore.DataWrapper
     /// Standard response wrapper model for successful responses.
     /// </summary>
     /// <typeparam name="T">The type of data being returned</typeparam>
-    public class ApiResponse<T> : IResponseWrapper
+    public class ApiResponse<T> : IResponseWrapper where T : notnull
     {
         /// <summary>
         /// Business operation status code.
         /// </summary>
-        public string Code { get; set; }
+        public string? Code { get; set; }
 
         /// <summary>
         /// Response message describing the result.
         /// </summary>
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
         /// <summary>
         /// The actual response data.
         /// </summary>
-        public T Data { get; set; }
+        public T Data { get; set; } = default!;
 
         public ApiResponse()
         {
         }
 
-        public ApiResponse(string code, string message, T data)
+        public ApiResponse(string? code, string? message, T? data)
         {
             Code = code;
             Message = message;
-            Data = data;
+            Data = data ?? default!;
         }
     }
 
@@ -42,7 +42,7 @@ namespace MiCake.AspNetCore.DataWrapper
         {
         }
 
-        public ApiResponse(string code, string message, object data)
+        public ApiResponse(string? code, string? message, object? data)
             : base(code, message, data)
         {
         }

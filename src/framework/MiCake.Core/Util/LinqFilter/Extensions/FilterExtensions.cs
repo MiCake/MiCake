@@ -88,8 +88,13 @@ namespace MiCake.Util.LinqFilter
                 }
                 else
                 {
-                    exp = ExpressionHelpers.ConcatExpressionsWithOperator(exp, expression, filterGroupsHolder.FilterGroupJoinType);
+                    exp = ExpressionHelpers.ConcatExpressionsWithOperator(exp, expression!, filterGroupsHolder.FilterGroupJoinType);
                 }
+            }
+
+            if (exp == null)
+            {
+                return query;
             }
 
             MethodCallExpression whereCallExpression = Expression.Call(
@@ -102,7 +107,7 @@ namespace MiCake.Util.LinqFilter
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
 
-        public static Expression<Func<T, bool>> GetFilterExpression<T>(this List<Filter> filters)
+        public static Expression<Func<T, bool>>? GetFilterExpression<T>(this List<Filter> filters)
         {
             if (filters.Count == 0)
             {
@@ -112,16 +117,20 @@ namespace MiCake.Util.LinqFilter
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
             var expression = CreateFilterExpression<T>(filters, pe);
+            if (expression == null)
+            {
+                return null;
+            }
             return Expression.Lambda<Func<T, bool>>(expression, pe);
         }
 
-        private static Expression CreateFilterExpression<T>(List<Filter> filters, ParameterExpression pe, FilterJoinType filterGroupJoinType = FilterJoinType.And)
+        private static Expression? CreateFilterExpression<T>(List<Filter> filters, ParameterExpression pe, FilterJoinType filterGroupJoinType = FilterJoinType.And)
         {
-            Expression exp = null;
+            Expression? exp = null;
             foreach (var filter in filters)
             {
                 Expression left = ExpressionHelpers.BuildNestedPropertyExpression(pe, filter.PropertyName);
-                Expression builded = BuildFilterValuesExpression(left, filter.Value, filter.FilterValueJoinType);
+                Expression? builded = BuildFilterValuesExpression(left, filter.Value, filter.FilterValueJoinType);
 
                 if (exp == null)
                 {
@@ -129,7 +138,7 @@ namespace MiCake.Util.LinqFilter
                 }
                 else
                 {
-                    exp = ExpressionHelpers.ConcatExpressionsWithOperator(exp, builded, filterGroupJoinType);
+                    exp = ExpressionHelpers.ConcatExpressionsWithOperator(exp, builded!, filterGroupJoinType);
                 }
             }
 
@@ -143,13 +152,14 @@ namespace MiCake.Util.LinqFilter
             var listType = typeof(List<>);
             Type[] typeArgs = [newItemType];
             var genericListType = listType.MakeGenericType(typeArgs);
-            var typedList = (IList)Activator.CreateInstance(genericListType);
+            var typedList = Activator.CreateInstance(genericListType) as IList ?? throw new InvalidOperationException("Failed to create typed list.");
+
             foreach (var item in source)
             {
                 if (IsNullable(newItemType))
                 {
                     var underlyingType = Nullable.GetUnderlyingType(newItemType);
-                    typedList.Add(System.Convert.ChangeType(item, underlyingType));
+                    typedList.Add(System.Convert.ChangeType(item, underlyingType!));
                 }
                 else
                 {
@@ -159,19 +169,19 @@ namespace MiCake.Util.LinqFilter
             return typedList;
         }
 
-        private static Expression BuildFilterValuesExpression(Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
+        private static Expression? BuildFilterValuesExpression(Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
         {
-            Expression exp = null;
+            Expression? exp = null;
 
             foreach (var filterValue in filterValues)
             {
                 ValidateFilterValue(filterValue, left.Type);
 
-                var valueType = filterValue.Value.GetType();
-                Expression right = null;
-                if (valueType.IsGenericType && filterValue.Value is IList)
+                var valueType = filterValue.Value?.GetType();
+                Expression? right = null;
+                if (valueType?.IsGenericType is true && filterValue.Value is IList list1)
                 {
-                    IList list = RemakeStaticListWithNewType(left.Type, filterValue.Value as IList);
+                    IList list = RemakeStaticListWithNewType(left.Type, list1);
                     right = Expression.Constant(list);
                 }
                 else
@@ -179,28 +189,28 @@ namespace MiCake.Util.LinqFilter
                     if (IsNullable(left.Type))
                     {
                         var underlyingType = Nullable.GetUnderlyingType(left.Type);
-                        Type type = typeof(Nullable<>).MakeGenericType(underlyingType);
-                        
-                        object convertedValue;
+                        Type type = typeof(Nullable<>).MakeGenericType(underlyingType!);
+
+                        object? convertedValue;
                         try
                         {
-                            convertedValue = System.Convert.ChangeType(filterValue.Value, underlyingType);
+                            convertedValue = System.Convert.ChangeType(filterValue.Value, underlyingType!);
                         }
                         catch (Exception ex)
                         {
-                             throw new InvalidOperationException($"Failed to convert filter value '{filterValue.Value}' to type '{underlyingType.Name}'", ex);
+                            throw new InvalidOperationException($"Failed to convert filter value '{filterValue.Value}' to type '{underlyingType!.Name}'", ex);
                         }
 
                         right = Expression.Convert(Expression.Constant(convertedValue), type);
                     }
                     else
                     {
-                        object exceptValue;
+                        object? exceptValue;
                         try
                         {
                             if (valueType == typeof(string))
                             {
-                                exceptValue = TypeDescriptor.GetConverter(left.Type).ConvertFromString(filterValue.Value.ToString());
+                                exceptValue = TypeDescriptor.GetConverter(left.Type)?.ConvertFromString(filterValue.Value?.ToString() ?? string.Empty);
                             }
                             else
                             {
@@ -209,7 +219,7 @@ namespace MiCake.Util.LinqFilter
                         }
                         catch (Exception ex)
                         {
-                             throw new InvalidOperationException($"Failed to convert filter value '{filterValue.Value}' to type '{left.Type.Name}'", ex);
+                            throw new InvalidOperationException($"Failed to convert filter value '{filterValue.Value}' to type '{left.Type.Name}'", ex);
                         }
                         right = Expression.Constant(exceptValue);
                     }

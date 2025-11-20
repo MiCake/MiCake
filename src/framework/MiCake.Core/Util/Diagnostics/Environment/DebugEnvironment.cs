@@ -18,18 +18,13 @@ namespace MiCake.Util.Diagnostics.Environment
             {
                 if (_isDebugMode == null)
                 {
-                    var assembly = Assembly.GetEntryAssembly();
-                    if (assembly == null)
-                    {
-                        assembly = new StackTrace().GetFrames().Last().GetMethod().Module.Assembly;
-                    }
-
-                    var debuggableAttribute = assembly.GetCustomAttribute<DebuggableAttribute>();
-                    _isDebugMode = debuggableAttribute.DebuggingFlags
+                    var assembly = Assembly.GetEntryAssembly() ?? (new StackTrace().GetFrames()?.Last()?.GetMethod()?.Module.Assembly);
+                    var debuggableAttribute = assembly?.GetCustomAttribute<DebuggableAttribute>();
+                    _isDebugMode = debuggableAttribute?.DebuggingFlags
                         .HasFlag(DebuggableAttribute.DebuggingModes.EnableEditAndContinue);
                 }
 
-                return _isDebugMode.Value;
+                return _isDebugMode ?? false;
             }
         }
         private static bool? _isDebugMode;

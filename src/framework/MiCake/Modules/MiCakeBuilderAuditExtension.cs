@@ -14,7 +14,7 @@ namespace MiCake.Core
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="optionsConfig">The config for audit options</param>
-        public static IMiCakeBuilder UseAudit(this IMiCakeBuilder builder, Action<MiCakeAuditOptions> optionsConfig)
+        public static IMiCakeBuilder UseAudit(this IMiCakeBuilder builder, Action<MiCakeAuditOptions>? optionsConfig)
         {
             var options = new MiCakeAuditOptions();
             optionsConfig?.Invoke(options);

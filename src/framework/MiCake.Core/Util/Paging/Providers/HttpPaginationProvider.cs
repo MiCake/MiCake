@@ -24,7 +24,7 @@ namespace MiCake.Util.Paging.Providers;
 public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : PaginationDataProviderBase<HttpPaginationRequest, TData>(logger), IDisposable
 {
     private bool _disposed;
-    private HttpClient _httpClient;
+    private HttpClient? _httpClient;
     private bool _ownsHttpClient;
     private RetryPolicy? _retryPolicy;
     

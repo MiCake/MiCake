@@ -5,13 +5,13 @@
     /// </summary>
     /// <typeparam name="TSource">source type</typeparam>
     /// <typeparam name="TDestination">destination type</typeparam>
-    public interface IValueConvert<in TSource, out TDestination>
+    public interface IValueConvert<in TSource, out TDestination> where TDestination : notnull where TSource : notnull
     {
         /// <summary>
         /// Convert value to destination type.
         /// </summary>
         /// <param name="value">source value.</param>
-        TDestination Convert(TSource value);
+        TDestination? Convert(TSource value);
 
         /// <summary>
         /// Indicates whether the current incoming value can be converted

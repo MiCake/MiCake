@@ -27,12 +27,12 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// Factory for wrapping successful responses.
         /// </summary>
-        public SuccessWrapperFactory SuccessFactory { get; set; }
+        public SuccessWrapperFactory? SuccessFactory { get; set; }
 
         /// <summary>
         /// Factory for wrapping error responses.
         /// </summary>
-        public ErrorWrapperFactory ErrorFactory { get; set; }
+        public ErrorWrapperFactory? ErrorFactory { get; set; }
 
         /// <summary>
         /// Creates a default factory using StandardResponse and ErrorResponse.

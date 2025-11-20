@@ -15,17 +15,17 @@ namespace MiCake.Core
         /// <summary>
         /// Configuration action for <see cref="MiCakeApplicationOptions"/>.
         /// </summary>
-        public Action<MiCakeApplicationOptions> AppConfig { get; set; }
+        public Action<MiCakeApplicationOptions>? AppConfig { get; set; }
 
         /// <summary>
         /// Configuration action for <see cref="MiCakeAuditOptions"/>.
         /// </summary>
-        public Action<MiCakeAuditOptions> AuditConfig { get; set; }
+        public Action<MiCakeAuditOptions>? AuditConfig { get; set; }
 
         /// <summary>
         /// Configuration action for <see cref="MiCakeAspNetOptions"/>.
         /// </summary>
-        public Action<MiCakeAspNetOptions> AspNetConfig { get; set; }
+        public Action<MiCakeAspNetOptions>? AspNetConfig { get; set; }
     }
 
     public static class MiCakeAspNetCoreStartExtension

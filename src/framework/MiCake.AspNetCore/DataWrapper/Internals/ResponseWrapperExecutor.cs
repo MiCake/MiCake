@@ -15,7 +15,7 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
         /// <summary>
         /// Wraps a successful response using the configured factory.
         /// </summary>
-        public object WrapSuccess(object originalData, HttpContext httpContext, int statusCode)
+        public object? WrapSuccess(object? originalData, HttpContext httpContext, int statusCode)
         {
             if (originalData is IResponseWrapper)
                 return originalData;
@@ -28,26 +28,26 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
             {
                 var slightExceptionData = new SlightExceptionData
                 {
-                    Code = slightException.Code,
+                    Code = slightException!.Code,
                     Message = slightException.Message,
                     Details = slightException.Details
                 };
                 context = new WrapperContext(httpContext, statusCode, slightExceptionData);
             }
 
-            return _options.GetOrCreateFactory().SuccessFactory(context);
+            return _options.GetOrCreateFactory()?.SuccessFactory?.Invoke(context);
         }
 
         /// <summary>
         /// Wraps an error response using the configured factory.
         /// </summary>
-        public object WrapError(Exception exception, HttpContext httpContext, int statusCode, object? originalData = null)
+        public object? WrapError(Exception exception, HttpContext httpContext, int statusCode, object? originalData = null)
         {
             var context = new ErrorWrapperContext(httpContext, statusCode, originalData, exception);
-            return _options.GetOrCreateFactory().ErrorFactory(context);
+            return _options.GetOrCreateFactory()?.ErrorFactory?.Invoke(context);
         }
 
-        private static bool IsProblemDetails(object data)
+        private static bool IsProblemDetails(object? data)
         {
             return data is ProblemDetails || data is HttpValidationProblemDetails || data is ValidationProblemDetails;
         }

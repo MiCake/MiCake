@@ -8,34 +8,34 @@ namespace MiCake.AspNetCore.DataWrapper
         /// <summary>
         /// Error code identifying the type of error.
         /// </summary>
-        public string Code { get; set; }
+        public string? Code { get; set; }
 
         /// <summary>
         /// Error message describing what went wrong.
         /// </summary>
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
         /// <summary>
         /// Additional error details (validation errors, inner exception details, etc.).
         /// </summary>
-        public object Details { get; set; }
+        public object? Details { get; set; }
 
         /// <summary>
         /// Stack trace information. Only included when enabled in configuration.
         /// </summary>
-        public string StackTrace { get; set; }
+        public string? StackTrace { get; set; }
 
         public ErrorResponse()
         {
         }
 
-        public ErrorResponse(string code, string message)
+        public ErrorResponse(string? code, string? message)
         {
             Code = code;
             Message = message;
         }
 
-        public ErrorResponse(string code, string message, object details, string stackTrace = null)
+        public ErrorResponse(string? code, string? message, object? details, string? stackTrace = null)
         {
             Code = code;
             Message = message;

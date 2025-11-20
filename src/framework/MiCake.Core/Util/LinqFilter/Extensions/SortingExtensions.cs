@@ -28,12 +28,12 @@ namespace MiCake.Util.LinqFilter
                 return query;
             }
 
-            ParameterExpression pe = System.Linq.Expressions.Expression.Parameter(typeof(T), "x");
+            ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
             System.Linq.Expressions.Expression property = ExpressionHelpers.BuildNestedPropertyExpression(pe, order.PropertyName);
 
-            var sortExpression = System.Linq.Expressions.Expression.Lambda<Func<T, object>>
-                (System.Linq.Expressions.Expression.Convert(property, typeof(object)), pe);
+            var sortExpression = Expression.Lambda<Func<T, object>>
+                (Expression.Convert(property, typeof(object)), pe);
 
             if (order.Ascending)
             {

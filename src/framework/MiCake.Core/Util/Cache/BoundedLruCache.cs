@@ -18,7 +18,6 @@ namespace MiCake.Util.Cache
         private readonly LinkedList<CacheItem> _accessOrder;
         private readonly Lock _lock = new();
         private volatile bool _disposed;
-        private int _accessCount;
 
         /// <summary>
         /// Initialize a new bounded LRU cache
@@ -204,9 +203,6 @@ namespace MiCake.Util.Cache
         private void MoveToFront(LinkedListNode<CacheItem> node)
         {
             if (_disposed)
-                return;
-
-            if (Interlocked.Increment(ref _accessCount) % 10 != 0)
                 return;
 
             lock (_lock)

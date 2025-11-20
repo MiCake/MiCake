@@ -95,7 +95,13 @@ namespace MiCake.DDD.Domain.Internal
             }
             else
             {
-                return IsMatchingWithInterface(handlerType.GetInterface(handlerInterface.Name), handlerInterface);
+                var interfaceType = handlerType.GetInterface(handlerInterface.Name);
+                if (interfaceType == null)
+                {
+                    return false;
+                }
+
+                return IsMatchingWithInterface(interfaceType, handlerInterface);
             }
 
             return false;
@@ -160,15 +166,15 @@ namespace MiCake.DDD.Domain.Internal
                     yield return interfaceType;
                 }
             }
-            else if (pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType &&
-                     (pluggedType.GetTypeInfo().BaseType.GetGenericTypeDefinition() == templateType))
+            else if (pluggedType.GetTypeInfo().BaseType?.GetTypeInfo()?.IsGenericType is true &&
+                     (pluggedType.GetTypeInfo().BaseType?.GetGenericTypeDefinition() == templateType))
             {
-                yield return pluggedType.GetTypeInfo().BaseType;
+                yield return pluggedType.GetTypeInfo().BaseType!;
             }
 
             if (pluggedType.GetTypeInfo().BaseType == typeof(object)) yield break;
 
-            foreach (var interfaceType in FindInterfacesThatClosesCore(pluggedType.GetTypeInfo().BaseType, templateType))
+            foreach (var interfaceType in FindInterfacesThatClosesCore(pluggedType.GetTypeInfo().BaseType!, templateType))
             {
                 yield return interfaceType;
             }

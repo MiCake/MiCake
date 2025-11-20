@@ -21,7 +21,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// <param name="logger">Logger for the interceptor (optional)</param>
         public MiCakeInterceptorFactory(
             IEFSaveChangesLifetime saveChangesLifetime,
-            ILogger<MiCakeEFCoreInterceptor> logger = null)
+            ILogger<MiCakeEFCoreInterceptor>? logger = null)
         {
             _saveChangesLifetime = saveChangesLifetime ?? throw new ArgumentNullException(nameof(saveChangesLifetime));
             _logger = logger ?? NullLogger<MiCakeEFCoreInterceptor>.Instance;
@@ -68,7 +68,7 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// </remarks>
     public static class MiCakeInterceptorFactoryHelper
     {
-        private static volatile IMiCakeInterceptorFactory _factory;
+        private static volatile IMiCakeInterceptorFactory? _factory;
         private static readonly Lock _lock = new();
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// Create a new interceptor using the configured factory
         /// </summary>
         /// <returns>MiCake EF Core interceptor (never null if factory is configured)</returns>
-        internal static ISaveChangesInterceptor CreateInterceptor()
+        internal static ISaveChangesInterceptor? CreateInterceptor()
         {
             var factory = _factory;
             try

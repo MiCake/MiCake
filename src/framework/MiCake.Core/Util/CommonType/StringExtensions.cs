@@ -126,9 +126,9 @@ namespace MiCake.Util
         /// <returns>Modified string or the same string if it has not any of given postfixes</returns>
         public static string RemovePostFix(this string str, StringComparison comparisonType, params string[] postFixes)
         {
-            if (str.IsNullOrEmpty())
+            if (str is null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(str));
             }
 
             if (postFixes.IsNullOrEmpty())
@@ -167,9 +167,9 @@ namespace MiCake.Util
         /// <returns>Modified string or the same string if it has not any of given prefixes</returns>
         public static string RemovePreFix(this string str, StringComparison comparisonType, params string[] preFixes)
         {
-            if (str.IsNullOrEmpty())
+            if (str is null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(str));
             }
 
             if (preFixes.IsNullOrEmpty())
@@ -359,7 +359,7 @@ namespace MiCake.Util
         {
             if (str == null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(str));
             }
 
             if (str.Length <= maxLength)
@@ -378,7 +378,7 @@ namespace MiCake.Util
         {
             if (str == null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(str));
             }
 
             if (str.Length <= maxLength)
@@ -410,7 +410,7 @@ namespace MiCake.Util
         {
             if (str == null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(str));
             }
 
             if (str == string.Empty || maxLength == 0)

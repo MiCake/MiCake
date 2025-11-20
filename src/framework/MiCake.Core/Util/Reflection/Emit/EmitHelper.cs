@@ -29,7 +29,7 @@ namespace MiCake.Util.Reflection.Emit
                                        string assemblyName = "",
                                        string moduleName = "",
                                        TypeAttributes typeAttributes = TypeAttributes.Public,
-                                       Type baseType = null)
+                                       Type? baseType = null)
         {
             CheckValue.NotNullOrEmpty(className, nameof(className));
 

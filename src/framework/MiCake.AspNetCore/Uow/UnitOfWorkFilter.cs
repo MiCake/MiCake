@@ -56,7 +56,7 @@ namespace MiCake.AspNetCore.Uow
             var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
 
             // Check for UnitOfWork attribute on action, controller, or endpoint metadata
-            UnitOfWorkAttribute uowAttribute;
+            UnitOfWorkAttribute? uowAttribute;
             try
             {
                 uowAttribute = GetUnitOfWorkAttribute(controllerActionDes);

@@ -31,7 +31,7 @@ namespace MiCake.Modules
 
         public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
-            var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions);
+            var auditOptions = context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions) as MiCakeAuditOptions;
             var services = context.Services;
             var storeConventionRegistry = new StoreConventionRegistry();
 

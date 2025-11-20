@@ -35,6 +35,6 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="moduleType">MiCake module type</param>
         /// <returns><see cref="MiCakeModuleDescriptor"/></returns>
-        MiCakeModuleDescriptor GetMiCakeModule(Type moduleType);
+        MiCakeModuleDescriptor? GetMiCakeModule(Type moduleType);
     }
 }

@@ -30,13 +30,13 @@ namespace MiCake.AspNetCore.DataWrapper.Internals
                 if (!_options.IgnoreStatusCodes.Any(s => s == statusCode))
                 {
                     var wrappedData = _executor.WrapSuccess(
-                        objectResult.Value,
+                        objectResult?.Value,
                         context.HttpContext,
                         statusCode
                     );
 
-                    objectResult.Value = wrappedData;
-                    objectResult.DeclaredType = wrappedData?.GetType();
+                    objectResult?.Value = wrappedData;
+                    objectResult?.DeclaredType = wrappedData?.GetType();
                 }
             }
 

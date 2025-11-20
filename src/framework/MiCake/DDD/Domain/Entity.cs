@@ -69,9 +69,9 @@ namespace MiCake.DDD.Domain
         /// </summary>
         /// <param name="obj">The object to compare with the current entity</param>
         /// <returns>True if the specified object is equal to the current entity; otherwise, false</returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is Entity<TKey>))
+            if (obj is null or not Entity<TKey>)
             {
                 return false;
             }
