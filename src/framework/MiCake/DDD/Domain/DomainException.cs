@@ -1,5 +1,3 @@
-#nullable disable warnings
-
 ﻿using MiCake.Core;
 
 namespace MiCake.DDD.Domain

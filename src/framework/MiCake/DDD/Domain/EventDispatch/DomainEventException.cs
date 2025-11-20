@@ -1,5 +1,3 @@
-#nullable disable warnings
-
 using System;
 
 namespace MiCake.DDD.Domain.EventDispatch

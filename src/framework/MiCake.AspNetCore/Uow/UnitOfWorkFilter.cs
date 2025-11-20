@@ -1,5 +1,3 @@
-#nullable disable warnings
-
 ﻿using MiCake.AspNetCore.Helper;
 using MiCake.DDD.Uow;
 using Microsoft.AspNetCore.Mvc.Controllers;

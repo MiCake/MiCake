@@ -1,5 +1,3 @@
-#nullable disable warnings
-
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;

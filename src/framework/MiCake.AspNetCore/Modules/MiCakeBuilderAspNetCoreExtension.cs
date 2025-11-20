@@ -1,5 +1,3 @@
-#nullable disable warnings
-
 ﻿using MiCake.AspNetCore.Modules;
 using MiCake.Core;
 using Microsoft.Extensions.DependencyInjection;
