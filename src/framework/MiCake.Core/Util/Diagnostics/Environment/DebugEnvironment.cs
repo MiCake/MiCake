@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using System.Diagnostics;
 using System.Linq;
 using System.Reflection;

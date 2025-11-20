@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using MiCake.Util.LinqFilter;
 using MiCake.Util.Paging;
 using System;

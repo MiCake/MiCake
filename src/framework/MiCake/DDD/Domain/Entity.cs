@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using MiCake.DDD.Domain.Helper;
 using MiCake.DDD.Domain.Internal;
 using System;

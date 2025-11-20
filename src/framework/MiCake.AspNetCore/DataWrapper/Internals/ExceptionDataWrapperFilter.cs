@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 namespace MiCake.AspNetCore.DataWrapper
 {
     /// <summary>

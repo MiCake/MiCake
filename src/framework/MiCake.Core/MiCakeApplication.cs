@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using System.Linq;
 
 namespace MiCake.Util.LinqFilter

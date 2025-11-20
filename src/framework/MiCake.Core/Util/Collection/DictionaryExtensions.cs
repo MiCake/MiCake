@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using System.Collections.Generic;
 using System.Linq;
 

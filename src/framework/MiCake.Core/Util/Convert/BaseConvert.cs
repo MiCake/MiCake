@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using static System.Convert;
 
 namespace MiCake.Util.Convert

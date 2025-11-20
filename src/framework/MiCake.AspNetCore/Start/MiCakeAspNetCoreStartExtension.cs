@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using MiCake.AspNetCore;
 using MiCake.Audit;
 using MiCake.Core.Modularity;

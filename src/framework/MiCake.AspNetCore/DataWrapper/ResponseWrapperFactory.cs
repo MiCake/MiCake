@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

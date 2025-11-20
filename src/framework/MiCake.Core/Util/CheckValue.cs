@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using MiCake.Util.Collection;
 using System;
 using System.Collections.Generic;

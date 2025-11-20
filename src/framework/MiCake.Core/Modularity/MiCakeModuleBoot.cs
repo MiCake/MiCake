@@ -1,3 +1,5 @@
+#nullable disable warnings
+
 ﻿using Microsoft.Extensions.Logging;
 using System;
 
