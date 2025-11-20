@@ -124,6 +124,42 @@ public class LinqFilter_Tests
     }
 
     [Fact]
+    public void Filter_By_Id_InOperator_With_StringValues_Should_Convert_And_Return_Correct_Results()
+    {
+        var data = GetTestData();
+
+        var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
+        {
+            FilterValue.Create("1", FilterOperatorType.In),
+            FilterValue.Create("2", FilterOperatorType.In)
+        });
+
+        var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
+
+        Assert.Equal(2, filteredData.Count);
+        Assert.Contains(filteredData, x => x.Id == 1);
+        Assert.Contains(filteredData, x => x.Id == 2);
+    }
+
+    [Fact]
+    public void Filter_By_Id_InOperator_With_ListOfStringValues_Should_Convert_List_And_Return_Correct_Results()
+    {
+        var data = GetTestData();
+
+        var list = new List<string> { "1", "3" };
+        var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
+        {
+            FilterValue.Create(list, FilterOperatorType.In)
+        });
+
+        var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
+
+        Assert.Equal(2, filteredData.Count);
+        Assert.Contains(filteredData, x => x.Id == 1);
+        Assert.Contains(filteredData, x => x.Id == 3);
+    }
+
+    [Fact]
     public void Filter_By_StartsWithOperator_Should_Return_Correct_Results()
     {
         var data = GetTestData();
@@ -497,4 +533,40 @@ public class LinqFilter_Tests
         Assert.Empty(andResults); // No one is both Alice and Bob
         Assert.Equal(2, orResults.Count);
     }
+
+    [Fact]
+    public void Filter_Should_Handle_Nullable_Properties_And_String_Conversions()
+    {
+        var models = new List<NullableTestModel>
+        {
+            new NullableTestModel { Age = 20 },
+            new NullableTestModel { Age = null },
+            new NullableTestModel { Age = 30 }
+        };
+
+        var filterAge = Filter.Create(nameof(NullableTestModel.Age), new List<FilterValue>
+        {
+            FilterValue.Create("20", FilterOperatorType.Equal)
+        });
+
+        var results = models.AsQueryable().Filter(new List<Filter> { filterAge }).ToList();
+
+        Assert.Single(results);
+        Assert.Equal(20, results[0].Age);
+
+        // Null equality
+        var filterNull = Filter.Create(nameof(NullableTestModel.Age), new List<FilterValue>
+        {
+            FilterValue.Create(null, FilterOperatorType.Equal)
+        });
+
+        var resultsNull = models.AsQueryable().Filter(new List<Filter> { filterNull }).ToList();
+        Assert.Single(resultsNull);
+        Assert.Null(resultsNull[0].Age);
+    }
+}
+
+class NullableTestModel
+{
+    public int? Age { get; set; }
 }

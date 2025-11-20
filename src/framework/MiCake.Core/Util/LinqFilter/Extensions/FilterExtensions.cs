@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security;
 
 namespace MiCake.Util.LinqFilter
 {
@@ -156,17 +157,62 @@ namespace MiCake.Util.LinqFilter
 
             foreach (var item in source)
             {
+                object? converted;
                 if (IsNullable(newItemType))
                 {
-                    var underlyingType = Nullable.GetUnderlyingType(newItemType);
-                    typedList.Add(System.Convert.ChangeType(item, underlyingType!));
+                    var underlyingType = Nullable.GetUnderlyingType(newItemType)!;
+                    converted = ConvertValueSafely(item, underlyingType);
                 }
                 else
                 {
-                    typedList.Add(System.Convert.ChangeType(item, newItemType));
+                    converted = ConvertValueSafely(item, newItemType);
                 }
+
+                typedList.Add(converted);
             }
+
             return typedList;
+        }
+
+        private static bool IsPropertyAllowed(Expression left)
+        {
+            if (left is MemberExpression me && me.Member is System.Reflection.PropertyInfo prop)
+            {
+                return prop.GetMethod != null && prop.GetMethod.IsPublic;
+            }
+            return false;
+        }
+
+        private static object? ConvertValueSafely(object? value, Type targetType)
+        {
+            if (value == null)
+                return null;
+
+            var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            try
+            {
+                if (value is string s)
+                {
+                    var converter = TypeDescriptor.GetConverter(underlying);
+                    if (converter != null && converter.CanConvertFrom(typeof(string)))
+                    {
+                        return converter.ConvertFromString(s);
+                    }
+                    // Fall back to ChangeType
+                    return System.Convert.ChangeType(s, underlying);
+                }
+
+                // Already correct type? return directly
+                if (underlying.IsInstanceOfType(value))
+                    return value;
+
+                return System.Convert.ChangeType(value, underlying);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to convert filter value '{value}' to type '{underlying.Name}'", ex);
+            }
         }
 
         private static Expression? BuildFilterValuesExpression(Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
@@ -175,11 +221,19 @@ namespace MiCake.Util.LinqFilter
 
             foreach (var filterValue in filterValues)
             {
+                // Ensure the left expression targets an allowed property
+                if (!IsPropertyAllowed(left))
+                {
+                    throw new SecurityException("Attempt to filter on disallowed member or method call detected.");
+                }
+
                 ValidateFilterValue(filterValue, left.Type);
 
                 var valueType = filterValue.Value?.GetType();
                 Expression? right = null;
-                if (valueType?.IsGenericType is true && filterValue.Value is IList list1)
+
+                // Handle list / collection values
+                if (filterValue.Value is IList list1)
                 {
                     IList list = RemakeStaticListWithNewType(left.Type, list1);
                     right = Expression.Constant(list);
@@ -188,40 +242,17 @@ namespace MiCake.Util.LinqFilter
                 {
                     if (IsNullable(left.Type))
                     {
-                        var underlyingType = Nullable.GetUnderlyingType(left.Type);
-                        Type type = typeof(Nullable<>).MakeGenericType(underlyingType!);
+                        var underlyingType = Nullable.GetUnderlyingType(left.Type)!;
+                        var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
 
-                        object? convertedValue;
-                        try
-                        {
-                            convertedValue = System.Convert.ChangeType(filterValue.Value, underlyingType!);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new InvalidOperationException($"Failed to convert filter value '{filterValue.Value}' to type '{underlyingType!.Name}'", ex);
-                        }
+                        var convertedValue = ConvertValueSafely(filterValue.Value, underlyingType);
 
-                        right = Expression.Convert(Expression.Constant(convertedValue), type);
+                        right = Expression.Constant(convertedValue, nullableType);
                     }
                     else
                     {
-                        object? exceptValue;
-                        try
-                        {
-                            if (valueType == typeof(string))
-                            {
-                                exceptValue = TypeDescriptor.GetConverter(left.Type)?.ConvertFromString(filterValue.Value?.ToString() ?? string.Empty);
-                            }
-                            else
-                            {
-                                exceptValue = System.Convert.ChangeType(filterValue.Value, left.Type);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new InvalidOperationException($"Failed to convert filter value '{filterValue.Value}' to type '{left.Type.Name}'", ex);
-                        }
-                        right = Expression.Constant(exceptValue);
+                        var converted = ConvertValueSafely(filterValue.Value, left.Type);
+                        right = Expression.Constant(converted, left.Type);
                     }
                 }
 

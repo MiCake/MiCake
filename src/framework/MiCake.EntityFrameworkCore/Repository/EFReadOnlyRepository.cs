@@ -54,5 +54,21 @@ namespace MiCake.EntityFrameworkCore.Repository
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             return await dbset.LongCountAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public async Task<TAggregateRoot?> FindAsync(TKey id, Func<IQueryable<TAggregateRoot>, IQueryable<TAggregateRoot>> includeFunc, CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
+            var query = dbset.AsQueryable();
+
+            if (includeFunc != null)
+            {
+                query = includeFunc(query);
+            }
+
+            return await query.FirstOrDefaultAsync(e => e.Id.Equals(id), cancellationToken);
+        }
     }
 }

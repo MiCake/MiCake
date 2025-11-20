@@ -11,7 +11,7 @@ namespace MiCake.Util.Cache
     /// </summary>
     /// <typeparam name="TKey">The type of cache keys</typeparam>
     /// <typeparam name="TValue">The type of cache values</typeparam>
-    public sealed class BoundedLruCache<TKey, TValue> : IDisposable where TKey : notnull
+    public class BoundedLruCache<TKey, TValue> : IDisposable where TKey : notnull
     {
         private readonly int _maxSize;
         private readonly ConcurrentDictionary<TKey, LinkedListNode<CacheItem>> _cache;
