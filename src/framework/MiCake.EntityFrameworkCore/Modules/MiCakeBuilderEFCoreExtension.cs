@@ -29,7 +29,7 @@ namespace MiCake.Core
         /// <returns>The MiCake builder for method chaining</returns>
         public static IMiCakeBuilder UseEFCore<TDbContext>(
             this IMiCakeBuilder builder,
-            Action<MiCakeEFCoreOptions> optionsBuilder = null)
+            Action<MiCakeEFCoreOptions>? optionsBuilder = null)
             where TDbContext : DbContext
         {
             return UseEFCore(builder, typeof(TDbContext), optionsBuilder);

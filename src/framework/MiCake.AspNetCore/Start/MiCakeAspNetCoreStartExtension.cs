@@ -60,7 +60,7 @@ namespace MiCake.Core
         /// </example>
         public static IMiCakeBuilder AddMiCakeWithDefault<TEntryModule, TDbContext>(
                 this IServiceCollection services,
-                Action<MiCakeSetupOptions> configureOptions = null)
+                Action<MiCakeSetupOptions>? configureOptions = null)
             where TDbContext : DbContext
             where TEntryModule : MiCakeModule
         {
@@ -93,7 +93,7 @@ namespace MiCake.Core
             this IServiceCollection services,
             Type entryModule,
             Type miCakeDbContextType,
-            Action<MiCakeSetupOptions> configureOptions = null)
+            Action<MiCakeSetupOptions>? configureOptions = null)
         {
             var options = new MiCakeSetupOptions();
             configureOptions?.Invoke(options);
