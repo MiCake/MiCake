@@ -19,7 +19,7 @@ namespace MiCake.Core
         private readonly Type _entryType;
         private readonly ILogger _logger;
 
-        private MiCakeModuleBoot _miCakeModuleBoot;
+        private MiCakeModuleBoot? _miCakeModuleBoot;
 
         private bool _isStarted;
         private bool _isShutdown;

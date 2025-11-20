@@ -11,10 +11,10 @@ namespace MiCake.Core.Modularity
     /// </summary>
     public class MiCakeModuleManager : IMiCakeModuleManager
     {
-        private MiCakeModuleContext _moduleContext;
+        private MiCakeModuleContext? _moduleContext;
         private bool _isPopulated;
         private readonly List<Type> _normalModulesTypes = [];
-        private ModuleDependencyResolver _dependencyResolver;
+        private ModuleDependencyResolver? _dependencyResolver;
 
         /// <summary>
         /// Function used to create module instances.
@@ -25,7 +25,7 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Gets the module context containing all registered modules.
         /// </summary>
-        public IMiCakeModuleContext ModuleContext => _moduleContext;
+        public IMiCakeModuleContext ModuleContext => _moduleContext ?? throw new InvalidOperationException("ModuleContext has not been initialized. Call PopulateModules first.");
 
         /// <summary>
         /// Indicates whether modules have been populated.
