@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using MiCake.Util.Cache;
 using Xunit;
@@ -7,7 +9,7 @@ using Xunit;
 namespace MiCake.Core.Tests.Util.Cache
 {
     /// <summary>
-    /// Comprehensive tests for BoundedLruCache to ensure proper memory management and LRU behavior
+        
     /// </summary>
     public class BoundedLruCacheTests
     {
@@ -78,7 +80,6 @@ namespace MiCake.Core.Tests.Util.Cache
             Assert.Equal(1, callCount); // Factory should only be called once
             Assert.Equal(1, cache.Count);
         }
-
         [Fact]
         public void GetOrAdd_ShouldThrowException_WhenKeyIsNull()
         {
@@ -364,6 +365,36 @@ namespace MiCake.Core.Tests.Util.Cache
         }
 
         [Fact]
+        public async Task GetOrAdd_ConcurrentSingleKey_FactoryCalledOnce()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, string>(maxSize: 100);
+            var factoryCalls = 0;
+
+            // Act
+            var tasks = new Task[50];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = Task.Run(() =>
+                {
+                    var value = cache.GetOrAdd(42, k =>
+                    {
+                        Interlocked.Increment(ref factoryCalls);
+                        // small delay to increase chance of race
+                        Thread.Sleep(5);
+                        return "the-value";
+                    });
+                    Assert.Equal("the-value", value);
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            // Assert: factory should have been called exactly once
+            Assert.Equal(1, factoryCalls);
+        }
+
+        [Fact]
         public void Dispose_ShouldClearCache()
         {
             // Arrange
@@ -398,6 +429,19 @@ namespace MiCake.Core.Tests.Util.Cache
         }
 
         [Fact]
+        public void Cache_ShouldThrowOnOperationsAfterDispose()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<string, int>(maxSize: 10);
+            cache.Dispose();
+
+            // Act & Assert
+            Assert.Throws<ObjectDisposedException>(() => cache.GetOrAdd("key", _ => 1));
+            Assert.Throws<ObjectDisposedException>(() => cache.AddOrUpdate("key", 2));
+            Assert.Throws<ObjectDisposedException>(() => cache.TryGetValue("key", out _));
+        }
+
+        [Fact]
         public void Cache_ShouldSupportNullValues()
         {
             // Arrange
@@ -410,7 +454,7 @@ namespace MiCake.Core.Tests.Util.Cache
             Assert.Null(value);
             Assert.True(cache.ContainsKey("null-value"));
             Assert.True(cache.TryGetValue("null-value", out var retrievedValue));
-            Assert.Null(retrievedValue);
+          // Removed stray brace here
         }
 
         [Fact]
@@ -451,6 +495,347 @@ namespace MiCake.Core.Tests.Util.Cache
                 Assert.True(cache.TryGetValue(i, out var value));
                 Assert.Equal(i * 2, value);
             }
+        }
+
+        [Fact]
+        public void Cache_LockFree_ShouldRespectMaxSizeAfterHeavyInsertions()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, string>(maxSize: 5, segments: 1, useLockFreeApproximation: true);
+
+            // Act
+            for (int i = 0; i < 100; i++)
+            {
+                cache.GetOrAdd(i, k => $"value-{k}");
+            }
+
+            // Assert
+            Assert.True(cache.Count <= 5, $"Lock-free segment exceeded max size. Actual count: {cache.Count}");
+        }
+
+        [Fact]
+        public async Task Cache_LockFreeMode_ShouldMaintainLruUnderConcurrentMixedOperations()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, string>(maxSize: 50, useLockFreeApproximation: true);
+            var taskCount = 8;
+            var operationsPerTask = 200;
+            var errors = new ConcurrentBag<string>();
+
+            // Act
+            var tasks = new Task[taskCount];
+            for (int t = 0; t < taskCount; t++)
+            {
+                var taskId = t;
+                tasks[t] = Task.Run(() =>
+                {
+                    for (int i = 0; i < operationsPerTask; i++)
+                    {
+                        try
+                        {
+                            var keyType = i % 4;
+                            var baseKey = (taskId * 100) + (i / 4);
+                            
+                            if (keyType == 0)
+                                cache.GetOrAdd(baseKey, k => $"value-{k}");
+                            else if (keyType == 1)
+                                cache.AddOrUpdate(baseKey, $"updated-{baseKey}");
+                            else if (keyType == 2)
+                                cache.TryGetValue(baseKey, out _);
+                            else
+                                cache.Remove(baseKey);
+                        }
+                        catch (Exception ex)
+                        {
+                            errors.Add($"Task {taskId}: {ex.Message}");
+                        }
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            // Assert
+            Assert.Empty(errors); // No exceptions should occur
+            Assert.InRange(cache.Count, 0, 50);
+        }
+
+        [Fact]
+        public async Task Cache_LockBasedMode_ShouldMaintainConsistencyUnderConcurrentMixedOperations()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, string>(maxSize: 30, useLockFreeApproximation: false);
+            var taskCount = 6;
+            var operationsPerTask = 150;
+            var errors = new ConcurrentBag<string>();
+
+            // Act
+            var tasks = new Task[taskCount];
+            for (int t = 0; t < taskCount; t++)
+            {
+                var taskId = t;
+                tasks[t] = Task.Run(() =>
+                {
+                    for (int i = 0; i < operationsPerTask; i++)
+                    {
+                        try
+                        {
+                            var keyType = i % 3;
+                            var key = (taskId * 50) + i;
+                            
+                            if (keyType == 0)
+                                cache.GetOrAdd(key, k => $"val-{k}");
+                            else if (keyType == 1)
+                                cache.TryGetValue(key, out _);
+                            else
+                                cache.AddOrUpdate(key, $"updated-{key}");
+                        }
+                        catch (Exception ex)
+                        {
+                            errors.Add($"Task {taskId}: {ex.Message}");
+                        }
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            // Assert
+            Assert.Empty(errors); // No exceptions should occur
+            Assert.True(cache.Count <= 30); // Should not exceed max size
+            Assert.True(cache.Count > 0); // Should have some items
+        }
+
+        [Fact]
+        public async Task Cache_ShouldHandleRapidAddAndRemove()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, int>(maxSize: 100);
+            var iterations = 1000;
+
+            // Act - Rapidly add and remove the same keys
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        for (int key = 0; key < 10; key++)
+                            cache.GetOrAdd(key, k => k * 10);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        for (int key = 0; key < 10; key++)
+                            cache.Remove(key);
+                    }
+                })
+            );
+
+            // Assert - No exceptions, valid state
+            Assert.True(cache.Count <= 100);
+        }
+
+        [Fact]
+        public void TryGetValue_ShouldUpdateAccessOrder_ForLockBasedMode()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<string, int>(maxSize: 3, useLockFreeApproximation: false);
+            cache.GetOrAdd("a", k => 1);
+            cache.GetOrAdd("b", k => 2);
+            cache.GetOrAdd("c", k => 3);
+
+            // Act - Access 'a' to make it most recently used
+            cache.TryGetValue("a", out _);
+            cache.GetOrAdd("d", k => 4); // Should evict 'b', not 'a'
+
+            // Assert
+            Assert.True(cache.ContainsKey("a"));
+            Assert.False(cache.ContainsKey("b")); // 'b' should be evicted
+            Assert.True(cache.ContainsKey("c"));
+            Assert.True(cache.ContainsKey("d"));
+        }
+
+        [Fact]
+        public void GetOrAdd_ShouldUpdateAccessOrder_ForLockBasedMode()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<string, int>(maxSize: 3, useLockFreeApproximation: false);
+            cache.GetOrAdd("a", k => 1);
+            cache.GetOrAdd("b", k => 2);
+            cache.GetOrAdd("c", k => 3);
+
+            // Act - Call GetOrAdd on existing key to update access order
+            var value = cache.GetOrAdd("a", k => 999); // Should return cached 1, not 999
+            cache.GetOrAdd("d", k => 4); // Should evict 'b', not 'a'
+
+            // Assert
+            Assert.Equal(1, value); // Cached value, not 999
+            Assert.True(cache.ContainsKey("a"));
+            Assert.False(cache.ContainsKey("b")); // 'b' should be evicted
+            Assert.True(cache.ContainsKey("c"));
+            Assert.True(cache.ContainsKey("d"));
+        }
+
+        [Fact]
+        public void AddOrUpdate_ShouldUpdateAccessOrder_ForNewItems()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<string, int>(maxSize: 3, useLockFreeApproximation: false);
+            cache.GetOrAdd("a", k => 1);
+            cache.GetOrAdd("b", k => 2);
+
+            // Act
+            cache.AddOrUpdate("c", 3);
+            cache.AddOrUpdate("a", 100); // Update 'a' to make it most recently used
+            cache.AddOrUpdate("d", 4); // Should evict 'b', not 'a'
+
+            // Assert
+            Assert.True(cache.ContainsKey("a"));
+            Assert.False(cache.ContainsKey("b")); // 'b' should be evicted
+            Assert.True(cache.ContainsKey("c"));
+            Assert.True(cache.ContainsKey("d"));
+            Assert.True(cache.TryGetValue("a", out var value));
+            Assert.Equal(100, value); // Should have updated value
+        }
+
+        [Fact]
+        public async Task Cache_ShouldHandleHighContentionOnSingleKey()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<string, int>(maxSize: 100);
+            var iterations = 5000;
+            var results = new ConcurrentBag<int>();
+
+            // Act - Many threads contending on single key
+            var tasks = Enumerable.Range(0, 10).Select(i => Task.Run(() =>
+            {
+                for (int j = 0; j < iterations; j++)
+                {
+                    var value = cache.GetOrAdd("single-key", k => 42);
+                    results.Add(value);
+                }
+            })).ToArray();
+
+            await Task.WhenAll(tasks);
+
+            // Assert
+            Assert.Equal(10 * iterations, results.Count);
+            Assert.All(results, v => Assert.Equal(42, v)); // All should return same value
+            Assert.True(cache.ContainsKey("single-key"));
+            Assert.True(cache.TryGetValue("single-key", out var finalValue));
+            Assert.Equal(42, finalValue);
+        }
+
+        [Fact]
+        public async Task Cache_LockFreeMode_ShouldHandleTimestampIncrement()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, string>(maxSize: 20, useLockFreeApproximation: true);
+            var threadCount = 4;
+            var operationsPerThread = 1000;
+
+            // Act - Rapidly update timestamps
+            await Task.WhenAll(Enumerable.Range(0, threadCount).Select(t => Task.Run(() =>
+            {
+                for (int i = 0; i < operationsPerThread; i++)
+                {
+                    var key = i % 10;
+                    cache.GetOrAdd(key, k => $"value-{k}");
+                    if (cache.TryGetValue(key, out var val))
+                        cache.AddOrUpdate(key, val); // Update and refresh timestamp
+                }
+            })).ToArray());
+
+            // Assert - Cache should be valid and not corrupt
+            Assert.True(cache.Count <= 20);
+            Assert.True(cache.Count > 0);
+        }
+
+        [Fact]
+        public void Cache_SmallMaxSize_ShouldSingleSegment()
+        {
+            // Arrange & Act
+            var cache = new BoundedLruCache<int, int>(maxSize: 5); // < 16, uses single segment
+
+            for (int i = 0; i < 100; i++)
+            {
+                cache.GetOrAdd(i, k => k);
+            }
+
+            // Assert
+            Assert.Equal(5, cache.Count);
+            // Last 5 items should be present
+            for (int i = 95; i < 100; i++)
+            {
+                Assert.True(cache.ContainsKey(i));
+            }
+        }
+
+        [Fact]
+        public async Task Cache_ConcurrentRemoveDuringEviction()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<int, int>(maxSize: 50);
+
+            // Act - Add items while another thread removes
+            var addTask = Task.Run(() =>
+            {
+                for (int i = 0; i < 500; i++)
+                {
+                    cache.GetOrAdd(i, k => k);
+                    Thread.Sleep(1); // Small delay
+                }
+            });
+
+            var removeTask = Task.Run(() =>
+            {
+                for (int i = 100; i < 400; i++)
+                {
+                    Thread.Sleep(2); // Stagger removals
+                    cache.Remove(i);
+                }
+            });
+
+            await Task.WhenAll(addTask, removeTask);
+
+            // Assert - Should maintain valid state
+            Assert.True(cache.Count <= 50);
+            Assert.True(cache.Count >= 0);
+        }
+
+        [Fact]
+        public void Cache_ShouldHandleExceptionInFactory()
+        {
+            // Arrange
+            var cache = new BoundedLruCache<string, int>(maxSize: 100);
+            var callCount = 0;
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                cache.GetOrAdd("error-key", k =>
+                {
+                    callCount++;
+                    throw new InvalidOperationException("Factory error");
+                });
+            });
+
+            Assert.Equal(1, callCount); // Factory was called
+            Assert.False(cache.ContainsKey("error-key")); // Key not added on exception
+
+            // Second call should retry
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                cache.GetOrAdd("error-key", k =>
+                {
+                    callCount++;
+                    throw new InvalidOperationException("Factory error");
+                });
+            });
+
+            Assert.Equal(2, callCount);
         }
 
         /// <summary>

@@ -22,7 +22,7 @@ namespace MiCake.DDD.Domain
     [Serializable]
     public abstract class Entity<TKey> : IEntity<TKey>, IDomainEventAccessor where TKey : notnull
     {
-        private readonly List<IDomainEvent> _domainEvents = [];
+        private List<IDomainEvent>? _domainEvents;
 
         /// <summary>
         /// Gets or init the unique identifier for this entity.
@@ -34,7 +34,7 @@ namespace MiCake.DDD.Domain
         /// Gets all pending domain events for this entity as a read-only collection.
         /// External code cannot modify the collection directly.
         /// </summary>
-        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents?.AsReadOnly() ?? [];
 
         /// <summary>
         /// Adds a domain event to the entity.
@@ -45,6 +45,8 @@ namespace MiCake.DDD.Domain
         protected void RaiseDomainEvent(IDomainEvent domainEvent)
         {
             ArgumentNullException.ThrowIfNull(domainEvent);
+            _domainEvents ??= new List<IDomainEvent>(4);
+
             _domainEvents.Add(domainEvent);
         }
 
@@ -54,14 +56,14 @@ namespace MiCake.DDD.Domain
         /// </summary>
         public void ClearDomainEvents()
         {
-            _domainEvents.Clear();
+            _domainEvents?.Clear();
         }
 
         /// <summary>
         /// Gets all pending domain events for this entity (internal use).
         /// Explicit interface implementation to hide from public API.
         /// </summary>
-        List<IDomainEvent> IDomainEventAccessor.GetDomainEventsInternal() => _domainEvents;
+        List<IDomainEvent> IDomainEventAccessor.GetDomainEventsInternal() => _domainEvents ?? [];
 
         /// <summary>
         /// Determines whether the specified object is equal to the current entity.

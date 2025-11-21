@@ -388,6 +388,25 @@ namespace MiCake.Core.Tests.Util
             Assert.Contains("System.DateTime", keys[0]);
         }
 
+        [Fact]
+        public void BuildCacheKey_ShouldHandleNullArgumentTypes()
+        {
+            // Arrange
+            var type = typeof(ClassWithConstructorParameter);
+            var argTypes = new Type[] { typeof(string), null };
+
+            // Act
+            var key = typeof(CompiledActivator).GetMethod("BuildCacheKey",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                ?.Invoke(null, new object[] { type, argTypes }) as string;
+
+            // Assert
+            Assert.NotNull(key);
+            Assert.Contains(type.FullName, key);
+            Assert.Contains("System.String", key);
+            Assert.EndsWith("_", key);
+        }
+
         #endregion
 
         #region Cache Management and LRU Eviction Tests
@@ -433,6 +452,46 @@ namespace MiCake.Core.Tests.Util
             // Assert - Cache size should be bounded by maxSize
             var cacheSize = CompiledActivator.GetParameterizedCacheSize();
             Assert.True(cacheSize <= maxSize, $"Cache size {cacheSize} exceeded max {maxSize}");
+        }
+
+        [Fact]
+        public void FactoryCache_ShouldEvictLruEntriesWhenMaxSizeExceeded()
+        {
+            // Arrange
+            CompiledActivator.ClearCache();
+            var maxSize = 1000; // must match CompiledActivator.MaxFactoryCacheSize
+            var typesToCreate = maxSize + 50;
+
+            var asmName = new System.Reflection.AssemblyName("DynamicFactoryTypes_" + Guid.NewGuid().ToString("N"));
+            var asmBuilder = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(asmName, System.Reflection.Emit.AssemblyBuilderAccess.Run);
+            var moduleBuilder = asmBuilder.DefineDynamicModule(asmName.Name);
+
+            for (int i = 0; i < typesToCreate; i++)
+            {
+                var tb = moduleBuilder.DefineType("DynamicType" + i, System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+
+                // Define a simple public parameterless constructor
+                var ctor = tb.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, Type.EmptyTypes);
+                var il = ctor.GetILGenerator();
+                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+                il.Emit(System.Reflection.Emit.OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes)!);
+                il.Emit(System.Reflection.Emit.OpCodes.Ret);
+
+                var t = tb.CreateType();
+
+                try
+                {
+                    if (t != null)
+                        CompiledActivator.CreateInstance(t);
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+
+            var cacheSize = CompiledActivator.GetFactoryCacheSize();
+            Assert.True(cacheSize <= maxSize, $"Factory cache size {cacheSize} exceeded max {maxSize}");
         }
 
         [Fact]

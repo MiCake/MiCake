@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using MiCake.Util.LinqFilter;
 using Xunit;
 
@@ -158,6 +159,88 @@ public class LinqFilter_Tests
         Assert.Contains(filteredData, x => x.Id == 1);
         Assert.Contains(filteredData, x => x.Id == 3);
     }
+
+        [Fact]
+        public void Filter_By_NullableAge_InOperator_With_ScalarString_Should_Convert_And_Return_Correct_Results()
+        {
+            var models = new List<NullableTestModel>
+            {
+                new NullableTestModel { Age = 20 },
+                new NullableTestModel { Age = null },
+                new NullableTestModel { Age = 30 }
+            };
+
+            var filterAge = Filter.Create(nameof(NullableTestModel.Age), new List<FilterValue>
+            {
+                FilterValue.Create("20", FilterOperatorType.In)
+            });
+
+            var results = models.AsQueryable().Filter(new List<Filter> { filterAge }).ToList();
+
+            Assert.Single(results);
+            Assert.Equal(20, results[0].Age);
+        }
+
+        [Fact]
+        public void Filter_By_Id_InOperator_With_EmptyList_Should_Return_NoResults()
+        {
+            var data = GetTestData();
+
+            var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
+            {
+                FilterValue.Create(new List<string>(), FilterOperatorType.In)
+            });
+
+            var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
+
+            Assert.Empty(filteredData);
+        }
+
+        [Fact]
+        public void Filter_By_Id_InOperator_With_MixedTypeList_Should_Convert_And_Return_Correct_Results()
+        {
+            var data = GetTestData();
+
+            var mixed = new List<object> { "1", 2, "3" };
+            var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
+            {
+                FilterValue.Create(mixed, FilterOperatorType.In)
+            });
+
+            var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
+
+            Assert.Equal(3, filteredData.Count);
+            Assert.Contains(filteredData, x => x.Id == 1);
+            Assert.Contains(filteredData, x => x.Id == 2);
+            Assert.Contains(filteredData, x => x.Id == 3);
+        }
+
+        [Fact]
+        public void Filter_By_Id_InOperator_With_UnconvertibleValue_Should_Throw()
+        {
+            var data = GetTestData();
+
+            var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
+            {
+                FilterValue.Create("no-number", FilterOperatorType.In)
+            });
+
+            Assert.Throws<InvalidOperationException>(() => data.AsQueryable().Filter(new List<Filter> { filterId }).ToList());
+        }
+
+        [Fact]
+        public void Filter_By_Id_InOperator_With_ListContainingNullForNonNullable_Should_Throw()
+        {
+            var data = GetTestData();
+
+            var listWithNull = new List<object?> { null, "1" };
+            var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
+            {
+                FilterValue.Create(listWithNull, FilterOperatorType.In)
+            });
+
+            Assert.Throws<ArgumentNullException>(() => data.AsQueryable().Filter(new List<Filter> { filterId }).ToList());
+        }
 
     [Fact]
     public void Filter_By_StartsWithOperator_Should_Return_Correct_Results()
@@ -564,9 +647,49 @@ public class LinqFilter_Tests
         Assert.Single(resultsNull);
         Assert.Null(resultsNull[0].Age);
     }
+
+    [Fact]
+    public void Filter_Should_Reject_NonPublic_Getters()
+    {
+        var data = new List<RestrictedFilterModel>
+        {
+            new() { Secret = "hidden" }
+        };
+
+        var filter = Filter.Create(nameof(RestrictedFilterModel.Secret), [
+            FilterValue.Create("hidden", FilterOperatorType.Equal)
+        ]);
+
+        Assert.Throws<SecurityException>(() => data.AsQueryable().Filter([filter]).ToList());
+    }
+
+    [Fact]
+    public void Filter_Should_Handle_Nullable_In_List_With_PreTypedValues()
+    {
+        var data = new List<NullableTestModel>
+        {
+            new() { Age = 20 },
+            new() { Age = 30 },
+            new() { Age = null }
+        };
+
+        var filter = Filter.Create(nameof(NullableTestModel.Age), [
+            FilterValue.Create(new List<int?> { 30 }, FilterOperatorType.In)
+        ]);
+
+        var results = data.AsQueryable().Filter([filter]).ToList();
+
+        Assert.Single(results);
+        Assert.Equal(30, results[0].Age);
+    }
 }
 
 class NullableTestModel
 {
     public int? Age { get; set; }
+}
+
+class RestrictedFilterModel
+{
+    internal string Secret { get; set; }
 }
