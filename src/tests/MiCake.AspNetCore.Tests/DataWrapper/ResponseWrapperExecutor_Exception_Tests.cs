@@ -1,5 +1,5 @@
-using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Responses.Internals;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -14,7 +14,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
     /// </summary>
     public class ResponseWrapperExecutor_Exception_Tests
     {
-        private readonly DataWrapperOptions _defaultOptions = new DataWrapperOptions();
+        private readonly ResponseWrapperOptions _defaultOptions = new ResponseWrapperOptions();
 
         [Fact]
         public void WriteSlightExceptionResponse_WithDefaultFactory_ReturnsApiResponse()
@@ -47,7 +47,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                     statusCode = context.StatusCode
                 }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
 
             // Act
@@ -94,7 +94,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                     statusCode = context.StatusCode
                 }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var exception = new InvalidOperationException("Something went wrong");
 
             // Act
@@ -162,7 +162,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 SuccessFactory = context => new { success = true }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
 
             // Act
@@ -185,7 +185,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 ErrorFactory = context => new { success = false }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var exception = new InvalidOperationException("Something went wrong");
 
             // Act
@@ -221,7 +221,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var options = new DataWrapperOptions { ShowStackTraceWhenError = false };
+            var options = new ResponseWrapperOptions { ShowStackTraceWhenError = false };
             var exception = new InvalidOperationException("Test error");
 
             // Act
@@ -239,7 +239,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var options = new DataWrapperOptions { ShowStackTraceWhenError = true };
+            var options = new ResponseWrapperOptions { ShowStackTraceWhenError = true };
             var exception = new InvalidOperationException("Test error");
 
             // Act

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using MiCake.Util.Collection;
+using MiCake.Util.Extensions;
 
 namespace MiCake.DDD.Infrastructure.Store;
 

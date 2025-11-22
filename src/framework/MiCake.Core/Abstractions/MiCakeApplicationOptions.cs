@@ -18,13 +18,13 @@ namespace MiCake.Core
         /// 
         /// default: find class all interfaces. The service whose interface name contains the class name.
         /// </summary>
-        public FindAutoServiceTypesDelegate FindAutoServiceTypes { get; set; }
+        public FindAutoServiceTypesDelegate? FindAutoServiceTypes { get; set; }
 
         /// <summary>
         /// Assemblies of domain layer
         /// Providing this parameter will facilitate micake to better scan related domain objects in the program.
         /// </summary>
-        public Assembly[] DomainLayerAssemblies { get; set; }
+        public Assembly[]? DomainLayerAssemblies { get; set; }
 
         /// <summary>
         /// Configuration options for printing module information during initialization.

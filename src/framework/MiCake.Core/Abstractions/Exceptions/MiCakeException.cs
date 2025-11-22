@@ -11,12 +11,12 @@ namespace MiCake.Core
         /// <summary>
         /// Indicates a code to represent the exception.
         /// </summary>
-        public virtual string Code { get; set; }
+        public virtual string? Code { get; set; }
 
         /// <summary>
         /// Some details about the error
         /// </summary>
-        public virtual object Details { get; set; }
+        public virtual object? Details { get; set; }
 
         protected MiCakeException()
         {

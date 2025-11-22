@@ -15,17 +15,17 @@ namespace MiCake.Core
         /// <summary>
         /// Configuration action for <see cref="MiCakeApplicationOptions"/>.
         /// </summary>
-        public Action<MiCakeApplicationOptions> AppConfig { get; set; }
+        public Action<MiCakeApplicationOptions>? AppConfig { get; set; }
 
         /// <summary>
         /// Configuration action for <see cref="MiCakeAuditOptions"/>.
         /// </summary>
-        public Action<MiCakeAuditOptions> AuditConfig { get; set; }
+        public Action<MiCakeAuditOptions>? AuditConfig { get; set; }
 
         /// <summary>
         /// Configuration action for <see cref="MiCakeAspNetOptions"/>.
         /// </summary>
-        public Action<MiCakeAspNetOptions> AspNetConfig { get; set; }
+        public Action<MiCakeAspNetOptions>? AspNetConfig { get; set; }
     }
 
     public static class MiCakeAspNetCoreStartExtension
@@ -60,7 +60,7 @@ namespace MiCake.Core
         /// </example>
         public static IMiCakeBuilder AddMiCakeWithDefault<TEntryModule, TDbContext>(
                 this IServiceCollection services,
-                Action<MiCakeSetupOptions> configureOptions = null)
+                Action<MiCakeSetupOptions>? configureOptions = null)
             where TDbContext : DbContext
             where TEntryModule : MiCakeModule
         {
@@ -93,7 +93,7 @@ namespace MiCake.Core
             this IServiceCollection services,
             Type entryModule,
             Type miCakeDbContextType,
-            Action<MiCakeSetupOptions> configureOptions = null)
+            Action<MiCakeSetupOptions>? configureOptions = null)
         {
             var options = new MiCakeSetupOptions();
             configureOptions?.Invoke(options);

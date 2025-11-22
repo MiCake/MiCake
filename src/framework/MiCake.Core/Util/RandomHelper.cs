@@ -93,7 +93,7 @@ namespace MiCake.Util
 
             while (currentList.Any())
             {
-                var randomIndex = RandomHelper.GetRandom(0, currentList.Count);
+                var randomIndex = GetRandom(0, currentList.Count);
                 randomList.Add(currentList[randomIndex]);
                 currentList.RemoveAt(randomIndex);
             }

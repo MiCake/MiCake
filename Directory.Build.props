@@ -5,6 +5,7 @@
 		<Authors>MiCake</Authors>
 		<owners>MiCake</owners>
 		<Version>1.0.0-preview1</Version>
+		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/MiCake/MiCake</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/MiCake/MiCake</RepositoryUrl>

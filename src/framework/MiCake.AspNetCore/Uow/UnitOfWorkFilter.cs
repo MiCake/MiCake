@@ -56,7 +56,7 @@ namespace MiCake.AspNetCore.Uow
             var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
 
             // Check for UnitOfWork attribute on action, controller, or endpoint metadata
-            UnitOfWorkAttribute uowAttribute;
+            UnitOfWorkAttribute? uowAttribute;
             try
             {
                 uowAttribute = GetUnitOfWorkAttribute(controllerActionDes);
@@ -169,6 +169,10 @@ namespace MiCake.AspNetCore.Uow
                             rollbackEx,
                             "Failed to rollback Unit of Work {UowId}",
                             unitOfWork.Id);
+
+                        throw new AggregateException(
+                            "Unit of Work operation failed and rollback also failed",
+                            ex, rollbackEx);
                     }
                 }
 

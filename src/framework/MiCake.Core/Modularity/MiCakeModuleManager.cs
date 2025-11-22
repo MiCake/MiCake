@@ -1,4 +1,4 @@
-﻿using MiCake.Util.Collection;
+﻿using MiCake.Util.Extensions;
 using MiCake.Util.Reflection;
 using System;
 using System.Collections.Generic;
@@ -11,10 +11,10 @@ namespace MiCake.Core.Modularity
     /// </summary>
     public class MiCakeModuleManager : IMiCakeModuleManager
     {
-        private MiCakeModuleContext _moduleContext;
+        private MiCakeModuleContext? _moduleContext;
         private bool _isPopulated;
         private readonly List<Type> _normalModulesTypes = [];
-        private ModuleDependencyResolver _dependencyResolver;
+        private ModuleDependencyResolver? _dependencyResolver;
 
         /// <summary>
         /// Function used to create module instances.
@@ -25,7 +25,7 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Gets the module context containing all registered modules.
         /// </summary>
-        public IMiCakeModuleContext ModuleContext => _moduleContext;
+        public IMiCakeModuleContext ModuleContext => _moduleContext ?? throw new InvalidOperationException("ModuleContext has not been initialized. Call PopulateModules first.");
 
         /// <summary>
         /// Indicates whether modules have been populated.
@@ -35,7 +35,7 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Gets the module dependency resolver (available after PopulateModules is called).
         /// </summary>
-        internal ModuleDependencyResolver DependencyResolver => _dependencyResolver;
+        internal ModuleDependencyResolver? DependencyResolver => _dependencyResolver;
 
         /// <summary>
         /// Discovers and registers all modules starting from the entry module.
@@ -74,7 +74,7 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="moduleType">The module type to find</param>
         /// <returns>The module descriptor, or null if not found</returns>
-        public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
+        public MiCakeModuleDescriptor? GetMiCakeModule(Type moduleType)
         {
             ArgumentNullException.ThrowIfNull(moduleType);
 

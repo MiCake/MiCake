@@ -210,6 +210,12 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             try
             {
+                if(_currentTransaction is null)
+                {
+                    _logger.LogDebug("Current transaction is null for DbContext {DbContextType}", _dbContext.GetType().Name);
+                    return;
+                }
+
                 _logger.LogDebug("Committing transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
                 await _currentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -236,6 +242,12 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             try
             {
+                if(_currentTransaction is null)
+                {
+                    _logger.LogDebug("Current transaction is null for DbContext {DbContextType}", _dbContext.GetType().Name);
+                    return;
+                }
+
                 _logger.LogDebug("Rolling back transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
                 await _currentTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -330,16 +342,16 @@ namespace MiCake.EntityFrameworkCore.Uow
                 try
                 {
                     _dbContext?.Dispose();
-                    _logger.LogDebug("Disposed DbContext {DbContextType} as requested", _dbContext.GetType().Name);
+                    _logger.LogDebug("Disposed DbContext {DbContextType} as requested", _dbContext?.GetType().Name);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error disposing DbContext {DbContextType}", _dbContext.GetType().Name);
+                    _logger.LogError(ex, "Error disposing DbContext {DbContextType}", _dbContext?.GetType().Name);
                 }
             }
             else
             {
-                _logger.LogDebug("DbContext {DbContextType} not disposed - managed by DI container", _dbContext.GetType().Name);
+                _logger.LogDebug("DbContext {DbContextType} not disposed - managed by DI container", _dbContext?.GetType().Name);
             }
 
             _disposed = true;

@@ -93,7 +93,8 @@ namespace MiCake.Core
             // Execute ConfigureServices lifecycle for all modules
             // This allows modules to register their services
             // Reuse the dependency resolver from the module manager to avoid recreating it
-            ConfigureModuleServices(moduleManager.ModuleContext, moduleManager.DependencyResolver);
+            ConfigureModuleServices(moduleManager.ModuleContext, moduleManager.DependencyResolver
+                ?? throw new InvalidOperationException("Module dependency resolver is not available. Please check the module initialization process."));
         }
 
         private void ConfigureModuleServices(IMiCakeModuleContext moduleContext, ModuleDependencyResolver dependencyResolver)

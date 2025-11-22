@@ -1,5 +1,5 @@
 using System;
-using MiCake.Util.Paging.Providers;
+using MiCake.Util.Query.Paging.Providers;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.Paging.Providers;

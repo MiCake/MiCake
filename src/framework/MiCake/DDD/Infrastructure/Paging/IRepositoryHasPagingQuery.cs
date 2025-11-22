@@ -1,5 +1,5 @@
-﻿using MiCake.Util.LinqFilter;
-using MiCake.Util.Paging;
+﻿using MiCake.Util.Query.Dynamic;
+using MiCake.Util.Query.Paging;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -13,7 +13,7 @@ namespace MiCake.DDD.Domain   // still using MiCake.DDD.Domain for compatibility
     /// </summary>
     /// <typeparam name="TAggregateRoot"></typeparam>
     /// <typeparam name="TKey"></typeparam>
-    public interface IRepositoryHasPagingQuery<TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey>
+    public interface IRepositoryHasPagingQuery<TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey> where TKey : notnull
     {
         /// <summary>
         /// Paing query data from repository by <see cref="PagingRequest"/>

@@ -1,4 +1,4 @@
-using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Responses.Internals;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using Xunit;

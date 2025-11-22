@@ -1,4 +1,4 @@
-﻿using MiCake.AspNetCore.DataWrapper;
+﻿using MiCake.AspNetCore.Responses;
 using MiCake.DDD.Uow;
 using System.Collections.Generic;
 
@@ -23,12 +23,12 @@ namespace MiCake.AspNetCore
         /// <summary>
         /// The data wrap configuration for MiCake in ASP.NET Core.
         /// </summary>
-        public DataWrapperOptions DataWrapperOptions { get; set; }
+        public ResponseWrapperOptions DataWrapperOptions { get; set; }
 
         public MiCakeAspNetOptions()
         {
             UnitOfWork = new MiCakeAspNetUowOption();
-            DataWrapperOptions = new DataWrapperOptions();
+            DataWrapperOptions = new ResponseWrapperOptions();
         }
     }
 

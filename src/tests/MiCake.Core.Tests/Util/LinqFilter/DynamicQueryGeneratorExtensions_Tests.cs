@@ -1,22 +1,22 @@
 using System.Collections.Generic;
 using System.Linq;
-using MiCake.Util.LinqFilter;
+using MiCake.Util.Query.Dynamic;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.LinqFilter;
 
 public class TestQueryObj : IDynamicQueryObj
 {
-    [DynamicFilter(PropertyName = "Age", OperatorType = FilterOperatorType.GreaterThan)]
+    [DynamicFilter(PropertyName = "Age", OperatorType = ValueOperatorType.GreaterThan)]
     public int? Age { get; set; }
 
-    [DynamicFilter(PropertyName = "Tags", OperatorType = FilterOperatorType.In)]
+    [DynamicFilter(PropertyName = "Tags", OperatorType = ValueOperatorType.In)]
     public List<string>? Tags { get; set; }
 
-    [DynamicFilter(PropertyName = "Name", OperatorType = FilterOperatorType.Contains)]
+    [DynamicFilter(PropertyName = "Name", OperatorType = ValueOperatorType.Contains)]
     public string? Name { get; set; }
 
-    [DynamicFilter(PropertyName = "Scores", OperatorType = FilterOperatorType.In)]
+    [DynamicFilter(PropertyName = "Scores", OperatorType = ValueOperatorType.In)]
     public int[]? Scores { get; set; }
 }
 
@@ -24,7 +24,7 @@ public class SimpleQueryTestObj : IDynamicQueryObj
 {
     public int Id { get; set; }
 
-    [DynamicFilter(PropertyName = "Name", OperatorType = FilterOperatorType.Equal)]
+    [DynamicFilter(PropertyName = "Name", OperatorType = ValueOperatorType.Equal)]
     public string Name { get; set; }
 }
 
@@ -55,7 +55,7 @@ public class DynamicQueryGeneratorExtensions_Tests
         var obj = new TestQueryObj { Age = 25, Tags = ["A", "B"], Name = "MiCake", Scores = [1, 2] };
         var group = obj.GenerateFilterGroup();
 
-        Assert.Equal(FilterJoinType.And, group.FilterGroupJoinType);
+        Assert.Equal(FilterJoinType.And, group.FiltersJoinType);
         Assert.Equal(4, group.Filters.Count);
         Assert.Contains(group.Filters, f => f.PropertyName == "Age");
         Assert.Contains(group.Filters, f => f.PropertyName == "Tags");
@@ -113,4 +113,30 @@ public class DynamicQueryGeneratorExtensions_Tests
         Assert.Single(filteredResults);
         Assert.Equal("MiCake", filteredResults.First().Name);
     }
+
+    [Fact]
+    public void GenerateFilterGroup_ShouldAccept_IEnumerable_Not_ICollection()
+    {
+        var obj = new NonCollectionQueryObj { Numbers = Enumerable.Range(1, 1).Select(i => i) };
+
+        var group = obj.GenerateFilterGroup();
+
+        Assert.Contains(group.Filters, f => f.PropertyName == "Numbers");
+    }
+
+    [Fact]
+    public void GenerateFilterGroup_Should_Skip_Empty_IEnumerable()
+    {
+        var obj = new NonCollectionQueryObj { Numbers = Enumerable.Empty<int>().Where(i => false) };
+
+        var group = obj.GenerateFilterGroup();
+
+        Assert.DoesNotContain(group.Filters, f => f.PropertyName == "Numbers");
+    }
+}
+
+public class NonCollectionQueryObj : IDynamicQueryObj
+{
+    [DynamicFilter(PropertyName = "Numbers", OperatorType = ValueOperatorType.In)]
+    public IEnumerable<int>? Numbers { get; set; }
 }

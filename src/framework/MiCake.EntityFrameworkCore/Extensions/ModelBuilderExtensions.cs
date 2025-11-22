@@ -56,14 +56,14 @@ namespace MiCake.EntityFrameworkCore
     /// </summary>
     internal static class MiCakeConventionEngineProvider
     {
-        private static StoreConventionEngine _conventionEngine;
+        private static StoreConventionEngine? _conventionEngine;
 
         internal static void SetConventionEngine(StoreConventionEngine engine)
         {
             _conventionEngine = engine;
         }
 
-        internal static StoreConventionEngine GetConventionEngine()
+        internal static StoreConventionEngine? GetConventionEngine()
         {
             return _conventionEngine;
         }

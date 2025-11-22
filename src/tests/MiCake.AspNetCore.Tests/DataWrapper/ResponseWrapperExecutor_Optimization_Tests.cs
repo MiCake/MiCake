@@ -1,5 +1,5 @@
-using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Responses.Internals;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +20,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IsProblemDetails_WithProblemDetails_ReturnsTrue()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var problemDetails = new ProblemDetails { Title = "Validation Error" };
@@ -37,7 +37,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IsProblemDetails_WithHttpValidationProblemDetails_ReturnsTrue()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var validationProblemDetails = new HttpValidationProblemDetails
@@ -58,7 +58,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IsProblemDetails_WithValidationProblemDetails_ReturnsTrue()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var validationProblemDetails = new ValidationProblemDetails
@@ -79,7 +79,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void IsProblemDetails_WithRegularObject_ReturnsFalse()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var regularData = new { name = "test" };
@@ -99,7 +99,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithSlightException_UsesSlightExceptionDataFactory()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var slightException = new SlightMiCakeException("Custom message", details: "{\"detail\": \"info\"}", code: "CUSTOM_CODE");
@@ -120,7 +120,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithSlightExceptionNullDetails_HandlesGracefully()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var slightException = new SlightMiCakeException("Custom message", details: null, code: "CUSTOM_CODE");
@@ -142,7 +142,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Success = "200" };
-            var options = new DataWrapperOptions { DefaultCodeSetting = customCodeSetting };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var slightException = new SlightMiCakeException("Custom message", details: null, code: "");
@@ -161,7 +161,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithSlightExceptionComplexData_IncludesAllData()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var slightException = new SlightMiCakeException("User already exists", details: "{\"userId\": 123, \"userName\": \"John\", \"status\": \"active\"}", code: "USER_EXISTS");
@@ -188,7 +188,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_DefaultTrue_WrapsHttpValidationProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions(); // Default: WrapProblemDetails = true
+            var options = new ResponseWrapperOptions(); // Default: WrapProblemDetails = true
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var validationProblemDetails = new HttpValidationProblemDetails();
@@ -207,7 +207,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_DefaultTrue_WrapsProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions(); // Default: WrapProblemDetails = true
+            var options = new ResponseWrapperOptions(); // Default: WrapProblemDetails = true
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var problemDetails = new ProblemDetails { Title = "Error", Detail = "Something went wrong" };
@@ -225,7 +225,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_False_DoesNotWrapHttpValidationProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var validationProblemDetails = new HttpValidationProblemDetails();
@@ -242,7 +242,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_False_DoesNotWrapProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var problemDetails = new ProblemDetails { Title = "Error", Detail = "Something went wrong" };
@@ -258,8 +258,8 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapProblemDetails_UnifiedFlagAppliesToBothTypes()
         {
             // Arrange
-            var optionsWrap = new DataWrapperOptions { WrapProblemDetails = true };
-            var optionsDontWrap = new DataWrapperOptions { WrapProblemDetails = false };
+            var optionsWrap = new ResponseWrapperOptions { WrapProblemDetails = true };
+            var optionsDontWrap = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executorWrap = new ResponseWrapperExecutor(optionsWrap);
             var executorDontWrap = new ResponseWrapperExecutor(optionsDontWrap);
             var httpContext1 = CreateHttpContext(400);
@@ -293,7 +293,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Constructor_WithValidOptions_Succeeds()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             var executor = new ResponseWrapperExecutor(options);
@@ -319,7 +319,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 SuccessFactory = ctx => customResponse
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
 
             // Act
             var executor = new ResponseWrapperExecutor(options);
@@ -337,7 +337,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithIResponseWrapper_ReturnsOriginal()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var alreadyWrapped = new ApiResponse("0", null, "data");
@@ -357,7 +357,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithNullHttpContext_HandlesGracefully()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
 
             // Act
@@ -371,7 +371,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithNullData_WrapsAsNull()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
 
@@ -388,7 +388,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapError_WithNullException_HandlesGracefully()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(500);
 
@@ -406,7 +406,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Error = "5000" };
-            var options = new DataWrapperOptions { DefaultCodeSetting = customCodeSetting };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(500);
             var exception = new Exception("Test error");
@@ -428,7 +428,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void MultipleWrappingScenarios_ConsistencyAcrossTypes()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var executor = new ResponseWrapperExecutor(options);
 
             // Test 1: Regular data
@@ -460,7 +460,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_ProblemDetailsWithSlightException_SlightExceptionTakesPriority()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var slightException = new SlightMiCakeException("Slight error", details: null, code: "SLIGHT");

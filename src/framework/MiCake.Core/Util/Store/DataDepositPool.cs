@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using MiCake.Util.Collection;
 using MiCake.Util.Reflection;
 
 namespace MiCake.Util.Store
@@ -47,7 +46,7 @@ namespace MiCake.Util.Store
         /// <param name="key">The key to retrieve data for</param>
         /// <returns>The stored object if found; otherwise, null</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
-        public object TakeOut(string key)
+        public object? TakeOut(string key)
         {
             ArgumentNullException.ThrowIfNull(key);
 

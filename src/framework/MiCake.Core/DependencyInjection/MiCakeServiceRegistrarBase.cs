@@ -15,7 +15,7 @@ namespace MiCake.Core.DependencyInjection
     internal abstract class MiCakeServiceRegistrarBase : IMiCakeServiceRegistrar
     {
         private readonly IServiceCollection _services;
-        private FindAutoServiceTypesDelegate _serviceTypesFinder;
+        private FindAutoServiceTypesDelegate? _serviceTypesFinder;
 
         /// <summary>
         /// Gets the current service type finder, using the default if none is set.
@@ -138,12 +138,12 @@ namespace MiCake.Core.DependencyInjection
             /// <summary>
             /// Gets or sets the service type (typically an interface).
             /// </summary>
-            public Type Type { get; set; }
+            public required Type Type { get; set; }
 
             /// <summary>
             /// Gets or sets the implementation type (concrete class).
             /// </summary>
-            public Type ImplementationType { get; set; }
+            public required Type ImplementationType { get; set; }
 
             /// <summary>
             /// Gets or sets the service lifetime.

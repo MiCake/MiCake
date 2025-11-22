@@ -1,4 +1,4 @@
-﻿using MiCake.Util.Collection;
+﻿using MiCake.Util.Extensions;
 using System;
 using System.Collections.Generic;
 
@@ -200,7 +200,7 @@ namespace MiCake.Util
         /// <param name="minLength">Minimum required length (default is 0)</param>
         /// <returns>The validated string</returns>
         /// <exception cref="ArgumentException">Thrown when value doesn't meet length requirements</exception>
-        public static string Length(string value, string parameterName, int maxLength, int minLength = 0)
+        public static string? Length(string? value, string parameterName, int maxLength, int minLength = 0)
         {
             if (minLength > 0)
             {

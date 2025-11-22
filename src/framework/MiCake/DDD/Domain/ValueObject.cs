@@ -21,7 +21,7 @@ namespace MiCake.DDD.Domain
 
         protected static bool NotEqualOperator(ValueObject left, ValueObject right)
         {
-            return !(EqualOperator(left, right));
+            return !EqualOperator(left, right);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace MiCake.DDD.Domain
         /// <returns>An enumerable of components to compare</returns>
         protected abstract IEnumerable<object> GetEqualityComponents();
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || obj.GetType() != GetType())
             {

@@ -54,14 +54,15 @@ namespace MiCake.EntityFrameworkCore.Modules
                 MiCakeInterceptorFactoryHelper.Configure(factory);
             }
 
-            var efcoreOptions = context.ServiceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>().Value
+            var efcoreOptions = context.ServiceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>()?.Value
                                         ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
             var registry = context.ServiceProvider.GetService<IDbContextTypeRegistry>();
             registry?.RegisterDbContextType(efcoreOptions.DbContextType);
 
             var storeConventionRegistry = context.ApplicationOptions.BuildTimeData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
-            RegisterMiCakeConventions(storeConventionRegistry);
+            if (storeConventionRegistry != null)
+                RegisterMiCakeConventions(storeConventionRegistry);
         }
 
         public override void OnApplicationShutdown(ModuleShutdownContext context)

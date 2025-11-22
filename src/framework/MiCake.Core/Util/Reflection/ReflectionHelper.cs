@@ -104,7 +104,7 @@ namespace MiCake.Util.Reflection
         /// <param name="defaultValue">The default value to return if attribute is not found</param>
         /// <param name="inherit">Whether to search the member's inheritance chain for the attribute</param>
         /// <returns>The attribute instance, or defaultValue if not found</returns>
-        public static TAttribute GetSingleAttributeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute defaultValue = default, bool inherit = true)
+        public static TAttribute? GetSingleAttributeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute? defaultValue = default, bool inherit = true) 
             where TAttribute : Attribute
         {
             // Get attribute on the member
@@ -125,7 +125,7 @@ namespace MiCake.Util.Reflection
         /// <param name="defaultValue">The default value to return if attribute is not found</param>
         /// <param name="inherit">Whether to search inheritance chains</param>
         /// <returns>The attribute instance, or defaultValue if not found</returns>
-        public static TAttribute GetSingleAttributeOfMemberOrDeclaringTypeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute defaultValue = default, bool inherit = true)
+        public static TAttribute? GetSingleAttributeOfMemberOrDeclaringTypeOrDefault<TAttribute>(MemberInfo memberInfo, TAttribute? defaultValue = default, bool inherit = true)
             where TAttribute : class
         {
             return memberInfo.GetCustomAttributes(true).OfType<TAttribute>().FirstOrDefault()
@@ -146,11 +146,11 @@ namespace MiCake.Util.Reflection
         /// var city = GetValueByPath(order, typeof(Order), "Customer.Address.City");
         /// </code>
         /// </example>
-        public static object GetValueByPath(object obj, Type objectType, string propertyPath)
+        public static object? GetValueByPath(object obj, Type objectType, string propertyPath)
         {
             var value = obj;
             var currentType = objectType;
-            var objectPath = currentType.FullName;
+            var objectPath = currentType.FullName ?? string.Empty;
             var absolutePropertyPath = propertyPath;
             
             if (absolutePropertyPath.StartsWith(objectPath))
@@ -161,8 +161,8 @@ namespace MiCake.Util.Reflection
             foreach (var propertyName in absolutePropertyPath.Split('.'))
             {
                 var property = currentType.GetProperty(propertyName);
-                value = property.GetValue(value, null);
-                currentType = property.PropertyType;
+                value = property?.GetValue(value, null);
+                currentType = property?.PropertyType ?? currentType;
             }
 
             return value;
@@ -179,8 +179,8 @@ namespace MiCake.Util.Reflection
         internal static void SetValueByPath(object obj, Type objectType, string propertyPath, object value)
         {
             var currentType = objectType;
-            PropertyInfo property;
-            var objectPath = currentType.FullName;
+            PropertyInfo? property;
+            var objectPath = currentType.FullName ?? string.Empty;
             var absolutePropertyPath = propertyPath;
             
             if (absolutePropertyPath.StartsWith(objectPath))
@@ -193,19 +193,19 @@ namespace MiCake.Util.Reflection
             if (properties.Length == 1)
             {
                 property = objectType.GetProperty(properties.First());
-                property.SetValue(obj, value);
+                property?.SetValue(obj, value);
                 return;
             }
 
             for (int i = 0; i < properties.Length - 1; i++)
             {
                 property = currentType.GetProperty(properties[i]);
-                obj = property.GetValue(obj, null);
-                currentType = property.PropertyType;
+                obj = property?.GetValue(obj, null)!;
+                currentType = property?.PropertyType ?? currentType;
             }
 
             property = currentType.GetProperty(properties.Last());
-            property.SetValue(obj, value);
+            property?.SetValue(obj, value);
         }
 
         /// <summary>
@@ -220,7 +220,7 @@ namespace MiCake.Util.Reflection
 
             var publicConstants = new List<string>();
 
-            void Recursively(List<string> constants, Type targetType, int currentDepth)
+            static void Recursively(List<string> constants, Type targetType, int currentDepth)
             {
                 if (currentDepth > maxRecursiveParameterValidationDepth)
                 {
@@ -229,7 +229,7 @@ namespace MiCake.Util.Reflection
 
                 constants.AddRange(targetType.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
                     .Where(x => x.IsLiteral && !x.IsInitOnly)
-                    .Select(x => x.GetValue(null).ToString()));
+                    .Select(x => x.GetValue(null)?.ToString()).Where(x => x != null)!);
 
                 var nestedTypes = targetType.GetNestedTypes(BindingFlags.Public);
 

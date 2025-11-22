@@ -1,5 +1,5 @@
 ﻿using MiCake.AspNetCore;
-using MiCake.AspNetCore.DataWrapper;
+using MiCake.AspNetCore.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BaseMiCakeApplication.MiCakeFeatures

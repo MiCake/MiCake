@@ -142,7 +142,7 @@ namespace MiCake.EntityFrameworkCore
         internal static DbContextOptionsBuilder UseMiCakeInterceptors(
             this DbContextOptionsBuilder optionsBuilder,
             IEFSaveChangesLifetime saveChangesLifetime,
-            ILogger<MiCakeEFCoreInterceptor> logger = null)
+            ILogger<MiCakeEFCoreInterceptor>? logger = null)
         {
             if (saveChangesLifetime != null)
             {

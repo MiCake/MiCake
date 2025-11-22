@@ -309,31 +309,31 @@ namespace MiCake.Core.Tests.Util
         }
 
         [Fact]
-        public void BuildCacheKey_ShouldGenerateCorrectKeys()
+        public void ParameterizedFactoryKey_EqualsAndHashCode_BehaveAsExpected()
         {
-            // Arrange
-            var type1 = typeof(ClassWithConstructorParameter);
-            var type2 = typeof(ClassWithIntConstructor);
-            var argTypes1 = new[] { typeof(string) };
-            var argTypes2 = new[] { typeof(int) };
+            // Arrange: reflection access to the private nested struct
+            var nested = typeof(CompiledActivator.ParameterizedFactoryKey);
 
-            // Act
-            var key1 = typeof(CompiledActivator).GetMethod("BuildCacheKey", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                ?.Invoke(null, new object[] { type1, argTypes1 }) as string;
-            
-            var key2 = typeof(CompiledActivator).GetMethod("BuildCacheKey", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                ?.Invoke(null, new object[] { type2, argTypes2 }) as string;
+            var ctor = nested.GetConstructor(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public,
+                null, new Type[] { typeof(Type), typeof(Type[]) }, null);
+            Assert.NotNull(ctor);
 
-            // Assert
-            Assert.NotNull(key1);
-            Assert.NotNull(key2);
-            Assert.NotEqual(key1, key2);
-            Assert.Contains(type1.FullName, key1);
-            Assert.Contains(type2.FullName, key2);
-            Assert.Contains("System.String", key1);
-            Assert.Contains("System.Int32", key2);
+            var type = typeof(ClassWithConstructorParameter);
+            var argsA = new Type[] { typeof(string) };
+            var argsB = new Type[] { typeof(string) };
+            var argsC = new Type[] { typeof(int) };
+
+            // Create three key instances via reflection
+            var key1 = ctor.Invoke(new object[] { type, argsA });
+            var key2 = ctor.Invoke(new object[] { type, argsB });
+            var key3 = ctor.Invoke(new object[] { typeof(ClassWithIntConstructor), argsC });
+
+            // Act & Assert: keys with same type & arg types should be equal
+            Assert.True(key1!.Equals(key2));
+            Assert.Equal(key1.GetHashCode(), key2.GetHashCode());
+
+            // Different type/signature should not be equal
+            Assert.False(key1.Equals(key3));
         }
 
         [Fact]
@@ -370,22 +370,46 @@ namespace MiCake.Core.Tests.Util
 
             // Act - Generate cache key multiple times
             var keys = new string[1000];
-            for (int i = 0; i < keys.Length; i++)
+            // The runtime uses typed key so determinism of a string helper is no longer critical —
+            // validate deterministic behavior when calling CreateInstance with the same parameter signature.
+            var factories = new string[keys.Length];
+            for (int i = 0; i < factories.Length; i++)
             {
-                keys[i] = typeof(CompiledActivator).GetMethod("BuildCacheKey", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                    ?.Invoke(null, new object[] { type, argTypes }) as string;
+                var inst = CompiledActivator.CreateInstance(typeof(ClassWithMultipleParameters), "a", 1, DateTime.MinValue);
+                Assert.IsType<ClassWithMultipleParameters>(inst);
+                factories[i] = inst.GetType().FullName; // trivial check to ensure instantiation succeeded repeatedly
             }
 
-            // Assert - All keys should be identical and not null
-            Assert.All(keys, key => Assert.NotNull(key));
-            Assert.All(keys, key => Assert.Equal(keys[0], key));
-            
-            // Verify key format
-            Assert.Contains(type.FullName, keys[0]);
-            Assert.Contains("System.String", keys[0]);
-            Assert.Contains("System.Int32", keys[0]);
-            Assert.Contains("System.DateTime", keys[0]);
+            // Assert - all instantiations returned the same runtime type and succeeded
+            Assert.All(factories, name => Assert.NotNull(name));
+            Assert.All(factories, name => Assert.Equal(factories[0], name));
+        }
+
+        [Fact]
+        public void ParameterizedFactoryKey_OrderAndNulls_AffectEquality()
+        {
+            var nested = typeof(CompiledActivator.ParameterizedFactoryKey);
+            Assert.NotNull(nested);
+
+            var ctor = nested.GetConstructor(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public,
+                null, new Type[] { typeof(Type), typeof(Type[]) }, null);
+            Assert.NotNull(ctor);
+
+            var type = typeof(ClassWithConstructorParameter);
+            var a = new Type[] { typeof(string), typeof(int) };
+            var b = new Type[] { typeof(int), typeof(string) };
+            var c = new Type[] { typeof(string), null };
+
+            var k1 = ctor.Invoke(new object[] { type, a });
+            var k2 = ctor.Invoke(new object[] { type, a });
+            var k3 = ctor.Invoke(new object[] { type, b });
+            var k4 = ctor.Invoke(new object[] { type, c });
+
+            Assert.True(k1!.Equals(k2));
+            Assert.Equal(k1.GetHashCode(), k2.GetHashCode());
+
+            Assert.False(k1.Equals(k3));
+            Assert.False(k1.Equals(k4));
         }
 
         #endregion
@@ -433,6 +457,46 @@ namespace MiCake.Core.Tests.Util
             // Assert - Cache size should be bounded by maxSize
             var cacheSize = CompiledActivator.GetParameterizedCacheSize();
             Assert.True(cacheSize <= maxSize, $"Cache size {cacheSize} exceeded max {maxSize}");
+        }
+
+        [Fact]
+        public void FactoryCache_ShouldEvictLruEntriesWhenMaxSizeExceeded()
+        {
+            // Arrange
+            CompiledActivator.ClearCache();
+            var maxSize = 1000; // must match CompiledActivator.MaxFactoryCacheSize
+            var typesToCreate = maxSize + 50;
+
+            var asmName = new System.Reflection.AssemblyName("DynamicFactoryTypes_" + Guid.NewGuid().ToString("N"));
+            var asmBuilder = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(asmName, System.Reflection.Emit.AssemblyBuilderAccess.Run);
+            var moduleBuilder = asmBuilder.DefineDynamicModule(asmName.Name);
+
+            for (int i = 0; i < typesToCreate; i++)
+            {
+                var tb = moduleBuilder.DefineType("DynamicType" + i, System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+
+                // Define a simple public parameterless constructor
+                var ctor = tb.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, Type.EmptyTypes);
+                var il = ctor.GetILGenerator();
+                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+                il.Emit(System.Reflection.Emit.OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes)!);
+                il.Emit(System.Reflection.Emit.OpCodes.Ret);
+
+                var t = tb.CreateType();
+
+                try
+                {
+                    if (t != null)
+                        CompiledActivator.CreateInstance(t);
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+
+            var cacheSize = CompiledActivator.GetFactoryCacheSize();
+            Assert.True(cacheSize <= maxSize, $"Factory cache size {cacheSize} exceeded max {maxSize}");
         }
 
         [Fact]

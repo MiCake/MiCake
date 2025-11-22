@@ -1,5 +1,5 @@
-using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Responses.Internals;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -13,7 +13,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_NormalData_ReturnsStandardResponse()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var originalData = "test data";
@@ -33,7 +33,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_AlreadyWrapped_ReturnsOriginal()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
             var wrappedData = new ApiResponse("200", "OK", "data");
@@ -49,7 +49,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_ProblemDetails_WrapDisabled_ReturnsOriginal()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var problemDetails = new ProblemDetails { Title = "Error" };
@@ -65,7 +65,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_ProblemDetails_WrapEnabled_ReturnsWrapped()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(400);
             var problemDetails = new ProblemDetails { Title = "Error" };
@@ -81,7 +81,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapError_Exception_ReturnsErrorResponse()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(500);
             var exception = new Exception("Test error");
@@ -102,7 +102,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapError_WithStackTrace_IncludesStackTrace()
         {
             // Arrange
-            var options = new DataWrapperOptions { ShowStackTraceWhenError = true };
+            var options = new ResponseWrapperOptions { ShowStackTraceWhenError = true };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(500);
             
@@ -131,7 +131,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var customResponse = new { status = "success", payload = "data" };
-            var options = new DataWrapperOptions
+            var options = new ResponseWrapperOptions
             {
                 WrapperFactory = new ResponseWrapperFactory
                 {
@@ -153,7 +153,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var customError = new { error = "custom error" };
-            var options = new DataWrapperOptions
+            var options = new ResponseWrapperOptions
             {
                 WrapperFactory = new ResponseWrapperFactory
                 {

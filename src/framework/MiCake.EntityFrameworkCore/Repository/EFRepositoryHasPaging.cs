@@ -1,6 +1,6 @@
 ﻿using MiCake.DDD.Domain;
-using MiCake.Util.LinqFilter;
-using MiCake.Util.Paging;
+using MiCake.Util.Query.Dynamic;
+using MiCake.Util.Query.Paging;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

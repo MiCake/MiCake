@@ -1,5 +1,5 @@
-using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Responses.Internals;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -14,7 +14,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
     /// </summary>
     public class ExceptionWrapping_ConsistencyTests
     {
-        private readonly DataWrapperOptions _defaultOptions = new DataWrapperOptions();
+        private readonly ResponseWrapperOptions _defaultOptions = new ResponseWrapperOptions();
 
         [Fact]
         public void Filter_And_Middleware_Both_Use_Extensions()
@@ -59,7 +59,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 SuccessFactory = context => new { custom = true },
                 ErrorFactory = context => new { custom = true }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = new DefaultHttpContext();
 
@@ -182,7 +182,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 SuccessFactory = context => new { isSuccess = true }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = new DefaultHttpContext();
 
@@ -291,7 +291,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                     return new { statusCode = context.StatusCode };
                 }
             };
-            var options = new DataWrapperOptions { WrapperFactory = customFactory };
+            var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var customExecutor = new ResponseWrapperExecutor(options);
 
             // Act
@@ -312,7 +312,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 SuccessFactory = context => new { custom = true }
             };
-            var customOptions = new DataWrapperOptions { WrapperFactory = customFactory };
+            var customOptions = new ResponseWrapperOptions { WrapperFactory = customFactory };
             var customExecutor = new ResponseWrapperExecutor(customOptions);
 
             // Act

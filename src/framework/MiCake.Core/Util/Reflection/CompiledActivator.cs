@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+using MiCake.Util.Cache;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 
 namespace MiCake.Util.Reflection
 {
@@ -16,16 +13,61 @@ namespace MiCake.Util.Reflection
     public static class CompiledActivator
     {
         private const int MaxParameterizedCacheSize = 256;
-        
-        private static readonly ConcurrentDictionary<Type, Func<object>> _factoryCache = new();
-        private static readonly ConcurrentDictionary<string, CacheEntry> _parameterizedFactoryCache = new();
-        private static readonly LinkedList<string> _lruList = new();
-        private static readonly ReaderWriterLockSlim _lruLock = new();
+
+        // Use a bounded LRU cache to avoid unbounded memory growth (potential leak)
+        private const int MaxFactoryCacheSize = 1000;
+        private static readonly BoundedLruCache<Type, Func<object>> _factoryCache = new(MaxFactoryCacheSize);
+        // parameterized factories cache - bounded using a LRU cache keyed by (Type, Type[])
+        private static readonly BoundedLruCache<ParameterizedFactoryKey, CacheEntry> _parameterizedFactoryCache = new(MaxParameterizedCacheSize);
 
         private class CacheEntry
         {
-            public Func<object[], object> Factory { get; set; }
-            public LinkedListNode<string> LruNode { get; set; }
+            public Func<object[], object> Factory { get; set; } = null!;
+        }
+
+        // Lightweight value type key describes a parameterized factory signature
+        internal readonly struct ParameterizedFactoryKey : IEquatable<ParameterizedFactoryKey>
+        {
+            public readonly Type Type;
+            public readonly Type[] ArgTypes;
+
+            public ParameterizedFactoryKey(Type type, Type[] argTypes)
+            {
+                Type = type ?? throw new ArgumentNullException(nameof(type));
+                ArgTypes = argTypes ?? Array.Empty<Type>();
+            }
+
+            public bool Equals(ParameterizedFactoryKey other)
+            {
+                if (!ReferenceEquals(Type, other.Type))
+                    return false;
+
+                if (ArgTypes.Length != other.ArgTypes.Length)
+                    return false;
+
+                for (int i = 0; i < ArgTypes.Length; i++)
+                {
+                    if (!ReferenceEquals(ArgTypes[i], other.ArgTypes[i]))
+                        return false;
+                }
+
+                return true;
+            }
+
+            public override bool Equals(object? obj) => obj is ParameterizedFactoryKey k && Equals(k);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hash = Type.GetHashCode();
+                    for (int i = 0; i < ArgTypes.Length; i++)
+                    {
+                        hash = (hash * 31) + (ArgTypes[i]?.GetHashCode() ?? 0);
+                    }
+                    return hash;
+                }
+            }
         }
 
         /// <summary>
@@ -60,9 +102,7 @@ namespace MiCake.Util.Reflection
             for (int i = 0; i < args.Length; i++)
                 argTypes[i] = args[i]?.GetType() ?? typeof(object);
 
-            var cacheKey = BuildCacheKey(type, argTypes);
-
-            var factory = GetOrAddParameterizedFactory(cacheKey, type, argTypes);
+            var factory = GetOrAddParameterizedFactory(type, argTypes);
             return factory(args);
         }
 
@@ -84,9 +124,9 @@ namespace MiCake.Util.Reflection
                     $"Ensure the type has a public or internal parameterless constructor.");
             }
 
-            var newExpression = System.Linq.Expressions.Expression.New(constructor);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object>>(
-                System.Linq.Expressions.Expression.Convert(newExpression, typeof(object)));
+            var newExpression = Expression.New(constructor);
+            var lambda = Expression.Lambda<Func<object>>(
+                Expression.Convert(newExpression, typeof(object)));
 
             return lambda.Compile();
         }
@@ -108,16 +148,16 @@ namespace MiCake.Util.Reflection
                     $"Type '{type.FullName}' does not have a constructor with parameters: {string.Join(", ", parameterTypes.Select(t => t.Name))}");
             }
 
-            var argsParameter = System.Linq.Expressions.Expression.Parameter(typeof(object[]), "args");
+            var argsParameter = Expression.Parameter(typeof(object[]), "args");
             var parameterExpressions = constructor.GetParameters()
                 .Select((p, i) => Expression.Convert(
                     Expression.ArrayIndex(argsParameter, Expression.Constant(i)),
                     p.ParameterType))
                 .ToArray();
 
-            var newExpression = System.Linq.Expressions.Expression.New(constructor, parameterExpressions);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object[], object>>(
-                System.Linq.Expressions.Expression.Convert(newExpression, typeof(object)),
+            var newExpression = Expression.New(constructor, parameterExpressions);
+            var lambda = Expression.Lambda<Func<object[], object>>(
+                Expression.Convert(newExpression, typeof(object)),
                 argsParameter);
 
             return lambda.Compile();
@@ -130,16 +170,6 @@ namespace MiCake.Util.Reflection
         {
             _factoryCache.Clear();
             _parameterizedFactoryCache.Clear();
-            
-            _lruLock.EnterWriteLock();
-            try
-            {
-                _lruList.Clear();
-            }
-            finally
-            {
-                _lruLock.ExitWriteLock();
-            }
         }
 
         /// <summary>
@@ -158,100 +188,12 @@ namespace MiCake.Util.Reflection
             return _factoryCache.Count;
         }
 
-        private static string BuildCacheKey(Type type, Type[] argTypes)
+        private static Func<object[], object> GetOrAddParameterizedFactory(Type type, Type[] parameterTypes)
         {
-            // Pre-calculate capacity to avoid reallocations
-            // Format: "TypeFullName_ArgType1_ArgType2_..."
-            var capacity = type.FullName.Length + 1; // +1 for underscore
-            for (int i = 0; i < argTypes.Length; i++)
-            {
-                capacity += argTypes[i].FullName.Length;
-                if (i < argTypes.Length - 1)
-                    capacity += 1; // underscore between types
-            }
+            var key = new ParameterizedFactoryKey(type, parameterTypes);
+            var cached = _parameterizedFactoryCache.GetOrAdd(key, k => new CacheEntry { Factory = CreateParameterizedFactory(k.Type, k.ArgTypes) });
 
-            var sb = new StringBuilder(capacity);
-            sb.Append(type.FullName);
-            sb.Append('_');
-
-            for (int i = 0; i < argTypes.Length; i++)
-            {
-                if (i > 0)
-                    sb.Append('_');
-                sb.Append(argTypes[i].FullName);
-            }
-
-            return sb.ToString();
-        }
-
-        private static Func<object[], object> GetOrAddParameterizedFactory(string cacheKey, Type type, Type[] parameterTypes)
-        {
-            // Fast path - try to get from cache first
-            if (_parameterizedFactoryCache.TryGetValue(cacheKey, out var entry))
-            {
-                // Update LRU - move to end
-                _lruLock.EnterWriteLock();
-                try
-                {
-                    if (entry.LruNode != null)
-                    {
-                        _lruList.Remove(entry.LruNode);
-                        _lruList.AddLast(entry.LruNode);
-                    }
-                }
-                finally
-                {
-                    _lruLock.ExitWriteLock();
-                }
-
-                return entry.Factory;
-            }
-
-            // Slow path - create new factory and add to cache
-            var factory = CreateParameterizedFactory(type, parameterTypes);
-            var newEntry = new CacheEntry { Factory = factory };
-
-            _lruLock.EnterWriteLock();
-            try
-            {
-                // Double-check pattern
-                if (_parameterizedFactoryCache.TryGetValue(cacheKey, out var existingEntry))
-                {
-                    return existingEntry.Factory;
-                }
-
-                // Add to LRU list
-                var node = _lruList.AddLast(cacheKey);
-                newEntry.LruNode = node;
-
-                // Add to cache
-                _parameterizedFactoryCache.TryAdd(cacheKey, newEntry);
-
-                // Check if we need to evict
-                if (_parameterizedFactoryCache.Count > MaxParameterizedCacheSize)
-                {
-                    EvictLruEntry();
-                }
-            }
-            finally
-            {
-                _lruLock.ExitWriteLock();
-            }
-
-            return factory;
-        }
-
-        private static void EvictLruEntry()
-        {
-            // Assumes caller holds write lock on _lruLock
-            if (_lruList.Count == 0)
-                return;
-
-            var lruNode = _lruList.First;
-            _lruList.RemoveFirst();
-
-            var cacheKey = lruNode.Value;
-            _parameterizedFactoryCache.TryRemove(cacheKey, out _);
+            return cached.Factory;
         }
     }
 }

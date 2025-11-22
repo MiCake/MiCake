@@ -1,5 +1,5 @@
-using MiCake.AspNetCore.DataWrapper;
-using MiCake.AspNetCore.DataWrapper.Internals;
+using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Responses.Internals;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using Xunit;
@@ -18,12 +18,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_HttpValidationProblemDetails_UsesPatternMatching()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var validationDetails = new ValidationProblemDetails { Title = "Validation Error", Status = 400 };
             validationDetails.Errors.Add("Name", new[] { "Name is required" });
             validationDetails.Errors.Add("Email", new[] { "Invalid email" });
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -44,10 +44,10 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_ProblemDetails_UsesPatternMatching()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var problemDetails = new ProblemDetails { Title = "Not Found", Detail = "Resource not found", Status = 404 };
-            var context = new WrapperContext(null, 404, problemDetails);
+            var context = new ResponseWrapperContext(null, 404, problemDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -64,11 +64,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_ValidationProblemDetails_UsesPatternMatching()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var validationDetails = new ValidationProblemDetails { Title = "Validation", Status = 400 };
             validationDetails.Errors.Add("Age", new[] { "Age must be greater than 0" });
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -84,12 +84,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_MultipleErrorMessages_ConcatenatesWithSemicolon()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var validationDetails = new ValidationProblemDetails();
             validationDetails.Errors.Add("Password", new[] { "Password is required", "Password must be at least 8 characters" });
             validationDetails.Errors.Add("Email", new[] { "Email is invalid" });
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -113,7 +113,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_StringJoinPerformance_NoUnnecessaryAllocations()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             
             // Create a validation problem with many errors to test string.Join
@@ -122,7 +122,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 validationDetails.Errors.Add($"Field{i}", new[] { $"Error {i}" });
             }
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -137,11 +137,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_EmptyErrorCollection_HandlesGracefully()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var validationDetails = new ValidationProblemDetails();
             // No errors added
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -162,10 +162,10 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_SlightExceptionData_UsesCustomCode()
         {
             // Arrange
-            var options = new DataWrapperOptions { DefaultCodeSetting = new DataWrapperDefaultCode { Success = "0" } };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = new DataWrapperDefaultCode { Success = "0" } };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new SlightExceptionData { Code = "BUSINESS_ERROR", Message = "Custom message", Details = "Details" };
-            var context = new WrapperContext(null, 200, slightData);
+            var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -183,10 +183,10 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Success = "SUCCESS_CODE" };
-            var options = new DataWrapperOptions { DefaultCodeSetting = customCodeSetting };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new SlightExceptionData { Code = "", Message = "Message", Details = null };
-            var context = new WrapperContext(null, 200, slightData);
+            var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -201,10 +201,10 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Success = "DEFAULT_CODE" };
-            var options = new DataWrapperOptions { DefaultCodeSetting = customCodeSetting };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new SlightExceptionData { Code = null, Message = "Message", Details = null };
-            var context = new WrapperContext(null, 200, slightData);
+            var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -218,12 +218,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_SlightExceptionData_TakesPriorityOverProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             // Even if the original data looks like it could be handled differently,
             // SlightException takes priority
             var slightData = new SlightExceptionData { Code = "PRIORITY", Message = "Slight message", Details = "slight details" };
-            var context = new WrapperContext(null, 200, slightData);
+            var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -242,11 +242,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_WrapProblemDetails_True_WrapsHttpValidationProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var validationDetails = new ValidationProblemDetails { Title = "Error" };
             validationDetails.Errors.Add("field", new[] { "error" });
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -259,11 +259,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_WrapProblemDetails_False_DoesNotWrapHttpValidationProblemDetails()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = false };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = false };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var validationDetails = new ValidationProblemDetails { Title = "Error" };
             validationDetails.Errors.Add("field", new[] { "error" });
-            var context = new WrapperContext(null, 400, validationDetails);
+            var context = new ResponseWrapperContext(null, 400, validationDetails);
 
             // Act
             var result = factory.SuccessFactory(context);
@@ -279,18 +279,18 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_WrapProblemDetails_UnifiedAcrossBothTypes()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
 
             // Test 1: HttpValidationProblemDetails
             var httpValidationProblemDetails = new ValidationProblemDetails();
             httpValidationProblemDetails.Errors.Add("field", new[] { "error" });
-            var context1 = new WrapperContext(null, 400, httpValidationProblemDetails);
+            var context1 = new ResponseWrapperContext(null, 400, httpValidationProblemDetails);
             var result1 = factory.SuccessFactory(context1);
 
             // Test 2: ProblemDetails
             var problemDetails = new ProblemDetails { Title = "Error" };
-            var context2 = new WrapperContext(null, 400, problemDetails);
+            var context2 = new ResponseWrapperContext(null, 400, problemDetails);
             var result2 = factory.SuccessFactory(context2);
 
             // Assert - Both should use the same code
@@ -308,7 +308,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultErrorFactory_CreatesErrorResponse()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var exception = new Exception("Test error message");
             var context = new ErrorWrapperContext(null, 500, null, exception);
@@ -327,7 +327,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultErrorFactory_WithStackTrace_IncludesStackTrace()
         {
             // Arrange
-            var options = new DataWrapperOptions { ShowStackTraceWhenError = true };
+            var options = new ResponseWrapperOptions { ShowStackTraceWhenError = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             
             Exception exception = null;
@@ -354,7 +354,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultErrorFactory_WithoutStackTrace_OmitsStackTrace()
         {
             // Arrange
-            var options = new DataWrapperOptions { ShowStackTraceWhenError = false };
+            var options = new ResponseWrapperOptions { ShowStackTraceWhenError = false };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             Exception exception = null;
             try
@@ -380,7 +380,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultErrorFactory_NullException_HandlesGracefully()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var context = new ErrorWrapperContext(null, 500, null, null);
 
@@ -400,7 +400,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void CreateDefault_ReturnsValidFactory()
         {
             // Arrange
-            var options = new DataWrapperOptions();
+            var options = new ResponseWrapperOptions();
 
             // Act
             var factory = ResponseWrapperFactory.CreateDefault(options);
@@ -421,13 +421,13 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 Error = "500",
                 ProblemDetails = "400"
             };
-            var options = new DataWrapperOptions { DefaultCodeSetting = customCodes };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodes };
 
             // Act
             var factory = ResponseWrapperFactory.CreateDefault(options);
 
             // Test success factory
-            var successContext = new WrapperContext(null, 200, "data");
+            var successContext = new ResponseWrapperContext(null, 200, "data");
             var successResult = factory.SuccessFactory(successContext) as ApiResponse;
 
             // Test error factory
@@ -447,22 +447,22 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_CompleteFlow_SuccessPath()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
 
             // Test 1: Regular data
-            var context1 = new WrapperContext(null, 200, new { name = "test" });
+            var context1 = new ResponseWrapperContext(null, 200, new { name = "test" });
             var result1 = factory.SuccessFactory(context1);
             Assert.IsType<ApiResponse>(result1);
 
             // Test 2: ProblemDetails
-            var context2 = new WrapperContext(null, 400, new ProblemDetails { Title = "Error" });
+            var context2 = new ResponseWrapperContext(null, 400, new ProblemDetails { Title = "Error" });
             var result2 = factory.SuccessFactory(context2);
             Assert.IsType<ApiResponse>(result2);
             Assert.Equal("9998", (result2 as ApiResponse).Code);
 
             // Test 3: SlightExceptionData
-            var context3 = new WrapperContext(null, 200, new SlightExceptionData { Code = "CUSTOM", Message = "msg", Details = null });
+            var context3 = new ResponseWrapperContext(null, 200, new SlightExceptionData { Code = "CUSTOM", Message = "msg", Details = null });
             var result3 = factory.SuccessFactory(context3);
             Assert.IsType<ApiResponse>(result3);
             Assert.Equal("CUSTOM", (result3 as ApiResponse).Code);
@@ -472,7 +472,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_ProblemDetailsAndSlightException_SlightExceptionWins()
         {
             // Arrange
-            var options = new DataWrapperOptions { WrapProblemDetails = true };
+            var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
 
             // Even though the original data is ProblemDetails-like,
@@ -483,7 +483,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 Message = "Slight takes priority",
                 Details = "details"
             };
-            var context = new WrapperContext(null, 200, slightData);
+            var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
             var result = factory.SuccessFactory(context);

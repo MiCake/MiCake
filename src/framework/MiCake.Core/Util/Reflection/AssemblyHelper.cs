@@ -29,7 +29,7 @@ namespace MiCake.Util.Reflection
             }
             catch (ReflectionTypeLoadException ex)
             {
-                return ex.Types;
+                return ex.Types.Where(t => t != null).ToList()!;
             }
         }
     }

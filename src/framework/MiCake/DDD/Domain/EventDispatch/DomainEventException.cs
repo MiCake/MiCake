@@ -10,7 +10,7 @@ namespace MiCake.DDD.Domain.EventDispatch
         /// <summary>
         /// Gets the domain event that failed to dispatch.
         /// </summary>
-        public IDomainEvent FailedEvent { get; }
+        public IDomainEvent? FailedEvent { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DomainEventException"/> class.
@@ -18,7 +18,7 @@ namespace MiCake.DDD.Domain.EventDispatch
         /// <param name="message">The error message</param>
         /// <param name="failedEvent">The domain event that failed</param>
         /// <param name="innerException">The underlying exception</param>
-        public DomainEventException(string message, IDomainEvent failedEvent = null, Exception innerException = null)
+        public DomainEventException(string message, IDomainEvent? failedEvent = null, Exception? innerException = null)
             : base(message, innerException)
         {
             FailedEvent = failedEvent;

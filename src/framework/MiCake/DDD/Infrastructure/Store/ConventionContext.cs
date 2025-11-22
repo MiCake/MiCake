@@ -10,8 +10,8 @@ namespace MiCake.DDD.Infrastructure.Store
     {
         public bool EnableSoftDeletion { get; set; }
         public bool EnableDirectDeletion { get; set; } = true;
-        public LambdaExpression QueryFilter { get; set; }
-        public List<string> IgnoredProperties { get; } = new List<string>();
+        public LambdaExpression? QueryFilter { get; set; }
+        public List<string> IgnoredProperties { get; } = [];
 
         public bool NeedApplyEntityConvention
         {
@@ -28,7 +28,7 @@ namespace MiCake.DDD.Infrastructure.Store
     public class PropertyConventionContext
     {
         public bool IsIgnored { get; set; }
-        public object DefaultValue { get; set; }
+        public object? DefaultValue { get; set; }
         public bool HasDefaultValue { get; set; }
 
         public bool NeedApplyPropertyConvention

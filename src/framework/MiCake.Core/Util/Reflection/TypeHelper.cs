@@ -77,7 +77,7 @@ namespace MiCake.Util.Reflection
         /// // Returns: typeof(int)
         /// </code>
         /// </example>
-        public static Type GetFirstGenericArgumentIfNullable(this Type t)
+        public static Type? GetFirstGenericArgumentIfNullable(this Type t)
         {
             if (t.GetGenericArguments().Length > 0 && t.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
@@ -117,7 +117,7 @@ namespace MiCake.Util.Reflection
         /// <param name="type">The type whose interfaces to examine</param>
         /// <param name="genericType">The generic interface type definition to match</param>
         /// <returns>The matching generic interface type, or null if not found</returns>
-        public static Type GetGenericInterface(Type type, Type genericType)
+        public static Type? GetGenericInterface(Type type, Type genericType)
         {
             return type.GetInterfaces()
                             .Where(i => IsGenericType(i))
