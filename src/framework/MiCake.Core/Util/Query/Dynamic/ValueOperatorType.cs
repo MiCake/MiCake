@@ -1,9 +1,9 @@
 ﻿namespace MiCake.Util.Query.Dynamic
 {
     /// <summary>
-    /// An enumeration that defines the operator types for filters.
+    /// Comparison operators used to check a value against a property (Equal, In, Contains, ...).
     /// </summary>
-    public enum FilterOperatorType
+    public enum ValueOperatorType
     {
         /// <summary>
         /// "="

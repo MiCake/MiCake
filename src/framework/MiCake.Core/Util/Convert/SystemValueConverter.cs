@@ -1,5 +1,3 @@
-using System;
-
 namespace MiCake.Util.Convert
 {
     /// <summary>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MiCake.Util.Query.Dynamic
 {
@@ -11,21 +12,33 @@ namespace MiCake.Util.Query.Dynamic
     /// </summary>
     public class CompositeFilterGroup
     {
+        /// <summary>
+        /// Groups that are combined inside this composite holder.
+        /// </summary>
         public List<FilterGroup> FilterGroups { get; set; } = [];
 
-        public FilterJoinType FilterGroupJoinType { get; set; }
+        /// <summary>
+        /// How the groups inside this composite are combined (AND/OR).
+        /// Default is <see cref="FilterJoinType.Or"/> for backward compatibility.
+        /// </summary>
+        public FilterJoinType FilterGroupsJoinType { get; set; } = FilterJoinType.Or;
 
-        public static CompositeFilterGroup Create(List<FilterGroup> filterGroups, FilterJoinType filterGroupJoinType = FilterJoinType.Or)
+        /// <summary>
+        /// Create a new <see cref="CompositeFilterGroup"/> with validation.
+        /// </summary>
+        /// <param name="filterGroups">Non-empty list of filter groups.</param>
+        /// <param name="filterGroupsJoinType">How the groups are combined in this composite (defaults to <see cref="FilterJoinType.And"/>).</param>
+        public static CompositeFilterGroup Create(List<FilterGroup> filterGroups, FilterJoinType filterGroupsJoinType = FilterJoinType.Or)
         {
             if (filterGroups == null || filterGroups.Count == 0)
             {
-                throw new System.ArgumentException("Filter groups cannot be null or empty.", nameof(filterGroups));
+                throw new ArgumentException("Filter groups cannot be null or empty.", nameof(filterGroups));
             }
 
             return new CompositeFilterGroup
             {
                 FilterGroups = filterGroups,
-                FilterGroupJoinType = filterGroupJoinType
+                FilterGroupsJoinType = filterGroupsJoinType
             };
         }
     }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MiCake.Util.Query.Dynamic
 {
@@ -11,21 +12,33 @@ namespace MiCake.Util.Query.Dynamic
     /// </summary>
     public class FilterGroup
     {
+        /// <summary>
+        /// The list of filters contained in this group.
+        /// </summary>
         public List<Filter> Filters { get; set; } = [];
 
-        public FilterJoinType FilterGroupJoinType { get; set; } = FilterJoinType.Or;
+        /// <summary>
+        /// How filters inside this group are combined (AND / OR).
+        /// Default is <see cref="FilterJoinType.Or"/> to preserve historical behavior.
+        /// </summary>
+        public FilterJoinType FiltersJoinType { get; set; } = FilterJoinType.Or;
 
-        public static FilterGroup Create(List<Filter> filters, FilterJoinType filterGroupJoinType = FilterJoinType.Or)
+        /// <summary>
+        /// Create a new <see cref="FilterGroup"/> with validation.
+        /// </summary>
+        /// <param name="filters">Non-empty list of filters.</param>
+        /// <param name="filtersJoinType">How the filters are combined in this group. Defaults to <see cref="FilterJoinType.Or"/> for backward compatibility.</param>
+        public static FilterGroup Create(List<Filter> filters, FilterJoinType filtersJoinType = FilterJoinType.Or)
         {
             if (filters == null || filters.Count == 0)
             {
-                throw new System.ArgumentException("Filter list cannot be null or empty.", nameof(filters));
+                throw new ArgumentException("Filter list cannot be null or empty.", nameof(filters));
             }
 
             return new FilterGroup
             {
                 Filters = filters,
-                FilterGroupJoinType = filterGroupJoinType
+                FiltersJoinType = filtersJoinType
             };
         }
     }

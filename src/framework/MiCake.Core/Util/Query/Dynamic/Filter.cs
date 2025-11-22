@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MiCake.Util.Query.Dynamic
 {
@@ -10,29 +11,47 @@ namespace MiCake.Util.Query.Dynamic
     /// </summary>
     public class Filter
     {
+        /// <summary>
+        /// The property name on the entity that this filter applies to. Supports nested properties with dot notation (eg. "Address.City").
+        /// </summary>
         public required string PropertyName { get; set; }
 
-        public List<FilterValue> Value { get; set; } = [];
+        /// <summary>
+        /// The list of <see cref="FilterValue"/> instances representing values to test for this property.
+        /// Use multiple values to create combined checks (see <see cref="ValuesJoinType"/>).
+        /// </summary>
+        public List<FilterValue> Values { get; set; } = [];
 
-        public FilterJoinType FilterValueJoinType { get; set; } = FilterJoinType.Or;
+        /// <summary>
+        /// How multiple values on this property are combined (AND / OR).
+        /// Defaults to <see cref="FilterJoinType.Or"/>.
+        /// </summary>
+        public FilterJoinType ValuesJoinType { get; set; } = FilterJoinType.Or;
 
-        public static Filter Create(string propertyName, List<FilterValue> values, FilterJoinType filterValueJoinType = FilterJoinType.Or)
+        /// <summary>
+        /// Factory helper to create a Filter instance with validation.
+        /// </summary>
+        /// <param name="propertyName">The property that should be filtered (non-empty).</param>
+        /// <param name="values">A non-empty collection of FilterValue instances.</param>
+        /// <param name="valuesJoinType">How the provided values are combined (AND/OR).</param>
+        /// <returns>A validated <see cref="Filter"/> instance.</returns>
+        public static Filter Create(string propertyName, List<FilterValue> values, FilterJoinType valuesJoinType = FilterJoinType.Or)
         {
             if (string.IsNullOrEmpty(propertyName))
             {
-                throw new System.ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
+                throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
             }
 
             if (values == null || values.Count == 0)
             {
-                throw new System.ArgumentException("Filter values cannot be null or empty.", nameof(values));
+                throw new ArgumentException("Filter values cannot be null or empty.", nameof(values));
             }
 
             return new Filter
             {
                 PropertyName = propertyName,
-                Value = values ?? [],
-                FilterValueJoinType = filterValueJoinType
+                Values = values ?? [],
+                ValuesJoinType = valuesJoinType
             };
         }
     }

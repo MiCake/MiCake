@@ -34,7 +34,7 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterName = Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Alice", FilterOperatorType.Equal)
+            FilterValue.Create("Alice", ValueOperatorType.Equal)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterName]).ToList();
@@ -49,7 +49,7 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), [
-            FilterValue.Create(2, FilterOperatorType.Equal)
+            FilterValue.Create(2, ValueOperatorType.Equal)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterId]).ToList();
@@ -64,7 +64,7 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterIdNumber = Filter.Create(nameof(LinqFilterTestModel.IdNumber), [
-            FilterValue.Create("123", FilterOperatorType.Contains)
+            FilterValue.Create("123", ValueOperatorType.Contains)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterIdNumber]).ToList();
@@ -79,7 +79,7 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterBirthDate = Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-            FilterValue.Create(new DateTime(1994, 1, 1), FilterOperatorType.GreaterThan)
+            FilterValue.Create(new DateTime(1994, 1, 1), ValueOperatorType.GreaterThan)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterBirthDate]).ToList();
@@ -95,10 +95,10 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterName = Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Bob", FilterOperatorType.Equal)
+            FilterValue.Create("Bob", ValueOperatorType.Equal)
         ]);
         var filterBirthDate = Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-            FilterValue.Create(new DateTime(1990, 1, 1), FilterOperatorType.GreaterThan)
+            FilterValue.Create(new DateTime(1990, 1, 1), ValueOperatorType.GreaterThan)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterName, filterBirthDate]).ToList();
@@ -113,8 +113,8 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterName = Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Alice", FilterOperatorType.In),
-            FilterValue.Create("Charlie", FilterOperatorType.In)
+            FilterValue.Create("Alice", ValueOperatorType.In),
+            FilterValue.Create("Charlie", ValueOperatorType.In)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterName]).ToList();
@@ -131,8 +131,8 @@ public class LinqFilter_Tests
 
         var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
         {
-            FilterValue.Create("1", FilterOperatorType.In),
-            FilterValue.Create("2", FilterOperatorType.In)
+            FilterValue.Create("1", ValueOperatorType.In),
+            FilterValue.Create("2", ValueOperatorType.In)
         });
 
         var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
@@ -150,7 +150,7 @@ public class LinqFilter_Tests
         var list = new List<string> { "1", "3" };
         var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
         {
-            FilterValue.Create(list, FilterOperatorType.In)
+            FilterValue.Create(list, ValueOperatorType.In)
         });
 
         var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
@@ -172,7 +172,7 @@ public class LinqFilter_Tests
 
             var filterAge = Filter.Create(nameof(NullableTestModel.Age), new List<FilterValue>
             {
-                FilterValue.Create("20", FilterOperatorType.In)
+                FilterValue.Create("20", ValueOperatorType.In)
             });
 
             var results = models.AsQueryable().Filter(new List<Filter> { filterAge }).ToList();
@@ -188,7 +188,7 @@ public class LinqFilter_Tests
 
             var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
             {
-                FilterValue.Create(new List<string>(), FilterOperatorType.In)
+                FilterValue.Create(new List<string>(), ValueOperatorType.In)
             });
 
             var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
@@ -204,7 +204,7 @@ public class LinqFilter_Tests
             var mixed = new List<object> { "1", 2, "3" };
             var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
             {
-                FilterValue.Create(mixed, FilterOperatorType.In)
+                FilterValue.Create(mixed, ValueOperatorType.In)
             });
 
             var filteredData = data.AsQueryable().Filter(new List<Filter> { filterId }).ToList();
@@ -222,7 +222,7 @@ public class LinqFilter_Tests
 
             var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
             {
-                FilterValue.Create("no-number", FilterOperatorType.In)
+                FilterValue.Create("no-number", ValueOperatorType.In)
             });
 
             Assert.Throws<InvalidOperationException>(() => data.AsQueryable().Filter(new List<Filter> { filterId }).ToList());
@@ -236,7 +236,7 @@ public class LinqFilter_Tests
             var listWithNull = new List<object?> { null, "1" };
             var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), new List<FilterValue>
             {
-                FilterValue.Create(listWithNull, FilterOperatorType.In)
+                FilterValue.Create(listWithNull, ValueOperatorType.In)
             });
 
             Assert.Throws<ArgumentNullException>(() => data.AsQueryable().Filter(new List<Filter> { filterId }).ToList());
@@ -248,7 +248,7 @@ public class LinqFilter_Tests
         var data = GetTestData();
 
         var filterName = Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("A", FilterOperatorType.StartsWith)
+            FilterValue.Create("A", ValueOperatorType.StartsWith)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterName]).ToList();
@@ -258,12 +258,24 @@ public class LinqFilter_Tests
     }
 
     [Fact]
+    public void Filter_Contains_On_NonString_Should_Throw()
+    {
+        var data = GetTestData();
+
+        var filterId = Filter.Create(nameof(LinqFilterTestModel.Id), [
+            FilterValue.Create(1, ValueOperatorType.Contains)
+        ]);
+
+        Assert.Throws<InvalidOperationException>(() => data.AsQueryable().Filter([filterId]).ToList());
+    }
+
+    [Fact]
     public void Filter_By_EndsWithOperator_Should_Return_Correct_Results()
     {
         var data = GetTestData();
 
         var filterName = Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("e", FilterOperatorType.EndsWith)
+            FilterValue.Create("e", ValueOperatorType.EndsWith)
         ]);
 
         var filteredData = data.AsQueryable().Filter([filterName]).ToList();
@@ -300,10 +312,10 @@ public class LinqFilter_Tests
 
         var filterGroup = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-                FilterValue.Create("Alice", FilterOperatorType.Equal)
+                FilterValue.Create("Alice", ValueOperatorType.Equal)
             ]),
             Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-                FilterValue.Create(new DateTime(1985, 1, 1), FilterOperatorType.LessThan)
+                FilterValue.Create(new DateTime(1985, 1, 1), ValueOperatorType.LessThan)
             ])
         ], FilterJoinType.And);
 
@@ -319,10 +331,10 @@ public class LinqFilter_Tests
 
         var filterGroup = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-                FilterValue.Create("Alice", FilterOperatorType.Equal)
+                FilterValue.Create("Alice", ValueOperatorType.Equal)
             ]),
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-                FilterValue.Create("Bob", FilterOperatorType.Equal)
+                FilterValue.Create("Bob", ValueOperatorType.Equal)
             ])
         ], FilterJoinType.Or);
 
@@ -340,10 +352,10 @@ public class LinqFilter_Tests
 
         var filterGroup = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-                FilterValue.Create("Charlie", FilterOperatorType.Equal)
+                FilterValue.Create("Charlie", ValueOperatorType.Equal)
             ]),
             Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-                FilterValue.Create(new DateTime(1999, 1, 1), FilterOperatorType.GreaterThan)
+                FilterValue.Create(new DateTime(1999, 1, 1), ValueOperatorType.GreaterThan)
             ])
         ], FilterJoinType.And);
 
@@ -370,12 +382,12 @@ public class LinqFilter_Tests
     {
         var filters = new List<Filter>
         {
-            Filter.Create("Name", [FilterValue.Create("Alice", FilterOperatorType.Equal)])
+            Filter.Create("Name", [FilterValue.Create("Alice", ValueOperatorType.Equal)])
         };
 
         var group = new FilterGroup { Filters = filters };
 
-        Assert.Equal(FilterJoinType.Or, group.FilterGroupJoinType);
+        Assert.Equal(FilterJoinType.Or, group.FiltersJoinType);
     }
 
     [Fact]
@@ -393,10 +405,10 @@ public class LinqFilter_Tests
 
         var filterGroup = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.IdNumber), [
-                FilterValue.Create("1234567890", FilterOperatorType.Equal)
+                FilterValue.Create("1234567890", ValueOperatorType.Equal)
             ]),
             Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-                FilterValue.Create(new DateTime(2000, 10, 10), FilterOperatorType.Equal)
+                FilterValue.Create(new DateTime(2000, 10, 10), ValueOperatorType.Equal)
             ])
         ], FilterJoinType.Or);
 
@@ -414,7 +426,7 @@ public class LinqFilter_Tests
 
         var filterGroup = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-                FilterValue.Create("Bob", FilterOperatorType.Equal)
+                FilterValue.Create("Bob", ValueOperatorType.Equal)
             ])
         ], FilterJoinType.And);
 
@@ -431,20 +443,20 @@ public class LinqFilter_Tests
 
         var filterGroup1 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-                FilterValue.Create("Alice", FilterOperatorType.Equal)
+                FilterValue.Create("Alice", ValueOperatorType.Equal)
             ])
         ], FilterJoinType.And);
 
         var filterGroup2 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-                FilterValue.Create(new DateTime(1985, 1, 1), FilterOperatorType.LessThan)
+                FilterValue.Create(new DateTime(1985, 1, 1), ValueOperatorType.LessThan)
             ])
         ], FilterJoinType.And);
 
         var compositeFilter = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup1, filterGroup2],
-            FilterGroupJoinType = FilterJoinType.And
+                FilterGroupsJoinType = FilterJoinType.And
         };
 
         var filteredData = data.AsQueryable().Filter(compositeFilter).ToList();
@@ -459,20 +471,20 @@ public class LinqFilter_Tests
 
         var filterGroup1 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Alice", FilterOperatorType.Equal)
+            FilterValue.Create("Alice", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var filterGroup2 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Bob", FilterOperatorType.Equal)
+            FilterValue.Create("Bob", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var compositeFilter = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup1, filterGroup2],
-            FilterGroupJoinType = FilterJoinType.Or
+                FilterGroupsJoinType = FilterJoinType.Or
         };
 
         var filteredData = data.AsQueryable().Filter(compositeFilter).ToList();
@@ -489,20 +501,20 @@ public class LinqFilter_Tests
 
         var filterGroup1 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-            FilterValue.Create(new DateTime(1989, 1, 1), FilterOperatorType.GreaterThan)
+            FilterValue.Create(new DateTime(1989, 1, 1), ValueOperatorType.GreaterThan)
         ])
         ], FilterJoinType.And);
 
         var filterGroup2 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.IdNumber), [
-            FilterValue.Create("1122334455", FilterOperatorType.Equal)
+            FilterValue.Create("1122334455", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var compositeFilter = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup1, filterGroup2],
-            FilterGroupJoinType = FilterJoinType.And
+                FilterGroupsJoinType = FilterJoinType.And
         };
 
         var filteredData = data.AsQueryable().Filter(compositeFilter).ToList();
@@ -518,20 +530,20 @@ public class LinqFilter_Tests
 
         var filterGroup1 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.BirthDate), [
-            FilterValue.Create(new DateTime(1995, 1, 1), FilterOperatorType.GreaterThan)
+            FilterValue.Create(new DateTime(1995, 1, 1), ValueOperatorType.GreaterThan)
         ])
         ], FilterJoinType.And);
 
         var filterGroup2 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Alice", FilterOperatorType.Equal)
+            FilterValue.Create("Alice", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var compositeFilter = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup1, filterGroup2],
-            FilterGroupJoinType = FilterJoinType.Or
+                FilterGroupsJoinType = FilterJoinType.Or
         };
 
         var filteredData = data.AsQueryable().Filter(compositeFilter).ToList();
@@ -550,7 +562,7 @@ public class LinqFilter_Tests
         var compositeFilter = new CompositeFilterGroup
         {
             FilterGroups = [],
-            FilterGroupJoinType = FilterJoinType.And
+              FilterGroupsJoinType = FilterJoinType.And
         };
 
         var filteredData = data.AsQueryable().Filter(compositeFilter).ToList();
@@ -565,14 +577,14 @@ public class LinqFilter_Tests
 
         var filterGroup = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Charlie", FilterOperatorType.Equal)
+            FilterValue.Create("Charlie", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var compositeFilter = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup],
-            FilterGroupJoinType = FilterJoinType.And
+                FilterGroupsJoinType = FilterJoinType.And
         };
 
         var filteredData = data.AsQueryable().Filter(compositeFilter).ToList();
@@ -588,26 +600,26 @@ public class LinqFilter_Tests
 
         var filterGroup1 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Alice", FilterOperatorType.Equal)
+            FilterValue.Create("Alice", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var filterGroup2 = FilterGroup.Create([
             Filter.Create(nameof(LinqFilterTestModel.Name), [
-            FilterValue.Create("Bob", FilterOperatorType.Equal)
+            FilterValue.Create("Bob", ValueOperatorType.Equal)
         ])
         ], FilterJoinType.And);
 
         var compositeFilterAnd = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup1, filterGroup2],
-            FilterGroupJoinType = FilterJoinType.And
+                FilterGroupsJoinType = FilterJoinType.And
         };
 
         var compositeFilterOr = new CompositeFilterGroup
         {
             FilterGroups = [filterGroup1, filterGroup2],
-            FilterGroupJoinType = FilterJoinType.Or
+                FilterGroupsJoinType = FilterJoinType.Or
         };
 
         var andResults = data.AsQueryable().Filter(compositeFilterAnd).ToList();
@@ -629,7 +641,7 @@ public class LinqFilter_Tests
 
         var filterAge = Filter.Create(nameof(NullableTestModel.Age), new List<FilterValue>
         {
-            FilterValue.Create("20", FilterOperatorType.Equal)
+            FilterValue.Create("20", ValueOperatorType.Equal)
         });
 
         var results = models.AsQueryable().Filter(new List<Filter> { filterAge }).ToList();
@@ -640,7 +652,7 @@ public class LinqFilter_Tests
         // Null equality
         var filterNull = Filter.Create(nameof(NullableTestModel.Age), new List<FilterValue>
         {
-            FilterValue.Create(null, FilterOperatorType.Equal)
+            FilterValue.Create(null, ValueOperatorType.Equal)
         });
 
         var resultsNull = models.AsQueryable().Filter(new List<Filter> { filterNull }).ToList();
@@ -657,7 +669,7 @@ public class LinqFilter_Tests
         };
 
         var filter = Filter.Create(nameof(RestrictedFilterModel.Secret), [
-            FilterValue.Create("hidden", FilterOperatorType.Equal)
+            FilterValue.Create("hidden", ValueOperatorType.Equal)
         ]);
 
         Assert.Throws<SecurityException>(() => data.AsQueryable().Filter([filter]).ToList());
@@ -674,7 +686,7 @@ public class LinqFilter_Tests
         };
 
         var filter = Filter.Create(nameof(NullableTestModel.Age), [
-            FilterValue.Create(new List<int?> { 30 }, FilterOperatorType.In)
+            FilterValue.Create(new List<int?> { 30 }, ValueOperatorType.In)
         ]);
 
         var results = data.AsQueryable().Filter([filter]).ToList();

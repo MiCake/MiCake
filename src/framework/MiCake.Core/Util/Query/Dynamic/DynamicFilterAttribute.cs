@@ -25,7 +25,7 @@ public class DynamicFilterAttribute : Attribute
     /// The operator type for the filter.
     /// This defines how the filter values are compared against the property.
     /// </summary>
-    public FilterOperatorType OperatorType { get; set; } = FilterOperatorType.Equal;
+    public ValueOperatorType OperatorType { get; set; } = ValueOperatorType.Equal;
 }
 
 /// <summary>

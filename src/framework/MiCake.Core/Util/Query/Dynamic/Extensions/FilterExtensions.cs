@@ -8,11 +8,42 @@ using System.Security;
 
 namespace MiCake.Util.Query.Dynamic
 {
-    public static class LinqFilterExtensions
+    /// <summary>
+    /// Extension methods for filtering IQueryable instances using dynamic filter expressions.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This class provides extension methods to apply <see cref="T:MiCake.Util.Query.Dynamic.Filter"/>, <see cref="FilterGroup"/>, 
+    /// and <see cref="CompositeFilterGroup"/> objects to LINQ queries.
+    /// </para>
+    /// <para>
+    /// It also provides methods to extract filter expressions for external use.
+    /// </para>
+    /// <para>
+    /// Example usage:
+    /// <code>
+    /// var filters = new List&lt;Filter&gt;
+    /// {
+    ///     Filter.Create("Age", new List&lt;FilterValue&gt; { FilterValue.Create(18, FilterOperatorType.GreaterThan) }),
+    ///     Filter.Create("Name", new List&lt;FilterValue&gt; { FilterValue.Create("John", FilterOperatorType.Contains) })
+    /// };
+    /// 
+    /// var results = dbContext.Users.Filter(filters).ToList();
+    /// </code>
+    /// </para>
+    /// </remarks>
+    public static class FilterExtensions
     {
-        public static IQueryable<T> Filter<T>(this IQueryable<T> query, List<Filter> filters)
+        /// <summary>
+        /// Applies a list of filters to an IQueryable using AND logic (all filters must match).
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query.</typeparam>
+        /// <param name="query">The source queryable.</param>
+        /// <param name="filters">The list of filters to apply.</param>
+        /// <returns>A filtered queryable.</returns>
+        public static IQueryable<T> Filter<T>(this IQueryable<T> query, IEnumerable<Filter> filters)
         {
-            if (filters == null || filters.Count == 0)
+            if (filters == null || !filters.Any())
             {
                 return query;
             }
@@ -24,6 +55,13 @@ namespace MiCake.Util.Query.Dynamic
             return ApplyFilter(query, expression, pe);
         }
 
+        /// <summary>
+        /// Applies a filter group to an IQueryable using the specified join type.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query.</typeparam>
+        /// <param name="query">The source queryable.</param>
+        /// <param name="filterGroup">The filter group to apply.</param>
+        /// <returns>A filtered queryable.</returns>
         public static IQueryable<T> Filter<T>(this IQueryable<T> query, FilterGroup filterGroup)
         {
             if (filterGroup?.Filters == null || filterGroup.Filters.Count == 0)
@@ -33,14 +71,21 @@ namespace MiCake.Util.Query.Dynamic
 
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
-            var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FilterGroupJoinType);
+            var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FiltersJoinType);
 
             return ApplyFilter(query, expression, pe);
         }
 
+        /// <summary>
+        /// Applies a composite filter group (multiple filter groups) to an IQueryable.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query.</typeparam>
+        /// <param name="query">The source queryable.</param>
+        /// <param name="filterGroupsHolder">The composite filter group to apply.</param>
+        /// <returns>A filtered queryable.</returns>
         public static IQueryable<T> Filter<T>(this IQueryable<T> query, CompositeFilterGroup filterGroupsHolder)
         {
-            if (filterGroupsHolder.FilterGroups.Count == 0)
+            if (filterGroupsHolder?.FilterGroups == null || filterGroupsHolder.FilterGroups.Count == 0)
             {
                 return query;
             }
@@ -55,16 +100,22 @@ namespace MiCake.Util.Query.Dynamic
                     continue;
                 }
 
-                var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FilterGroupJoinType);
-                exp = CombineExpressions(exp, expression, filterGroupsHolder.FilterGroupJoinType);
+                var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FiltersJoinType);
+                exp = CombineExpressions(exp, expression, filterGroupsHolder.FilterGroupsJoinType);
             }
 
             return ApplyFilter(query, exp, pe);
         }
 
-        public static Expression<Func<T, bool>>? GetFilterExpression<T>(this List<Filter> filters)
+        /// <summary>
+        /// Generates a compiled filter expression from a list of filters.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query.</typeparam>
+        /// <param name="filters">The list of filters to generate expression from.</param>
+        /// <returns>A compiled lambda expression, or null if the filters list is empty.</returns>
+        public static Expression<Func<T, bool>>? GetFilterExpression<T>(this IEnumerable<Filter> filters)
         {
-            if (filters.Count == 0)
+            if (filters == null || !filters.Any())
             {
                 return null;
             }
@@ -96,13 +147,13 @@ namespace MiCake.Util.Query.Dynamic
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
 
-        private static Expression? CreateFilterExpression<T>(List<Filter> filters, ParameterExpression parameter, FilterJoinType filterGroupJoinType = FilterJoinType.And)
+        private static Expression? CreateFilterExpression<T>(IEnumerable<Filter> filters, ParameterExpression parameter, FilterJoinType filterGroupJoinType = FilterJoinType.And)
         {
             Expression? combined = null;
             foreach (var filter in filters)
             {
                 var left = ExpressionHelpers.BuildNestedPropertyExpression(parameter, filter.PropertyName);
-                var built = BuildFilterValuesExpression(left, filter.Value, filter.FilterValueJoinType);
+                var built = BuildFilterValuesExpression(left, filter.Values, filter.ValuesJoinType);
                 combined = CombineExpressions(combined, built, filterGroupJoinType);
             }
 
@@ -121,7 +172,7 @@ namespace MiCake.Util.Query.Dynamic
                 : ExpressionHelpers.ConcatExpressionsWithOperator(current, next, joinType);
         }
 
-        private static Expression? BuildFilterValuesExpression(Expression left, List<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
+        private static Expression? BuildFilterValuesExpression(Expression left, IEnumerable<FilterValue> filterValues, FilterJoinType filterValueJoinType = FilterJoinType.Or)
         {
             Expression? combined = null;
 
@@ -151,7 +202,7 @@ namespace MiCake.Util.Query.Dynamic
                 return Expression.Constant(typedList);
             }
 
-            if (filterValue.Operator == FilterOperatorType.In)
+            if (filterValue.Operator == ValueOperatorType.In)
             {
                 var elementType = FilterValueConversion.ExtractElementType(left.Type);
                 var typedSingleList = FilterValueConversion.ToTypedList(elementType, new ArrayList { filterValue.Value });

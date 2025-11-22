@@ -1,7 +1,5 @@
 using System;
 using System.Linq;
-using MiCake.Util.Query.Dynamic;
-using MiCake.Util.Query.Paging;
 
 namespace MiCake.Util.Query.Paging;
 
@@ -22,5 +20,29 @@ public static class PagingQueryExtensions
         }
 
         return query.Page(queryModel.PageIndex, queryModel.PageSize);
+    }
+
+    /// <summary>
+    /// Applies paging to an IQueryable based on the provided page number and page size.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="query"></param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <returns></returns>
+    public static IQueryable<T> Page<T>(this IQueryable<T> query, int page, int pageSize)
+    {
+        if (pageSize < 1)
+        {
+            throw new ArgumentException("Page size must be >= 1.", nameof(pageSize));
+        }
+
+        if (page < 1)
+        {
+            throw new ArgumentException("Page number must be >= 1.", nameof(page));
+        }
+
+        var pageIndex = page - 1;
+        return query.Skip(pageIndex * pageSize).Take(pageSize);
     }
 }

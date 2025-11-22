@@ -5,11 +5,21 @@ using System.Linq.Expressions;
 
 namespace MiCake.Util.Query.Dynamic
 {
+    /// <summary>
+    /// Extension methods for sorting IQueryable instances.
+    /// </summary>
     public static class SortingExtensions
     {
-        public static IQueryable<T> Sort<T>(this IQueryable<T> query, List<Sort> orders)
+        /// <summary>
+        /// Applies a list of sort specifications to an IQueryable.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query.</typeparam>
+        /// <param name="query">The source queryable.</param>
+        /// <param name="orders">The list of sort specifications to apply.</param>
+        /// <returns>A sorted queryable.</returns>
+        public static IQueryable<T> Sort<T>(this IQueryable<T> query, IEnumerable<Sort> orders)
         {
-            if (orders == null || orders.Count == 0)
+            if (orders == null || !orders.Any())
             {
                 return query;
             }
@@ -21,6 +31,13 @@ namespace MiCake.Util.Query.Dynamic
             return query;
         }
 
+        /// <summary>
+        /// Applies a sort specification to an IQueryable.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query.</typeparam>
+        /// <param name="query">The source queryable.</param>
+        /// <param name="order">The sort specification to apply.</param>
+        /// <returns>A sorted queryable.</returns>
         public static IQueryable<T> Sort<T>(this IQueryable<T> query, Sort order)
         {
             if (order == null)
@@ -30,18 +47,23 @@ namespace MiCake.Util.Query.Dynamic
 
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
-            System.Linq.Expressions.Expression property = ExpressionHelpers.BuildNestedPropertyExpression(pe, order.PropertyName);
+            Expression property = ExpressionHelpers.BuildNestedPropertyExpression(pe, order.PropertyName);
 
             var sortExpression = Expression.Lambda<Func<T, object>>
                 (Expression.Convert(property, typeof(object)), pe);
 
-            if (order.Ascending)
+            // Check if the current query is already ordered
+            if (query is IOrderedQueryable<T> orderedQuery)
             {
-                query = query.Expression.Type == typeof(IOrderedQueryable<T>) ? ((IOrderedQueryable<T>)query).ThenBy(sortExpression) : query.OrderBy(sortExpression);
+                query = order.Ascending
+                    ? orderedQuery.ThenBy(sortExpression)
+                    : orderedQuery.ThenByDescending(sortExpression);
             }
             else
             {
-                query = query.Expression.Type == typeof(IOrderedQueryable<T>) ? ((IOrderedQueryable<T>)query).ThenByDescending(sortExpression) : query.OrderByDescending(sortExpression);
+                query = order.Ascending
+                    ? query.OrderBy(sortExpression)
+                    : query.OrderByDescending(sortExpression);
             }
 
             return query;

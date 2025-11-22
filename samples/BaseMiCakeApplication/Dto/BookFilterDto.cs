@@ -15,13 +15,13 @@ namespace BaseMiCakeApplication.Dto
         /// <summary>
         /// Gets or sets the book name filter (Equal comparison).
         /// </summary>
-        [DynamicFilter(OperatorType = FilterOperatorType.Equal)]
+        [DynamicFilter(OperatorType = ValueOperatorType.Equal)]
         public string BookName { get; set; }
 
         /// <summary>
         /// Gets or sets the author first name filter (Contains comparison).
         /// </summary>
-        [DynamicFilter(OperatorType = FilterOperatorType.Contains, PropertyName = "Author.FirstName")]
+        [DynamicFilter(OperatorType = ValueOperatorType.Contains, PropertyName = "Author.FirstName")]
         public string AuthorFirstName { get; set; }
 
         /// <summary>

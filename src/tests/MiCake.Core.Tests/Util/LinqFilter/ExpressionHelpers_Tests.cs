@@ -35,7 +35,7 @@ public class ExpressionHelpers_Tests
     {
         var left = Expression.Constant(5);
         var right = Expression.Constant(5);
-        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, FilterOperatorType.Equal);
+        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, ValueOperatorType.Equal);
         Assert.Equal(ExpressionType.Equal, expr.NodeType);
     }
 
@@ -44,7 +44,7 @@ public class ExpressionHelpers_Tests
     {
         var left = Expression.Constant(5);
         var right = Expression.Constant(10);
-        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, FilterOperatorType.NotEqual);
+        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, ValueOperatorType.NotEqual);
         Assert.Equal(ExpressionType.NotEqual, expr.NodeType);
     }
 
@@ -53,7 +53,7 @@ public class ExpressionHelpers_Tests
     {
         var left = Expression.Constant(10);
         var right = Expression.Constant(5);
-        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, FilterOperatorType.GreaterThan);
+        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, ValueOperatorType.GreaterThan);
         Assert.Equal(ExpressionType.GreaterThan, expr.NodeType);
     }
 
@@ -62,7 +62,7 @@ public class ExpressionHelpers_Tests
     {
         var left = Expression.Constant(5);
         var right = Expression.Constant(10);
-        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, FilterOperatorType.LessThan);
+        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, ValueOperatorType.LessThan);
         Assert.Equal(ExpressionType.LessThan, expr.NodeType);
     }
 
@@ -88,14 +88,14 @@ public class ExpressionHelpers_Tests
     public void ConcatExpressionsWithOperator_ShouldThrowOnNullLeft()
     {
         var right = Expression.Constant(5);
-        Assert.Throws<ArgumentNullException>(() => ExpressionHelpers.ConcatExpressionsWithOperator(null, right, FilterOperatorType.Equal));
+        Assert.Throws<ArgumentNullException>(() => ExpressionHelpers.ConcatExpressionsWithOperator(null, right, ValueOperatorType.Equal));
     }
 
     [Fact]
     public void ConcatExpressionsWithOperator_ShouldThrowOnNullRight()
     {
         var left = Expression.Constant(5);
-        Assert.Throws<ArgumentNullException>(() => ExpressionHelpers.ConcatExpressionsWithOperator(left, null, FilterOperatorType.Equal));
+        Assert.Throws<ArgumentNullException>(() => ExpressionHelpers.ConcatExpressionsWithOperator(left, null, ValueOperatorType.Equal));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class ExpressionHelpers_Tests
     {
         var left = Expression.Constant("A");
         var right = Expression.Constant(new List<string> { "A", "B", "C" });
-        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, FilterOperatorType.In);
+        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, ValueOperatorType.In);
         Assert.Equal(ExpressionType.Call, expr.NodeType);
     }
 
@@ -112,7 +112,7 @@ public class ExpressionHelpers_Tests
     {
         var left = Expression.Constant("MiCake");
         var right = Expression.Constant("Cake");
-        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, FilterOperatorType.Contains);
+        var expr = ExpressionHelpers.ConcatExpressionsWithOperator(left, right, ValueOperatorType.Contains);
         Assert.Equal(ExpressionType.Call, expr.NodeType);
     }
 

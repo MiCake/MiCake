@@ -1,11 +1,26 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace MiCake.Util.Query.Dynamic
 {
+    /// <summary>
+    /// Helper methods for building and manipulating LINQ expression trees.
+    /// </summary>
+    /// <remarks>
+    /// This internal class provides utility methods for constructing expressions used in dynamic filtering.
+    /// </remarks>
     internal static class ExpressionHelpers
     {
+        /// <summary>
+        /// Builds an expression for accessing a property, supporting nested properties.
+        /// </summary>
+        /// <param name="parameter">The parameter expression representing the target object.</param>
+        /// <param name="propertyName">The property name or nested property path (e.g., "Address.City").</param>
+        /// <returns>An expression that accesses the specified property.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when parameter is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when propertyName is null or empty.</exception>
         internal static Expression BuildNestedPropertyExpression(ParameterExpression parameter, string propertyName)
         {
             ArgumentNullException.ThrowIfNull(parameter);
@@ -20,27 +35,43 @@ namespace MiCake.Util.Query.Dynamic
             return body;
         }
 
-        internal static Expression ConcatExpressionsWithOperator(Expression left, Expression right, FilterOperatorType operatorType)
+        /// <summary>
+        /// Combines two expressions using a comparison operator.
+        /// </summary>
+        /// <param name="left">The left operand expression.</param>
+        /// <param name="right">The right operand expression.</param>
+        /// <param name="operatorType">The comparison operator type.</param>
+        /// <returns>An expression representing the comparison operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when left or right is null.</exception>
+        internal static Expression ConcatExpressionsWithOperator(Expression left, Expression right, ValueOperatorType operatorType)
         {
             ArgumentNullException.ThrowIfNull(left);
             ArgumentNullException.ThrowIfNull(right);
 
             return operatorType switch
             {
-                FilterOperatorType.Equal => Expression.Equal(left, right),
-                FilterOperatorType.NotEqual => Expression.NotEqual(left, right),
-                FilterOperatorType.LessThan => Expression.LessThan(left, right),
-                FilterOperatorType.GreaterThan => Expression.GreaterThan(left, right),
-                FilterOperatorType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
-                FilterOperatorType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
-                FilterOperatorType.In => CreateInExpression(left, right),
-                FilterOperatorType.Contains => CreateStringMethodExpression(left, right, "Contains"),
-                FilterOperatorType.StartsWith => CreateStringMethodExpression(left, right, "StartsWith"),
-                FilterOperatorType.EndsWith => CreateStringMethodExpression(left, right, "EndsWith"),
+                ValueOperatorType.Equal => Expression.Equal(left, right),
+                ValueOperatorType.NotEqual => Expression.NotEqual(left, right),
+                ValueOperatorType.LessThan => Expression.LessThan(left, right),
+                ValueOperatorType.GreaterThan => Expression.GreaterThan(left, right),
+                ValueOperatorType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
+                ValueOperatorType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
+                ValueOperatorType.In => CreateInExpression(left, right),
+                ValueOperatorType.Contains => CreateStringMethodExpression(left, right, "Contains"),
+                ValueOperatorType.StartsWith => CreateStringMethodExpression(left, right, "StartsWith"),
+                ValueOperatorType.EndsWith => CreateStringMethodExpression(left, right, "EndsWith"),
                 _ => Expression.Equal(left, right)
             };
         }
 
+        /// <summary>
+        /// Combines two expressions using a logical join operator (AND/OR).
+        /// </summary>
+        /// <param name="left">The left operand expression.</param>
+        /// <param name="right">The right operand expression.</param>
+        /// <param name="joinType">The join type (And/Or).</param>
+        /// <returns>An expression representing the logical operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when left or right is null.</exception>
         internal static Expression ConcatExpressionsWithOperator(Expression left, Expression right, FilterJoinType joinType)
         {
             ArgumentNullException.ThrowIfNull(left);
@@ -56,16 +87,37 @@ namespace MiCake.Util.Query.Dynamic
 
         private static Expression CreateInExpression(Expression left, Expression right)
         {
-            var containsMethod = right.Type.GetMethod("Contains", [left.Type]);
-            if (containsMethod == null)
-                throw new InvalidOperationException($"Contains method not found for type {right.Type}");
+            // Resolve element type (handle nullable left types)
+            var elementType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
 
-            return Expression.Call(right, containsMethod, left);
+            // First try instance method: right.Contains(element)
+            var containsMethod = right.Type.GetMethod("Contains", new[] { elementType });
+            if (containsMethod != null)
+                return Expression.Call(right, containsMethod, left);
+
+            // Fallback to Enumerable.Contains<T>(IEnumerable<T>, T)
+            var enumerableContains = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .FirstOrDefault(m => m.Name == "Contains" && m.GetParameters().Length == 2);
+
+            if (enumerableContains != null)
+            {
+                var generic = enumerableContains.MakeGenericMethod(elementType);
+                return Expression.Call(generic, right, left);
+            }
+
+            throw new InvalidOperationException($"Contains method not found for type {right.Type}");
         }
 
         private static MethodCallExpression CreateStringMethodExpression(Expression left, Expression right, string methodName)
         {
-            var method = typeof(string).GetMethod(methodName, [typeof(string)]);
+            // ensure left operand is some form of string
+            var leftUnderlying = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
+            if (leftUnderlying != typeof(string))
+            {
+                throw new InvalidOperationException($"Operator '{methodName}' is only supported on string properties.");
+            }
+
+            var method = typeof(string).GetMethod(methodName, new[] { typeof(string) });
             if (method == null)
                 throw new InvalidOperationException($"{methodName} method not found for string type");
 
