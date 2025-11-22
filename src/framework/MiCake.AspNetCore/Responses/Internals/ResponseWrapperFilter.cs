@@ -10,12 +10,12 @@ namespace MiCake.AspNetCore.Responses.Internals
     /// Filter to wrap successful HTTP responses.
     /// Only wraps ObjectResult to ensure proper JSON serialization.
     /// </summary>
-    internal class DataWrapperFilter : IAsyncResultFilter
+    internal class ResponseWrapperFilter : IAsyncResultFilter
     {
         private readonly ResponseWrapperExecutor _executor;
         private readonly ResponseWrapperOptions _options;
 
-        public DataWrapperFilter(IOptions<MiCakeAspNetOptions> options)
+        public ResponseWrapperFilter(IOptions<MiCakeAspNetOptions> options)
         {
             _options = options.Value?.DataWrapperOptions ?? new ResponseWrapperOptions();
             _executor = new ResponseWrapperExecutor(_options);

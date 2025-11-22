@@ -10,6 +10,11 @@ namespace MiCake.AspNetCore.Responses
         /// <summary>
         /// Shows the stack trace information in error responses.
         /// Default: false
+        /// 
+        /// <para>
+        /// The option is typically enabled in development environments to aid debugging.
+        /// In production, it is advisable to keep this disabled to avoid exposing sensitive information.
+        /// </para>
         /// </summary>
         public bool ShowStackTraceWhenError { get; set; } = false;
 

@@ -9,7 +9,7 @@ namespace MiCake.AspNetCore.Responses
     /// </summary>
     /// <param name="context">Context information about the request and response</param>
     /// <returns>The wrapped response object</returns>
-    public delegate object SuccessWrapperFactory(WrapperContext context);
+    public delegate object SuccessWrapperFactory(ResponseWrapperContext context);
 
     /// <summary>
     /// Factory delegate for creating error response wrappers.

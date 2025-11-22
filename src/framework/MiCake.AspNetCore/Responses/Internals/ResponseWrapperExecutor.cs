@@ -23,7 +23,7 @@ namespace MiCake.AspNetCore.Responses.Internals
             if (!_options.WrapProblemDetails && IsProblemDetails(originalData))
                 return originalData;
 
-            var context = new WrapperContext(httpContext, statusCode, originalData);
+            var context = new ResponseWrapperContext(httpContext, statusCode, originalData);
             if (httpContext.TryGetSlightException(out var slightException))
             {
                 var slightExceptionData = new SlightExceptionData
@@ -32,7 +32,7 @@ namespace MiCake.AspNetCore.Responses.Internals
                     Message = slightException.Message,
                     Details = slightException.Details
                 };
-                context = new WrapperContext(httpContext, statusCode, slightExceptionData);
+                context = new ResponseWrapperContext(httpContext, statusCode, slightExceptionData);
             }
 
             return _options.GetOrCreateFactory()?.SuccessFactory?.Invoke(context);

@@ -5,7 +5,7 @@ namespace MiCake.AspNetCore.Responses
     /// <summary>
     /// Context information passed to wrapper factory delegates.
     /// </summary>
-    public class WrapperContext
+    public class ResponseWrapperContext
     {
         /// <summary>
         /// The HTTP context for the current request.
@@ -23,7 +23,7 @@ namespace MiCake.AspNetCore.Responses
         /// </summary>
         public object? OriginalData { get; }
 
-        public WrapperContext(HttpContext httpContext, int statusCode, object? originalData)
+        public ResponseWrapperContext(HttpContext httpContext, int statusCode, object? originalData)
         {
             HttpContext = httpContext;
             StatusCode = statusCode;
@@ -34,7 +34,7 @@ namespace MiCake.AspNetCore.Responses
     /// <summary>
     /// Context information for error wrapper factory.
     /// </summary>
-    public class ErrorWrapperContext : WrapperContext
+    public class ErrorWrapperContext : ResponseWrapperContext
     {
         /// <summary>
         /// The exception that occurred (if any).

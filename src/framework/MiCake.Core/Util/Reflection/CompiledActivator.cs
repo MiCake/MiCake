@@ -28,7 +28,7 @@ namespace MiCake.Util.Reflection
         }
 
         // Lightweight value type key describes a parameterized factory signature
-        private readonly struct ParameterizedFactoryKey : IEquatable<ParameterizedFactoryKey>
+        internal readonly struct ParameterizedFactoryKey : IEquatable<ParameterizedFactoryKey>
         {
             public readonly Type Type;
             public readonly Type[] ArgTypes;

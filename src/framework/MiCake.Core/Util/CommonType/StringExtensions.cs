@@ -126,10 +126,7 @@ namespace MiCake.Util
         /// <returns>Modified string or the same string if it has not any of given postfixes</returns>
         public static string RemovePostFix(this string str, StringComparison comparisonType, params string[] postFixes)
         {
-            if (str is null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (postFixes.IsNullOrEmpty())
             {
@@ -167,10 +164,7 @@ namespace MiCake.Util
         /// <returns>Modified string or the same string if it has not any of given prefixes</returns>
         public static string RemovePreFix(this string str, StringComparison comparisonType, params string[] preFixes)
         {
-            if (str is null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (preFixes.IsNullOrEmpty())
             {
@@ -357,10 +351,7 @@ namespace MiCake.Util
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="str"/> is null</exception>
         public static string Truncate(this string str, int maxLength)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (str.Length <= maxLength)
             {
@@ -376,10 +367,7 @@ namespace MiCake.Util
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="str"/> is null</exception>
         public static string TruncateFromBeginning(this string str, int maxLength)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (str.Length <= maxLength)
             {
@@ -408,10 +396,7 @@ namespace MiCake.Util
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="str"/> is null</exception>
         public static string TruncateWithPostfix(this string str, int maxLength, string postfix)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (str == string.Empty || maxLength == 0)
             {

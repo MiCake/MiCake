@@ -26,7 +26,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             // Arrange
             var options = new ResponseWrapperOptions();
             var factory = ResponseWrapperFactory.CreateDefault(options);
-            var context = new WrapperContext(null, 200, "test data");
+            var context = new ResponseWrapperContext(null, 200, "test data");
 
             // Act
             var result = factory.SuccessFactory(context);

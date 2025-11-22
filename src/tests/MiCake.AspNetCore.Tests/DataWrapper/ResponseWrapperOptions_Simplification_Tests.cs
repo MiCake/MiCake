@@ -8,7 +8,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
     /// Tests for DataWrapperOptions simplifications in commit 1ba5a78.
     /// Focus: Unified WrapProblemDetails flag, removal of WrapValidationProblemDetails property.
     /// </summary>
-    public class DataWrapperOptions_Simplification_Tests
+    public class ResponseWrapperOptions_Simplification_Tests
     {
         #region Default Value Tests
 

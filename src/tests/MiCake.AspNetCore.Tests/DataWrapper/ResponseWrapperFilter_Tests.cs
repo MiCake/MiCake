@@ -11,7 +11,7 @@ using Xunit;
 
 namespace MiCake.AspNetCore.Tests.DataWrapper
 {
-    public class DataWrapperFilter_Tests
+    public class ResponseWrapperFilter_Tests
     {
         [Fact]
         public async Task DataWrapperFilter_ObjectResult_UseWrapper()
@@ -27,7 +27,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
-            var wrapperFilter = new DataWrapperFilter(options);
+            var wrapperFilter = new ResponseWrapperFilter(options);
 
             // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
@@ -58,7 +58,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, contentResult);
-            var wrapperFilter = new DataWrapperFilter(options);
+            var wrapperFilter = new ResponseWrapperFilter(options);
 
             // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
@@ -89,7 +89,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
-            var wrapperFilter = new DataWrapperFilter(options);
+            var wrapperFilter = new ResponseWrapperFilter(options);
 
             // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,
@@ -119,7 +119,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             });
 
             var resultExecutingContext = GetResourceExecutingContext(httpContext, objectResult);
-            var wrapperFilter = new DataWrapperFilter(options);
+            var wrapperFilter = new ResponseWrapperFilter(options);
 
             // Act
             await wrapperFilter.OnResultExecutionAsync(resultExecutingContext,

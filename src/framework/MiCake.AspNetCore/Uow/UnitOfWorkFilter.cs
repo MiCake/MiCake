@@ -169,6 +169,10 @@ namespace MiCake.AspNetCore.Uow
                             rollbackEx,
                             "Failed to rollback Unit of Work {UowId}",
                             unitOfWork.Id);
+
+                        throw new AggregateException(
+                            "Unit of Work operation failed and rollback also failed",
+                            ex, rollbackEx);
                     }
                 }
 

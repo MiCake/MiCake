@@ -24,8 +24,8 @@ namespace MiCake.AspNetCore
             //Add Data wrapper filters
             if (_micakeAspNetOptions.UseDataWrapper)
             {
-                options.Filters.Add(typeof(DataWrapperFilter));
-                options.Filters.Add(typeof(ExceptionDataWrapperFilter));
+                options.Filters.Add(typeof(ResponseWrapperFilter));
+                options.Filters.Add(typeof(ExceptionResponseWrapperFilter));
             }
         }
     }
