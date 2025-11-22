@@ -1,4 +1,4 @@
-﻿using MiCake.Util.Collection;
+﻿using MiCake.Util.Extensions;
 using MiCake.Util.Reflection;
 using System;
 using System.Collections.Generic;

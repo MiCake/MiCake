@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using MiCake.Util.LinqFilter;
+using MiCake.Util.Query.Dynamic;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.LinqFilter;

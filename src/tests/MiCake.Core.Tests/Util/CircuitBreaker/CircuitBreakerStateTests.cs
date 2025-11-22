@@ -1,5 +1,5 @@
 using System;
-using MiCake.Util.CircuitBreaker;
+using MiCake.Util.Resilience;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.CircuitBreaker;

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using MiCake.Util.Collection;
+using MiCake.Util.Extensions;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.Collections;

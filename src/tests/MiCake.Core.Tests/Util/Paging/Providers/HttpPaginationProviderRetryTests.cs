@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MiCake.Util.Paging.Providers;
+using MiCake.Util.Query.Paging.Providers;
 using Moq;
 using Xunit;
 

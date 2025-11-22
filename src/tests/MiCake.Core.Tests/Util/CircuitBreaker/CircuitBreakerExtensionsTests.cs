@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MiCake.Util.CircuitBreaker;
+using MiCake.Util.Resilience;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

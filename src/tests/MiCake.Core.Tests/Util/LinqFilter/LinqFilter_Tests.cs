@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security;
-using MiCake.Util.LinqFilter;
+using MiCake.Util.Query.Dynamic;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.LinqFilter;

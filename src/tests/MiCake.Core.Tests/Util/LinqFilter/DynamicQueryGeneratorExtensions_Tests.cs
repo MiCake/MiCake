@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using MiCake.Util.LinqFilter;
+using MiCake.Util.Query.Dynamic;
 using Xunit;
 
 namespace MiCake.Core.Tests.Util.LinqFilter;

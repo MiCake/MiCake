@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using MiCake.Util.Collection;
 using MiCake.Util.Reflection;
 
 namespace MiCake.Util.Store

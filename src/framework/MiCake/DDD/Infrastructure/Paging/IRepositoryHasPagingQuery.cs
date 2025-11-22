@@ -1,5 +1,5 @@
-﻿using MiCake.Util.LinqFilter;
-using MiCake.Util.Paging;
+﻿using MiCake.Util.Query.Dynamic;
+using MiCake.Util.Query.Paging;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
