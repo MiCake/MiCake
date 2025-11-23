@@ -8,12 +8,12 @@ namespace MiCake.Util.Store
 {
     /// <summary>
     /// Type used to store transient data with capacity limits.
-    /// Can release data by <see cref="Release"/> method.
+    /// Can release data by <see cref="ReleaseAll"/> method.
     /// </summary>
     public class DataDepositPool : IDisposable
     {
         private const int DefaultMaxCapacity = 1000;
-        private bool _isDispose = false;
+        private bool _disposed = false;
         private readonly ConcurrentDictionary<string, object> _cachePool = new();
         private readonly int _maxCapacity;
         private readonly Lock _syncLock = new();
@@ -46,8 +46,10 @@ namespace MiCake.Util.Store
         /// <param name="key">The key to retrieve data for</param>
         /// <returns>The stored object if found; otherwise, null</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the pool has been disposed</exception>
         public object? TakeOut(string key)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(key);
 
             if (!_cachePool.TryGetValue(key, out var result))
@@ -59,11 +61,15 @@ namespace MiCake.Util.Store
         /// <summary>
         /// Get the stored data according to the key
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The expected type of the stored data</typeparam>
+        /// <param name="key">The key to retrieve data for</param>
+        /// <returns>The stored object cast to type T, or default if not found</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the pool has been disposed</exception>
+        /// <exception cref="InvalidCastException">Thrown when the stored object cannot be cast to type T</exception>
         public T? TakeOut<T>(string key)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(key);
 
             if (!_cachePool.TryGetValue(key, out var result))
@@ -74,12 +80,16 @@ namespace MiCake.Util.Store
 
 
         /// <summary>
-        /// Get the stored data according to the key type
+        /// Get the stored data according to the specified type.
+        /// Returns all items whose type is the specified type or derived from it.
         /// </summary>
-        /// <param name="type">The type of the stored data</param>
-        /// <returns></returns>
+        /// <param name="type">The type of the stored data to retrieve</param>
+        /// <returns>A list of all stored objects matching the specified type</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="type"/> is null</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the pool has been disposed</exception>
         public List<object> TakeOutByType(Type type)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(type);
 
             var results = new List<object>();
@@ -103,25 +113,27 @@ namespace MiCake.Util.Store
         /// <param name="isReplace">Whether to replace the existing data with the same key</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
         /// <exception cref="InvalidOperationException">Thrown when the key already exists or capacity is exceeded</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the pool has been disposed</exception>
         public void Deposit(string key, object dataInfo, bool isReplace = false)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(key);
 
             lock (_syncLock)
             {
-                if (_cachePool.Count >= _maxCapacity)
+                // Check capacity: allow replacement without counting against capacity
+                if (_cachePool.Count >= _maxCapacity && !_cachePool.ContainsKey(key))
                 {
                     throw new InvalidOperationException(
                         $"DataDepositPool capacity exceeded. Maximum capacity: {_maxCapacity}, current count: {_cachePool.Count}. " +
                         $"Please increase the capacity or remove existing items before adding new ones.");
                 }
 
-                if (!isReplace)
+                if (!isReplace && _cachePool.TryGetValue(key, out _))
                 {
-                    if (_cachePool.ContainsKey(key))
-                        throw new InvalidOperationException(
-                            $"The key '{key}' already exists in DataDepositPool. " +
-                            $"Please remove the existing item first using TakeOut or Release before adding a new one.");
+                    throw new InvalidOperationException(
+                        $"The key '{key}' already exists in DataDepositPool. " +
+                        $"Please remove the existing item first using TakeOut or Release before adding a new one.");
                 }
 
                 _cachePool[key] = dataInfo;
@@ -131,19 +143,52 @@ namespace MiCake.Util.Store
         /// <summary>
         /// Releases all data from the pool.
         /// </summary>
-        public void Release()
+        public void ReleaseAll()
         {
             _cachePool.Clear();
         }
 
-        void IDisposable.Dispose()
+        /// <summary>
+        /// Disposes the DataDepositPool and releases its resources.
+        /// This method is idempotent and can be safely called multiple times.
+        /// </summary>
+        public void Dispose()
         {
-            if (_isDispose)
-                throw new InvalidOperationException($"{nameof(DataDepositPool)} has already been disposed.");
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            _isDispose = true;
+        /// <summary>
+        /// Protected dispose method following the standard .NET Dispose pattern.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return; // Idempotent - just return, don't throw
 
-            Release();
+            if (disposing)
+            {
+                ReleaseAll();
+            }
+
+            _disposed = true;
+        }
+
+        /// <summary>
+        /// Finalizer to ensure resources are cleaned up if Dispose is not called.
+        /// </summary>
+        ~DataDepositPool()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
+        /// Throws ObjectDisposedException if the pool has been disposed.
+        /// </summary>
+        private void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

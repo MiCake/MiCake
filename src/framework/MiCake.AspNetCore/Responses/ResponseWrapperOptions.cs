@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace MiCake.AspNetCore.Responses
 {
@@ -43,11 +45,32 @@ namespace MiCake.AspNetCore.Responses
         public DataWrapperDefaultCode DefaultCodeSetting { get; set; } = new();
 
         /// <summary>
-        /// Gets the wrapper factory, creating default if not configured.
+        /// Lazy-initialized wrapper factory for thread-safe, single-instance caching.
+        /// Ensures the factory is created only once, even in multi-threaded scenarios.
         /// </summary>
+        private readonly Lazy<ResponseWrapperFactory> _lazyFactory;
+
+        public ResponseWrapperOptions()
+        {
+            _lazyFactory = new Lazy<ResponseWrapperFactory>(
+               () => ResponseWrapperFactory.CreateDefault(this),
+               LazyThreadSafetyMode.ExecutionAndPublication);
+        }
+
+        /// <summary>
+        /// Gets the wrapper factory, creating and caching the default if not configured.
+        /// </summary>
+        /// <remarks>
+        /// If a custom WrapperFactory is set, it is returned directly without lazy initialization.
+        /// This allows for runtime factory changes while still providing caching for the default factory.
+        /// </remarks>
         internal ResponseWrapperFactory GetOrCreateFactory()
         {
-            return WrapperFactory ?? ResponseWrapperFactory.CreateDefault(this);
+            // If custom factory is set, return it directly (prioritize explicit configuration)
+            if (WrapperFactory != null)
+                return WrapperFactory;
+
+            return _lazyFactory.Value;
         }
     }
 

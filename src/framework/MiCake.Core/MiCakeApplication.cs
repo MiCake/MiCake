@@ -96,7 +96,7 @@ namespace MiCake.Core
             _miCakeModuleBoot.Initialization(context);
 
             // Release options additional info
-            ApplicationOptions.BuildTimeData.Release();
+            ApplicationOptions.BuildTimeData.ReleaseAll();
 
             _isStarted = true;
             _logger?.LogInformation("MiCake Application Started Successfully.");

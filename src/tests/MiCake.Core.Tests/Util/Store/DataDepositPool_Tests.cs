@@ -285,7 +285,7 @@ namespace MiCake.Core.Tests.Util.Store
             Assert.Equal(3, pool.Count);
 
             // Act
-            pool.Release();
+            pool.ReleaseAll();
 
             // Assert
             Assert.Equal(0, pool.Count);
@@ -301,7 +301,7 @@ namespace MiCake.Core.Tests.Util.Store
             var pool = new DataDepositPool();
 
             // Act & Assert (should not throw)
-            pool.Release();
+            pool.ReleaseAll();
             Assert.Equal(0, pool.Count);
         }
 
@@ -313,9 +313,9 @@ namespace MiCake.Core.Tests.Util.Store
             pool.Deposit("key", "value");
 
             // Act & Assert
-            pool.Release();
-            pool.Release();
-            pool.Release();
+            pool.ReleaseAll();
+            pool.ReleaseAll();
+            pool.ReleaseAll();
             Assert.Equal(0, pool.Count);
         }
 
@@ -325,7 +325,7 @@ namespace MiCake.Core.Tests.Util.Store
             // Arrange
             var pool = new DataDepositPool();
             pool.Deposit("key1", "value1");
-            pool.Release();
+            pool.ReleaseAll();
 
             // Act
             pool.Deposit("key1", "new-value");
@@ -591,7 +591,7 @@ namespace MiCake.Core.Tests.Util.Store
             pool.Deposit("key3", "value3");
 
             // Act
-            pool.Release();
+            pool.ReleaseAll();
             pool.Deposit("key1", "new-value1");
             pool.Deposit("key4", "value4");
 
@@ -621,15 +621,20 @@ namespace MiCake.Core.Tests.Util.Store
         }
 
         [Fact]
-        public void Dispose_CalledTwice_ShouldThrowInvalidOperationException()
+        public void Dispose_CalledTwice_ShouldNotThrowException()
         {
             // Arrange
             var pool = new DataDepositPool();
-            ((IDisposable)pool).Dispose();
+            pool.Deposit("key1", "value1");
 
-            // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() => ((IDisposable)pool).Dispose());
-            Assert.Contains("already been disposed", exception.Message);
+            // Act
+            pool.Dispose();
+            // Calling Dispose again should not throw (idempotent behavior)
+            // This is the correct .NET pattern for Dispose
+            pool.Dispose();
+
+            // Assert
+            Assert.Throws<ObjectDisposedException>(() => pool.TakeOut("key1"));
         }
 
         #endregion
