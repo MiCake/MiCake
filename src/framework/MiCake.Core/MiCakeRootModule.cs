@@ -37,7 +37,7 @@ namespace MiCake.Core
         /// <summary>
         /// Auto-register services based on marker interfaces
         /// </summary>
-        private void AutoRegisterServices(ModuleConfigServiceContext context)
+        private static void AutoRegisterServices(ModuleConfigServiceContext context)
         {
             var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
             

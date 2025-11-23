@@ -367,7 +367,7 @@ namespace MiCake.Tests.Uow
 
         #region Helper Methods
 
-        private Mock<IUnitOfWorkResource> CreateMockResource(string identifier)
+        private static Mock<IUnitOfWorkResource> CreateMockResource(string identifier)
         {
             var mock = new Mock<IUnitOfWorkResource>();
             

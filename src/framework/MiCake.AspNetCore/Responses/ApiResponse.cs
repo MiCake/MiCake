@@ -19,7 +19,7 @@ namespace MiCake.AspNetCore.Responses
         /// <summary>
         /// The actual response data.
         /// </summary>
-        public T Data { get; set; } = default!;
+        public T? Data { get; set; }
 
         public ApiResponse()
         {

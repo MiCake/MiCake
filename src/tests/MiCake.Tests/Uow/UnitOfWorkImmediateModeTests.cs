@@ -334,7 +334,7 @@ namespace MiCake.Tests.Uow
 
         #region Helper Methods
 
-        private Mock<IUnitOfWorkResource> CreateMockResource()
+        private static Mock<IUnitOfWorkResource> CreateMockResource()
         {
             var mock = new Mock<IUnitOfWorkResource>();
             var uniqueId = Guid.NewGuid().ToString();

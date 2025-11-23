@@ -322,7 +322,7 @@ namespace MiCake.Audit.Tests
             return services;
         }
 
-        private ServiceCollection BuildServicesWithAuditProvider()
+        private static ServiceCollection BuildServicesWithAuditProvider()
         {
             var services = new ServiceCollection();
             //Audit Executor

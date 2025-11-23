@@ -11,7 +11,6 @@ namespace MiCake.EntityFrameworkCore
     {
         /// <summary>
         /// Primary constructor for MiCake DbContext.
-        /// No longer requires IServiceProvider dependency.
         /// </summary>
         /// <param name="options">The DbContext options</param>
         public MiCakeDbContext(DbContextOptions options) : base(options)

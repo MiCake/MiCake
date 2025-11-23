@@ -90,7 +90,7 @@ public abstract partial class HttpPaginationProvider<TData>
             }
         }
 
-        return CreateFailureResponse(attemptNumber, lastException);
+        return HttpPaginationProvider<TData>.CreateFailureResponse(attemptNumber, lastException);
     }
 
     /// <summary>
@@ -194,7 +194,7 @@ public abstract partial class HttpPaginationProvider<TData>
     /// <summary>
     /// Create a failure response after all retries exhausted
     /// </summary>
-    private PaginationResponse<TData> CreateFailureResponse(int attemptNumber, Exception? lastException)
+    private static PaginationResponse<TData> CreateFailureResponse(int attemptNumber, Exception? lastException)
     {
         return new PaginationResponse<TData>
         {

@@ -226,7 +226,7 @@ namespace MiCake.DDD.Tests
 
         private class TestDomainEvent : IDomainEvent
         {
-            public DateTime OccurredOn => DateTime.Now;
+            public static DateTime OccurredOn => DateTime.Now;
         }
 
         #endregion

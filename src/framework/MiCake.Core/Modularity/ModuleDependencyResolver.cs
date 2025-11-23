@@ -67,16 +67,16 @@ namespace MiCake.Core.Modularity
         /// Builds a dependency chain starting from a leaf node (no dependents) and tracing back to roots.
         /// This correctly represents: Root -> ... -> Dependency -> Leaf
         /// </summary>
-        private string BuildDependencyChainFromLeaf(ModuleNode leafNode)
+        private static string BuildDependencyChainFromLeaf(ModuleNode leafNode)
         {
             var chain = new List<string>();
             var visited = new HashSet<ModuleNode>();
 
             TraceBackToRoot(leafNode, chain, visited);
-            
+
             // Reverse because we traced backward from leaf to root
             chain.Reverse();
-            
+
             return string.Join(" -> ", chain);
         }
 
@@ -92,7 +92,7 @@ namespace MiCake.Core.Modularity
 
             var moduleName = node.Descriptor.ModuleType?.Name ?? "Unknown";
             var isFrameworkLevel = node.Descriptor.Instance.IsFrameworkLevel;
-            
+
             chain.Add(isFrameworkLevel ? $"*{moduleName}" : moduleName);
 
             // Trace back through dependencies
@@ -113,24 +113,27 @@ namespace MiCake.Core.Modularity
             if (!_isGraphBuilt)
                 BuildDependencyGraph();
 
-            // Use Kahn's algorithm for topological sorting
+            // Use Kahn's algorithm for topological sorting with priority queue
             var sorted = new List<MiCakeModuleDescriptor>();
             var inDegree = CalculateInDegree();
-            var queue = new Queue<ModuleNode>();
+
+            var readyNodes = new List<ModuleNode>();
 
             // Find all nodes with in-degree 0 (no dependencies)
             foreach (var (_, node) in _moduleNodes)
             {
                 if (inDegree[node] == 0)
                 {
-                    queue.Enqueue(node);
+                    readyNodes.Add(node);
                 }
             }
 
-            // Process nodes in topological order
-            while (queue.Count > 0)
+            // Process nodes in topological order with priority
+            while (readyNodes.Count > 0)
             {
-                var node = queue.Dequeue();
+                // Sort by priority: Framework modules first, with MiCakeRootModule at the very top
+                var node = GetHighestPriorityNode(readyNodes);
+                readyNodes.Remove(node);
                 sorted.Add(node.Descriptor);
 
                 // Reduce in-degree for all dependents
@@ -139,7 +142,7 @@ namespace MiCake.Core.Modularity
                     inDegree[dependent]--;
                     if (inDegree[dependent] == 0)
                     {
-                        queue.Enqueue(dependent);
+                        readyNodes.Add(dependent);
                     }
                 }
             }
@@ -156,6 +159,30 @@ namespace MiCake.Core.Modularity
             }
 
             return sorted;
+        }
+
+        /// <summary>
+        /// Selects the highest priority node from the ready list.
+        /// Priority order: MiCakeRootModule > Other Framework modules > Regular modules
+        /// This ensures framework modules are always loaded before application modules when there are no dependency constraints.
+        /// </summary>
+        private static ModuleNode GetHighestPriorityNode(List<ModuleNode> readyNodes)
+        {
+            if (readyNodes.Count == 1)
+                return readyNodes[0];
+
+            // First priority: MiCakeRootModule
+            var rootModule = readyNodes.FirstOrDefault(n => n.Descriptor.ModuleType.Name == nameof(MiCakeRootModule));
+            if (rootModule != null)
+                return rootModule;
+
+            // Second priority: Other framework-level modules
+            var frameworkModule = readyNodes.FirstOrDefault(n => n.Descriptor.Instance.IsFrameworkLevel);
+            if (frameworkModule != null)
+                return frameworkModule;
+
+            // Default: Return first regular module
+            return readyNodes[0];
         }
 
         /// <summary>
