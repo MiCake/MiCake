@@ -99,24 +99,68 @@ namespace MiCake.DDD.Uow
         /// Event raised before committing the transaction.
         /// Useful for validation or preparing data before commit.
         /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnCommitting;
 
         /// <summary>
         /// Event raised after successfully committing the transaction.
         /// Useful for cache clearing, notifications, or other post-commit actions.
         /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnCommitted;
 
         /// <summary>
         /// Event raised before rolling back the transaction.
         /// Useful for logging or preparing for rollback.
         /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnRollingBack;
 
         /// <summary>
         /// Event raised after successfully rolling back the transaction.
         /// Useful for cleanup or error handling.
         /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnRolledBack;
 
         #endregion

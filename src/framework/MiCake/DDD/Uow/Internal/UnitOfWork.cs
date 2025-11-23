@@ -189,7 +189,7 @@ namespace MiCake.DDD.Uow.Internal
             ThrowIfCompleted("Unit of work has already been completed");
 
             // Raise OnCommitting event
-            RaiseEvent(OnCommitting, new UnitOfWorkEventArgs(Id, Parent != null));
+            RaiseEvent(OnCommitting, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitting));
 
             try
             {
@@ -200,7 +200,7 @@ namespace MiCake.DDD.Uow.Internal
                     MarkAsCompleted();
 
                     // Raise OnCommitted event for nested UoW
-                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
+                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
                     return;
                 }
 
@@ -211,7 +211,7 @@ namespace MiCake.DDD.Uow.Internal
                     MarkAsCompleted();
 
                     // Raise OnCommitted event even for skipped commit
-                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
+                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
                     return;
                 }
 
@@ -248,7 +248,7 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
 
                 // Raise OnCommitted event
-                RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null));
+                RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
             }
             catch (Exception ex)
             {
@@ -265,7 +265,7 @@ namespace MiCake.DDD.Uow.Internal
             ThrowIfCompleted("Cannot rollback a completed unit of work");
 
             // Raise OnRollingBack event
-            RaiseEvent(OnRollingBack, new UnitOfWorkEventArgs(Id, Parent != null));
+            RaiseEvent(OnRollingBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRollingBack));
 
             try
             {
@@ -284,7 +284,7 @@ namespace MiCake.DDD.Uow.Internal
                     MarkAsCompleted();
 
                     // Raise OnRolledBack event for nested UoW
-                    RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
+                    RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRolledBack));
                     return;
                 }
 
@@ -294,12 +294,12 @@ namespace MiCake.DDD.Uow.Internal
                 MarkAsCompleted();
 
                 // Raise OnRolledBack event
-                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null));
+                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRolledBack));
             }
             catch (Exception ex)
             {
                 // Raise OnRolledBack event with exception
-                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null, ex));
+                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null, ex), nameof(OnRolledBack));
                 throw;
             }
         }
@@ -506,15 +506,22 @@ namespace MiCake.DDD.Uow.Internal
             _completed = true;
         }
 
-        private void RaiseEvent(EventHandler<UnitOfWorkEventArgs>? eventHandler, UnitOfWorkEventArgs args)
+        private void RaiseEvent(EventHandler<UnitOfWorkEventArgs>? eventHandler, UnitOfWorkEventArgs args, string eventName = "Unknown")
         {
+            if (eventHandler == null)
+                return;
+
             try
             {
-                eventHandler?.Invoke(this, args);
+                eventHandler.Invoke(this, args);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error raising event in UnitOfWork {UnitOfWorkId}", Id);
+                _logger.LogError(ex,
+                    "Error raising {EventName} event in UnitOfWork {UnitOfWorkId}. " +
+                    "Event handlers should handle their own exceptions to avoid disrupting UoW flow. " +
+                    "This error has been logged but will not prevent the UnitOfWork from completing.",
+                    eventName, Id);
                 // Don't throw - event handler errors shouldn't break UoW flow
             }
         }

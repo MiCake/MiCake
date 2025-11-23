@@ -219,10 +219,25 @@ namespace MiCake.EntityFrameworkCore.Uow
                 _logger.LogDebug("Committing transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
                 await _currentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to commit transaction for DbContext {DbContextType}", _dbContext.GetType().Name);
+                throw;
+            }
             finally
             {
-                _currentTransaction?.Dispose();
-                _currentTransaction = null;
+                try
+                {
+                    _currentTransaction?.Dispose();
+                }
+                catch (Exception disposeEx)
+                {
+                    _logger.LogWarning(disposeEx, "Error disposing transaction after commit for DbContext {DbContextType}", _dbContext.GetType().Name);
+                }
+                finally
+                {
+                    _currentTransaction = null;
+                }
             }
         }
 
@@ -257,8 +272,18 @@ namespace MiCake.EntityFrameworkCore.Uow
             }
             finally
             {
-                _currentTransaction?.Dispose();
-                _currentTransaction = null;
+                try
+                {
+                    _currentTransaction?.Dispose();
+                }
+                catch (Exception disposeEx)
+                {
+                    _logger.LogWarning(disposeEx, "Error disposing transaction after rollback for DbContext {DbContextType}", _dbContext.GetType().Name);
+                }
+                finally
+                {
+                    _currentTransaction = null;
+                }
             }
         }
 
@@ -327,31 +352,55 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases the unmanaged resources used by the EFCoreDbContextWrapper and optionally releases the managed resources.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
             if (_disposed)
                 return;
 
-            _logger.LogDebug("Disposing EFCoreDbContextWrapper for {DbContextType}", _dbContext.GetType().Name);
-
-            // Always dispose the transaction
-            _currentTransaction?.Dispose();
-            _currentTransaction = null;
-
-            // Only dispose DbContext if explicitly allowed (e.g., when created by the factory for this specific UoW)
-            if (_shouldDisposeDbContext)
+            if (disposing)
             {
+                // Dispose managed resources
+                _logger.LogDebug("Disposing EFCoreDbContextWrapper for {DbContextType}", _dbContext?.GetType().Name);
+
+                // Always dispose the transaction
                 try
                 {
-                    _dbContext?.Dispose();
-                    _logger.LogDebug("Disposed DbContext {DbContextType} as requested", _dbContext?.GetType().Name);
+                    _currentTransaction?.Dispose();
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error disposing DbContext {DbContextType}", _dbContext?.GetType().Name);
+                    _logger.LogError(ex, "Error disposing transaction for {DbContextType}", _dbContext?.GetType().Name);
                 }
-            }
-            else
-            {
-                _logger.LogDebug("DbContext {DbContextType} not disposed - managed by DI container", _dbContext?.GetType().Name);
+                finally
+                {
+                    _currentTransaction = null;
+                }
+
+                // Only dispose DbContext if explicitly allowed (e.g., when created by the factory for this specific UoW)
+                if (_shouldDisposeDbContext && _dbContext != null)
+                {
+                    try
+                    {
+                        _dbContext.Dispose();
+                        _logger.LogDebug("Disposed DbContext {DbContextType} as requested", _dbContext.GetType().Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error disposing DbContext {DbContextType}", _dbContext.GetType().Name);
+                    }
+                }
+                else
+                {
+                    _logger.LogDebug("DbContext {DbContextType} not disposed - managed by DI container", _dbContext?.GetType().Name);
+                }
             }
 
             _disposed = true;

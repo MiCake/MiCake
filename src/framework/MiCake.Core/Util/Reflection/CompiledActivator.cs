@@ -58,15 +58,15 @@ namespace MiCake.Util.Reflection
 
             public override int GetHashCode()
             {
-                unchecked
+                var hashCode = new HashCode();
+                hashCode.Add(Type);
+
+                foreach (var argType in ArgTypes)
                 {
-                    var hash = Type.GetHashCode();
-                    for (int i = 0; i < ArgTypes.Length; i++)
-                    {
-                        hash = (hash * 31) + (ArgTypes[i]?.GetHashCode() ?? 0);
-                    }
-                    return hash;
+                    hashCode.Add(argType);
                 }
+
+                return hashCode.ToHashCode();
             }
         }
 
