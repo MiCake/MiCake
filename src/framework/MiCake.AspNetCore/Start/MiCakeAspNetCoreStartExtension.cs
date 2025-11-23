@@ -100,7 +100,7 @@ namespace MiCake.Core
 
             return services.AddMiCake(entryModule, options.AppConfig)
                            .UseAudit(options.AuditConfig)
-                           .UseEFCore(miCakeDbContextType, null)
+                           .UseEFCore(miCakeDbContextType)
                            .UseAspNetCore(options.AspNetConfig);
         }
     }

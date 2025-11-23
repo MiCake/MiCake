@@ -45,7 +45,7 @@ namespace MiCake.Core
         public static IMiCakeBuilder UseEFCore(
             this IMiCakeBuilder builder,
             Type miCakeDbContextType,
-            Action<MiCakeEFCoreOptions>? optionsBuilder)
+            Action<MiCakeEFCoreOptions>? optionsBuilder = null)
         {
             MiCakeEFCoreOptions options = new(miCakeDbContextType);
             optionsBuilder?.Invoke(options);

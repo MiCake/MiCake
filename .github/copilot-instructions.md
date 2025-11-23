@@ -164,3 +164,6 @@ Built-in audit support via `UseAudit()` extension - tracks creation/modification
 - **Module registration order**: Framework handles dependency resolution, but entry module must be specified
 - **StartMiCake() placement**: Must be called before `UseEndpoints()` in pipeline
 - **Repository scope**: Always work with aggregate roots, not individual entities via repositories
+
+## Development Principle
++ The doc `principles\development_principle.md` lists the development principles for MiCake framework.
