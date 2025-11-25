@@ -13,4 +13,10 @@
     <ProjectReference Include="..\MiCake\MiCake.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+		<!--In order to unit test-->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>MiCake.IntegrationTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>
