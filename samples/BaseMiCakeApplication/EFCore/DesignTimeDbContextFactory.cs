@@ -18,8 +18,7 @@ namespace BaseMiCakeApplication.EFCore
                 .Build();
 
             var connectionString = config.GetConnectionString("DefaultConnection");
-            Console.WriteLine(connectionString);
-            builder.UseSqlServer(connectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure());
+            builder.UseNpgsql(connectionString);
 
             return new BaseAppDbContext(builder.Options);
         }

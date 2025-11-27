@@ -52,9 +52,10 @@ namespace MiCake.Util.Query.Dynamic
             var sortExpression = Expression.Lambda<Func<T, object>>
                 (Expression.Convert(property, typeof(object)), pe);
 
-            // Check if the current query is already ordered
-            if (query is IOrderedQueryable<T> orderedQuery)
+            // Check if the current query expression tree already contains an OrderBy/OrderByDescending call.
+            if (HasOrderingMethodCall(query.Expression))
             {
+                var orderedQuery = (IOrderedQueryable<T>)query;
                 query = order.Ascending
                     ? orderedQuery.ThenBy(sortExpression)
                     : orderedQuery.ThenByDescending(sortExpression);
@@ -67,6 +68,35 @@ namespace MiCake.Util.Query.Dynamic
             }
 
             return query;
+        }
+
+        /// <summary>
+        /// Checks if the expression tree contains an OrderBy/OrderByDescending method call,
+        /// indicating that the query has already been sorted.
+        /// </summary>
+        /// <param name="expression">The expression to check.</param>
+        /// <returns>True if the expression contains an ordering method call; otherwise, false.</returns>
+        private static bool HasOrderingMethodCall(Expression expression)
+        {
+            if (expression is MethodCallExpression methodCall)
+            {
+                var methodName = methodCall.Method.Name;
+                if (methodName == nameof(Queryable.OrderBy) ||
+                    methodName == nameof(Queryable.OrderByDescending) ||
+                    methodName == nameof(Queryable.ThenBy) ||
+                    methodName == nameof(Queryable.ThenByDescending))
+                {
+                    return true;
+                }
+
+                // Recursively check the source expression (first argument for extension methods)
+                if (methodCall.Arguments.Count > 0)
+                {
+                    return HasOrderingMethodCall(methodCall.Arguments[0]);
+                }
+            }
+
+            return false;
         }
     }
 }

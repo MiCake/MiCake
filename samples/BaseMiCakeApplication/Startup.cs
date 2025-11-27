@@ -59,14 +59,7 @@ namespace BaseMiCakeApplication
             services.AddDbContext<BaseAppDbContext>(options =>
             {
                 var connectionString = Configuration.GetConnectionString("DefaultConnection");
-                options.UseSqlServer(connectionString, sqlServerOptions =>
-                {
-                    // Configure SQL Server specific options
-                    sqlServerOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(10),
-                        errorNumbersToAdd: null);
-                });
+                options.UseNpgsql(connectionString);
             });
 
             // Register Fluent Validation
