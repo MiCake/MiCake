@@ -230,6 +230,215 @@ namespace MiCake.Core.Tests.Modularity
 
         #endregion
 
+        #region GetDependencyGraph Tests
+
+        [Fact]
+        public void GetDependencyGraph_ShouldMatchResolveLoadOrder()
+        {
+            // Arrange: Create a complex dependency graph
+            var resolver = new ModuleDependencyResolver();
+            var moduleA = new TestModuleA();
+            var moduleB = new TestModuleBDependsOnA();
+            var moduleC = new TestModuleCDependsOnB();
+            
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), moduleA));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleBDependsOnA), moduleB));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleCDependsOnB), moduleC));
+
+            // Act
+            var loadOrder = resolver.ResolveLoadOrder();
+            var dependencyGraph = resolver.GetDependencyGraph();
+
+            // Assert: The dependency graph should match the load order
+            var expectedGraph = string.Join(" -> ", loadOrder.Select(d => d.ModuleType.Name));
+            Assert.Equal(expectedGraph, dependencyGraph);
+        }
+
+        [Fact]
+        public void GetDependencyGraph_WithFrameworkModules_ShouldIndicateFrameworkLevel()
+        {
+            // Arrange
+            var resolver = new ModuleDependencyResolver();
+            var frameworkModule = new TestFrameworkModule();
+            var regularModule = new TestModuleA();
+            
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestFrameworkModule), frameworkModule));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), regularModule));
+
+            // Act
+            var dependencyGraph = resolver.GetDependencyGraph();
+
+            // Assert: Framework modules should be prefixed with *
+            Assert.Contains("*TestFrameworkModule", dependencyGraph);
+            Assert.Contains("TestModuleA", dependencyGraph);
+            Assert.DoesNotContain("*TestModuleA", dependencyGraph);
+        }
+
+        [Fact]
+        public void GetDependencyGraph_EmptyResolver_ShouldReturnEmptyString()
+        {
+            // Arrange
+            var resolver = new ModuleDependencyResolver();
+
+            // Act
+            var result = resolver.GetDependencyGraph();
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void GetDependencyGraph_WithMixedPriorities_ShouldMatchLoadOrder()
+        {
+            // Arrange: Framework and regular modules with no dependencies
+            var resolver = new ModuleDependencyResolver();
+            var frameworkA = new TestFrameworkModule();
+            var regularA = new TestModuleA();
+            var regularB = new TestModuleB();
+            
+            // Register in mixed order
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), regularA));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestFrameworkModule), frameworkA));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleB), regularB));
+
+            // Act
+            var loadOrder = resolver.ResolveLoadOrder();
+            var dependencyGraph = resolver.GetDependencyGraph();
+
+            // Assert: Graph should match load order (framework first)
+            var loadOrderNames = loadOrder.Select(d => 
+                d.Instance.IsFrameworkLevel ? $"*{d.ModuleType.Name}" : d.ModuleType.Name);
+            var expectedGraph = string.Join(" -> ", loadOrderNames);
+            Assert.Equal(expectedGraph, dependencyGraph);
+            
+            // Framework module should appear first
+            Assert.StartsWith("*TestFrameworkModule", dependencyGraph);
+        }
+
+        [Fact]
+        public void GetDependencyGraph_CalledMultipleTimes_ShouldReturnSameResult()
+        {
+            // Arrange
+            var resolver = new ModuleDependencyResolver();
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), new TestModuleA()));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleB), new TestModuleB()));
+
+            // Act: Call multiple times
+            var result1 = resolver.GetDependencyGraph();
+            var result2 = resolver.GetDependencyGraph();
+            var result3 = resolver.GetDependencyGraph();
+
+            // Assert: All results should be identical
+            Assert.Equal(result1, result2);
+            Assert.Equal(result2, result3);
+        }
+
+        #endregion
+
+        #region Caching Tests
+
+        [Fact]
+        public void ResolveLoadOrder_CalledMultipleTimes_ShouldUseCachedResult()
+        {
+            // Arrange
+            var resolver = new ModuleDependencyResolver();
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), new TestModuleA()));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleB), new TestModuleB()));
+
+            // Act: Call multiple times
+            var result1 = resolver.ResolveLoadOrder();
+            var result2 = resolver.ResolveLoadOrder();
+
+            // Assert: Should return the same instance (cached)
+            Assert.Same(result1, result2);
+        }
+
+        [Fact]
+        public void RegisterModule_AfterResolve_ShouldInvalidateCache()
+        {
+            // Arrange
+            var resolver = new ModuleDependencyResolver();
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), new TestModuleA()));
+            
+            // Act: Resolve, then add module, then resolve again
+            var result1 = resolver.ResolveLoadOrder();
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleB), new TestModuleB()));
+            var result2 = resolver.ResolveLoadOrder();
+
+            // Assert: Results should be different (cache was invalidated)
+            Assert.NotSame(result1, result2);
+            Assert.Single(result1);
+            Assert.Equal(2, result2.Count);
+        }
+
+        [Fact]
+        public void GetDependencyGraph_AfterNewModuleRegistered_ShouldReflectNewModule()
+        {
+            // Arrange
+            var resolver = new ModuleDependencyResolver();
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), new TestModuleA()));
+            
+            // Act
+            var graph1 = resolver.GetDependencyGraph();
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleB), new TestModuleB()));
+            var graph2 = resolver.GetDependencyGraph();
+
+            // Assert
+            Assert.Equal("TestModuleA", graph1);
+            Assert.Contains("TestModuleB", graph2);
+            Assert.NotEqual(graph1, graph2);
+        }
+
+        #endregion
+
+        #region Priority Tests
+
+        [Fact]
+        public void ResolveLoadOrder_FrameworkModules_ShouldLoadBeforeRegularModules()
+        {
+            // Arrange: Mix of framework and regular modules with no dependencies
+            var resolver = new ModuleDependencyResolver();
+            var frameworkModule = new TestFrameworkModule();
+            var regularA = new TestModuleA();
+            var regularB = new TestModuleB();
+            
+            // Register in non-priority order
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), regularA));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestFrameworkModule), frameworkModule));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleB), regularB));
+
+            // Act
+            var result = resolver.ResolveLoadOrder();
+
+            // Assert: Framework module should be first
+            Assert.Equal(typeof(TestFrameworkModule), result[0].ModuleType);
+            Assert.True(result[0].Instance.IsFrameworkLevel);
+        }
+
+        [Fact]
+        public void ResolveLoadOrder_MiCakeRootModule_ShouldAlwaysBeFirst()
+        {
+            // Arrange: Include a module named MiCakeRootModule with other framework and regular modules
+            var resolver = new ModuleDependencyResolver();
+            var rootModule = new MiCakeRootModule();
+            var frameworkModule = new TestFrameworkModule();
+            var regularModule = new TestModuleA();
+            
+            // Register in random order
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestModuleA), regularModule));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(TestFrameworkModule), frameworkModule));
+            resolver.RegisterModule(new MiCakeModuleDescriptor(typeof(MiCakeRootModule), rootModule));
+
+            // Act
+            var result = resolver.ResolveLoadOrder();
+
+            // Assert: Root module should be first
+            Assert.Equal(typeof(MiCakeRootModule), result[0].ModuleType);
+            Assert.Equal("MiCakeRootModule", result[0].ModuleType.Name);
+        }
+
+        #endregion
+
         #region Test Helper Modules
 
         // Simple modules with no dependencies
@@ -269,6 +478,18 @@ namespace MiCake.Core.Tests.Modularity
         
         [RelyOn(typeof(TestCircularModuleA))]
         private class TestCircularModuleB : MiCakeModule { }
+
+        // Framework module for priority testing
+        private class TestFrameworkModule : MiCakeModule 
+        { 
+            public override bool IsFrameworkLevel => true; 
+        }
+
+        // Test class with the exact name MiCakeRootModule for priority testing
+        private class MiCakeRootModule : MiCakeModule
+        {
+            public override bool IsFrameworkLevel => true;
+        }
 
         #endregion
     }

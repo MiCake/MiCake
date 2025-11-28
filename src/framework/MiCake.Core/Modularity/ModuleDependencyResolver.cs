@@ -12,6 +12,7 @@ namespace MiCake.Core.Modularity
     {
         private readonly Dictionary<Type, ModuleNode> _moduleNodes = [];
         private bool _isGraphBuilt = false;
+        private List<MiCakeModuleDescriptor>? _cachedLoadOrder;
 
         /// <summary>
         /// Registers a module descriptor for dependency resolution.
@@ -24,82 +25,34 @@ namespace MiCake.Core.Modularity
 
             var node = new ModuleNode(descriptor);
             _moduleNodes[descriptor.ModuleType] = node;
+            
+            // Invalidate cache when new module is registered
+            _isGraphBuilt = false;
+            _cachedLoadOrder = null;
         }
 
         /// <summary>
         /// Gets the dependency graph as a formatted string showing module relationships.
         /// Format: ModuleA -> ModuleB -> ModuleC
         /// </summary>
-        /// <returns>A string representation of the dependency graph</returns>
+        /// <returns>A string representation of the dependency graph in load order</returns>
         public string GetDependencyGraph()
         {
             if (_moduleNodes.Count == 0)
                 return string.Empty;
 
-            if (!_isGraphBuilt)
-                BuildDependencyGraph();
+            // Use cached or compute load order to ensure consistency
+            var loadOrder = _cachedLoadOrder ?? ResolveLoadOrder();
 
-            // Build the graph by traversing from leaf nodes (those with no dependents)
-            // A leaf node is one that no other module depends on
-            var leafNodes = _moduleNodes.Values.Where(n => n.Dependents.Count == 0).ToList();
-
-            if (leafNodes.Count == 0)
+            // Build module names with framework indicator
+            var moduleNames = loadOrder.Select(descriptor =>
             {
-                // If no leaf nodes found, this might indicate a cycle or single module
-                // Fallback to all nodes
-                leafNodes = _moduleNodes.Values.ToList();
-            }
+                var moduleName = descriptor.ModuleType?.Name ?? "Unknown";
+                var isFrameworkLevel = descriptor.Instance.IsFrameworkLevel;
+                return isFrameworkLevel ? $"*{moduleName}" : moduleName;
+            });
 
-            var chains = new List<string>();
-            foreach (var leaf in leafNodes)
-            {
-                var chain = BuildDependencyChainFromLeaf(leaf);
-                if (!string.IsNullOrEmpty(chain))
-                {
-                    chains.Add(chain);
-                }
-            }
-
-            return string.Join(" -> ", chains);
-        }
-
-        /// <summary>
-        /// Builds a dependency chain starting from a leaf node (no dependents) and tracing back to roots.
-        /// This correctly represents: Root -> ... -> Dependency -> Leaf
-        /// </summary>
-        private static string BuildDependencyChainFromLeaf(ModuleNode leafNode)
-        {
-            var chain = new List<string>();
-            var visited = new HashSet<ModuleNode>();
-
-            TraceBackToRoot(leafNode, chain, visited);
-
-            // Reverse because we traced backward from leaf to root
-            chain.Reverse();
-
-            return string.Join(" -> ", chain);
-        }
-
-        /// <summary>
-        /// Recursively traces back from a node to its root dependencies.
-        /// </summary>
-        private static void TraceBackToRoot(ModuleNode node, List<string> chain, HashSet<ModuleNode> visited)
-        {
-            if (visited.Contains(node))
-                return;
-
-            visited.Add(node);
-
-            var moduleName = node.Descriptor.ModuleType?.Name ?? "Unknown";
-            var isFrameworkLevel = node.Descriptor.Instance.IsFrameworkLevel;
-
-            chain.Add(isFrameworkLevel ? $"*{moduleName}" : moduleName);
-
-            // Trace back through dependencies
-            foreach (var dependency in node.Dependencies)
-            {
-                TraceBackToRoot(dependency, chain, visited);
-            }
+            return string.Join(" -> ", moduleNames);
         }
 
         /// <summary>
@@ -110,6 +63,10 @@ namespace MiCake.Core.Modularity
         /// <exception cref="InvalidOperationException">When circular dependency is detected</exception>
         public List<MiCakeModuleDescriptor> ResolveLoadOrder()
         {
+            // Return cached result if available
+            if (_cachedLoadOrder != null)
+                return _cachedLoadOrder;
+
             if (!_isGraphBuilt)
                 BuildDependencyGraph();
 
@@ -158,6 +115,8 @@ namespace MiCake.Core.Modularity
                     $"Circular module dependency detected. Affected modules: {string.Join(", ", unprocessedModules)}");
             }
 
+            // Cache the result
+            _cachedLoadOrder = sorted;
             return sorted;
         }
 
