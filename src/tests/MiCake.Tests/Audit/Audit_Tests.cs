@@ -36,7 +36,7 @@ namespace MiCake.Audit.Tests
             HasCreationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            var beforeGiveTime = DateTime.Now;
+            var beforeGiveTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Added);
 
             var result = entity.CreationTime >= beforeGiveTime;
@@ -66,7 +66,7 @@ namespace MiCake.Audit.Tests
             HasModificationTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            var beforeGiveTime = DateTime.Now;
+            var beforeGiveTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Modified);
 
             var result = entity.ModificationTime >= beforeGiveTime;
@@ -96,14 +96,14 @@ namespace MiCake.Audit.Tests
             HasAuditModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            var beforeGiveCreationTime = DateTime.Now;
+            var beforeGiveCreationTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Added);
 
             var result = entity.CreationTime >= beforeGiveCreationTime;
             Assert.True(result);
             Assert.Null(entity.ModificationTime);
 
-            var beforeGiveModificationTime = DateTime.Now;
+            var beforeGiveModificationTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Modified);
 
             var modificationResult = entity.ModificationTime.Value >= beforeGiveModificationTime;

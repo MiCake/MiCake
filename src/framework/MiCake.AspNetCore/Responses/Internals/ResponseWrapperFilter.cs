@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
 using System.Linq;
@@ -23,6 +24,13 @@ namespace MiCake.AspNetCore.Responses.Internals
 
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
+            // Check if wrapping should be skipped
+            if (ShouldSkipWrapping(context))
+            {
+                await next();
+                return;
+            }
+
             if (context.Result is ObjectResult objectResult)
             {
                 var statusCode = objectResult.StatusCode ?? context.HttpContext.Response.StatusCode;
@@ -41,6 +49,19 @@ namespace MiCake.AspNetCore.Responses.Internals
             }
 
             await next();
+        }
+
+        /// <summary>
+        /// Determines whether response wrapping should be skipped based on the SkipResponseWrapper attribute.
+        /// </summary>
+        private static bool ShouldSkipWrapping(FilterContext context)
+        {
+            if (context.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor)
+            {
+                return SkipResponseWrapperCache.ShouldSkip(controllerActionDescriptor);
+            }
+
+            return false;
         }
     }
 }

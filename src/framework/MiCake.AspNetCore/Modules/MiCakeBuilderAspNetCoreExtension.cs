@@ -1,5 +1,4 @@
-﻿using MiCake.AspNetCore.Modules;
-using MiCake.Core;
+﻿using MiCake.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 

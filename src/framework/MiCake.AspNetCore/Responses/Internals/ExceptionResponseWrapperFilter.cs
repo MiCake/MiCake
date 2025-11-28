@@ -1,6 +1,7 @@
 ﻿using MiCake.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -28,6 +29,10 @@ namespace MiCake.AspNetCore.Responses.Internals
         public Task OnExceptionAsync(ExceptionContext context)
         {
             if (context.ExceptionHandled)
+                return Task.CompletedTask;
+
+            // Check if wrapping should be skipped
+            if (ShouldSkipWrapping(context))
                 return Task.CompletedTask;
 
             var exception = context.Exception;
@@ -80,6 +85,19 @@ namespace MiCake.AspNetCore.Responses.Internals
                 return StatusCodes.Status500InternalServerError;
 
             return StatusCodes.Status500InternalServerError;
+        }
+
+        /// <summary>
+        /// Determines whether response wrapping should be skipped based on the SkipResponseWrapper attribute.
+        /// </summary>
+        private static bool ShouldSkipWrapping(FilterContext context)
+        {
+            if (context.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor)
+            {
+                return SkipResponseWrapperCache.ShouldSkip(controllerActionDescriptor);
+            }
+
+            return false;
         }
     }
 }

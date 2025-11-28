@@ -11,9 +11,9 @@ namespace MiCake.Audit.Core
     {
         /// <summary>
         /// Gets or sets the function that provides the current time for audit operations.
-        /// Default: <see cref="DateTime.Now"/>
+        /// Default: <see cref="DateTime.UtcNow"/>
         /// </summary>
-        public static Func<DateTime> CurrentTimeProvider { get; set; } = () => DateTime.Now;
+        public static Func<DateTime> CurrentTimeProvider { get; set; } = () => DateTime.UtcNow;
 
         public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
         {
