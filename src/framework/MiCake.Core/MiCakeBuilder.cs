@@ -62,7 +62,7 @@ namespace MiCake.Core
 
         private void AddEnvironment()
         {
-            var environment = new MiCakeEnvironment { EntryType = _entryType };
+            var environment = new MiCakeEnvironment { EntryModuleType = _entryType };
             _services.AddSingleton<IMiCakeEnvironment>(environment);
         }
 

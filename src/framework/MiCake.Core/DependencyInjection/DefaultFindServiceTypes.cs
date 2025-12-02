@@ -25,7 +25,7 @@ namespace MiCake.Core.DependencyInjection
         /// An interface is matched if its name (case-insensitive) contains the type name.
         /// For example, class "OrderService" will match interface "IOrderService".
         /// </summary>
-        public static FindAutoServiceTypesDelegate Finder = (type, interfaces) =>
+        public static ServiceTypeDiscoveryHandler Finder = (type, interfaces) =>
         {
             var result = new List<Type>();
             var typeName = type.Name.ToUpperInvariant();

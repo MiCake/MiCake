@@ -10,6 +10,6 @@ namespace MiCake.Core
         /// <summary>
         /// Type of entry module
         /// </summary>
-        public Type EntryType { get; set; }
+        public Type EntryModuleType { get; set; }
     }
 }

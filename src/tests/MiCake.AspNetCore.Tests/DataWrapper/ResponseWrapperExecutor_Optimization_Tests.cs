@@ -141,7 +141,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithBusinessExceptionEmptyCode_UsesDefaultCode()
         {
             // Arrange
-            var customCodeSetting = new DataWrapperDefaultCode { Success = "200" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Success = "200" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
@@ -405,7 +405,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapError_WithCustomCodeSetting_UsesCustomCode()
         {
             // Arrange
-            var customCodeSetting = new DataWrapperDefaultCode { Error = "5000" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Error = "5000" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(500);

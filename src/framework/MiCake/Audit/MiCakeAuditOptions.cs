@@ -8,14 +8,14 @@ namespace MiCake.Audit
         /// <summary>
         /// Whether to use soft delete function
         /// If is false,Data will not be verified for soft deletion when it is saved.
-        /// Defalut value is false.
+        /// Default value is false.
         /// </summary>
         public bool UseSoftDeletion { get; set; } = false;
 
         /// <summary>
         /// Whether to use audit function.
         /// If is false,Data will not be verified for audit(create time,modify time,etc) when it is saved.
-        /// Defalut value is true.
+        /// Default value is true.
         /// </summary>
         public bool UseAudit { get; set; } = true;
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Domain
 {
     /// <summary>
-    /// A Repository only has get method
+    /// A common interface of read-only repository operations
     /// </summary>
     /// <typeparam name="TAggregateRoot"></typeparam>
     /// <typeparam name="TKey">The key type of <typeparamref name="TAggregateRoot"/></typeparam>

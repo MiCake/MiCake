@@ -13,7 +13,7 @@ namespace MiCake.EntityFrameworkCore
         /// <summary>
         /// Before EFCore SaveChangesAsync().
         /// </summary>
-        /// <param name="entityEntries">current change tracking entites</param>
+        /// <param name="entityEntries">current change tracking entities</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task BeforeSaveChangesAsync(IEnumerable<EntityEntry> entityEntries, CancellationToken cancellationToken = default);
@@ -21,7 +21,7 @@ namespace MiCake.EntityFrameworkCore
         /// <summary>
         /// After EFCore SaveChanges().
         /// </summary>
-        /// <param name="entityEntries">current change tracking entites</param>
+        /// <param name="entityEntries">current change tracking entities</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task AfterSaveChangesAsync(IEnumerable<EntityEntry> entityEntries, CancellationToken cancellationToken = default);

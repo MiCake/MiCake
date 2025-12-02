@@ -18,7 +18,7 @@ namespace MiCake.Core
         /// 
         /// default: find class all interfaces. The service whose interface name contains the class name.
         /// </summary>
-        public FindAutoServiceTypesDelegate? FindAutoServiceTypes { get; set; }
+        public ServiceTypeDiscoveryHandler? FindAutoServiceTypes { get; set; }
 
         /// <summary>
         /// Assemblies of domain layer
@@ -35,7 +35,7 @@ namespace MiCake.Core
         /// A data stash that only exists during the build process.
         /// It can be used to store data cross modules during the build phase.
         /// </summary>
-        public DataDepositPool BuildTimeData { get; set; } = new DataDepositPool();
+        public DataDepositPool BuildPhaseData { get; set; } = new DataDepositPool();
 
         /// <summary>
         /// Use given option value.
@@ -46,7 +46,7 @@ namespace MiCake.Core
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
             DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
             Printing = applicationOptions.Printing ?? new PrintingOptions();
-            BuildTimeData = applicationOptions.BuildTimeData;
+            BuildPhaseData = applicationOptions.BuildPhaseData;
         }
 
 

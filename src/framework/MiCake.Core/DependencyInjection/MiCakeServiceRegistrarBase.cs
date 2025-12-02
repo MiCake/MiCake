@@ -15,12 +15,12 @@ namespace MiCake.Core.DependencyInjection
     internal abstract class MiCakeServiceRegistrarBase : IMiCakeServiceRegistrar
     {
         private readonly IServiceCollection _services;
-        private FindAutoServiceTypesDelegate? _serviceTypesFinder;
+        private ServiceTypeDiscoveryHandler? _serviceTypesFinder;
 
         /// <summary>
         /// Gets the current service type finder, using the default if none is set.
         /// </summary>
-        protected FindAutoServiceTypesDelegate CurrentFinder => _serviceTypesFinder ?? DefaultFindServiceTypes.Finder;
+        protected ServiceTypeDiscoveryHandler CurrentFinder => _serviceTypesFinder ?? DefaultFindServiceTypes.Finder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MiCakeServiceRegistrarBase"/> class.
@@ -42,7 +42,7 @@ namespace MiCake.Core.DependencyInjection
             var injectServices = new List<InjectServiceInfo>();
 
             // Filter modules that have automatic service registration enabled
-            var needRegisterModules = miCakeModules.Where(s => s.Instance.IsAutoRegisterServices)
+            var needRegisterModules = miCakeModules.Where(s => s.Instance.EnableAutoServiceRegistration)
                                                     .ToMiCakeModuleCollection();
 
             var assemblies = needRegisterModules.GetAssemblies();
@@ -98,7 +98,7 @@ namespace MiCake.Core.DependencyInjection
         /// </summary>
         /// <param name="findAutoServiceTypes">The custom finder delegate</param>
         /// <returns>A completed task</returns>
-        public Task SetServiceTypesFinder(FindAutoServiceTypesDelegate findAutoServiceTypes)
+        public Task SetServiceTypesFinder(ServiceTypeDiscoveryHandler findAutoServiceTypes)
         {
             _serviceTypesFinder = findAutoServiceTypes;
             return Task.CompletedTask;

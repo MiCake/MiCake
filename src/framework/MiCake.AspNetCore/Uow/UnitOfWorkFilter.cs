@@ -19,7 +19,7 @@ namespace MiCake.AspNetCore.Uow
     public class UnitOfWorkFilter : IAsyncActionFilter
     {
         private readonly IUnitOfWorkManager _unitOfWorkManager;
-        private readonly MiCakeAspNetUowOption _uowOptions;
+        private readonly MiCakeAspNetUowOptions _uowOptions;
         private readonly ILogger<UnitOfWorkFilter> _logger;
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace MiCake.AspNetCore.Uow
             // Determine if UoW should be enabled
             // If attribute is present, it determines enablement (including DisableUnitOfWorkAttribute)
             // Otherwise, use global configuration
-            bool isUowEnabled = uowAttribute?.IsUowEnabled ?? _uowOptions.IsAutoUowEnabled;
+            bool isUowEnabled = uowAttribute?.IsUowEnabled ?? _uowOptions.EnableAutoUnitOfWork;
 
             if (!isUowEnabled)
             {

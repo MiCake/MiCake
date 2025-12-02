@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Uow;
 
 /// <summary>
-/// Hook interface for customizing Unit of Work lifecycle.
+/// Hook interface for customizing Unit of Work lifetime.
 /// Implementations can be registered in DI to perform additional initialization or cleanup.
 /// </summary>
-public interface IUnitOfWorkLifecycleHook
+public interface IUnitOfWorkLifetimeHook
 {
     /// <summary>
     /// Gets the initialization mode(s) this hook applies to.

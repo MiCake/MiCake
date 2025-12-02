@@ -37,21 +37,21 @@ namespace MiCake.DDD.Domain   // still using MiCake.DDD.Domain for compatibility
         /// <summary>
         /// Using <see cref="FilterGroup"/> to query data from repository.
         /// </summary>
-        Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
+        Task<IEnumerable<TAggregateRoot>> FilterQueryAsync(FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Using <see cref="CompositeFilterGroup"/> to query data from repository.
         /// </summary>
-        Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
+        Task<IEnumerable<TAggregateRoot>> FilterQueryAsync(CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Using <see cref="FilterGroup"/> to paging query data from repository.
         /// </summary>
-        Task<PagingResponse<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingRequest pagingRequest, FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
+        Task<PagingResponse<TAggregateRoot>> FilterPagingQueryAsync(PagingRequest pagingRequest, FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Using <see cref="CompositeFilterGroup"/> to paging query data from repository.
         /// </summary>
-        Task<PagingResponse<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingRequest pagingRequest, CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
+        Task<PagingResponse<TAggregateRoot>> FilterPagingQueryAsync(PagingRequest pagingRequest, CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default);
     }
 }

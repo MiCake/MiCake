@@ -152,7 +152,7 @@ namespace MiCake.Core.Tests
             
             // Assert
             Assert.Equal(assemblies, targetOptions.DomainLayerAssemblies);
-            Assert.NotNull(targetOptions.BuildTimeData);
+            Assert.NotNull(targetOptions.BuildPhaseData);
         }
         
         [Fact]

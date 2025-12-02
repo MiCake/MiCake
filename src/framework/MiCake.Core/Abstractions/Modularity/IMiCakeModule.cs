@@ -17,7 +17,7 @@
         /// Indicates whether to automatically register services (via InjectServiceAttribute or marker interfaces).
         /// When true, services implementing ITransientService, IScopedService, or ISingletonService will be auto-registered.
         /// </summary>
-        bool IsAutoRegisterServices { get; }
+        bool EnableAutoServiceRegistration { get; }
 
         /// <summary>
         /// Module description

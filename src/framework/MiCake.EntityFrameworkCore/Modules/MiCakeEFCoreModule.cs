@@ -32,7 +32,7 @@ namespace MiCake.EntityFrameworkCore.Modules
         public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
             var services = context.Services;
-            var dbContextType = context.MiCakeApplicationOptions.BuildTimeData.TakeOut<Type>(MiCakeEFCoreModuleInternalKeys.DBContextType)
+            var dbContextType = context.MiCakeApplicationOptions.BuildPhaseData.TakeOut<Type>(MiCakeEFCoreModuleInternalKeys.DBContextType)
                                             ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
             services.TryAddSingleton<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
@@ -60,7 +60,7 @@ namespace MiCake.EntityFrameworkCore.Modules
             var registry = context.ServiceProvider.GetService<IDbContextTypeRegistry>();
             registry?.RegisterDbContextType(efcoreOptions.DbContextType);
 
-            var storeConventionRegistry = context.ApplicationOptions.BuildTimeData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
+            var storeConventionRegistry = context.ApplicationOptions.BuildPhaseData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
             if (storeConventionRegistry != null)
                 RegisterMiCakeConventions(storeConventionRegistry);
         }

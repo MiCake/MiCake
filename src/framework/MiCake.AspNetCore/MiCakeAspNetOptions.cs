@@ -12,7 +12,7 @@ namespace MiCake.AspNetCore
         /// <summary>
         /// The unit of work configuration for MiCake in ASP.NET Core.
         /// </summary>
-        public MiCakeAspNetUowOption UnitOfWork { get; set; }
+        public MiCakeAspNetUowOptions UnitOfWork { get; set; }
 
         /// <summary>
         /// Whether it is needed to format the returned data.
@@ -27,7 +27,7 @@ namespace MiCake.AspNetCore
 
         public MiCakeAspNetOptions()
         {
-            UnitOfWork = new MiCakeAspNetUowOption();
+            UnitOfWork = new MiCakeAspNetUowOptions();
             DataWrapperOptions = new ResponseWrapperOptions();
         }
     }
@@ -36,7 +36,7 @@ namespace MiCake.AspNetCore
     /// Provides configuration for the MiCake Unit of Work in ASP.NET Core.
     /// Allows automatic UoW management for controller actions.
     /// </summary>
-    public class MiCakeAspNetUowOption
+    public class MiCakeAspNetUowOptions
     {
         /// <summary>
         /// Enables automatic Unit of Work management for controller actions.
@@ -49,7 +49,7 @@ namespace MiCake.AspNetCore
         /// Default: true. This can be overridden at the Controller or Action level using [UnitOfWork] attribute.
         /// </para>
         /// </summary>
-        public bool IsAutoUowEnabled { get; set; } = true;
+        public bool EnableAutoUnitOfWork { get; set; } = true;
 
         /// <summary>
         /// Match controller action name start keywords to treat actions as read-only operations.

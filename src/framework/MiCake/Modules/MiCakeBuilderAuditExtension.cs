@@ -20,7 +20,7 @@ namespace MiCake.Core
             optionsConfig?.Invoke(options);
 
             // Store audit options in the application options for later use
-            builder.GetApplicationOptions().BuildTimeData.Deposit(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions, options);
+            builder.GetApplicationOptions().BuildPhaseData.Deposit(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions, options);
 
             return builder;
         }

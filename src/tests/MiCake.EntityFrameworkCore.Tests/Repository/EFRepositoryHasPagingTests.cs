@@ -63,7 +63,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
 
             // Act: request page 1 with page size 10
-            var response = await _repository.CommonFilterPagingQueryAsync(new PagingRequest(1, 10), FilterGroup.Create(new List<Filter> { Filter.Create(nameof(TestEntity.Name), new List<FilterValue> { FilterValue.Create("Item", ValueOperatorType.Contains) }) }));
+            var response = await _repository.FilterPagingQueryAsync(new PagingRequest(1, 10), FilterGroup.Create(new List<Filter> { Filter.Create(nameof(TestEntity.Name), new List<FilterValue> { FilterValue.Create("Item", ValueOperatorType.Contains) }) }));
 
             // Assert
             Assert.Equal(1, response.CurrentIndex);
@@ -89,7 +89,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             var group = FilterGroup.Create(new List<Filter> { filter });
 
             // Act: page request (page size is larger than number of matches)
-            var response = await _repository.CommonFilterPagingQueryAsync(new PagingRequest(1, 50), group);
+            var response = await _repository.FilterPagingQueryAsync(new PagingRequest(1, 50), group);
 
             // Assert: total count should be only matching items
             Assert.Equal(10, response.TotalCount);

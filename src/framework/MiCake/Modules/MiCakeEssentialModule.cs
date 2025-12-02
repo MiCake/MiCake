@@ -31,7 +31,7 @@ namespace MiCake.Modules
 
         public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
-            var auditOptions = context.MiCakeApplicationOptions.BuildTimeData.TakeOut(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions) as MiCakeAuditOptions;
+            var auditOptions = context.MiCakeApplicationOptions.BuildPhaseData.TakeOut(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions) as MiCakeAuditOptions;
             var services = context.Services;
             var storeConventionRegistry = new StoreConventionRegistry();
 
@@ -84,7 +84,7 @@ namespace MiCake.Modules
             services.AddScoped<IEventDispatcher, EventDispatcher>();
 
             // Store Convention Registry to build chain
-            context.MiCakeApplicationOptions.BuildTimeData.Deposit(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry, storeConventionRegistry);
+            context.MiCakeApplicationOptions.BuildPhaseData.Deposit(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry, storeConventionRegistry);
         }
     }
 }

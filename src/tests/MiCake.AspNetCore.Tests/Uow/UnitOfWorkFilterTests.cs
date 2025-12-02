@@ -41,9 +41,9 @@ namespace MiCake.AspNetCore.Tests.Uow
 
             var aspNetOptions = new MiCakeAspNetOptions
             {
-                UnitOfWork = new MiCakeAspNetUowOption
+                UnitOfWork = new MiCakeAspNetUowOptions
                 {
-                    IsAutoUowEnabled = true,
+                    EnableAutoUnitOfWork = true,
                     ReadOnlyActionKeywords = new List<string> { "Get", "Find", "Query", "Search" }
                 }
             };
@@ -105,9 +105,9 @@ namespace MiCake.AspNetCore.Tests.Uow
             // Arrange
             var options = new MiCakeAspNetOptions
             {
-                UnitOfWork = new MiCakeAspNetUowOption
+                UnitOfWork = new MiCakeAspNetUowOptions
                 {
-                    IsAutoUowEnabled = false
+                    EnableAutoUnitOfWork = false
                 }
             };
             _mockOptions.Setup(o => o.Value).Returns(options);
