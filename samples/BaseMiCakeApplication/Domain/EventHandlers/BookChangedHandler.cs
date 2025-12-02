@@ -41,7 +41,7 @@ namespace BaseMiCakeApplication.Domain.EventHandlers
         /// 3. Update caches
         /// 4. Send notifications
         /// </remarks>
-        public async Task HandleAysnc(BookChangeEvent domainEvent, CancellationToken cancellationToken = default)
+        public async Task HandleAsync(BookChangeEvent domainEvent, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation($"Book '{domainEvent.BookName}' author was changed at {domainEvent.ChangedAt}");
 

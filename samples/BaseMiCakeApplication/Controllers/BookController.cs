@@ -64,7 +64,7 @@ namespace BaseMiCakeApplication.Controllers
             _logger.LogInformation("Getting book list with pagination");
 
             var filterGroup = filterDto.GenerateFilterGroup();
-            var books = await _bookRepositoryPaging.CommonFilterPagingQueryAsync(
+            var books = await _bookRepositoryPaging.FilterPagingQueryAsync(
                 new PagingRequest(filterDto.PageNumber ?? 1, filterDto.PageSize ?? 10),
                 filterGroup);
 

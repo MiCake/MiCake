@@ -14,7 +14,7 @@ namespace MiCake.Core.Modularity
     /// <param name="repoInterfaceType">Interface type inherited by current repository.</param>
     /// <param name="currentIndex">Current index for interface.(usually,the higher the level of the interface, the greater the value)</param>
     /// <returns></returns>
-    public delegate bool CustomerRepositorySelector(Type repoType, Type repoInterfaceType, int currentIndex);
+    public delegate bool CustomRepositorySelector(Type repoType, Type repoInterfaceType, int currentIndex);
 
     public static class AutoRegisterRepositoriesExtension
     {
@@ -36,8 +36,8 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="context"></param>
         /// <param name="assembly">The assembly in which the custom repository resides</param>
-        /// <param name="selector">a selector,see <see cref="CustomerRepositorySelector"/>.</param>
-        public static void AutoRegisterRepositories(this ModuleConfigServiceContext context, Assembly assembly, CustomerRepositorySelector selector)
+        /// <param name="selector">a selector,see <see cref="CustomRepositorySelector"/>.</param>
+        public static void AutoRegisterRepositories(this ModuleConfigServiceContext context, Assembly assembly, CustomRepositorySelector selector)
         {
             var allRepoTypes = assembly.GetTypes().Where(s => TypeHelper.IsConcrete(s) && typeof(IRepository).IsAssignableFrom(s));
 

@@ -162,7 +162,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_BusinessExceptionData_UsesCustomCode()
         {
             // Arrange
-            var options = new ResponseWrapperOptions { DefaultCodeSetting = new DataWrapperDefaultCode { Success = "0" } };
+            var options = new ResponseWrapperOptions { DefaultCodeSetting = new ResponseWrapperDefaultCodes { Success = "0" } };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new BusinessExceptionData { Code = "BUSINESS_ERROR", Message = "Custom message", Details = "Details" };
             var context = new ResponseWrapperContext(null, 200, slightData);
@@ -182,7 +182,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_BusinessExceptionData_EmptyCode_UsesDefault()
         {
             // Arrange
-            var customCodeSetting = new DataWrapperDefaultCode { Success = "SUCCESS_CODE" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Success = "SUCCESS_CODE" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new BusinessExceptionData { Code = "", Message = "Message", Details = null };
@@ -200,7 +200,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_BusinessExceptionData_NullCode_UsesDefault()
         {
             // Arrange
-            var customCodeSetting = new DataWrapperDefaultCode { Success = "DEFAULT_CODE" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Success = "DEFAULT_CODE" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new BusinessExceptionData { Code = null, Message = "Message", Details = null };
@@ -415,7 +415,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void CreateDefault_WithCustomCodeSettings_UsesCustomCodes()
         {
             // Arrange
-            var customCodes = new DataWrapperDefaultCode
+            var customCodes = new ResponseWrapperDefaultCodes
             {
                 Success = "200",
                 Error = "500",

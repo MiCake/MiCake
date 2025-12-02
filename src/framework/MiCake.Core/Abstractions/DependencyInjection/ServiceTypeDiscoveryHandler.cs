@@ -12,5 +12,5 @@ namespace MiCake.Core.DependencyInjection
     /// <param name="type">The class type to register</param>
     /// <param name="inheritInterfaces">All interfaces inherited by this class</param>
     /// <returns>List of service types (interfaces) to register for this class</returns>
-    public delegate List<Type> FindAutoServiceTypesDelegate(Type type, List<Type> inheritInterfaces);
+    public delegate List<Type> ServiceTypeDiscoveryHandler(Type type, List<Type> inheritInterfaces);
 }

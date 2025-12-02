@@ -19,7 +19,7 @@ namespace MiCake.DDD.Domain.EventDispatch
         {
             var handlers = serviceProvider
                  .GetServices<IDomainEventHandler<TDomainEvent>>()
-                 .Select(x => new Func<Task>(() => x.HandleAysnc((TDomainEvent)domainEvent, cancellationToken)));
+                 .Select(x => new Func<Task>(() => x.HandleAsync((TDomainEvent)domainEvent, cancellationToken)));
 
             return publish(handlers);
         }

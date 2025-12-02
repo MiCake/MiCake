@@ -23,6 +23,6 @@ namespace MiCake.Core.DependencyInjection
         /// </summary>
         /// <param name="findAutoServiceTypes">The delegate that determines which service types to register</param>
         /// <returns>A task that represents the asynchronous operation</returns>
-        Task SetServiceTypesFinder(FindAutoServiceTypesDelegate findAutoServiceTypes);
+        Task SetServiceTypesFinder(ServiceTypeDiscoveryHandler findAutoServiceTypes);
     }
 }

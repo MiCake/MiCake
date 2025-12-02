@@ -52,7 +52,7 @@ namespace MiCake.Core
 
             // Register services directly on the builder's service collection
             builder.Services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
-            builder.GetApplicationOptions().BuildTimeData.Deposit(MiCakeEFCoreModuleInternalKeys.DBContextType, miCakeDbContextType);
+            builder.GetApplicationOptions().BuildPhaseData.Deposit(MiCakeEFCoreModuleInternalKeys.DBContextType, miCakeDbContextType);
 
             return builder;
         }

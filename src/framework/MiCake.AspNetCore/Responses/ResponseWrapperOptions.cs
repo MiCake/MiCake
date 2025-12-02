@@ -42,7 +42,7 @@ namespace MiCake.AspNetCore.Responses
         /// <summary>
         /// Default status codes used in wrapped responses.
         /// </summary>
-        public DataWrapperDefaultCode DefaultCodeSetting { get; set; } = new();
+        public ResponseWrapperDefaultCodes DefaultCodeSetting { get; set; } = new();
 
         /// <summary>
         /// Lazy-initialized wrapper factory for thread-safe, single-instance caching.
@@ -77,7 +77,7 @@ namespace MiCake.AspNetCore.Responses
     /// <summary>
     /// Default business status codes for wrapped responses.
     /// </summary>
-    public class DataWrapperDefaultCode
+    public class ResponseWrapperDefaultCodes
     {
         /// <summary>
         /// Code returned for successful operations.

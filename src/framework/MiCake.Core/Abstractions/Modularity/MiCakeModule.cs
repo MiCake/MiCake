@@ -17,7 +17,7 @@
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public virtual bool IsAutoRegisterServices => true;
+        public virtual bool EnableAutoServiceRegistration => true;
 
         /// <summary>
         /// <inheritdoc/>

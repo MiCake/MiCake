@@ -79,7 +79,7 @@ namespace MiCake.DDD.Uow.Internal
             CancellationToken cancellationToken)
         {
             // Get hooks applicable to the initialization mode
-            var hooks = _serviceProvider.GetServices<IUnitOfWorkLifecycleHook>()
+            var hooks = _serviceProvider.GetServices<IUnitOfWorkLifetimeHook>()
                 .Where(h => h.ApplicableMode == null || h.ApplicableMode == options.InitializationMode);
 
             foreach (var hook in hooks)

@@ -161,7 +161,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultCodeSetting_CanBeCustomized()
         {
             // Arrange
-            var customCodes = new DataWrapperDefaultCode
+            var customCodes = new ResponseWrapperDefaultCodes
             {
                 Success = "200",
                 Error = "500",
@@ -307,7 +307,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void Scenario_CustomConfiguration_AllPropertiesSet()
         {
             // Arrange
-            var customCodes = new DataWrapperDefaultCode { Success = "OK", Error = "FAIL" };
+            var customCodes = new ResponseWrapperDefaultCodes { Success = "OK", Error = "FAIL" };
             var customFactory = new ResponseWrapperFactory();
             var customStatusCodes = new System.Collections.Generic.List<int> { 400, 500 };
 
@@ -415,7 +415,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             {
                 WrapProblemDetails = false,
                 ShowStackTraceWhenError = true,
-                DefaultCodeSetting = new DataWrapperDefaultCode { Success = "OK" }
+                DefaultCodeSetting = new ResponseWrapperDefaultCodes { Success = "OK" }
             };
 
             // Assert - Configuration is clear and straightforward

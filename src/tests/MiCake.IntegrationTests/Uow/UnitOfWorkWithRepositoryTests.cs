@@ -351,7 +351,7 @@ namespace MiCake.IntegrationTests.Uow
 
             public static void Reset() => EventCount = 0;
 
-            public Task HandleAysnc(TestDomainEvent domainEvent, CancellationToken cancellationToken = default)
+            public Task HandleAsync(TestDomainEvent domainEvent, CancellationToken cancellationToken = default)
             {
                 EventCount++;
                 return Task.CompletedTask;

@@ -18,7 +18,7 @@ namespace MiCake.Core
         /// <summary>
         /// Enable auto-registration for this module
         /// </summary>
-        public override bool IsAutoRegisterServices => true;
+        public override bool EnableAutoServiceRegistration => true;
 
         /// <summary>
         /// Module description

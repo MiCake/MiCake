@@ -11,19 +11,19 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// When a UoW is created with TransactionInitializationMode.Immediate,
     /// this hook will immediately initialize transactions for all registered DbContext types.
     /// </summary>
-    public class ImmediateTransactionLifecycleHook : IUnitOfWorkLifecycleHook
+    public class ImmediateTransactionLifetimeHook : IUnitOfWorkLifetimeHook
     {
         private readonly IImmediateTransactionInitializer _initializer;
-        private readonly ILogger<ImmediateTransactionLifecycleHook> _logger;
+        private readonly ILogger<ImmediateTransactionLifetimeHook> _logger;
 
         /// <summary>
         /// This hook applies only to Immediate initialization mode
         /// </summary>
         public TransactionInitializationMode? ApplicableMode => TransactionInitializationMode.Immediate;
 
-        public ImmediateTransactionLifecycleHook(
+        public ImmediateTransactionLifetimeHook(
             IImmediateTransactionInitializer initializer,
-            ILogger<ImmediateTransactionLifecycleHook> logger)
+            ILogger<ImmediateTransactionLifetimeHook> logger)
         {
             _initializer = initializer ?? throw new ArgumentNullException(nameof(initializer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

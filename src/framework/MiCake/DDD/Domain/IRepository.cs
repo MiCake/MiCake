@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Domain
 {
     /// <summary>
-    /// Defined a DDD repository interface.Please use <see cref="IRepository{TAggregateRoot, TKey}"/>.
+    /// A common interface is given to implement aggregateroot operations
     /// </summary>
     public interface IRepository
     {

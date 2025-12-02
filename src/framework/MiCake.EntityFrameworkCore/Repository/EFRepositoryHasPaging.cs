@@ -68,7 +68,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public async Task<PagingResponse<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingRequest queryModel, FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
+        public async Task<PagingResponse<TAggregateRoot>> FilterPagingQueryAsync(PagingRequest queryModel, FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             var query = dbset.AsQueryable().Filter(filterGroup).Sort(sorts ?? [_defaultSort]);
@@ -81,7 +81,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public async Task<PagingResponse<TAggregateRoot>> CommonFilterPagingQueryAsync(PagingRequest queryModel, CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
+        public async Task<PagingResponse<TAggregateRoot>> FilterPagingQueryAsync(PagingRequest queryModel, CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             var query = dbset.AsQueryable().Filter(compositeFilterGroup).Sort(sorts ?? [_defaultSort]);
@@ -94,7 +94,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public async Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<TAggregateRoot>> FilterQueryAsync(FilterGroup filterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             var query = dbset.AsQueryable().Filter(filterGroup).Sort(sorts ?? [_defaultSort]);
@@ -105,7 +105,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public async Task<IEnumerable<TAggregateRoot>> CommonFilterQueryAsync(CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<TAggregateRoot>> FilterQueryAsync(CompositeFilterGroup compositeFilterGroup, List<Sort>? sorts = null, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             var query = dbset.AsQueryable().Filter(compositeFilterGroup).Sort(sorts ?? [_defaultSort]);

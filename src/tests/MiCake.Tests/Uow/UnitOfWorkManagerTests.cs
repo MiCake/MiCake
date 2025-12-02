@@ -181,7 +181,7 @@ namespace MiCake.Tests.Uow
         {
             // Arrange
             var hookInvoked = false;
-            var mockHook = new Mock<IUnitOfWorkLifecycleHook>();
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
             mockHook.Setup(h => h.ApplicableMode).Returns(TransactionInitializationMode.Immediate);
             mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
                 .Callback(() => hookInvoked = true)
@@ -211,7 +211,7 @@ namespace MiCake.Tests.Uow
         {
             // Arrange
             var hookInvoked = false;
-            var mockHook = new Mock<IUnitOfWorkLifecycleHook>();
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
             mockHook.Setup(h => h.ApplicableMode).Returns(TransactionInitializationMode.Immediate);
             mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
                 .Callback(() => hookInvoked = true)
@@ -241,7 +241,7 @@ namespace MiCake.Tests.Uow
         {
             // Arrange
             var hookInvoked = false;
-            var mockHook = new Mock<IUnitOfWorkLifecycleHook>();
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
             mockHook.Setup(h => h.ApplicableMode).Returns((TransactionInitializationMode?)null);  // Applies to all
             mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
                 .Callback(() => hookInvoked = true)

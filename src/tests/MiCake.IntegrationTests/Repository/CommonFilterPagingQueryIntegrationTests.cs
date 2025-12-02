@@ -68,7 +68,7 @@ namespace MiCake.IntegrationTests.Repository
             // Act: use repository from DI
             var repo = _provider.GetRequiredService<TestPagingRepository>();
             var filter = Filter.Create(nameof(TestEntity.Name), new System.Collections.Generic.List<FilterValue> { FilterValue.Create("match", ValueOperatorType.Contains) });
-            var response = await repo.CommonFilterPagingQueryAsync(new PagingRequest(1, 20), FilterGroup.Create(new System.Collections.Generic.List<Filter> { filter }));
+            var response = await repo.FilterPagingQueryAsync(new PagingRequest(1, 20), FilterGroup.Create(new System.Collections.Generic.List<Filter> { filter }));
 
             // Assert
             Assert.Equal(1, response.CurrentIndex);
