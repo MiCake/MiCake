@@ -11,7 +11,7 @@ namespace MiCake.DDD.Infrastructure.Metadata
     /// </summary>
     public class DomainMetadata
     {
-        private readonly Dictionary<Type, DomainObjectDescriptor> _descriptorCache = [];
+        private readonly Dictionary<Type, DomainTypeDescriptor> _descriptorCache = [];
         
         /// <summary>
         /// Assemblies containing domain objects
@@ -56,7 +56,7 @@ namespace MiCake.DDD.Infrastructure.Metadata
         /// <summary>
         /// Gets the descriptor for a specific domain object type
         /// </summary>
-        public DomainObjectDescriptor? GetDescriptor(Type type)
+        public DomainTypeDescriptor? GetDescriptor(Type type)
         {
             return _descriptorCache.TryGetValue(type, out var descriptor) ? descriptor : null;
         }
@@ -64,7 +64,7 @@ namespace MiCake.DDD.Infrastructure.Metadata
         /// <summary>
         /// Gets the descriptor for a specific domain object type
         /// </summary>
-        public TDescriptor? GetDescriptor<TDescriptor>(Type type) where TDescriptor : DomainObjectDescriptor
+        public TDescriptor? GetDescriptor<TDescriptor>(Type type) where TDescriptor : DomainTypeDescriptor
         {
             return GetDescriptor(type) as TDescriptor;
         }

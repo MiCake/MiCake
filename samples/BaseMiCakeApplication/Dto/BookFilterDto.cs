@@ -10,7 +10,7 @@ namespace BaseMiCakeApplication.Dto
     /// dynamic filtering based on the provided properties.
     /// </remarks>
     [DynamicFilterJoin(JoinType = FilterJoinType.Or)]
-    public class BookFilterDto : IDynamicQueryObj
+    public class BookFilterDto : IDynamicQueryModel
     {
         /// <summary>
         /// Gets or sets the book name filter (Equal comparison).

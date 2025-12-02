@@ -5,7 +5,7 @@ namespace MiCake.Util.Query.Dynamic;
 /// <summary>
 /// An attribute to mark properties for dynamic filtering in Linq queries.
 /// <para>
-/// When your query model has implemented the <see cref="IDynamicQueryObj"/> interface,
+/// When your query model has implemented the <see cref="IDynamicQueryModel"/> interface,
 /// this attribute can be used to specify which properties should be included in dynamic filtering.
 /// </para>
 /// <para>
@@ -31,7 +31,7 @@ public class DynamicFilterAttribute : Attribute
 /// <summary>
 /// An attribute to specify the join type for dynamic filters.
 /// <para>
-/// This can be applied to classes that implement <see cref="IDynamicQueryObj"/>.
+/// This can be applied to classes that implement <see cref="IDynamicQueryModel"/>.
 /// </para>
 /// <para>
 /// When the properties in the class has been decorated with <see cref="DynamicFilterAttribute"/>, this attribute defines how the filters are combined.

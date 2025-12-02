@@ -1,9 +1,9 @@
 ﻿namespace MiCake.Core
 {
     /// <summary>
-    /// Indicates a non critical error message
+    /// Indicates an exception that can be safely shown to end users.
     /// </summary>
-    public interface ISlightException
+    public interface IUserFriendlyException
     {
         /// <summary>
         /// Indicates a code to represent the exception.

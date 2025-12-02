@@ -4,7 +4,10 @@ using System.Collections.Generic;
 
 namespace MiCake.Audit.Core
 {
-    public class DefaultAuditExecutor : IAuditExecutor
+    /// <summary>
+    /// Default implementation of <see cref="IAuditExecutor"/>.
+    /// </summary>
+    internal class DefaultAuditExecutor : IAuditExecutor
     {
         private readonly IEnumerable<IAuditProvider> _providers;
 
@@ -20,7 +23,7 @@ namespace MiCake.Audit.Core
             if (!DomainTypeHelper.IsDomainObject(entityType))
                 return;
 
-            var model = new AuditObjectModel(needAuditEntity, entityState);
+            var model = new AuditOperationContext(needAuditEntity, entityState);
 
             foreach (var auditProvider in _providers)
             {

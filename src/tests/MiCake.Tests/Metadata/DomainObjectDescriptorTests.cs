@@ -7,22 +7,22 @@ using Xunit;
 namespace MiCake.Tests.Metadata
 {
     /// <summary>
-    /// Unit tests for DomainObjectDescriptor and its derived classes
+    /// Unit tests for DomainTypeDescriptor and its derived classes
     /// Tests descriptor creation, properties, and type safety
     /// </summary>
-    public class DomainObjectDescriptorTests
+    public class DomainTypeDescriptorTests
     {
-        #region DomainObjectDescriptor Base Class Tests
+        #region DomainTypeDescriptor Base Class Tests
 
         [Fact]
-        public void DomainObjectDescriptor_Constructor_WithNullType_ShouldThrowArgumentNullException()
+        public void DomainTypeDescriptor_Constructor_WithNullType_ShouldThrowArgumentNullException()
         {
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => new TestDescriptor(null));
         }
 
         [Fact]
-        public void DomainObjectDescriptor_Constructor_WithValidType_ShouldSetProperties()
+        public void DomainTypeDescriptor_Constructor_WithValidType_ShouldSetProperties()
         {
             // Arrange
             var type = typeof(TestEntity);
@@ -143,9 +143,9 @@ namespace MiCake.Tests.Metadata
             var valueObjectDesc = new ValueObjectDescriptor(typeof(TestValueObject));
 
             // Act & Assert
-            Assert.IsAssignableFrom<DomainObjectDescriptor>(entityDesc);
-            Assert.IsAssignableFrom<DomainObjectDescriptor>(aggregateDesc);
-            Assert.IsAssignableFrom<DomainObjectDescriptor>(valueObjectDesc);
+            Assert.IsAssignableFrom<DomainTypeDescriptor>(entityDesc);
+            Assert.IsAssignableFrom<DomainTypeDescriptor>(aggregateDesc);
+            Assert.IsAssignableFrom<DomainTypeDescriptor>(valueObjectDesc);
         }
 
         [Fact]
@@ -184,7 +184,7 @@ namespace MiCake.Tests.Metadata
         public void IntegrationScenario_TypeHierarchy_ShouldBeCorrect()
         {
             // Arrange
-            var descriptors = new List<DomainObjectDescriptor>
+            var descriptors = new List<DomainTypeDescriptor>
             {
                 new AggregateRootDescriptor(typeof(User), typeof(int)),
                 new EntityDescriptor(typeof(Order), typeof(int)),
@@ -209,7 +209,7 @@ namespace MiCake.Tests.Metadata
         #region Test Classes
 
         // Test descriptor for base class testing
-        private class TestDescriptor : DomainObjectDescriptor
+        private class TestDescriptor : DomainTypeDescriptor
         {
             public TestDescriptor(Type type) : base(type) { }
         }

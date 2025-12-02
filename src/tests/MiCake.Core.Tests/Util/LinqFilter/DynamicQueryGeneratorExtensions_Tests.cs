@@ -5,7 +5,7 @@ using Xunit;
 
 namespace MiCake.Core.Tests.Util.LinqFilter;
 
-public class TestQueryObj : IDynamicQueryObj
+public class TestQueryObj : IDynamicQueryModel
 {
     [DynamicFilter(PropertyName = "Age", OperatorType = ValueOperatorType.GreaterThan)]
     public int? Age { get; set; }
@@ -20,7 +20,7 @@ public class TestQueryObj : IDynamicQueryObj
     public int[]? Scores { get; set; }
 }
 
-public class SimpleQueryTestObj : IDynamicQueryObj
+public class SimpleQueryTestObj : IDynamicQueryModel
 {
     public int Id { get; set; }
 
@@ -135,7 +135,7 @@ public class DynamicQueryGeneratorExtensions_Tests
     }
 }
 
-public class NonCollectionQueryObj : IDynamicQueryObj
+public class NonCollectionQueryObj : IDynamicQueryModel
 {
     [DynamicFilter(PropertyName = "Numbers", OperatorType = ValueOperatorType.In)]
     public IEnumerable<int>? Numbers { get; set; }

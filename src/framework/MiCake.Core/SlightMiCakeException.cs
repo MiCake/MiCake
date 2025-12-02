@@ -6,7 +6,7 @@ namespace MiCake.Core
     /// Indicates a non critical error message
     /// </summary>
     [Serializable]
-    public class SlightMiCakeException : MiCakeException, ISlightException
+    public class SlightMiCakeException : MiCakeException, IUserFriendlyException
     {
         public SlightMiCakeException() : base()
         {

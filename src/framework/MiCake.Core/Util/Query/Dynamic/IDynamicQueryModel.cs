@@ -15,7 +15,7 @@ namespace MiCake.Util.Query.Dynamic;
 /// <example>
 /// <code>
 /// [DynamicFilterJoinAttribute(JoinType = FilterJoinType.And)]
-/// public class UserQuery : IDynamicQueryObj
+/// public class UserQuery : IDynamicQueryModel
 /// {
 ///     [DynamicFilter(OperatorType = FilterOperatorType.Contains)]
 ///     public string? Name { get; set; }
@@ -31,7 +31,7 @@ namespace MiCake.Util.Query.Dynamic;
 /// </code>
 /// </example>
 /// </remarks>
-public interface IDynamicQueryObj
+public interface IDynamicQueryModel
 {
 
 }

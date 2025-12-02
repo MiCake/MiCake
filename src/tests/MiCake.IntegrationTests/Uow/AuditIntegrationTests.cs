@@ -190,7 +190,7 @@ namespace MiCake.IntegrationTests.Uow
             public DateTime? ModificationTime { get; set; }
         }
 
-        private class SoftDeletableEntity : DDD.Domain.AggregateRoot<Guid>, ISoftDeletion, IHasAuditWithSoftDeletion
+        private class SoftDeletableEntity : DDD.Domain.AggregateRoot<Guid>, ISoftDeletion, IAuditableWithSoftDeletion
         {
             public string Name { get; set; }
             public bool IsDeleted { get; set; }

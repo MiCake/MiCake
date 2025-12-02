@@ -37,7 +37,7 @@ namespace MiCake.AspNetCore.Responses.Internals
 
             var exception = context.Exception;
 
-            if (exception is ISlightException slightException)
+            if (exception is IUserFriendlyException slightException)
             {
                 context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
                 context.HttpContext.SetSlightException(slightException);

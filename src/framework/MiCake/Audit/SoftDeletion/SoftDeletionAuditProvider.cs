@@ -6,15 +6,15 @@ namespace MiCake.Audit.SoftDeletion
 {
     internal class SoftDeletionAuditProvider : IAuditProvider
     {
-        public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
+        public virtual void ApplyAudit(AuditOperationContext context)
         {
-            if (auditObjectModel?.AuditEntity == null)
+            if (context?.Entity == null)
                 return;
 
-            if (auditObjectModel.EntityState != RepositoryEntityState.Deleted)
+            if (context.EntityState != RepositoryEntityState.Deleted)
                 return;
 
-            var entity = auditObjectModel.AuditEntity;
+            var entity = context.Entity;
             if (entity is not ISoftDeletion softDeletionObj)
                 return;
 

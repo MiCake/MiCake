@@ -15,19 +15,19 @@ namespace MiCake.Audit.Core
         /// </summary>
         public static Func<DateTime> CurrentTimeProvider { get; set; } = () => DateTime.UtcNow;
 
-        public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
+        public virtual void ApplyAudit(AuditOperationContext context)
         {
-            if (auditObjectModel?.AuditEntity == null)
+            if (context?.Entity == null)
                 return;
 
-            switch (auditObjectModel.EntityState)
+            switch (context.EntityState)
             {
                 case RepositoryEntityState.Added:
-                    SetCreationTime(auditObjectModel.AuditEntity);
+                    SetCreationTime(context.Entity);
                     break;
 
                 case RepositoryEntityState.Modified:
-                    SetModificationTime(auditObjectModel.AuditEntity);
+                    SetModificationTime(context.Entity);
                     break;
             }
         }

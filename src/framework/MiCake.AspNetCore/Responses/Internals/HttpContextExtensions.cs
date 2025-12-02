@@ -19,7 +19,7 @@ namespace MiCake.AspNetCore.Responses.Internals
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
         /// <param name="exception">The SlightException to store.</param>
-        public static void SetSlightException(this HttpContext httpContext, ISlightException exception)
+        public static void SetSlightException(this HttpContext httpContext, IUserFriendlyException exception)
         {
             if (httpContext?.Items != null)
             {
@@ -33,7 +33,7 @@ namespace MiCake.AspNetCore.Responses.Internals
         /// <param name="httpContext">The current HTTP context.</param>
         /// <param name="exception">The SlightException if found; otherwise null.</param>
         /// <returns>True if a SlightException was found; otherwise false.</returns>
-        public static bool TryGetSlightException(this HttpContext httpContext, out ISlightException? exception)
+        public static bool TryGetSlightException(this HttpContext httpContext, out IUserFriendlyException? exception)
         {
             exception = null;
 
@@ -41,7 +41,7 @@ namespace MiCake.AspNetCore.Responses.Internals
                 return false;
 
             if (httpContext.Items.TryGetValue(SlightExceptionKey, out var item) &&
-                item is ISlightException slightEx)
+                item is IUserFriendlyException slightEx)
             {
                 exception = slightEx;
                 return true;
@@ -65,7 +65,7 @@ namespace MiCake.AspNetCore.Responses.Internals
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
         /// <returns>The stored SlightException, or null if not found.</returns>
-        public static ISlightException? GetSlightException(this HttpContext httpContext)
+        public static IUserFriendlyException? GetSlightException(this HttpContext httpContext)
         {
             TryGetSlightException(httpContext, out var exception);
             return exception;

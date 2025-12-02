@@ -5,28 +5,23 @@ namespace MiCake.DDD.Infrastructure.Metadata
     /// <summary>
     /// Base descriptor for all domain objects
     /// </summary>
-    public abstract class DomainObjectDescriptor
+    public abstract class DomainTypeDescriptor(Type type)
     {
         /// <summary>
         /// The CLR type of the domain object
         /// </summary>
-        public Type Type { get; }
-        
+        public Type Type { get; } = type ?? throw new ArgumentNullException(nameof(type));
+
         /// <summary>
         /// The name of the domain object
         /// </summary>
         public string Name => Type.Name;
-
-        protected DomainObjectDescriptor(Type type)
-        {
-            Type = type ?? throw new ArgumentNullException(nameof(type));
-        }
     }
 
     /// <summary>
     /// Describes an Entity with a primary key
     /// </summary>
-    public class EntityDescriptor : DomainObjectDescriptor
+    public class EntityDescriptor : DomainTypeDescriptor
     {
         /// <summary>
         /// The primary key type of the entity
@@ -53,7 +48,7 @@ namespace MiCake.DDD.Infrastructure.Metadata
     /// <summary>
     /// Describes a Value Object
     /// </summary>
-    public class ValueObjectDescriptor : DomainObjectDescriptor
+    public class ValueObjectDescriptor : DomainTypeDescriptor
     {
         public ValueObjectDescriptor(Type valueObjectType) : base(valueObjectType)
         {

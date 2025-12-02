@@ -13,7 +13,7 @@ public static class DynamicQueryGeneratorExtensions
     /// <summary>
     /// Generates a filter group from an object's properties decorated with <see cref="DynamicFilterAttribute"/>.
     /// </summary>
-    /// <typeparam name="T">The type of the query object that implements <see cref="IDynamicQueryObj"/>.</typeparam>
+    /// <typeparam name="T">The type of the query object that implements <see cref="IDynamicQueryModel"/>.</typeparam>
     /// <param name="queryObj">The query object to generate filters from.</param>
     /// <returns>
     /// A <see cref="FilterGroup"/> containing filters for all non-null properties 
@@ -23,7 +23,7 @@ public static class DynamicQueryGeneratorExtensions
     /// Only properties with values are included in the generated filter group.
     /// Null values and empty collections are skipped.
     /// </remarks>
-    public static FilterGroup GenerateFilterGroup<T>(this T queryObj) where T : IDynamicQueryObj
+    public static FilterGroup GenerateFilterGroup<T>(this T queryObj) where T : IDynamicQueryModel
     {
         var group = new FilterGroup();
 
