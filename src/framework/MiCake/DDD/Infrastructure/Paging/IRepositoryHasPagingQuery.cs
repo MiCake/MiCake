@@ -16,7 +16,7 @@ namespace MiCake.DDD.Domain   // still using MiCake.DDD.Domain for compatibility
     public interface IRepositoryHasPagingQuery<TAggregateRoot, TKey> : IRepository<TAggregateRoot, TKey> where TAggregateRoot : class, IAggregateRoot<TKey> where TKey : notnull
     {
         /// <summary>
-        /// Paing query data from repository by <see cref="PagingRequest"/>
+        /// Paging query data from repository by <see cref="PagingRequest"/>
         /// </summary>
         /// <param name="pagingRequest"></param>
         /// <param name="cancellationToken"></param>
@@ -24,7 +24,7 @@ namespace MiCake.DDD.Domain   // still using MiCake.DDD.Domain for compatibility
         Task<PagingResponse<TAggregateRoot>> PagingQueryAsync(PagingRequest pagingRequest, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Paing query data from repository and specify a sort selector.
+        /// Paging query data from repository and specify a sort selector.
         /// </summary>
         /// <typeparam name="TOrderKey"></typeparam>
         /// <param name="pagingRequest"></param>
