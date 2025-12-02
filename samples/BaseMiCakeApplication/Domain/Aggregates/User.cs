@@ -77,10 +77,10 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         {
             // Business rule validation
             if (string.IsNullOrEmpty(phone))
-                throw new SlightMiCakeException("Phone number cannot be empty");
+                throw new BusinessException("Phone number cannot be empty");
 
             if (string.IsNullOrEmpty(pwd))
-                throw new SlightMiCakeException("Password cannot be empty");
+                throw new BusinessException("Password cannot be empty");
 
             Password = pwd;
             Phone = phone;
@@ -103,7 +103,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void ChangeUserInfo(string name, int age)
         {
             if (age < 0 || age > 150)
-                throw new SlightMiCakeException("Invalid age");
+                throw new BusinessException("Invalid age");
 
             Name = name;
             Age = age;
@@ -116,7 +116,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void ChangePhone(string phone)
         {
             if (string.IsNullOrEmpty(phone))
-                throw new SlightMiCakeException("Phone number cannot be empty");
+                throw new BusinessException("Phone number cannot be empty");
 
             Phone = phone;
         }
@@ -128,7 +128,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void UpdateEmail(string email)
         {
             if (string.IsNullOrEmpty(email))
-                throw new SlightMiCakeException("Email cannot be empty");
+                throw new BusinessException("Email cannot be empty");
 
             Email = email;
         }

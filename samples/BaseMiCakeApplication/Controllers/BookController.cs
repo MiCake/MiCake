@@ -21,7 +21,7 @@ namespace BaseMiCakeApplication.Controllers
     /// 1. Dependency injection of repositories
     /// 2. CRUD operations on aggregate roots
     /// 3. Pagination support
-    /// 4. Exception handling (MiCakeException, SlightMiCakeException)
+    /// 4. Exception handling (BusinessException, DomainException)
     /// 5. Proper async/await patterns
     /// </remarks>
     /// <remarks>
@@ -96,7 +96,7 @@ namespace BaseMiCakeApplication.Controllers
 
                 return CreatedAtAction(nameof(GetBook), new { bookId = book.Id }, book.Id);
             }
-            catch (SlightMiCakeException ex)
+            catch (BusinessException ex)
             {
                 _logger.LogWarning($"Book creation failed: {ex.Message}");
                 return BadRequest(ex.Message);
@@ -114,7 +114,7 @@ namespace BaseMiCakeApplication.Controllers
             _logger.LogInformation($"Updating author for book: {bookDto.BookID}");
 
             var bookInfo = await _bookRepositoryPaging.FindAsync(bookDto.BookID)
-                ?? throw new SlightMiCakeException("Book not found");
+                ?? throw new BusinessException("Book not found");
 
             bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
             await _bookRepositoryPaging.SaveChangesAsync();

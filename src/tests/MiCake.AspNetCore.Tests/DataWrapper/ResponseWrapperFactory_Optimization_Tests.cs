@@ -156,15 +156,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
         #endregion
 
-        #region SlightException Data Handling Tests
+        #region BusinessException Data Handling Tests
 
         [Fact]
-        public void DefaultFactory_SlightExceptionData_UsesCustomCode()
+        public void DefaultFactory_BusinessExceptionData_UsesCustomCode()
         {
             // Arrange
             var options = new ResponseWrapperOptions { DefaultCodeSetting = new DataWrapperDefaultCode { Success = "0" } };
             var factory = ResponseWrapperFactory.CreateDefault(options);
-            var slightData = new SlightExceptionData { Code = "BUSINESS_ERROR", Message = "Custom message", Details = "Details" };
+            var slightData = new BusinessExceptionData { Code = "BUSINESS_ERROR", Message = "Custom message", Details = "Details" };
             var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
@@ -179,13 +179,13 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void DefaultFactory_SlightExceptionData_EmptyCode_UsesDefault()
+        public void DefaultFactory_BusinessExceptionData_EmptyCode_UsesDefault()
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Success = "SUCCESS_CODE" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
-            var slightData = new SlightExceptionData { Code = "", Message = "Message", Details = null };
+            var slightData = new BusinessExceptionData { Code = "", Message = "Message", Details = null };
             var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
@@ -197,13 +197,13 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void DefaultFactory_SlightExceptionData_NullCode_UsesDefault()
+        public void DefaultFactory_BusinessExceptionData_NullCode_UsesDefault()
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Success = "DEFAULT_CODE" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
-            var slightData = new SlightExceptionData { Code = null, Message = "Message", Details = null };
+            var slightData = new BusinessExceptionData { Code = null, Message = "Message", Details = null };
             var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
@@ -215,14 +215,14 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void DefaultFactory_SlightExceptionData_TakesPriorityOverProblemDetails()
+        public void DefaultFactory_BusinessExceptionData_TakesPriorityOverProblemDetails()
         {
             // Arrange
             var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             // Even if the original data looks like it could be handled differently,
-            // SlightException takes priority
-            var slightData = new SlightExceptionData { Code = "PRIORITY", Message = "Slight message", Details = "slight details" };
+            // BusinessException takes priority
+            var slightData = new BusinessExceptionData { Code = "PRIORITY", Message = "Slight message", Details = "slight details" };
             var context = new ResponseWrapperContext(null, 200, slightData);
 
             // Act
@@ -461,23 +461,23 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             Assert.IsType<ApiResponse>(result2);
             Assert.Equal("9998", (result2 as ApiResponse).Code);
 
-            // Test 3: SlightExceptionData
-            var context3 = new ResponseWrapperContext(null, 200, new SlightExceptionData { Code = "CUSTOM", Message = "msg", Details = null });
+            // Test 3: BusinessExceptionData
+            var context3 = new ResponseWrapperContext(null, 200, new BusinessExceptionData { Code = "CUSTOM", Message = "msg", Details = null });
             var result3 = factory.SuccessFactory(context3);
             Assert.IsType<ApiResponse>(result3);
             Assert.Equal("CUSTOM", (result3 as ApiResponse).Code);
         }
 
         [Fact]
-        public void DefaultFactory_ProblemDetailsAndSlightException_SlightExceptionWins()
+        public void DefaultFactory_ProblemDetailsAndBusinessException_BusinessExceptionWins()
         {
             // Arrange
             var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var factory = ResponseWrapperFactory.CreateDefault(options);
 
             // Even though the original data is ProblemDetails-like,
-            // when passed as SlightExceptionData, it should be handled as SlightException
-            var slightData = new SlightExceptionData
+            // when passed as BusinessExceptionData, it should be handled as BusinessException
+            var slightData = new BusinessExceptionData
             {
                 Code = "PRIORITY",
                 Message = "Slight takes priority",

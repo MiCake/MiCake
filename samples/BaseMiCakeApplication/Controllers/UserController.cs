@@ -78,7 +78,7 @@ namespace BaseMiCakeApplication.Controllers
 
                 return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
             }
-            catch (SlightMiCakeException ex)
+            catch (BusinessException ex)
             {
                 _logger.LogWarning($"User creation failed: {ex.Message}");
                 return BadRequest(ex.Message);
@@ -119,7 +119,7 @@ namespace BaseMiCakeApplication.Controllers
 
                 return Ok(user);
             }
-            catch (SlightMiCakeException ex)
+            catch (BusinessException ex)
             {
                 _logger.LogWarning($"User update failed: {ex.Message}");
                 return BadRequest(ex.Message);

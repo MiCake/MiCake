@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using MiCake.Core;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,11 @@ namespace BaseMiCakeApplication.Controllers
         public IActionResult DemoNotFound() => NotFound("This resource was not found");
 
         /// <summary>
-        /// Demonstrates MiCakeException (HTTP 500).
+        /// Demonstrates general exception handling (HTTP 500).
         /// </summary>
         [HttpGet("exception/handle")]
-        public IActionResult DemoMiCakeException()
-            => throw new MiCakeException("This is a critical error");
+        public IActionResult DemoGeneralException()
+            => throw new InvalidOperationException("This is a critical error");
 
         /// <summary>
         /// Demonstrates successful string response.
@@ -34,10 +35,10 @@ namespace BaseMiCakeApplication.Controllers
         public IActionResult DemoListResult() => Ok(new List<int> { 1, 2, 3, 4, 5 });
 
         /// <summary>
-        /// Demonstrates SlightMiCakeException (HTTP 200 with error message).
+        /// Demonstrates BusinessException (HTTP 200 with error message).
         /// </summary>
         [HttpGet("exception/slight")]
-        public IActionResult DemoSlightMiCakeException()
-            => throw new SlightMiCakeException("This is a soft error handled gracefully");
+        public IActionResult DemoBusinessException()
+            => throw new BusinessException("This is a soft error handled gracefully");
     }
 }

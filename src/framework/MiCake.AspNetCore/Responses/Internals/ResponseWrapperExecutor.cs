@@ -24,15 +24,15 @@ namespace MiCake.AspNetCore.Responses.Internals
                 return originalData;
 
             var context = new ResponseWrapperContext(httpContext, statusCode, originalData);
-            if (httpContext.TryGetSlightException(out var slightException))
+            if (httpContext.TryGetBusinessException(out var businessException))
             {
-                var slightExceptionData = new SlightExceptionData
+                var businessExceptionData = new BusinessExceptionData
                 {
-                    Code = slightException!.Code,
-                    Message = slightException.Message,
-                    Details = slightException.Details
+                    Code = businessException!.Code,
+                    Message = businessException.Message,
+                    Details = businessException.Details
                 };
-                context = new ResponseWrapperContext(httpContext, statusCode, slightExceptionData);
+                context = new ResponseWrapperContext(httpContext, statusCode, businessExceptionData);
             }
 
             return _options.GetOrCreateFactory()?.SuccessFactory?.Invoke(context);
@@ -54,10 +54,10 @@ namespace MiCake.AspNetCore.Responses.Internals
     }
 
     /// <summary>
-    /// Wrapper data for SlightException to be passed to factory.
+    /// Wrapper data for BusinessException to be passed to factory.
     /// Allows factory to customize response format while preserving exception details.
     /// </summary>
-    internal class SlightExceptionData
+    internal class BusinessExceptionData
     {
         /// <summary>
         /// Business operation status code from the exception.

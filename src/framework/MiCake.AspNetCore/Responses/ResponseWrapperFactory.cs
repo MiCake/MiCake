@@ -43,7 +43,7 @@ namespace MiCake.AspNetCore.Responses
             {
                 SuccessFactory = context =>
                 {
-                    if (context.OriginalData is Internals.SlightExceptionData slightData)
+                    if (context.OriginalData is Internals.BusinessExceptionData slightData)
                     {
                         var code = string.IsNullOrWhiteSpace(slightData.Code)
                             ? options.DefaultCodeSetting.Success

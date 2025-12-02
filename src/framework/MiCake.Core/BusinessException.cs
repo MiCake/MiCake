@@ -3,42 +3,42 @@
 namespace MiCake.Core
 {
     /// <summary>
-    /// Base exception type for Micake framework.
+    /// Indicates an exception that can be safely shown to end users.
     /// </summary>
     [Serializable]
-    public class MiCakeException : Exception
+    public class BusinessException : Exception, IBusinessException
     {
         /// <summary>
-        /// Indicates a code to represent the exception.
+        /// <inheritdoc/>
         /// </summary>
-        public virtual string? Code { get; set; }
+        public string? Code { get; }
 
         /// <summary>
-        /// Some details about the error
+        /// <inheritdoc/>
         /// </summary>
-        public virtual object? Details { get; set; }
+        public object? Details { get; }
 
-        protected MiCakeException()
+        public BusinessException() : base()
         {
         }
 
-        public MiCakeException(
+        public BusinessException(
             string message,
             string? details = null,
             string? code = null) : base(message)
         {
-            Code = code;
             Details = details;
+            Code = code;
         }
 
-        public MiCakeException(
+        public BusinessException(
             string message,
             Exception innerException,
             string? details = null,
             string? code = null) : base(message, innerException)
         {
-            Code = code;
             Details = details;
+            Code = code;
         }
     }
 }

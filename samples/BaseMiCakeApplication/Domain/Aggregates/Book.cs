@@ -71,11 +71,11 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         /// <param name="bookName">The name/title of the book</param>
         /// <param name="authorFirstName">Author's first name</param>
         /// <param name="authorLastName">Author's last name</param>
-        /// <exception cref="SlightMiCakeException">Thrown when book name is empty</exception>
+        /// <exception cref="BusinessException">Thrown when book name is empty</exception>
         public Book(string bookName, string authorFirstName, string authorLastName)
         {
             if (string.IsNullOrEmpty(bookName))
-                throw new SlightMiCakeException("Book name cannot be empty");
+                throw new BusinessException("Book name cannot be empty");
 
             Id = Guid.NewGuid();
             BookName = bookName;
@@ -116,7 +116,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void SetISBN(string isbn)
         {
             if (string.IsNullOrWhiteSpace(isbn))
-                throw new SlightMiCakeException("ISBN cannot be empty");
+                throw new BusinessException("ISBN cannot be empty");
 
             ISBN = isbn;
         }
@@ -128,7 +128,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         public void SetPublicationYear(int year)
         {
             if (year < 1000 || year > DateTime.Now.Year)
-                throw new SlightMiCakeException("Invalid publication year");
+                throw new BusinessException("Invalid publication year");
 
             PublicationYear = year;
         }

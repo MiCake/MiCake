@@ -1,6 +1,5 @@
 ﻿using MiCake.AspNetCore;
 using MiCake.AspNetCore.Responses;
-using Microsoft.AspNetCore.Mvc;
 
 namespace BaseMiCakeApplication.MiCakeFeatures
 {
@@ -53,8 +52,8 @@ namespace BaseMiCakeApplication.MiCakeFeatures
                     error = new
                     {
                         message = context.Exception?.Message ?? "Unknown error",
-                        details = context.Exception is MiCake.Core.MiCakeException micakeEx 
-                            ? micakeEx.Details 
+                        details = context.Exception is MiCake.Core.BusinessException businessEx 
+                            ? businessEx.Details 
                             : null
                     },
                     timestamp = System.DateTime.UtcNow

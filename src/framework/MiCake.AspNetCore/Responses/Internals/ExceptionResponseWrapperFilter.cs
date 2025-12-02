@@ -11,7 +11,7 @@ namespace MiCake.AspNetCore.Responses.Internals
 {
     /// <summary>
     /// Filter to wrap exception responses.
-    /// Handles both MiCake exceptions and general exceptions.
+    /// Handles both business exceptions and general exceptions.
     /// </summary>
     internal class ExceptionResponseWrapperFilter : IAsyncExceptionFilter
     {
@@ -37,10 +37,10 @@ namespace MiCake.AspNetCore.Responses.Internals
 
             var exception = context.Exception;
 
-            if (exception is IUserFriendlyException slightException)
+            if (exception is IBusinessException businessException)
             {
                 context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
-                context.HttpContext.SetSlightException(slightException);
+                context.HttpContext.SetBusinessExceptionContext(businessException);
 
                 var wrappedData = _executor.WrapSuccess(
                     null,
@@ -59,7 +59,7 @@ namespace MiCake.AspNetCore.Responses.Internals
 
             _logger.LogError(exception, "An unhandled exception occurred.");
 
-            var statusCode = DetermineStatusCode(exception);
+            var statusCode = StatusCodes.Status500InternalServerError;
             var errorData = _executor.WrapError(
                 exception,
                 context.HttpContext,
@@ -74,17 +74,6 @@ namespace MiCake.AspNetCore.Responses.Internals
             };
 
             return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Determines appropriate HTTP status code based on exception type.
-        /// </summary>
-        private static int DetermineStatusCode(System.Exception exception)
-        {
-            if (exception is MiCakeException)
-                return StatusCodes.Status500InternalServerError;
-
-            return StatusCodes.Status500InternalServerError;
         }
 
         /// <summary>

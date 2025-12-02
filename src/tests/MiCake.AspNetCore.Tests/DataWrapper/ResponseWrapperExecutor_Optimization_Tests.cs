@@ -10,7 +10,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 {
     /// <summary>
     /// Tests for ResponseWrapperExecutor optimizations in commit 1ba5a78.
-    /// Focus: C# 12 primary constructor, IsProblemDetails() helper method, and SlightException flow improvements.
+    /// Focus: C# 12 primary constructor, IsProblemDetails() helper method, and BusinessException flow improvements.
     /// </summary>
     public class ResponseWrapperExecutor_Optimization_Tests
     {
@@ -93,17 +93,17 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 
         #endregion
 
-        #region SlightException Flow Tests
+        #region BusinessException Flow Tests
 
         [Fact]
-        public void WrapSuccess_WithSlightException_UsesSlightExceptionDataFactory()
+        public void WrapSuccess_WithBusinessException_UsesBusinessExceptionDataFactory()
         {
             // Arrange
             var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
-            var slightException = new SlightMiCakeException("Custom message", details: "{\"detail\": \"info\"}", code: "CUSTOM_CODE");
-            httpContext.SetSlightException(slightException);
+            var businessException = new BusinessException("Custom message", details: "{\"detail\": \"info\"}", code: "CUSTOM_CODE");
+            httpContext.SetBusinessExceptionContext(businessException);
 
             // Act
             var result = executor.WrapSuccess("original data", httpContext, 200);
@@ -117,14 +117,14 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WrapSuccess_WithSlightExceptionNullDetails_HandlesGracefully()
+        public void WrapSuccess_WithBusinessExceptionNullDetails_HandlesGracefully()
         {
             // Arrange
             var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
-            var slightException = new SlightMiCakeException("Custom message", details: null, code: "CUSTOM_CODE");
-            httpContext.SetSlightException(slightException);
+            var businessException = new BusinessException("Custom message", details: null, code: "CUSTOM_CODE");
+            httpContext.SetBusinessExceptionContext(businessException);
 
             // Act
             var result = executor.WrapSuccess("original data", httpContext, 200);
@@ -138,15 +138,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WrapSuccess_WithSlightExceptionEmptyCode_UsesDefaultCode()
+        public void WrapSuccess_WithBusinessExceptionEmptyCode_UsesDefaultCode()
         {
             // Arrange
             var customCodeSetting = new DataWrapperDefaultCode { Success = "200" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
-            var slightException = new SlightMiCakeException("Custom message", details: null, code: "");
-            httpContext.SetSlightException(slightException);
+            var businessException = new BusinessException("Custom message", details: null, code: "");
+            httpContext.SetBusinessExceptionContext(businessException);
 
             // Act
             var result = executor.WrapSuccess("original data", httpContext, 200);
@@ -158,14 +158,14 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WrapSuccess_WithSlightExceptionComplexData_IncludesAllData()
+        public void WrapSuccess_WithBusinessExceptionComplexData_IncludesAllData()
         {
             // Arrange
             var options = new ResponseWrapperOptions();
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
-            var slightException = new SlightMiCakeException("User already exists", details: "{\"userId\": 123, \"userName\": \"John\", \"status\": \"active\"}", code: "USER_EXISTS");
-            httpContext.SetSlightException(slightException);
+            var businessException = new BusinessException("User already exists", details: "{\"userId\": 123, \"userName\": \"John\", \"status\": \"active\"}", code: "USER_EXISTS");
+            httpContext.SetBusinessExceptionContext(businessException);
 
             // Act
             var result = executor.WrapSuccess("original data", httpContext, 200);
@@ -457,20 +457,20 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WrapSuccess_ProblemDetailsWithSlightException_SlightExceptionTakesPriority()
+        public void WrapSuccess_ProblemDetailsWithBusinessException_BusinessExceptionTakesPriority()
         {
             // Arrange
             var options = new ResponseWrapperOptions { WrapProblemDetails = true };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
-            var slightException = new SlightMiCakeException("Slight error", details: null, code: "SLIGHT");
-            httpContext.SetSlightException(slightException);
+            var businessException = new BusinessException("Slight error", details: null, code: "SLIGHT");
+            httpContext.SetBusinessExceptionContext(businessException);
             var problemDetails = new ProblemDetails { Title = "Problem" }; // This should be ignored
 
             // Act
             var result = executor.WrapSuccess(problemDetails, httpContext, 200);
 
-            // Assert - Should use SlightException data, not ProblemDetails
+            // Assert - Should use BusinessException data, not ProblemDetails
             Assert.IsType<ApiResponse>(result);
             var response = result as ApiResponse;
             Assert.Equal("SLIGHT", response.Code);

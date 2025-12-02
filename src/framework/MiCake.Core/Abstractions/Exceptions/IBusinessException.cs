@@ -3,7 +3,7 @@
     /// <summary>
     /// Indicates an exception that can be safely shown to end users.
     /// </summary>
-    public interface IUserFriendlyException
+    public interface IBusinessException
     {
         /// <summary>
         /// Indicates a code to represent the exception.

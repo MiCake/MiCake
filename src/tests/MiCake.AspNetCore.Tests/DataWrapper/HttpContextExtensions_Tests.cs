@@ -7,36 +7,36 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
 {
     /// <summary>
     /// Unit tests for HttpContextExtensions methods.
-    /// Tests verify consistent SlightException storage and retrieval across middleware and filters.
+    /// Tests verify consistent BusinessException storage and retrieval across middleware and filters.
     /// </summary>
     public class HttpContextExtensions_Tests
     {
         [Fact]
-        public void SetSlightException_StoresExceptionInContext()
+        public void SetBusinessException_StoresExceptionInContext()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test error", null, "TEST_CODE");
+            var exception = new BusinessException("Test error", null, "TEST_CODE");
 
             // Act
-            httpContext.SetSlightException(exception);
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Assert
-            var retrieved = httpContext.GetSlightException();
+            var retrieved = httpContext.GetBusinessException();
             Assert.NotNull(retrieved);
             Assert.Equal("TEST_CODE", retrieved.Code);
         }
 
         [Fact]
-        public void TryGetSlightException_WithValidException_ReturnsTrue()
+        public void TryGetBusinessException_WithValidException_ReturnsTrue()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test error", null, "TEST_CODE");
-            httpContext.SetSlightException(exception);
+            var exception = new BusinessException("Test error", null, "TEST_CODE");
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Act
-            var result = httpContext.TryGetSlightException(out var retrieved);
+            var result = httpContext.TryGetBusinessException(out var retrieved);
 
             // Assert
             Assert.True(result);
@@ -45,13 +45,13 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void TryGetSlightException_WithNoException_ReturnsFalse()
+        public void TryGetBusinessException_WithNoException_ReturnsFalse()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
 
             // Act
-            var result = httpContext.TryGetSlightException(out var retrieved);
+            var result = httpContext.TryGetBusinessException(out var retrieved);
 
             // Assert
             Assert.False(result);
@@ -59,43 +59,43 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void HasSlightException_WithStoredException_ReturnsTrue()
+        public void HasBusinessException_WithStoredException_ReturnsTrue()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test error", null, "TEST_CODE");
-            httpContext.SetSlightException(exception);
+            var exception = new BusinessException("Test error", null, "TEST_CODE");
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Act
-            var hasException = httpContext.HasSlightException();
+            var hasException = httpContext.HasBusinessException();
 
             // Assert
             Assert.True(hasException);
         }
 
         [Fact]
-        public void HasSlightException_WithoutStoredException_ReturnsFalse()
+        public void HasBusinessException_WithoutStoredException_ReturnsFalse()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
 
             // Act
-            var hasException = httpContext.HasSlightException();
+            var hasException = httpContext.HasBusinessException();
 
             // Assert
             Assert.False(hasException);
         }
 
         [Fact]
-        public void GetSlightException_WithValidException_ReturnsException()
+        public void GetBusinessException_WithValidException_ReturnsException()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test error", null, "TEST_CODE");
-            httpContext.SetSlightException(exception);
+            var exception = new BusinessException("Test error", null, "TEST_CODE");
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Act
-            var retrieved = httpContext.GetSlightException();
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.NotNull(retrieved);
@@ -103,31 +103,31 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void GetSlightException_WithNoException_ReturnsNull()
+        public void GetBusinessException_WithNoException_ReturnsNull()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
 
             // Act
-            var retrieved = httpContext.GetSlightException();
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.Null(retrieved);
         }
 
         [Fact]
-        public void SetSlightException_OverwritesPreviousValue()
+        public void SetBusinessException_OverwritesPreviousValue()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception1 = new SlightMiCakeException("Error 1", null, "ERROR_1");
-            var exception2 = new SlightMiCakeException("Error 2", null, "ERROR_2");
+            var exception1 = new BusinessException("Error 1", null, "ERROR_1");
+            var exception2 = new BusinessException("Error 2", null, "ERROR_2");
 
             // Act
-            httpContext.SetSlightException(exception1);
-            var first = httpContext.GetSlightException();
-            httpContext.SetSlightException(exception2);
-            var second = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception1);
+            var first = httpContext.GetBusinessException();
+            httpContext.SetBusinessExceptionContext(exception2);
+            var second = httpContext.GetBusinessException();
 
             // Assert
             Assert.Equal("ERROR_1", first.Code);
@@ -135,15 +135,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void SetSlightException_WithDifferentMessages_PreservesAll()
+        public void SetBusinessException_WithDifferentMessages_PreservesAll()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Detailed message", null, "CODE_123");
+            var exception = new BusinessException("Detailed message", null, "CODE_123");
 
             // Act
-            httpContext.SetSlightException(exception);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.Equal("Detailed message", retrieved.Message);
@@ -156,43 +156,43 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             // Arrange
             var context1 = new DefaultHttpContext();
             var context2 = new DefaultHttpContext();
-            var exception1 = new SlightMiCakeException("Error 1", null, "ERROR_1");
-            var exception2 = new SlightMiCakeException("Error 2", null, "ERROR_2");
+            var exception1 = new BusinessException("Error 1", null, "ERROR_1");
+            var exception2 = new BusinessException("Error 2", null, "ERROR_2");
 
             // Act
-            context1.SetSlightException(exception1);
-            context2.SetSlightException(exception2);
+            context1.SetBusinessExceptionContext(exception1);
+            context2.SetBusinessExceptionContext(exception2);
 
             // Assert
-            Assert.Equal("ERROR_1", context1.GetSlightException().Code);
-            Assert.Equal("ERROR_2", context2.GetSlightException().Code);
+            Assert.Equal("ERROR_1", context1.GetBusinessException().Code);
+            Assert.Equal("ERROR_2", context2.GetBusinessException().Code);
         }
 
         [Fact]
-        public void HasSlightException_AfterSet_ReturnsTrue()
+        public void HasBusinessException_AfterSet_ReturnsTrue()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test error", null, "TEST_CODE");
+            var exception = new BusinessException("Test error", null, "TEST_CODE");
 
             // Act
-            Assert.False(httpContext.HasSlightException());
-            httpContext.SetSlightException(exception);
+            Assert.False(httpContext.HasBusinessException());
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Assert
-            Assert.True(httpContext.HasSlightException());
+            Assert.True(httpContext.HasBusinessException());
         }
 
         [Fact]
-        public void SlightException_WithNullMessage_HandledGracefully()
+        public void BusinessException_WithNullMessage_HandledGracefully()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException(null, null, "TEST_CODE");
+            var exception = new BusinessException(null, null, "TEST_CODE");
 
             // Act
-            httpContext.SetSlightException(exception);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.NotNull(retrieved);
@@ -200,15 +200,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void SlightException_WithComplexDetails_Preserved()
+        public void BusinessException_WithComplexDetails_Preserved()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Error with details", null, "ERROR_WITH_DETAILS");
+            var exception = new BusinessException("Error with details", null, "ERROR_WITH_DETAILS");
 
             // Act
-            httpContext.SetSlightException(exception);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.NotNull(retrieved);
@@ -217,15 +217,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void TryGetSlightException_OutParameter_SetCorrectly()
+        public void TryGetBusinessException_OutParameter_SetCorrectly()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test", null, "TEST");
-            httpContext.SetSlightException(exception);
+            var exception = new BusinessException("Test", null, "TEST");
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Act
-            httpContext.TryGetSlightException(out var outException);
+            httpContext.TryGetBusinessException(out var outException);
 
             // Assert
             Assert.NotNull(outException);
@@ -237,27 +237,27 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test", null, "TEST");
+            var exception = new BusinessException("Test", null, "TEST");
 
             // Act & Assert - Chain of calls should work
-            httpContext.SetSlightException(exception);
-            Assert.True(httpContext.HasSlightException());
-            var result = httpContext.TryGetSlightException(out var retrieved);
+            httpContext.SetBusinessExceptionContext(exception);
+            Assert.True(httpContext.HasBusinessException());
+            var result = httpContext.TryGetBusinessException(out var retrieved);
             Assert.True(result);
             Assert.Equal("TEST", retrieved.Code);
         }
 
         [Fact]
-        public void GetSlightException_ConsistentWithTryGet()
+        public void GetBusinessException_ConsistentWithTryGet()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test", null, "TEST");
-            httpContext.SetSlightException(exception);
+            var exception = new BusinessException("Test", null, "TEST");
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Act
-            httpContext.TryGetSlightException(out var fromTry);
-            var fromGet = httpContext.GetSlightException();
+            httpContext.TryGetBusinessException(out var fromTry);
+            var fromGet = httpContext.GetBusinessException();
 
             // Assert
             Assert.Equal(fromTry.Code, fromGet.Code);
@@ -265,18 +265,18 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void SlightException_Type_AlwaysPreserved()
+        public void BusinessException_Type_AlwaysPreserved()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Test", null, "TEST");
+            var exception = new BusinessException("Test", null, "TEST");
 
             // Act
-            httpContext.SetSlightException(exception);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
-            Assert.IsType<SlightMiCakeException>(retrieved);
+            Assert.IsType<BusinessException>(retrieved);
         }
 
         [Fact]
@@ -286,11 +286,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             var httpContext = new DefaultHttpContext();
             var originalCode = "ROUND_TRIP_TEST";
             var originalMessage = "Round trip test message";
-            var exception = new SlightMiCakeException(originalMessage, null, originalCode);
+            var exception = new BusinessException(originalMessage, null, originalCode);
 
             // Act
-            httpContext.SetSlightException(exception);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.Equal(originalCode, retrieved.Code);

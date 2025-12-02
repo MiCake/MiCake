@@ -36,14 +36,14 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         /// </summary>
         /// <param name="firstName">The author's first name</param>
         /// <param name="lastName">The author's last name</param>
-        /// <exception cref="SlightMiCakeException">Thrown when name is empty</exception>
+        /// <exception cref="BusinessException">Thrown when name is empty</exception>
         public BookAuthor(string firstName, string lastName)
         {
             if (string.IsNullOrEmpty(firstName))
-                throw new SlightMiCakeException("Author's first name cannot be empty");
+                throw new BusinessException("Author's first name cannot be empty");
 
             if (string.IsNullOrEmpty(lastName))
-                throw new SlightMiCakeException("Author's last name cannot be empty");
+                throw new BusinessException("Author's last name cannot be empty");
 
             FirstName = firstName;
             LastName = lastName;

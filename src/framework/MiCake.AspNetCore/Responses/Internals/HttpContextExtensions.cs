@@ -4,44 +4,44 @@ using Microsoft.AspNetCore.Http;
 namespace MiCake.AspNetCore.Responses.Internals
 {
     /// <summary>
-    /// Extension methods for HttpContext to manage SlightException handling.
-    /// Provides a centralized, consistent way to store and retrieve SlightException instances.
+    /// Extension methods for HttpContext to manage BusinessException handling.
+    /// Provides a centralized, consistent way to store and retrieve BusinessException instances.
     /// </summary>
     internal static class HttpContextExtensions
     {
         /// <summary>
-        /// Key used to store SlightException in HttpContext.Items dictionary.
+        /// Key used to store BusinessException in HttpContext.Items dictionary.
         /// </summary>
-        private const string SlightExceptionKey = "MiCake.SlightException";
+        private const string BusinessExceptionKey = "MiCake.BusinessException";
 
         /// <summary>
-        /// Stores a SlightException in the HttpContext for later retrieval.
+        /// Stores a BusinessException in the HttpContext for later retrieval.
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
-        /// <param name="exception">The SlightException to store.</param>
-        public static void SetSlightException(this HttpContext httpContext, IUserFriendlyException exception)
+        /// <param name="exception">The BusinessException to store.</param>
+        public static void SetBusinessExceptionContext(this HttpContext httpContext, IBusinessException exception)
         {
             if (httpContext?.Items != null)
             {
-                httpContext.Items[SlightExceptionKey] = exception;
+                httpContext.Items[BusinessExceptionKey] = exception;
             }
         }
 
         /// <summary>
-        /// Attempts to retrieve a previously stored SlightException from the HttpContext.
+        /// Attempts to retrieve a previously stored BusinessException from the HttpContext.
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
-        /// <param name="exception">The SlightException if found; otherwise null.</param>
-        /// <returns>True if a SlightException was found; otherwise false.</returns>
-        public static bool TryGetSlightException(this HttpContext httpContext, out IUserFriendlyException? exception)
+        /// <param name="exception">The BusinessException if found; otherwise null.</param>
+        /// <returns>True if a BusinessException was found; otherwise false.</returns>
+        public static bool TryGetBusinessException(this HttpContext httpContext, out IBusinessException? exception)
         {
             exception = null;
 
             if (httpContext?.Items == null)
                 return false;
 
-            if (httpContext.Items.TryGetValue(SlightExceptionKey, out var item) &&
-                item is IUserFriendlyException slightEx)
+            if (httpContext.Items.TryGetValue(BusinessExceptionKey, out var item) &&
+                item is IBusinessException slightEx)
             {
                 exception = slightEx;
                 return true;
@@ -51,23 +51,23 @@ namespace MiCake.AspNetCore.Responses.Internals
         }
 
         /// <summary>
-        /// Checks if a SlightException has been stored in the HttpContext.
+        /// Checks if a BusinessException has been stored in the HttpContext.
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
-        /// <returns>True if a SlightException is stored; otherwise false.</returns>
-        public static bool HasSlightException(this HttpContext httpContext)
+        /// <returns>True if a BusinessException is stored; otherwise false.</returns>
+        public static bool HasBusinessException(this HttpContext httpContext)
         {
-            return TryGetSlightException(httpContext, out _);
+            return TryGetBusinessException(httpContext, out _);
         }
 
         /// <summary>
-        /// Retrieves a stored SlightException from the HttpContext.
+        /// Retrieves a stored BusinessException from the HttpContext.
         /// </summary>
         /// <param name="httpContext">The current HTTP context.</param>
-        /// <returns>The stored SlightException, or null if not found.</returns>
-        public static IUserFriendlyException? GetSlightException(this HttpContext httpContext)
+        /// <returns>The stored BusinessException, or null if not found.</returns>
+        public static IBusinessException? GetBusinessException(this HttpContext httpContext)
         {
-            TryGetSlightException(httpContext, out var exception);
+            TryGetBusinessException(httpContext, out var exception);
             return exception;
         }
     }

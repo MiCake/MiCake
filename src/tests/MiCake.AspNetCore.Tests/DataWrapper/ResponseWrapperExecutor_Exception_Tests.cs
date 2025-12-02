@@ -17,16 +17,16 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         private readonly ResponseWrapperOptions _defaultOptions = new ResponseWrapperOptions();
 
         [Fact]
-        public void WriteSlightExceptionResponse_WithDefaultFactory_ReturnsApiResponse()
+        public void WriteBusinessExceptionResponse_WithDefaultFactory_ReturnsApiResponse()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
+            var exception = new BusinessException("Soft error", null, "SOFT_ERROR");
 
             // Act
             var executor = new ResponseWrapperExecutor(_defaultOptions);
             httpContext.Response.StatusCode = StatusCodes.Status200OK;
-            httpContext.SetSlightException(exception);
+            httpContext.SetBusinessExceptionContext(exception);
             var wrappedData = executor.WrapSuccess(null, httpContext, StatusCodes.Status200OK);
 
             // Assert
@@ -35,7 +35,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WriteSlightExceptionResponse_WithCustomFactory_ReturnsCustomObject()
+        public void WriteBusinessExceptionResponse_WithCustomFactory_ReturnsCustomObject()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
@@ -48,12 +48,12 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 }
             };
             var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
-            var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
+            var exception = new BusinessException("Soft error", null, "SOFT_ERROR");
 
             // Act
             var executor = new ResponseWrapperExecutor(options);
             httpContext.Response.StatusCode = StatusCodes.Status200OK;
-            httpContext.SetSlightException(exception);
+            httpContext.SetBusinessExceptionContext(exception);
             var wrappedData = executor.WrapSuccess(null, httpContext, StatusCodes.Status200OK);
 
             // Assert
@@ -110,15 +110,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void SlightException_StoresAndRetrievesFromContext()
+        public void BusinessException_StoresAndRetrievesFromContext()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
+            var exception = new BusinessException("Soft error", null, "SOFT_ERROR");
 
             // Act
-            httpContext.SetSlightException(exception);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.NotNull(retrieved);
@@ -126,15 +126,15 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void WriteSlightExceptionResponse_SetsStatusCodeTo200()
+        public void WriteBusinessExceptionResponse_SetsStatusCodeTo200()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
+            var exception = new BusinessException("Soft error", null, "SOFT_ERROR");
 
             // Act
             httpContext.Response.StatusCode = StatusCodes.Status200OK;
-            httpContext.SetSlightException(exception);
+            httpContext.SetBusinessExceptionContext(exception);
 
             // Assert
             Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
@@ -154,7 +154,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void CustomFactory_AppliedForSlightException()
+        public void CustomFactory_AppliedForBusinessException()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
@@ -163,11 +163,11 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
                 SuccessFactory = context => new { success = true }
             };
             var options = new ResponseWrapperOptions { WrapperFactory = customFactory };
-            var exception = new SlightMiCakeException("Soft error", null, "SOFT_ERROR");
+            var exception = new BusinessException("Soft error", null, "SOFT_ERROR");
 
             // Act
             var executor = new ResponseWrapperExecutor(options);
-            httpContext.SetSlightException(exception);
+            httpContext.SetBusinessExceptionContext(exception);
             var wrappedData = executor.WrapSuccess(null, httpContext, StatusCodes.Status200OK);
 
             // Assert
@@ -203,7 +203,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var originalException = new MiCakeException("Test error", "Error details");
+            var originalException = new Exception("Test error");
 
             // Act
             var executor = new ResponseWrapperExecutor(_defaultOptions);
@@ -254,14 +254,14 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void SlightException_Response_Returns200OK()
+        public void BusinessException_Response_Returns200OK()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception = new SlightMiCakeException("Business error", null, "BUSINESS_ERROR");
+            var exception = new BusinessException("Business error", null, "BUSINESS_ERROR");
 
             // Act
-            httpContext.SetSlightException(exception);
+            httpContext.SetBusinessExceptionContext(exception);
             httpContext.Response.StatusCode = StatusCodes.Status200OK;
             var executor = new ResponseWrapperExecutor(_defaultOptions);
             var wrappedData = executor.WrapSuccess(null, httpContext, StatusCodes.Status200OK);
@@ -284,17 +284,17 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         }
 
         [Fact]
-        public void MultipleSlightExceptions_LastOneWins()
+        public void MultipleBusinessExceptions_LastOneWins()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            var exception1 = new SlightMiCakeException("Error 1", null, "ERROR_1");
-            var exception2 = new SlightMiCakeException("Error 2", null, "ERROR_2");
+            var exception1 = new BusinessException("Error 1", null, "ERROR_1");
+            var exception2 = new BusinessException("Error 2", null, "ERROR_2");
 
             // Act
-            httpContext.SetSlightException(exception1);
-            httpContext.SetSlightException(exception2);
-            var retrieved = httpContext.GetSlightException();
+            httpContext.SetBusinessExceptionContext(exception1);
+            httpContext.SetBusinessExceptionContext(exception2);
+            var retrieved = httpContext.GetBusinessException();
 
             // Assert
             Assert.NotNull(retrieved);
