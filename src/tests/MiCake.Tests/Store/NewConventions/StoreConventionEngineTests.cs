@@ -180,7 +180,7 @@ namespace MiCake.Tests.Store.NewConventions
             // Arrange
             _engine.AddConvention(new AuditTimeConvention());
             var entityType = typeof(TestAuditableEntity);
-            var propertyInfo = entityType.GetProperty(nameof(TestAuditableEntity.CreationTime));
+            var propertyInfo = entityType.GetProperty(nameof(TestAuditableEntity.CreatedAt));
 
             // Act
             var context = _engine.ApplyPropertyConventions(entityType, propertyInfo);
@@ -267,15 +267,15 @@ namespace MiCake.Tests.Store.NewConventions
         public string NonTestProperty { get; set; }
     }
 
-    public class TestSoftDeletableEntity : Entity, ISoftDeletion
+    public class TestSoftDeletableEntity : Entity, ISoftDeletable
     {
         public string Name { get; set; }
         public bool IsDeleted { get; set; }
     }
 
-    public class TestAuditableEntity : Entity, IHasCreationTime
+    public class TestAuditableEntity : Entity, IHasCreatedAt
     {
         public string Title { get; set; }
-        public DateTime CreationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

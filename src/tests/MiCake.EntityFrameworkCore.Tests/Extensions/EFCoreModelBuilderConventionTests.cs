@@ -111,7 +111,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
             Assert.NotNull(auditableType);
             
             // Check that CreationTime property is configured
-            var creationTimeProperty = auditableType.FindProperty(nameof(TestAuditableDbEntity.CreationTime));
+            var creationTimeProperty = auditableType.FindProperty(nameof(TestAuditableDbEntity.CreatedAt));
             Assert.NotNull(creationTimeProperty);
         }
     }
@@ -132,17 +132,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
     }
     
     // Test entities for DbContext convention testing
-    public class TestSoftDeletableDbEntity : Entity, ISoftDeletion
+    public class TestSoftDeletableDbEntity : Entity, ISoftDeletable
     {
         public string Name { get; set; }
         public bool IsDeleted { get; set; }
     }
     
-    public class TestAuditableDbEntity : Entity, IHasCreationTime, IHasModificationTime
+    public class TestAuditableDbEntity : Entity, IHasCreatedAt, IHasUpdatedAt
     {
         public string Title { get; set; }
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
     
     public class TestRegularDbEntity : Entity

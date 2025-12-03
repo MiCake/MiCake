@@ -37,10 +37,10 @@ namespace MiCake.Audit.Core
             if (entity == null)
                 return;
 
-            if (entity is IHasCreationTime hasCreationTime &&
-                hasCreationTime.CreationTime == default)
+            if (entity is IHasCreatedAt hasCreationTime &&
+                hasCreationTime.CreatedAt == default)
             {
-                hasCreationTime.CreationTime = CurrentTimeProvider?.Invoke() ?? DateTime.Now;
+                hasCreationTime.CreatedAt = CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
             }
         }
 
@@ -49,9 +49,9 @@ namespace MiCake.Audit.Core
             if (entity == null)
                 return;
 
-            if (entity is IHasModificationTime hasModificationTime)
+            if (entity is IHasUpdatedAt hasModificationTime)
             {
-                hasModificationTime.ModificationTime = CurrentTimeProvider?.Invoke() ?? DateTime.Now;
+                hasModificationTime.UpdatedAt = CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
             }
         }
     }

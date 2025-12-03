@@ -5,9 +5,9 @@ namespace MiCake.Audit.Tests.Fakes
 {
     class HasAuditWithSoftDeletionModel : IAuditableWithSoftDeletion
     {
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
-        public DateTime? DeletionTime { get; set; }
+        public DateTime? DeletedAt { get; set; }
     }
 }

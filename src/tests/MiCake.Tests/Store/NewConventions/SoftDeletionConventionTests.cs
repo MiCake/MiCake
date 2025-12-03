@@ -25,7 +25,7 @@ namespace MiCake.Tests.Store.NewConventions
         }
         
         [Fact]
-        public void CanApply_WithISoftDeletionEntity_ShouldReturnTrue()
+        public void CanApply_WithISoftDeletableEntity_ShouldReturnTrue()
         {
             // Arrange
             var entityType = typeof(SoftDeletableEntity);
@@ -38,7 +38,7 @@ namespace MiCake.Tests.Store.NewConventions
         }
         
         [Fact]
-        public void CanApply_WithNonISoftDeletionEntity_ShouldReturnFalse()
+        public void CanApply_WithNonISoftDeletableEntity_ShouldReturnFalse()
         {
             // Arrange
             var entityType = typeof(RegularEntity);
@@ -51,7 +51,7 @@ namespace MiCake.Tests.Store.NewConventions
         }
         
         [Fact]
-        public void CanApply_WithAbstractISoftDeletionEntity_ShouldReturnTrue()
+        public void CanApply_WithAbstractISoftDeletableEntity_ShouldReturnTrue()
         {
             // Arrange
             var entityType = typeof(AbstractSoftDeletableEntity);
@@ -64,7 +64,7 @@ namespace MiCake.Tests.Store.NewConventions
         }
         
         [Fact]
-        public void Configure_WithISoftDeletionEntity_ShouldSetCorrectFlags()
+        public void Configure_WithISoftDeletableEntity_ShouldSetCorrectFlags()
         {
             // Arrange
             var entityType = typeof(SoftDeletableEntity);
@@ -79,7 +79,7 @@ namespace MiCake.Tests.Store.NewConventions
         }
         
         [Fact]
-        public void Configure_WithISoftDeletionEntity_ShouldCreateQueryFilter()
+        public void Configure_WithISoftDeletableEntity_ShouldCreateQueryFilter()
         {
             // Arrange
             var entityType = typeof(SoftDeletableEntity);
@@ -158,7 +158,7 @@ namespace MiCake.Tests.Store.NewConventions
         }
         
         [Fact]
-        public void Configure_WithDerivedISoftDeletionEntity_ShouldWork()
+        public void Configure_WithDerivedISoftDeletableEntity_ShouldWork()
         {
             // Arrange
             var entityType = typeof(DerivedSoftDeletableEntity);
@@ -193,13 +193,13 @@ namespace MiCake.Tests.Store.NewConventions
     }
     
     // Test entities for soft deletion convention testing
-    public class SoftDeletableEntity : Entity, ISoftDeletion
+    public class SoftDeletableEntity : Entity, ISoftDeletable
     {
         public string Name { get; set; }
         public bool IsDeleted { get; set; }
     }
     
-    public abstract class AbstractSoftDeletableEntity : Entity, ISoftDeletion
+    public abstract class AbstractSoftDeletableEntity : Entity, ISoftDeletable
     {
         public string Title { get; set; }
         public bool IsDeleted { get; set; }

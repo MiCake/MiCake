@@ -57,7 +57,7 @@ namespace MiCake.IntegrationTests.Uow
         }
 
         [Fact]
-        public async Task SaveChanges_ShouldSetCreationTime_ForEntitiesWithIHasCreationTime()
+        public async Task SaveChanges_ShouldSetCreationTime_ForEntitiesWithIHasCreatedAt()
         {
             // Arrange
             var entity = new AuditEntityWithCreationTime { Name = "Create" };
@@ -67,11 +67,11 @@ namespace MiCake.IntegrationTests.Uow
             await _dbContext.SaveChangesAsync();
 
             // Assert
-            Assert.NotEqual(default, entity.CreationTime);
+            Assert.NotEqual(default, entity.CreatedAt);
         }
 
         [Fact]
-        public async Task SaveChanges_ShouldSetModificationTime_ForEntitiesWithIHasModificationTime()
+        public async Task SaveChanges_ShouldSetModificationTime_ForEntitiesWithIHasUpdatedAt()
         {
             // Arrange
             var entity = new AuditEntityWithCreateAndModify { Name = "Initial" };
@@ -85,7 +85,7 @@ namespace MiCake.IntegrationTests.Uow
             await _dbContext.SaveChangesAsync();
 
             // Assert
-            Assert.NotNull(existing.ModificationTime);
+            Assert.NotNull(existing.UpdatedAt);
         }
 
         [Fact]
@@ -138,7 +138,7 @@ namespace MiCake.IntegrationTests.Uow
                 _dbContext.AuditEntities.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                Assert.Equal(fixedTime, entity.CreationTime);
+                Assert.Equal(fixedTime, entity.CreatedAt);
             }
             finally
             {
@@ -177,26 +177,26 @@ namespace MiCake.IntegrationTests.Uow
             }
         }
 
-        private class AuditEntityWithCreationTime : DDD.Domain.AggregateRoot<Guid>, IHasCreationTime
+        private class AuditEntityWithCreationTime : DDD.Domain.AggregateRoot<Guid>, IHasCreatedAt
         {
             public string Name { get; set; }
-            public DateTime CreationTime { get; set; }
+            public DateTime CreatedAt { get; set; }
         }
 
-        private class AuditEntityWithCreateAndModify : DDD.Domain.AggregateRoot<Guid>, IHasCreationTime, IHasModificationTime
+        private class AuditEntityWithCreateAndModify : DDD.Domain.AggregateRoot<Guid>, IHasCreatedAt, IHasUpdatedAt
         {
             public string Name { get; set; }
-            public DateTime CreationTime { get; set; }
-            public DateTime? ModificationTime { get; set; }
+            public DateTime CreatedAt { get; set; }
+            public DateTime? UpdatedAt { get; set; }
         }
 
-        private class SoftDeletableEntity : DDD.Domain.AggregateRoot<Guid>, ISoftDeletion, IAuditableWithSoftDeletion
+        private class SoftDeletableEntity : DDD.Domain.AggregateRoot<Guid>, ISoftDeletable, IAuditableWithSoftDeletion
         {
             public string Name { get; set; }
             public bool IsDeleted { get; set; }
-            public DateTime? DeletionTime { get; set; }
-            public DateTime CreationTime { get; set; }
-            public DateTime? ModificationTime { get; set; }
+            public DateTime? DeletedAt { get; set; }
+            public DateTime CreatedAt { get; set; }
+            public DateTime? UpdatedAt { get; set; }
         }
 
 

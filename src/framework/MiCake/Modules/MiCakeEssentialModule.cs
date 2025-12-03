@@ -39,7 +39,7 @@ namespace MiCake.Modules
             {
                 //Audit Executor
                 services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
-                //Audit CreationTime and ModifationTime
+                //Audit timestamp provider
                 services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
                 //RepositoryLifeTime
                 services.AddScoped<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
@@ -52,7 +52,7 @@ namespace MiCake.Modules
 
                 if (auditOptions?.UseSoftDeletion == true)
                 {
-                    //Audit Deletion Time
+                    //Audit soft deletion provider
                     services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
                     //RepositoryLifeTime
                     services.AddScoped<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();

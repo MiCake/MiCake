@@ -11,7 +11,7 @@ namespace MiCake.Tests.Store.Simplified
     public class SimplifiedStoreConventionTests
     {
         [Fact]
-        public void SoftDeletionConvention_ShouldApplyToISoftDeletionEntities()
+        public void SoftDeletionConvention_ShouldApplyToISoftDeletableEntities()
         {
             // Arrange
             var convention = new SoftDeletionConvention();
@@ -93,7 +93,7 @@ namespace MiCake.Tests.Store.Simplified
             }
         }
 
-        private class SoftDeletableEntity : AggregateRoot, ISoftDeletion
+        private class SoftDeletableEntity : AggregateRoot, ISoftDeletable
         {
             public bool IsDeleted { get; set; }
         }
@@ -102,9 +102,9 @@ namespace MiCake.Tests.Store.Simplified
         {
         }
 
-        private class AuditableEntity : AggregateRoot, IHasCreationTime
+        private class AuditableEntity : AggregateRoot, IHasCreatedAt
         {
-            public DateTime CreationTime { get; set; }
+            public DateTime CreatedAt { get; set; }
         }
 
         private class TestEntity : AggregateRoot

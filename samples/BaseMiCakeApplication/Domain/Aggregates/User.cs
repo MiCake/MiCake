@@ -11,12 +11,12 @@ namespace BaseMiCakeApplication.Domain.Aggregates
     /// </summary>
     /// <remarks>
     /// This aggregate root demonstrates:
-    /// - Audit support (IHasCreationTime, IHasModificationTime)
-    /// - Soft deletion support (ISoftDeletion)
+    /// - Audit support (IHasCreatedAt, IHasUpdatedAt)
+    /// - Soft deletion support (ISoftDeletable)
     /// - Business logic encapsulation
     /// - Factory pattern for creation
     /// </remarks>
-    public class User : AggregateRoot<long>, IHasCreationTime, IHasModificationTime, ISoftDeletion
+    public class User : AggregateRoot<long>, IHasCreatedAt, IHasUpdatedAt, ISoftDeletable
     {
         /// <summary>
         /// Gets the user's name.
@@ -46,12 +46,12 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         /// <summary>
         /// Gets the account creation time (Audit support).
         /// </summary>
-        public DateTime CreationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         /// <summary>
         /// Gets the last modification time (Audit support).
         /// </summary>
-        public DateTime? ModificationTime { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether the user is soft-deleted (Soft Deletion support).

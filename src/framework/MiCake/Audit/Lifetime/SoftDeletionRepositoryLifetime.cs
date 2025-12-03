@@ -15,7 +15,7 @@ namespace MiCake.Audit.Lifetime
 
         public static RepositoryEntityState PreSaveChanges(RepositoryEntityState entityState, object entity)
         {
-            if (entity is ISoftDeletion softDeletion)
+            if (entity is ISoftDeletable softDeletion)
             {
                 if (entityState == RepositoryEntityState.Deleted)
                 {

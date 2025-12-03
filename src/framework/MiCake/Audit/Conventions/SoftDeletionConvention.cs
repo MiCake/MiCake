@@ -14,7 +14,7 @@ namespace MiCake.Audit.Conventions
         
         public bool CanApply(Type entityType)
         {
-            return typeof(ISoftDeletion).IsAssignableFrom(entityType);
+            return typeof(ISoftDeletable).IsAssignableFrom(entityType);
         }
         
         public void Configure(Type entityType, EntityConventionContext context)
@@ -27,7 +27,7 @@ namespace MiCake.Audit.Conventions
             
             // Create query filter: entity => !entity.IsDeleted
             var parameter = Expression.Parameter(entityType, "entity");
-            var property = Expression.Property(parameter, nameof(ISoftDeletion.IsDeleted));
+            var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
             var notDeleted = Expression.Not(property);
             context.QueryFilter = Expression.Lambda(notDeleted, parameter);
         }

@@ -25,7 +25,7 @@ namespace MiCake.Audit.Tests
 
             executor.Execute(entity, RepositoryEntityState.Added);
 
-            Assert.Equal(default, entity.CreationTime);
+            Assert.Equal(default, entity.CreatedAt);
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace MiCake.Audit.Tests
             var beforeGiveTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Added);
 
-            var result = entity.CreationTime >= beforeGiveTime;
+            var result = entity.CreatedAt >= beforeGiveTime;
             Assert.True(result);
         }
 
@@ -55,7 +55,7 @@ namespace MiCake.Audit.Tests
             executor.Execute(entity, RepositoryEntityState.Modified);
             executor.Execute(entity, RepositoryEntityState.Unchanged);
 
-            Assert.Equal(default, entity.CreationTime);
+            Assert.Equal(default, entity.CreatedAt);
         }
 
         [Fact]
@@ -69,7 +69,7 @@ namespace MiCake.Audit.Tests
             var beforeGiveTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Modified);
 
-            var result = entity.ModificationTime >= beforeGiveTime;
+            var result = entity.UpdatedAt >= beforeGiveTime;
             Assert.True(result);
         }
 
@@ -85,7 +85,7 @@ namespace MiCake.Audit.Tests
             executor.Execute(entity, RepositoryEntityState.Deleted);
             executor.Execute(entity, RepositoryEntityState.Unchanged);
 
-            Assert.Null(entity.ModificationTime);
+            Assert.Null(entity.UpdatedAt);
         }
 
         [Fact]
@@ -99,14 +99,14 @@ namespace MiCake.Audit.Tests
             var beforeGiveCreationTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Added);
 
-            var result = entity.CreationTime >= beforeGiveCreationTime;
+            var result = entity.CreatedAt >= beforeGiveCreationTime;
             Assert.True(result);
-            Assert.Null(entity.ModificationTime);
+            Assert.Null(entity.UpdatedAt);
 
             var beforeGiveModificationTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Modified);
 
-            var modificationResult = entity.ModificationTime.Value >= beforeGiveModificationTime;
+            var modificationResult = entity.UpdatedAt.Value >= beforeGiveModificationTime;
             Assert.True(modificationResult);
         }
 
@@ -120,7 +120,7 @@ namespace MiCake.Audit.Tests
 
             executor.Execute(entity, RepositoryEntityState.Added);
 
-            Assert.Equal(default, entity.CreationTime);
+            Assert.Equal(default, entity.CreatedAt);
         }
 
         [Fact]
@@ -159,10 +159,10 @@ namespace MiCake.Audit.Tests
             HasDeletionTimeModel entity = new();
             var executor = provider.GetService<IAuditExecutor>();
 
-            var beforeGiveDeletionTime = DateTime.Now;
+            var beforeGiveDeletionTime = DateTime.UtcNow;
             executor.Execute(entity, RepositoryEntityState.Deleted);
 
-            var result = entity.DeletionTime.Value >= beforeGiveDeletionTime;
+            var result = entity.DeletedAt.Value >= beforeGiveDeletionTime;
 
             Assert.True(entity.IsDeleted);
             Assert.True(result);
@@ -181,7 +181,7 @@ namespace MiCake.Audit.Tests
             executor.Execute(entity, RepositoryEntityState.Unchanged);
 
             Assert.False(entity.IsDeleted);
-            Assert.Null(entity.DeletionTime);
+            Assert.Null(entity.DeletedAt);
         }
 
         [Fact]
@@ -194,7 +194,7 @@ namespace MiCake.Audit.Tests
 
             executor.Execute(entity, RepositoryEntityState.Deleted);
 
-            Assert.Null(entity.DeletionTime);
+            Assert.Null(entity.DeletedAt);
         }
 
         [Fact]
@@ -215,7 +215,7 @@ namespace MiCake.Audit.Tests
                 executor.Execute(entity, RepositoryEntityState.Added);
 
                 // Assert
-                Assert.Equal(fixedTime, entity.CreationTime);
+                Assert.Equal(fixedTime, entity.CreatedAt);
             }
             finally
             {
@@ -242,7 +242,7 @@ namespace MiCake.Audit.Tests
                 executor.Execute(entity, RepositoryEntityState.Modified);
 
                 // Assert
-                Assert.Equal(fixedTime, entity.ModificationTime);
+                Assert.Equal(fixedTime, entity.UpdatedAt);
             }
             finally
             {
@@ -274,8 +274,8 @@ namespace MiCake.Audit.Tests
                 executor.Execute(entity2, RepositoryEntityState.Added);
 
                 // Assert
-                Assert.Equal(firstTime, entity1.CreationTime);
-                Assert.Equal(secondTime, entity2.CreationTime);
+                Assert.Equal(firstTime, entity1.CreatedAt);
+                Assert.Equal(secondTime, entity2.CreatedAt);
             }
             finally
             {
@@ -304,8 +304,8 @@ namespace MiCake.Audit.Tests
                 var afterTime = DateTime.Now;
 
                 // Assert
-                Assert.True(entity.CreationTime >= beforeTime);
-                Assert.True(entity.CreationTime <= afterTime);
+                Assert.True(entity.CreatedAt >= beforeTime);
+                Assert.True(entity.CreatedAt <= afterTime);
             }
             finally
             {

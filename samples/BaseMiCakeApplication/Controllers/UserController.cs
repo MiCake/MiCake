@@ -15,7 +15,7 @@ namespace BaseMiCakeApplication.Controllers
     /// This controller demonstrates:
     /// 1. Dependency injection with constructor parameters
     /// 2. CRUD operations on aggregate roots
-    /// 3. Soft deletion support (via ISoftDeletion interface)
+    /// 3. Soft deletion support (via ISoftDeletable interface)
     /// 4. Proper async/await patterns
     /// 5. RESTful API design
     /// </remarks>
@@ -145,7 +145,7 @@ namespace BaseMiCakeApplication.Controllers
             if (user == null)
                 return NotFound("User not found");
 
-            // Mark as deleted (soft delete via ISoftDeletion)
+            // Mark as deleted (soft delete via ISoftDeletable)
             user.IsDeleted = true;
             await _userRepository.UpdateAsync(user);
 

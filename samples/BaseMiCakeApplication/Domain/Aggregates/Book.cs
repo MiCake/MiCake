@@ -16,7 +16,7 @@ namespace BaseMiCakeApplication.Domain.Aggregates
     /// - Business rule validation
     /// - Aggregate root responsibilities
     /// </remarks>
-    public class Book : AggregateRoot<Guid>, IHasCreationTime, IHasModificationTime
+    public class Book : AggregateRoot<Guid>, IHasCreatedAt, IHasUpdatedAt
     {
         /// <summary>
         /// Gets the book name/title.
@@ -51,12 +51,12 @@ namespace BaseMiCakeApplication.Domain.Aggregates
         /// <summary>
         /// Gets the creation time (Audit support).
         /// </summary>
-        public DateTime CreationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         /// <summary>
         /// Gets the modification time (Audit support).
         /// </summary>
-        public DateTime? ModificationTime { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the Book class.

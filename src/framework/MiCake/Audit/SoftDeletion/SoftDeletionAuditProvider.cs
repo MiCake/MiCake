@@ -15,13 +15,13 @@ namespace MiCake.Audit.SoftDeletion
                 return;
 
             var entity = context.Entity;
-            if (entity is not ISoftDeletion softDeletionObj)
+            if (entity is not ISoftDeletable softDeletionObj)
                 return;
 
             softDeletionObj.IsDeleted = true;
 
-            if (entity is IHasDeletionTime hasDeletionTimeObj)
-                hasDeletionTimeObj.DeletionTime = DateTime.Now;
+            if (entity is IHasDeletedAt hasDeletionTimeObj)
+                hasDeletionTimeObj.DeletedAt = DefaultTimeAuditProvider.CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
         }
     }
 }

@@ -2,8 +2,8 @@
 
 namespace MiCake.Audit.Tests.Fakes
 {
-    public class HasCreationTimeButNotEntity : IHasCreationTime
+    public class HasCreationTimeButNotEntity : IHasCreatedAt
     {
-        public DateTime CreationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

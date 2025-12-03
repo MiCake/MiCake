@@ -124,7 +124,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
     }
     
     // Test entity for the custom DbContext
-    public class TestSoftDeletableEntity : Entity, ISoftDeletion
+    public class TestSoftDeletableEntity : Entity, ISoftDeletable
     {
         public string Name { get; set; }
         public bool IsDeleted { get; set; }

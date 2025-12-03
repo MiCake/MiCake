@@ -121,17 +121,17 @@ namespace MiCake.Tests.Store.NewConventions
     }
     
     // Test entities for convention testing
-    public class TestEntity : Entity, ISoftDeletion
+    public class TestEntity : Entity, ISoftDeletable
     {
         public string Name { get; set; }
         public bool IsDeleted { get; set; }
     }
     
-    public class AuditableEntity : Entity, IHasCreationTime, IHasModificationTime
+    public class AuditableEntity : Entity, IHasCreatedAt, IHasUpdatedAt
     {
         public string Title { get; set; }
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
     
     public class RegularEntity : Entity

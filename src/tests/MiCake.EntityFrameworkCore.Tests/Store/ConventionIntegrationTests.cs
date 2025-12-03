@@ -169,17 +169,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
     }
     
     // Test entities with unique names for integration tests
-    public class IntegrationSoftDeletableEntity : Entity, ISoftDeletion
+    public class IntegrationSoftDeletableEntity : Entity, ISoftDeletable
     {
         public string Name { get; set; }
         public bool IsDeleted { get; set; }
     }
     
-    public class IntegrationAuditableEntity : Entity, IHasCreationTime, IHasModificationTime
+    public class IntegrationAuditableEntity : Entity, IHasCreatedAt, IHasUpdatedAt
     {
         public string Title { get; set; }
-        public DateTime CreationTime { get; set; }
-        public DateTime? ModificationTime { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
     
     public class IntegrationRegularEntity : Entity
