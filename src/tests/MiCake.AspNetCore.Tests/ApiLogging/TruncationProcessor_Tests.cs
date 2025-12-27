@@ -197,8 +197,6 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         [Fact]
         public async Task ProcessAsync_TruncateWithSummary_JsonArray_ProvidesSummary()
         {
-            // Arrange
-            var jsonArray = """[{"id": 1}, {"id": 2}, {"id": 3}, {"id": 4}, {"id": 5}]""";
             // Make it large enough to trigger truncation
             var largeArray = "[" + string.Join(",", Enumerable.Range(1, 100).Select(i => $$"""{"id": {{i}}, "data": "{{new string('X', 100)}}"}""")) + "]";
             var entry = CreateLogEntry(responseBody: largeArray);

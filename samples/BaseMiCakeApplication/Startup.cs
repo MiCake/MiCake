@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BaseMiCakeApplication.EFCore;
 using BaseMiCakeApplication.MiCakeFeatures;
 using FluentValidation;
@@ -88,6 +89,7 @@ namespace BaseMiCakeApplication
                 options.AspNetConfig = asp =>
                 {
                     asp.UseApiLogging = true;
+                    asp.ApiLoggingOptions.SensitiveFields = ["password", "token"];
                 };
             })
             .Build();

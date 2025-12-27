@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,7 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         #region Logging Enabled/Disabled Tests
 
         [Fact]
-        public async Task OnActionExecutionAsync_LoggingDisabled_SkipsLogging()
+        public async Task OnResourceExecutionAsync_LoggingDisabled_SkipsLogging()
         {
             // Arrange
             var logWriter = new TestApiLogWriter();
@@ -34,26 +34,26 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(enabled: false),
                 logWriter: logWriter);
 
-            var context = CreateActionExecutingContext();
+            var context = CreateResourceExecutingContext();
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert - no log entry should be stored in HttpContext
             Assert.False(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
         }
 
         [Fact]
-        public async Task OnActionExecutionAsync_LoggingEnabled_CreatesLogEntry()
+        public async Task OnResourceExecutionAsync_LoggingEnabled_CreatesLogEntry()
         {
             // Arrange
             var filter = CreateFilter(
                 configProvider: new TestConfigProvider(enabled: true));
 
-            var context = CreateActionExecutingContext();
+            var context = CreateResourceExecutingContext();
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.True(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
@@ -64,7 +64,7 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         #region Path Exclusion Tests
 
         [Fact]
-        public async Task OnActionExecutionAsync_ExcludedPath_SkipsLogging()
+        public async Task OnResourceExecutionAsync_ExcludedPath_SkipsLogging()
         {
             // Arrange
             var logWriter = new TestApiLogWriter();
@@ -72,17 +72,17 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(excludedPaths: ["/health"]),
                 logWriter: logWriter);
 
-            var context = CreateActionExecutingContext(path: "/health");
+            var context = CreateResourceExecutingContext(path: "/health");
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.False(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
         }
 
         [Fact]
-        public async Task OnActionExecutionAsync_ExcludedPathWithGlob_SkipsLogging()
+        public async Task OnResourceExecutionAsync_ExcludedPathWithGlob_SkipsLogging()
         {
             // Arrange
             var logWriter = new TestApiLogWriter();
@@ -90,26 +90,26 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(excludedPaths: ["/api/files/*"]),
                 logWriter: logWriter);
 
-            var context = CreateActionExecutingContext(path: "/api/files/download");
+            var context = CreateResourceExecutingContext(path: "/api/files/download");
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.False(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
         }
 
         [Fact]
-        public async Task OnActionExecutionAsync_NonExcludedPath_ProcessesLogging()
+        public async Task OnResourceExecutionAsync_NonExcludedPath_ProcessesLogging()
         {
             // Arrange
             var filter = CreateFilter(
                 configProvider: new TestConfigProvider(excludedPaths: ["/health"]));
 
-            var context = CreateActionExecutingContext(path: "/api/users");
+            var context = CreateResourceExecutingContext(path: "/api/users");
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.True(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
@@ -128,10 +128,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(excludeStatusCodes: [200]),
                 logWriter: logWriter);
 
-            var actionContext = CreateActionExecutingContext(statusCode: 200);
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext(statusCode: 200);
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext, statusCode: 200);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext, statusCode: 200);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -149,10 +149,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(excludeStatusCodes: [200]),
                 logWriter: logWriter);
 
-            var actionContext = CreateActionExecutingContext(statusCode: 400);
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext(statusCode: 400);
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext, statusCode: 400);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext, statusCode: 400);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -170,10 +170,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(excludeStatusCodes: []),
                 logWriter: logWriter);
 
-            var actionContext = CreateActionExecutingContext(statusCode: 200);
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext(statusCode: 200);
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext, statusCode: 200);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext, statusCode: 200);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -196,10 +196,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(excludeStatusCodes: []),
                 logWriter: logWriter);
 
-            var actionContext = CreateActionExecutingContext(statusCode: statusCode);
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext(statusCode: statusCode);
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext, statusCode: statusCode);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext, statusCode: statusCode);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -214,7 +214,7 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         #region Attribute Tests
 
         [Fact]
-        public async Task OnActionExecutionAsync_SkipApiLoggingAttribute_SkipsLogging()
+        public async Task OnResourceExecutionAsync_SkipApiLoggingAttribute_SkipsLogging()
         {
             // Arrange
             var logWriter = new TestApiLogWriter();
@@ -224,17 +224,17 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 typeof(SkipLoggingController),
                 nameof(SkipLoggingController.SkippedAction));
 
-            var context = CreateActionExecutingContext(actionDescriptor: actionDescriptor);
+            var context = CreateResourceExecutingContext(actionDescriptor: actionDescriptor);
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.False(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
         }
 
         [Fact]
-        public async Task OnActionExecutionAsync_SkipApiLoggingAttributeOnController_SkipsLogging()
+        public async Task OnResourceExecutionAsync_SkipApiLoggingAttributeOnController_SkipsLogging()
         {
             // Arrange
             var logWriter = new TestApiLogWriter();
@@ -244,10 +244,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 typeof(SkipLoggingAtControllerLevelController),
                 nameof(SkipLoggingAtControllerLevelController.SomeAction));
 
-            var context = CreateActionExecutingContext(actionDescriptor: actionDescriptor);
+            var context = CreateResourceExecutingContext(actionDescriptor: actionDescriptor);
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.False(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
@@ -266,10 +266,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 typeof(AlwaysLogController),
                 nameof(AlwaysLogController.AlwaysLoggedAction));
 
-            var actionContext = CreateActionExecutingContext(statusCode: 200, actionDescriptor: actionDescriptor);
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext(statusCode: 200, actionDescriptor: actionDescriptor);
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext, statusCode: 200);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext, statusCode: 200);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -296,10 +296,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 logWriter: logWriter,
                 processors: [processor1, processor2, processor3]);
 
-            var actionContext = CreateActionExecutingContext();
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext();
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -318,10 +318,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 logWriter: logWriter,
                 processors: [nullProcessor]);
 
-            var actionContext = CreateActionExecutingContext();
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext();
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -341,10 +341,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 logWriter: logWriter,
                 processors: [throwingProcessor, normalProcessor]);
 
-            var actionContext = CreateActionExecutingContext();
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext();
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext);
 
             // Act
             await filter.OnResultExecutionAsync(resultContext, () => Task.FromResult(CreateResultExecutedContext(resultContext)));
@@ -358,17 +358,17 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         #region Request Body Capture Tests
 
         [Fact]
-        public async Task OnActionExecutionAsync_LogRequestBodyEnabled_CapturesBody()
+        public async Task OnResourceExecutionAsync_LogRequestBodyEnabled_CapturesBody()
         {
             // Arrange
             var filter = CreateFilter(
                 configProvider: new TestConfigProvider(logRequestBody: true));
 
             var requestBody = """{"name": "test"}""";
-            var context = CreateActionExecutingContext(requestBody: requestBody);
+            var context = CreateResourceExecutingContext(requestBody: requestBody);
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.True(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
@@ -378,17 +378,17 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         }
 
         [Fact]
-        public async Task OnActionExecutionAsync_LogRequestBodyDisabled_DoesNotCaptureBody()
+        public async Task OnResourceExecutionAsync_LogRequestBodyDisabled_DoesNotCaptureBody()
         {
             // Arrange
             var filter = CreateFilter(
                 configProvider: new TestConfigProvider(logRequestBody: false));
 
             var requestBody = """{"name": "test"}""";
-            var context = CreateActionExecutingContext(requestBody: requestBody);
+            var context = CreateResourceExecutingContext(requestBody: requestBody);
 
             // Act
-            await filter.OnActionExecutionAsync(context, () => Task.FromResult(CreateActionExecutedContext(context)));
+            await filter.OnResourceExecutionAsync(context, () => Task.FromResult(CreateResourceExecutedContext(context)));
 
             // Assert
             Assert.True(context.HttpContext.Items.ContainsKey("MiCake.ApiLogging.Entry"));
@@ -410,11 +410,11 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(logResponseBody: true),
                 logWriter: logWriter);
 
-            var actionContext = CreateActionExecutingContext();
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext();
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
             var resultContext = CreateResultExecutingContext(
-                actionContext.HttpContext,
+                resourceContext.HttpContext,
                 result: new ObjectResult(new { Id = 1, Name = "Test" }));
 
             // Act
@@ -435,11 +435,11 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 configProvider: new TestConfigProvider(logResponseBody: false),
                 logWriter: logWriter);
 
-            var actionContext = CreateActionExecutingContext();
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext();
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
             var resultContext = CreateResultExecutingContext(
-                actionContext.HttpContext,
+                resourceContext.HttpContext,
                 result: new ObjectResult(new { Id = 1, Name = "Test" }));
 
             // Act
@@ -483,10 +483,10 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
             var throwingLogWriter = new ThrowingApiLogWriter();
             var filter = CreateFilter(logWriter: throwingLogWriter);
 
-            var actionContext = CreateActionExecutingContext();
-            await filter.OnActionExecutionAsync(actionContext, () => Task.FromResult(CreateActionExecutedContext(actionContext)));
+            var resourceContext = CreateResourceExecutingContext();
+            await filter.OnResourceExecutionAsync(resourceContext, () => Task.FromResult(CreateResourceExecutedContext(resourceContext)));
 
-            var resultContext = CreateResultExecutingContext(actionContext.HttpContext);
+            var resultContext = CreateResultExecutingContext(resourceContext.HttpContext);
 
             // Act & Assert - Should not throw
             var exception = await Record.ExceptionAsync(() =>
@@ -512,7 +512,7 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
                 NullLogger<ApiLoggingFilter>.Instance);
         }
 
-        private static ActionExecutingContext CreateActionExecutingContext(
+        private static ResourceExecutingContext CreateResourceExecutingContext(
             string method = "GET",
             string path = "/api/test",
             int statusCode = 200,
@@ -521,20 +521,18 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         {
             var httpContext = CreateFakeHttpContext(method, path, statusCode, requestBody);
 
-            return new ActionExecutingContext(
+            return new ResourceExecutingContext(
                 new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(),
                     actionDescriptor ?? new ActionDescriptor()),
                 new List<IFilterMetadata>(),
-                new Dictionary<string, object?>(),
-                new object());
+                new List<IValueProviderFactory>());
         }
 
-        private static ActionExecutedContext CreateActionExecutedContext(ActionExecutingContext context)
+        private static ResourceExecutedContext CreateResourceExecutedContext(ResourceExecutingContext context)
         {
-            return new ActionExecutedContext(
+            return new ResourceExecutedContext(
                 context,
-                context.Filters,
-                context.Controller);
+                context.Filters);
         }
 
         private static ResultExecutingContext CreateResultExecutingContext(

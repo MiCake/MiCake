@@ -16,9 +16,9 @@ using Microsoft.Extensions.Logging;
 namespace MiCake.AspNetCore.ApiLogging.Internals
 {
     /// <summary>
-    /// MVC Action Filter that logs API requests and responses.
+    /// MVC Resource and Result Filter that logs API requests and responses.
     /// </summary>
-    internal sealed class ApiLoggingFilter : IAsyncActionFilter, IAsyncResultFilter
+    internal sealed class ApiLoggingFilter : IAsyncResourceFilter, IAsyncResultFilter
     {
         private readonly IApiLoggingConfigProvider _configProvider;
         private readonly IApiLogEntryFactory _entryFactory;
@@ -48,7 +48,11 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
             _logger = logger;
         }
 
-        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        /// <summary>
+        /// Resource filter runs before model binding, allowing us to enable request buffering
+        /// before the [FromBody] model binder reads the request stream.
+        /// </summary>
+        public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
         {
             var config = await _configProvider.GetEffectiveConfigAsync().ConfigureAwait(false);
 
@@ -92,7 +96,7 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
             // Create initial log entry with request info
             var entry = _entryFactory.CreateEntry(context.HttpContext, config);
 
-            // Capture request body if enabled
+            // CRITICAL: Enable buffering BEFORE model binding reads the request body
             if (config.LogRequestBody)
             {
                 entry.Request.Body = await CaptureRequestBodyAsync(
