@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
-using Xunit;
 using System.Threading.Tasks;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore;

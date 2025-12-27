@@ -1,4 +1,5 @@
-﻿using MiCake.AspNetCore.Responses;
+﻿using MiCake.AspNetCore.ApiLogging;
+using MiCake.AspNetCore.Responses;
 using MiCake.DDD.Uow;
 using System.Collections.Generic;
 
@@ -25,10 +26,39 @@ namespace MiCake.AspNetCore
         /// </summary>
         public ResponseWrapperOptions DataWrapperOptions { get; set; }
 
+        /// <summary>
+        /// Whether to enable API request/response logging.
+        /// When true, HTTP requests and responses will be logged for debugging, auditing, and monitoring.
+        /// Configure logging behavior via <see cref="ApiLoggingOptions"/>.
+        /// <para>
+        /// Default: false
+        /// </para>
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// services.AddMiCake(typeof(MyModule))
+        ///     .UseAspNetCore(options =>
+        ///     {
+        ///         options.UseApiLogging = true;
+        ///         options.ApiLoggingOptions.ExcludeStatusCodes = [200, 204];
+        ///         options.ApiLoggingOptions.SensitiveFields.Add("phoneNumber");
+        ///     })
+        ///     .Build();
+        /// </code>
+        /// </example>
+        public bool UseApiLogging { get; set; } = false;
+
+        /// <summary>
+        /// The API logging configuration for MiCake in ASP.NET Core.
+        /// Only takes effect when <see cref="UseApiLogging"/> is set to true.
+        /// </summary>
+        public ApiLoggingOptions ApiLoggingOptions { get; set; }
+
         public MiCakeAspNetOptions()
         {
             UnitOfWork = new MiCakeAspNetUowOptions();
             DataWrapperOptions = new ResponseWrapperOptions();
+            ApiLoggingOptions = new ApiLoggingOptions();
         }
     }
 

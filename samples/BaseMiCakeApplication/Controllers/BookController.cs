@@ -1,14 +1,13 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
 using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Dto;
+using MiCake.AspNetCore.ApiLogging;
 using MiCake.Core;
-using MiCake.DDD.Domain;
 using MiCake.Util.Query.Dynamic;
 using MiCake.Util.Query.Paging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Controllers
@@ -23,6 +22,7 @@ namespace BaseMiCakeApplication.Controllers
     /// 3. Pagination support
     /// 4. Exception handling (BusinessException, DomainException)
     /// 5. Proper async/await patterns
+    /// 6. API Logging attributes (AlwaysLog, LogFullResponse)
     /// </remarks>
     /// <remarks>
     /// Initializes a new instance of the BookController.
@@ -41,7 +41,12 @@ namespace BaseMiCakeApplication.Controllers
         /// </summary>
         /// <param name="bookId">The book ID</param>
         /// <returns>The book if found; otherwise null</returns>
+        /// <remarks>
+        /// This endpoint uses [LogFullResponse] to capture the complete response,
+        /// which is useful for debugging entity serialization issues.
+        /// </remarks>
         [HttpGet("{bookId}")]
+        [LogFullResponse]
         public async Task<ActionResult<Book>> GetBook(Guid bookId)
         {
             _logger.LogInformation($"Getting book with ID: {bookId}");
@@ -76,7 +81,13 @@ namespace BaseMiCakeApplication.Controllers
         /// </summary>
         /// <param name="bookDto">The book data</param>
         /// <returns>The created book ID</returns>
+        /// <remarks>
+        /// This endpoint uses [AlwaysLog] to ensure all book creation operations
+        /// are logged for audit purposes, even if successful responses (200/201)
+        /// are normally excluded from logging.
+        /// </remarks>
         [HttpPost]
+        [AlwaysLog]
         public async Task<ActionResult<Guid>> AddBook([FromBody] AddBookDto bookDto)
         {
             _logger.LogInformation($"Adding new book: {bookDto.BookName}");
