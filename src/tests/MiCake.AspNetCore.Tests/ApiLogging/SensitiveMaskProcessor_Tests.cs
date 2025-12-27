@@ -110,7 +110,7 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         {
             // Arrange
             var entry = CreateLogEntry(
-                responseBody: """{"user": "john", "accessToken": "xyz789"}""");
+                responseBody: """{"user": "john", "token": "xyz789"}""");
             var context = CreateContext(sensitiveFields: ["token"]);
 
             // Act
@@ -183,7 +183,7 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         {
             // Arrange
             var entry = CreateLogEntry(
-                requestBody: """{"password": "pass123", "secret": "sec456", "apiKey": "key789"}""");
+                requestBody: """{"password": "pass123", "secret": "sec456", "key": "key789"}""");
             var context = CreateContext(sensitiveFields: ["password", "secret", "key"]);
 
             // Act

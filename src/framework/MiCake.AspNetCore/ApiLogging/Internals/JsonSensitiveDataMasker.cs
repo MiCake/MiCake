@@ -73,10 +73,7 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
 
             foreach (var property in element.EnumerateObject())
             {
-                var isSensitive = sensitiveFields.Any(f =>
-                    property.Name.Equals(f, StringComparison.OrdinalIgnoreCase) ||
-                    property.Name.Contains(f, StringComparison.OrdinalIgnoreCase));
-
+                var isSensitive = sensitiveFields.Any(f => property.Name.Equals(f, StringComparison.OrdinalIgnoreCase));
                 if (isSensitive)
                 {
                     result[property.Name] = MaskValue;

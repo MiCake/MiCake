@@ -1,4 +1,6 @@
 using System;
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -28,6 +30,9 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
         private const string StopwatchKey = "MiCake.ApiLogging.Stopwatch";
         private const string ConfigKey = "MiCake.ApiLogging.Config";
         private const string AttributeInfoKey = "MiCake.ApiLogging.AttributeInfo";
+
+        // Cache compiled regex patterns for glob matching to avoid repeated compilation
+        private static readonly ConcurrentDictionary<string, Regex> _globPatternCache = new();
 
         public ApiLoggingFilter(
             IApiLoggingConfigProvider configProvider,
@@ -200,13 +205,16 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
 
         private static bool MatchesGlobPattern(string path, string pattern)
         {
-            // Simple glob pattern matching
-            // Convert glob pattern to regex
-            var regexPattern = "^" + Regex.Escape(pattern)
-                .Replace("\\*\\*", ".*")
-                .Replace("\\*", "[^/]*") + "$";
+            // Cache compiled regex patterns to avoid repeated compilation on each request
+            var regex = _globPatternCache.GetOrAdd(pattern, p =>
+            {
+                var regexPattern = "^" + Regex.Escape(p)
+                    .Replace("\\*\\*", ".*")
+                    .Replace("\\*", "[^/]*") + "$";
+                return new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            });
 
-            return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
+            return regex.IsMatch(path);
         }
 
         private static async Task<string?> CaptureRequestBodyAsync(HttpContext context, int maxSize)
@@ -222,20 +230,29 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
             // Enable buffering to allow reading the body multiple times
             request.EnableBuffering();
 
+            var bodySize = Math.Min((int)request.ContentLength.Value, maxSize);
+            var buffer = ArrayPool<byte>.Shared.Rent(bodySize);
             try
             {
-                var bodySize = Math.Min((int)request.ContentLength.Value, maxSize);
-                var buffer = new byte[bodySize];
-
                 request.Body.Position = 0;
                 var bytesRead = await request.Body.ReadAsync(buffer.AsMemory(0, bodySize)).ConfigureAwait(false);
                 request.Body.Position = 0;
 
                 return Encoding.UTF8.GetString(buffer, 0, bytesRead);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                // Log warning for unexpected failures during request body capture
+                // This helps with debugging while gracefully degrading the logging feature
+                if (context.RequestServices.GetService(typeof(ILogger<ApiLoggingFilter>)) is ILogger<ApiLoggingFilter> logger)
+                {
+                    logger.LogWarning(ex, "Failed to capture request body for API logging");
+                }
                 return null;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 

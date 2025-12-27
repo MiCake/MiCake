@@ -10,6 +10,9 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
     /// </summary>
     internal sealed class TruncationProcessor : IApiLogProcessor
     {
+        // Reserve space for the truncation marker "...[truncated]"
+        private const int TruncationMarkerReservedBytes = 20;
+
         public int Order => 10; // Run after masking
 
         public Task<ApiLogEntry?> ProcessAsync(
@@ -81,7 +84,7 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
             foreach (var c in content)
             {
                 var charBytes = Encoding.UTF8.GetByteCount([c]);
-                if (byteCount + charBytes > maxBytes - 20) // Reserve space for "[truncated]"
+                if (byteCount + charBytes > maxBytes - TruncationMarkerReservedBytes)
                 {
                     break;
                 }

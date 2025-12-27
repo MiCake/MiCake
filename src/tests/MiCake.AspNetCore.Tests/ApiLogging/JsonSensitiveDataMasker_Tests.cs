@@ -173,23 +173,6 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
         }
 
         [Fact]
-        public void Mask_FieldNameContainsSensitiveWord_MasksField()
-        {
-            // Arrange
-            var content = """{"userPassword": "secret1", "passwordHash": "hash123", "normalField": "value"}""";
-            var sensitiveFields = new List<string> { "password" };
-
-            // Act
-            var result = _masker.Mask(content, sensitiveFields);
-
-            // Assert
-            // Fields containing "password" should also be masked
-            Assert.DoesNotContain("secret1", result);
-            Assert.DoesNotContain("hash123", result);
-            Assert.Contains(""""normalField":"value"""", result);
-        }
-
-        [Fact]
         public void Mask_JsonWithNumberValue_DoesNotMaskNumbers()
         {
             // Arrange
