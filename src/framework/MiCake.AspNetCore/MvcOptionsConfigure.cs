@@ -1,4 +1,5 @@
-﻿using MiCake.AspNetCore.Responses.Internals;
+﻿using MiCake.AspNetCore.ApiLogging.Internals;
+using MiCake.AspNetCore.Responses.Internals;
 using MiCake.AspNetCore.Uow;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -19,13 +20,19 @@ namespace MiCake.AspNetCore
 
         public void Configure(MvcOptions options)
         {
-            options.Filters.Add(typeof(UnitOfWorkFilter));
+            options.Filters.Add<UnitOfWorkFilter>();
 
             //Add Data wrapper filters
             if (_micakeAspNetOptions.UseDataWrapper)
             {
-                options.Filters.Add(typeof(ResponseWrapperFilter));
-                options.Filters.Add(typeof(ExceptionResponseWrapperFilter));
+                options.Filters.Add<ResponseWrapperFilter>();
+                options.Filters.Add<ExceptionResponseWrapperFilter>();
+            }
+
+            //Add API logging filter (runs after response wrapper to capture wrapped responses)
+            if (_micakeAspNetOptions.UseApiLogging)
+            {
+                options.Filters.Add<ApiLoggingFilter>();
             }
         }
     }

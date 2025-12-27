@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace BaseMiCakeApplication.Dto
+﻿namespace BaseMiCakeApplication.Dto
 {
     /// <summary>
     /// DTO for representing user information in responses.

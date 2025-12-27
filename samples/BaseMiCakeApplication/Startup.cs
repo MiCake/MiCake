@@ -1,6 +1,8 @@
 using BaseMiCakeApplication.EFCore;
+using BaseMiCakeApplication.MiCakeFeatures;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MiCake.AspNetCore.ApiLogging;
 using MiCake.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,7 +11,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
 
 namespace BaseMiCakeApplication
 {
@@ -69,6 +70,11 @@ namespace BaseMiCakeApplication
             // Register HTTP context accessor
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
+            // Register custom API log writer
+            // This demonstrates how to implement a custom IApiLogWriter
+            // You can replace this with your own implementation (e.g., database, Elasticsearch, file)
+            services.AddSingleton<IApiLogWriter, ConsoleApiLogWriter>();
+
             // Register and configure MiCake framework
             services.AddMiCakeWithDefault<BaseMiCakeModule, BaseAppDbContext>(options =>
             {
@@ -78,12 +84,13 @@ namespace BaseMiCakeApplication
                     // Application configuration
                 };
 
-                // Configure MiCake ASP.NET Core options
+                // Configure MiCake ASP.NET Core options (including API Logging)
                 options.AspNetConfig = asp =>
                 {
-                    // ASP.NET Core configuration
+                    asp.UseApiLogging = true;
                 };
-            }).Build();
+            })
+            .Build();
 
             // Configure Swagger/OpenAPI
             services.AddSwaggerGen();
