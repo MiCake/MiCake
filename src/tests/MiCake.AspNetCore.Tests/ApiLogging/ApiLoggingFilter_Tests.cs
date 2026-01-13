@@ -23,6 +23,50 @@ namespace MiCake.AspNetCore.Tests.ApiLogging
     /// </summary>
     public class ApiLoggingFilter_Tests
     {
+        #region IOrderedFilter Tests
+
+        [Fact]
+        public void Order_ShouldReturnIntMaxValue()
+        {
+            // Arrange
+            var filter = CreateFilter();
+
+            // Assert - Filter should run last
+            Assert.Equal(int.MaxValue, filter.Order);
+        }
+
+        [Fact]
+        public void Filter_ShouldImplementIOrderedFilter()
+        {
+            // Arrange
+            var filter = CreateFilter();
+
+            // Assert
+            Assert.IsAssignableFrom<IOrderedFilter>(filter);
+        }
+
+        [Fact]
+        public void Filter_ShouldImplementIAsyncResourceFilter()
+        {
+            // Arrange
+            var filter = CreateFilter();
+
+            // Assert
+            Assert.IsAssignableFrom<IAsyncResourceFilter>(filter);
+        }
+
+        [Fact]
+        public void Filter_ShouldImplementIAsyncResultFilter()
+        {
+            // Arrange
+            var filter = CreateFilter();
+
+            // Assert
+            Assert.IsAssignableFrom<IAsyncResultFilter>(filter);
+        }
+
+        #endregion
+
         #region Logging Enabled/Disabled Tests
 
         [Fact]

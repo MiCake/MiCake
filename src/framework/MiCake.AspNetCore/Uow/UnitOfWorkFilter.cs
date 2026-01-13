@@ -16,11 +16,13 @@ namespace MiCake.AspNetCore.Uow
     /// Creates, commits or rolls back UoW based on action execution result and configured options.
     /// Supports declarative configuration via [UnitOfWork] attribute.
     /// </summary>
-    public class UnitOfWorkFilter : IAsyncActionFilter
+    public class UnitOfWorkFilter : IAsyncActionFilter, IOrderedFilter
     {
         private readonly IUnitOfWorkManager _unitOfWorkManager;
         private readonly MiCakeAspNetUowOptions _uowOptions;
         private readonly ILogger<UnitOfWorkFilter> _logger;
+
+        public int Order => int.MaxValue; // Run last
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnitOfWorkFilter"/> class.

@@ -407,6 +407,24 @@ namespace MiCake.AspNetCore.Tests.Uow
 
         #endregion
 
+        #region IOrderedFilter Tests
+
+        [Fact]
+        public void Order_ShouldReturnIntMaxValue()
+        {
+            // Assert - Filter should run last
+            Assert.Equal(int.MaxValue, _filter.Order);
+        }
+
+        [Fact]
+        public void Filter_ShouldImplementIOrderedFilter()
+        {
+            // Assert
+            Assert.IsAssignableFrom<IOrderedFilter>(_filter);
+        }
+
+        #endregion
+
         #region Edge Cases
 
         [Fact]

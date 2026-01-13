@@ -1,6 +1,6 @@
 <p align="center">
   <a href="http://www.micake.net">
-    <img width="180px" src="assets/logo.svg">
+    <img width="180px" src="assets/readme_logo.png">
   </a>
 </p>
 

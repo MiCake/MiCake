@@ -4,12 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Uow\**" />
-    <EmbeddedResource Remove="Uow\**" />
-    <None Remove="Uow\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
   </ItemGroup>
 

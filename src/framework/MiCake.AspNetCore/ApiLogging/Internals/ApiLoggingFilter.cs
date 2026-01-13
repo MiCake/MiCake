@@ -18,7 +18,7 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
     /// <summary>
     /// MVC Resource and Result Filter that logs API requests and responses.
     /// </summary>
-    internal sealed class ApiLoggingFilter : IAsyncResourceFilter, IAsyncResultFilter
+    internal sealed class ApiLoggingFilter : IAsyncResourceFilter, IAsyncResultFilter, IOrderedFilter
     {
         private readonly IApiLoggingConfigProvider _configProvider;
         private readonly IApiLogEntryFactory _entryFactory;
@@ -33,6 +33,8 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
 
         // Cache compiled regex patterns for glob matching to avoid repeated compilation
         private static readonly ConcurrentDictionary<string, Regex> _globPatternCache = new();
+
+        public int Order => int.MaxValue; // Run last
 
         public ApiLoggingFilter(
             IApiLoggingConfigProvider configProvider,
