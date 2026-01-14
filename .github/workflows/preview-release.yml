@@ -1,0 +1,139 @@
+name: Preview Release
+
+on:
+  push:
+    branches:
+      - 'releases/preview*'
+
+# Prevent concurrent preview releases
+concurrency:
+  group: preview-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  BUILD_CONFIGURATION: 'Release'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  build-and-publish-preview:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    # Cache NuGet packages for faster builds
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build MiCake.All.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+    
+    - name: Run tests
+      run: |
+        dotnet test src/tests/**/*.csproj \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-build \
+          --logger "trx;LogFileName=test-results.trx" \
+          --logger "console;verbosity=minimal"
+    
+    - name: Get preview version number
+      id: preview_version
+      run: |
+        # Extract version from branch name if possible (e.g., releases/preview-v1.0.0 -> 1.0.0)
+        BRANCH_NAME=${GITHUB_REF#refs/heads/releases/}
+        
+        # Try to extract version from branch name (format: preview-v1.0.0 or preview-1.0.0)
+        if [[ "$BRANCH_NAME" =~ v?([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+          MAJOR="${BASH_REMATCH[1]}"
+          MINOR="${BASH_REMATCH[2]}"
+          PATCH="${BASH_REMATCH[3]}"
+          echo "Extracted version from branch name: $MAJOR.$MINOR.$PATCH"
+        else
+          # Fallback to environment variables
+          MAJOR=${{ vars.NUGET_VERSION_MAJOR || '1' }}
+          MINOR=${{ vars.NUGET_VERSION_MINOR || '0' }}
+          PATCH=${{ vars.NUGET_VERSION_PATCH || '0' }}
+          echo "Using default version: $MAJOR.$MINOR.$PATCH"
+        fi
+        
+        # Use GitHub run number as prerelease identifier for uniqueness
+        # Format: Major.Minor.Patch-preview.RunNumber
+        PREVIEW_VERSION="${MAJOR}.${MINOR}.${PATCH}-preview.${GITHUB_RUN_NUMBER}"
+        
+        echo "version=${PREVIEW_VERSION}" >> $GITHUB_OUTPUT
+        echo "::notice ::Preview version: ${PREVIEW_VERSION}"
+    
+    - name: Pack preview NuGet packages
+      run: |
+        dotnet pack src/framework/**/*.csproj \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-build \
+          --include-symbols \
+          --include-source \
+          -p:SymbolPackageFormat=snupkg \
+          --output ./artifacts \
+          -p:PackageVersion=${{ steps.preview_version.outputs.version }}
+    
+    - name: Push preview packages to NuGet.org
+      run: |
+        for package in ./artifacts/*.nupkg; do
+          echo "Pushing $package..."
+          dotnet nuget push "$package" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+        done
+    
+    - name: Create preview release summary
+      run: |
+        echo "## 🚀 Preview Release Published" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Version** | \`${{ steps.preview_version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Branch** | \`${GITHUB_REF#refs/heads/}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Commit** | \`${GITHUB_SHA::8}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Published Packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        for pkg in ./artifacts/*.nupkg; do
+          pkgname=$(basename "$pkg" .nupkg)
+          echo "- \`$pkgname\`" >> $GITHUB_STEP_SUMMARY
+        done
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Installation" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "dotnet add package MiCake --version ${{ steps.preview_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload NuGet packages as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: preview-packages-${{ steps.preview_version.outputs.version }}
+        path: |
+          ./artifacts/*.nupkg
+          ./artifacts/*.snupkg
+        retention-days: 30
