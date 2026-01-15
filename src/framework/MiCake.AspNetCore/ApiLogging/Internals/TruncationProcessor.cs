@@ -126,21 +126,18 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
             }
 
             // Check for common wrapper patterns
-            if (element.TryGetProperty("data", out var dataElement))
+            if (element.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Array)
             {
-                if (dataElement.ValueKind == JsonValueKind.Array)
+                var itemCount = dataElement.GetArrayLength();
+
+                // Try to find totalCount property
+                if (element.TryGetProperty("totalCount", out var totalElement) &&
+                    totalElement.TryGetInt32(out var total))
                 {
-                    var itemCount = dataElement.GetArrayLength();
-
-                    // Try to find totalCount property
-                    if (element.TryGetProperty("totalCount", out var totalElement) &&
-                        totalElement.TryGetInt32(out var total))
-                    {
-                        return $"Array with {itemCount} items, totalCount: {total}";
-                    }
-
-                    return $"Array with {itemCount} items";
+                    return $"Array with {itemCount} items, totalCount: {total}";
                 }
+
+                return $"Array with {itemCount} items";
             }
 
             return $"Object with {propertyCount} properties";
