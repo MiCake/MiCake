@@ -53,7 +53,7 @@ jobs:
     
     - name: Run tests
       run: |
-        dotnet test MiCake.All.sln
+        dotnet test MiCake.All.sln \
           --configuration ${{ env.BUILD_CONFIGURATION }} \
           --no-build \
           --logger "trx;LogFileName=test-results.trx" \
