@@ -20,6 +20,9 @@ permissions:
   contents: read
   security-events: write
 
+env:
+  DOTNET_VERSION:  ${{ vars.DOTNET_VERSION }} 
+
 jobs:
   analyze:
     name: Analyze
@@ -37,7 +40,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
