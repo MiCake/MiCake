@@ -1,152 +1,111 @@
 <p align="center">
-  <a href="http://www.micake.net">
-    <img width="180px" src="assets/logo.svg">
+  <a href="https://micake.github.io">
+    <img width="180px" src="assets/readme_logo.png">
   </a>
 </p>
 
-<h1 align="center" >MiCake</h1>
+<h1 align="center">MiCake</h1>
 
 <div align="center">
 
-一款基于.Net Core平台的 **“超轻柔”** 领域驱动设计（DDD）组件
+基于 .NET 的轻量级领域驱动设计（DDD）工具包
 
-[![Nuget Version](https://img.shields.io/nuget/v/MiCake.Core?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake.Core?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake.Core/) [![Maintainability](https://api.codeclimate.com/v1/badges/a9d8163cb3023fdef30a/maintainability)](https://codeclimate.com/github/uoyoCsharp/MiCake/maintainability) [![Build Status](https://dev.azure.com/MiCake/MiCake/_apis/build/status/MiCake?branchName=master)](https://dev.azure.com/MiCake/MiCake/_build/latest?definitionId=5&branchName=master)[![Azure DevOps tests](https://img.shields.io/azure-devops/tests/MiCake/MiCake/5?color=ff69b4&label=Azure%20Tests&logo=Microsoft-Azure&logoColor=white)](https://dev.azure.com/MiCake/MiCake/_build/latest?definitionId=5&branchName=master) [![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/MiCake/MiCake/5?label=Azure%20Coverage&logo=Azure-DevOps)](https://dev.azure.com/MiCake/MiCake/_build/latest?definitionId=5&branchName=master) [![Board Status](https://dev.azure.com/MiCake/e359a201-ca49-495f-92ba-11493e88e94e/9a202286-9c70-40fa-8892-9bd476191d74/_apis/work/boardbadge/e5dd9abe-6df7-4f1c-95d0-762074a5f1e2)](https://dev.azure.com/MiCake/MiCake/_workitems/recentlyupdated/)
+[![Nuget Version](https://img.shields.io/nuget/v/MiCake?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake/) [![Build Status](https://github.com/MiCake/MiCake/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/MiCake/MiCake/actions/workflows/build-and-release.yml) [![codecov](https://codecov.io/gh/MiCake/MiCake/branch/master/graph/badge.svg)](https://codecov.io/gh/MiCake/MiCake) [![License](https://img.shields.io/github/license/MiCake/MiCake)](https://github.com/MiCake/MiCake/blob/master/LICENSE)
 
 </div>
 
-## 🍡 特点
+---
 
-- “快捷” —— 快速将您的项目转换为DDD风格，让您更专注于您的领域代码。
-- “规范” —— 实现了DDD战术模式提出的几乎所有部件，便于使用领域驱动思想来规范项目。
-- “方便” —— 提供项目常用的基础功能（全局异常处理，数据格式化等），便于快速构建项目。
-- “灵活” —— 通过模块进行解耦，您可以根据自身需求使用特定的MiCake模块。
-- “轻柔” —— 无感的融入现有的项目，甚至感觉不到它的存在。
+## 什么是 MiCake？
 
-## 🍧 简介
+MiCake 是一个基于 .NET 开发的轻量级领域驱动设计（DDD）工具包。它旨在帮助开发者快速将现有项目转换为 DDD 风格，同时保持代码的简洁性和灵活性。
 
-`MiCake`（中文名我更喜欢叫它为“米蛋糕”😜）是基于 `.Net Standard` 所开发的领域驱动设计（DDD）工具包。
+MiCake 不是一个传统意义上的"框架"，而是一套便利的"工具集"。它提供了实践 DDD 所需的各种组件和工具，但不会强制改变你的开发习惯。
 
-您只需要通过 `NuGet` 包安装它，并且编写非常少量的代码就能快速使您的项目转变为**DDD**风格。
+## 快速开始
 
-它提供了DDD战术模式中的大部分部件，比如**聚合根、实体、值对象、领域服务**等等，通过这些部件建立您的“领域对象”，将开发重心放在领域层中，其它大部分的交互逻辑都将由`MiCake`来帮您完成。
+迫不及待想要使用 MiCake？我们提供了成熟的模板和示例项目，你只需要使用`dotnet new`命令就能创建一个开箱即用，由 MiCake 驱动的`ASP.NET Core`项目。
 
-**“轻柔”**的**“组件”**？ `MiCake`在设计之初就被定位为“很薄的一层”，它包裹 `.NET` 项目但并不干扰，您仍然可以使用原有的编程习惯进行开发。
+详细的入门指南和使用文档，请访问： 📚 **[在线完整文档 - 快速开始](https://micake.github.io)** 
 
-当不使用`DDD`风格时，您甚至都感觉不到它的存在。它很轻，轻到可以忽略；它不是一个“框架”，不会约束您的开发风格；它不是`DDD`，它只是让您更好的践行`DDD`。
+## 核心特性
 
-`MiCake`的核心是提供领域驱动设计（DDD）的功能，但同时还提供了其它的扩展功能便于您更快速的构建出应用程序：比如依赖注入、自动审计、全局异常处理等等功能。
+### 🚀 快捷
+快速将项目转换为 DDD 风格，专注于领域代码的编写而非框架配置。通过简单的配置和少量代码，即可将现有项目升级为 DDD 架构。
 
-## 🍒 用法
+### 📐 规范
+实现了 DDD 战术模式的核心部件：
 
-### 所需环境版本
+- **实体（Entity）** - 具有唯一标识的领域对象
+- **值对象（Value Object）** - 通过属性值比较的不可变对象
+- **聚合根（Aggregate Root）** - 聚合的根实体，作为外部访问的入口
+- **仓储（Repository）** - 提供聚合根的持久化操作
+- **领域事件（Domain Event）** - 捕获领域中发生的重要事件
+- **领域服务（Domain Service）** - 封装不属于实体或值对象的领域逻辑
+- **工作单元（Unit of Work）** - 管理业务事务和数据一致性
 
-+ .NET Core 5.0及以上版本
-+ Visual Studio 2019
+### 🎯 方便
+提供项目开发常用的基础功能：
 
-在您的`Asp Net Core`项目中通过`NuGet`安装`MiCake.AspNetCore.Start`：
+- 全局异常处理
+- 统一数据返回格式
+- 自动审计功能
+- 软删除支持
+- 依赖注入增强
+- API 请求日志记录
+- 丰富的工具集（缓存、转换器、查询、熔断器等）
 
-```powershell
-Install-Package MiCake.AspNetCore.Start
-```
+### 🪶 轻柔
+"轻柔"是 MiCake 的核心设计理念：
 
-新增一个叫做`MyEntryModule.cs`的文件，该类的作用是告诉`MiCake`该从哪个程序集启动：
+- **非侵入式** - 无感融入现有项目，不改变编程习惯
+- **低耦合** - 框架代码与业务代码清晰分离
+- **可选使用** - 不强制使用 DDD，可逐步引入
+- **几乎无感** - 不使用 DDD 特性时，甚至感觉不到它的存在
 
-```csharp
-public class MyEntryModule : MiCakeModule
-{
-}
-```
+## 适用场景
 
-将您的DbContext继承自`MiCakeDbContext`:
+- ✅ 新项目开发，希望使用 DDD 方法构建清晰架构
+- ✅ 现有项目重构，逐步引入 DDD 改善可维护性
+- ✅ 中小型企业应用，需要良好架构但不想引入重量级框架
+- ✅ 学习和实践 DDD，需要轻量级的参考实现
 
-```csharp
-public class MyDbContext : MiCakeDbContext
-{
-    public MyDbContext(DbContextOptions options) : base(options)
-    {
-    }
+## 环境要求
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        base.OnConfiguring(optionsBuilder);
-    }
+- .NET 10.0 及以上版本
+- Visual Studio 2022+ / Visual Studio Code / Rider
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        //不要删除该行代码
-        base.OnModelCreating(modelBuilder);
-    }
-}
-```
+## NuGet 包
 
-在`Startup.cs`中添加`MiCake`服务：
+| 包名                       | 版本                                                                           | 说明                  |
+| -------------------------- | ------------------------------------------------------------------------------ | --------------------- |
+| MiCake                     | ![Nuget](https://img.shields.io/nuget/v/MiCake?logo=nuget)                     | DDD 核心组件          |
+| MiCake.EntityFrameworkCore | ![Nuget](https://img.shields.io/nuget/v/MiCake.EntityFrameworkCore?logo=nuget) | EF Core 集成支持      |
+| MiCake.AspNetCore          | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore?logo=nuget)          | ASP.NET Core 集成支持 |
 
-```csharp
-public void ConfigureServices(IServiceCollection services)
-{
-    ………………
+更多包信息请访问 [NuGet.org](https://www.nuget.org/packages?q=micake)
 
-   //添加该代码 用于配置MiCake
-   services.AddMiCakeWithDefault<MyDbContext, MyEntryModule>()
-           .Build();
-}
+## 贡献
 
-public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-{
-    …………
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/MiCake/MiCake/pulls)
 
-    //添加该代码 用于启动MiCake。确保该代码位于UseEndpoints之前
-    app.StartMiCake();
-    app.UseEndpoints(…………);
-}
-```
+我们欢迎社区贡献！
 
-是的，就是如此简单。`AddMiCakeWithDefault`是`MiCake`所提供的基础使用方案，您可以通过查阅文档来获取更丰富的使用方法。
+- 💡 [提交问题](https://github.com/MiCake/MiCake/issues/new) - 报告 Bug 或功能建议
+- 🔧 [提交 PR](https://github.com/MiCake/MiCake/pulls) - 改进代码或文档
+- 💬 [参与讨论](https://github.com/MiCake/MiCake/discussions) - 分享经验和最佳实践
 
-文档中心提供了一篇[《Wiki - 搭建起步程序》](https://github.com/uoyoCsharp/MiCake/wiki/%E8%B5%B7%E6%AD%A5)来介绍如何使用`MiCake`，也许您可以从中获取一些帮助。
+## 社区与支持
 
-## 🍉 文档
+- 📖 [官方文档](https://micake.github.io)
+- 💻 [GitHub 仓库](https://github.com/MiCake/MiCake)
+- 📝 [作者博客](https://www.cnblogs.com/uoyo/)
+- 📦 [NuGet 包](https://www.nuget.org/packages?q=micake)
 
-点击跳转至：[文档中心](https://github.com/uoyoCsharp/MiCake/wiki)。
+---
 
-## 🍊 示例项目
+<div align="center">
 
-您可能会对大量的文字教程而感到枯燥，因此我们提供了以下的几个演示项目供您参考：
+**MiCake** - 让 DDD 更简单
 
-+ **预约星** (<font color="red">Coming Soon</font>)
-+ **旅人帐** (<font color="red">Coming Soon</font>)
-
-`MiCake.Samples`仓库中放置了一些`MiCake`所公开的示例项目和实验性项目，您可以跳转至[该仓库](https://github.com/uoyoCsharp/MiCake.Samples)进行查阅.
-
-## 🍍 当前版本
-
-| Nuget Package              | 版本信息                                                                                                        | 描述                            |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| MiCake.Core                | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core?label=MiCake.Core&logo=nuget)                               | MiCake 核心程序集               |
-| MiCake.DDD.Domain          | ![Nuget](https://img.shields.io/nuget/v/MiCake.DDD.Domain?label=MiCake.DDD.Domain&logo=nuget)                   | MiCake 对DDD领域层的实现程序集  |
-| MiCake.Core.Util           | ![Nuget](https://img.shields.io/nuget/v/MiCake.Core.Util?label=MiCake.Core.Util&logo=nuget)                     | MiCake 提供的工具类程序集       |
-| MiCake.EntityFrameworkCore | ![Nuget](https://img.shields.io/nuget/v/MiCake.EntityFrameworkCore?label=MiCake.EntityFrameworkCore&logo=nuget) | MiCake 对EFCore的支持程序集     |
-| MiCake.AspNetCore          | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore?label=MiCake.AspNetCore&logo=nuget)                   | MiCake 对AspNetCore的支持程序集 |
-| MiCake.AspNetCore.Start    | ![Nuget](https://img.shields.io/nuget/v/MiCake.AspNetCore.Start?label=MiCake.AspNetCore.Start&logo=nuget)       | MiCake 搭建起步程序所用的程序集 |
-
-更多：请跳转至[NuGet官网](https://www.nuget.org/packages?q=micake),进行查阅。
-
-## 🍠 贡献与帮助
-
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/uoyoCsharp/MiCake/pulls)
-
-如果您有什么好的想法和观点，欢迎通过 [Pull Request](https://github.com/uoyoCsharp/MiCake/pulls) 进行贡献，或通过 [提交 issues](https://github.com/uoyoCsharp/MiCake/issues/new)  来反馈您在使用过程中所发现的BUG。（ *期待得到您的反馈~* 🌻🌻）
-
-## 🍑 联系
-
-[![博客园](https://img.shields.io/badge/%E5%8D%9A%E5%AE%A2%E5%9B%AD-%E5%8F%A5%E5%B9%BD-blue)](https://www.cnblogs.com/uoyo/)
-
-如果您喜欢关于 `.NET ` 方面的内容，或者对领域驱动很感兴趣，欢迎您关注我的博客：[句幽的博客](https://www.cnblogs.com/uoyo/)。您可以通过博客园内的站内**短消息**来与我沟通有关编程方面的问题。
-
-![QQ:344481481](https://img.shields.io/badge/QQ:344481481-Online-green)
-
-如果您愿意与我沟通一些其它方面（*非编程方向*）的事情，欢迎添加QQ好友。🌻🌻
-
-## 🍄 最后
-
-备战 `.NET 5` 。**冲鸭！！** 🐣
+</div>

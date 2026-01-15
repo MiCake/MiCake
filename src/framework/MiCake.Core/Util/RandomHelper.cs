@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MiCake.Core.Util
+namespace MiCake.Util
 {
-    public class RandomHelper
+    public static class RandomHelper
     {
         private static readonly Random Rnd = new();
 
@@ -93,7 +93,7 @@ namespace MiCake.Core.Util
 
             while (currentList.Any())
             {
-                var randomIndex = RandomHelper.GetRandom(0, currentList.Count);
+                var randomIndex = GetRandom(0, currentList.Count);
                 randomList.Add(currentList[randomIndex]);
                 currentList.RemoveAt(randomIndex);
             }

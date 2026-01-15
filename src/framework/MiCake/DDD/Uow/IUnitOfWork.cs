@@ -1,54 +1,168 @@
-﻿using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow
 {
     /// <summary>
-    /// Define a unit of work.
+    /// Unit of Work interface for managing database transactions.
+    /// When created, the UoW is immediately active. Transactions are automatically started if configured.
     /// </summary>
     public interface IUnitOfWork : IDisposable
     {
         /// <summary>
-        /// The ID of this unit of work.
+        /// Unique identifier for this unit of work
         /// </summary>
-        Guid ID { get; }
+        Guid Id { get; }
 
         /// <summary>
-        /// Indicate unit of work is disposed.
+        /// Indicates if this unit of work is disposed
         /// </summary>
         bool IsDisposed { get; }
 
         /// <summary>
-        /// The option of unit of work.<see cref="UnitOfWorkOptions"/>
+        /// Indicates if this unit of work has been completed (committed or marked as completed)
         /// </summary>
-        UnitOfWorkOptions UnitOfWorkOptions { get; }
+        bool IsCompleted { get; }
 
         /// <summary>
-        /// The <see cref="IServiceScope"/> the unit of work depends on.
-        /// The services created through this ServicScope are released together with the unit of work.
+        /// Indicates if transactions are currently active
         /// </summary>
-        IServiceScope ServiceScope { get; }
+        bool HasActiveTransactions { get; }
 
         /// <summary>
-        /// Try add a <see cref="IDbExecutor"/> to current <see cref="IUnitOfWork"/> asynchronously. 
-        /// Unit of work transactions will be given to the current <see cref="IDbExecutor"/>.
+        /// Gets the transaction isolation level for this unit of work
         /// </summary>
-        /// <param name="dbExecutor">Expected to be added <see cref="IDbExecutor"/></param>
-        /// <param name="cancellationToken"></param>
-        Task<bool> TryAddDbExecutorAsync(IDbExecutor dbExecutor, CancellationToken cancellationToken = default);
+        IsolationLevel? IsolationLevel { get; }
 
         /// <summary>
-        /// Commits all changes made to the database in the current unit of work asynchronously.
+        /// Gets the parent unit of work if this is a nested UoW
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        Task SaveChangesAsync(CancellationToken cancellationToken = default);
+        IUnitOfWork? Parent { get; }
 
         /// <summary>
-        /// Discards all changes made to the database in the current unit of work asynchronously.
+        /// Indicates if this is a nested unit of work
+        /// </summary>
+        bool IsNested => Parent != null;
+
+        /// <summary>
+        /// Commits all changes to the database.
+        /// For nested UoW, this only marks as completed; actual commit happens at root level.
+        /// </summary>
+        Task CommitAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Rolls back all changes.
+        /// For nested UoW, this marks parent UoW to rollback.
         /// </summary>
         Task RollbackAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Marks this unit of work to skip commit operations for performance optimization.
+        /// This is useful for read-only operations or when you don't need to persist changes.
+        /// </summary>
+        Task MarkAsCompletedAsync(CancellationToken cancellationToken = default);
+
+        #region Savepoint Support
+
+        /// <summary>
+        /// Creates a savepoint within the current transaction.
+        /// Allows partial rollback to this point without rolling back the entire transaction.
+        /// </summary>
+        /// <param name="name">Name of the savepoint</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>The name of the created savepoint</returns>
+        Task<string> CreateSavepointAsync(string name, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Rolls back to a specific savepoint, discarding changes made after that point.
+        /// The savepoint remains valid and can be rolled back to again.
+        /// </summary>
+        /// <param name="name">Name of the savepoint</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Releases a savepoint, freeing its resources.
+        /// The savepoint cannot be used after being released.
+        /// </summary>
+        /// <param name="name">Name of the savepoint</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default);
+
+        #endregion
+
+        #region Transaction Event Hooks
+
+        /// <summary>
+        /// Event raised before committing the transaction.
+        /// Useful for validation or preparing data before commit.
+        /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
+        event EventHandler<UnitOfWorkEventArgs>? OnCommitting;
+
+        /// <summary>
+        /// Event raised after successfully committing the transaction.
+        /// Useful for cache clearing, notifications, or other post-commit actions.
+        /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
+        event EventHandler<UnitOfWorkEventArgs>? OnCommitted;
+
+        /// <summary>
+        /// Event raised before rolling back the transaction.
+        /// Useful for logging or preparing for rollback.
+        /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
+        event EventHandler<UnitOfWorkEventArgs>? OnRollingBack;
+
+        /// <summary>
+        /// Event raised after successfully rolling back the transaction.
+        /// Useful for cleanup or error handling.
+        /// </summary>
+        /// <remarks>
+        /// <para><b> Important Guidelines for Event Handlers:</b></para>
+        /// <list type="bullet">
+        ///   <item>Event handlers should be lightweight and fast</item>
+        ///   <item>Event handlers should NOT perform critical business logic</item>
+        ///   <item>Event handlers MUST handle their own exceptions</item>
+        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
+        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
+        ///   <item>Do NOT use for: data validation, critical state changes</item>
+        /// </list>
+        /// </remarks>
+        event EventHandler<UnitOfWorkEventArgs>? OnRolledBack;
+
+        #endregion
     }
 }

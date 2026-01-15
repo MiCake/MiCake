@@ -1,31 +1,106 @@
 ﻿using MiCake.AspNetCore;
-using MiCake.AspNetCore.DataWrapper;
-using Microsoft.AspNetCore.Mvc;
+using MiCake.AspNetCore.Responses;
 
 namespace BaseMiCakeApplication.MiCakeFeatures
 {
     public static class DataWrappedFeature
     {
-        public static MiCakeAspNetOptions UseCustomModel(this MiCakeAspNetOptions options)
+        /// <summary>
+        /// Example 1: Use default StandardResponse wrapper (simplest approach)
+        /// </summary>
+        public static MiCakeAspNetOptions UseDefaultWrapper(this MiCakeAspNetOptions options)
         {
-            //要使用自定义模型格式，必须启动该配置
-            options.DataWrapperOptions.UseCustomModel = true;
+            // No configuration needed - StandardResponse is used by default
+            // Response format: { "code": "0", "message": null, "data": <your-data> }
+            return options;
+        }
 
-            //表示当返回code在200-300之间时，将使用该自定义模型
-            options.DataWrapperOptions.CustomModelConfig.Add(200..300, CreateCustomModel());
+        /// <summary>
+        /// Example 2: Customize default response codes
+        /// </summary>
+        public static MiCakeAspNetOptions UseCustomCodes(this MiCakeAspNetOptions options)
+        {
+            options.DataWrapperOptions.DefaultCodeSetting.Success = "SUCCESS";
+            options.DataWrapperOptions.DefaultCodeSetting.Error = "ERROR";
+            return options;
+        }
+
+        /// <summary>
+        /// Example 3: Use completely custom response wrapper
+        /// This is the new simplified way to customize response format
+        /// </summary>
+        public static MiCakeAspNetOptions UseCustomWrapper(this MiCakeAspNetOptions options)
+        {
+            options.DataWrapperOptions.WrapperFactory = new ResponseWrapperFactory
+            {
+                // Custom success response
+                SuccessFactory = context => new
+                {
+                    company = "MiCake",
+                    statusCode = context.StatusCode,
+                    success = true,
+                    result = context.OriginalData,
+                    timestamp = System.DateTime.UtcNow
+                },
+
+                // Custom error response
+                ErrorFactory = context => new
+                {
+                    company = "MiCake",
+                    statusCode = context.StatusCode,
+                    success = false,
+                    error = new
+                    {
+                        message = context.Exception?.Message ?? "Unknown error",
+                        details = context.Exception is MiCake.Core.BusinessException businessEx 
+                            ? businessEx.Details 
+                            : null
+                    },
+                    timestamp = System.DateTime.UtcNow
+                }
+            };
 
             return options;
         }
 
-        private static CustomWrapperModel CreateCustomModel()
+        /// <summary>
+        /// Example 4: Use strongly-typed custom wrapper model
+        /// </summary>
+        public static MiCakeAspNetOptions UseStronglyTypedWrapper(this MiCakeAspNetOptions options)
         {
-            CustomWrapperModel result = new("MiCakeCustomModel");
+            options.DataWrapperOptions.WrapperFactory = new ResponseWrapperFactory
+            {
+                SuccessFactory = context => new CustomApiResponse
+                {
+                    Code = "OK",
+                    Payload = context.OriginalData,
+                    ServerTime = System.DateTime.UtcNow
+                },
 
-            result.AddProperty("company", s => "MiCake");
-            result.AddProperty("statusCode", s => (s.ResultData as ObjectResult).StatusCode ?? s.HttpContext.Response.StatusCode);
-            result.AddProperty("result", s => (s.ResultData as ObjectResult).Value);
+                ErrorFactory = context => new CustomErrorResponse
+                {
+                    ErrorCode = "ERROR",
+                    ErrorMessage = context.Exception?.Message,
+                    ServerTime = System.DateTime.UtcNow
+                }
+            };
 
-            return result;
+            return options;
         }
+    }
+
+    // Example custom response models
+    public class CustomApiResponse : IResponseWrapper
+    {
+        public string Code { get; set; }
+        public object Payload { get; set; }
+        public System.DateTime ServerTime { get; set; }
+    }
+
+    public class CustomErrorResponse : IResponseWrapper
+    {
+        public string ErrorCode { get; set; }
+        public string ErrorMessage { get; set; }
+        public System.DateTime ServerTime { get; set; }
     }
 }

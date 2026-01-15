@@ -11,7 +11,7 @@ namespace MiCake.DDD.Tests.Fakes.Aggregates
 
         public void OneAddEventCase()
         {
-            AddDomainEvent(new CreateOrderEvents(32));
+            RaiseDomainEvent(new CreateOrderEvents(32));
         }
     }
 }

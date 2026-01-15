@@ -1,184 +1,154 @@
-﻿using MiCake.Core.Data;
-using MiCake.Core.DependencyInjection;
-using MiCake.Core.Modularity;
+﻿using MiCake.Core.Modularity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using System;
-using System.Threading.Tasks;
 
 namespace MiCake.Core
 {
-    public class MiCakeApplication(
-        IServiceCollection services,
-        MiCakeApplicationOptions options,
-        bool needNewScope) : IMiCakeApplication, IDependencyReceiver<IServiceProvider>
+    /// <summary>
+    /// Represents a MiCake application instance.
+    /// Manages the application lifecycle (initialization and shutdown).
+    /// Module discovery and service configuration happens earlier in MiCakeBuilder.
+    /// </summary>
+    internal class MiCakeApplication : IMiCakeApplication
     {
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
-        public MiCakeApplicationOptions ApplicationOptions { get; private set; } = options;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IMiCakeModuleContext _moduleContext;
+        private readonly ILogger _logger;
+
+        private MiCakeModuleBoot? _miCakeModuleBoot;
+
+        private bool _isStarted;
+        private bool _isShutdown;
+        private bool _disposed;
 
         /// <summary>
-        /// <inheritdoc/>
+        /// Application options
         /// </summary>
-        public IMiCakeModuleManager ModuleManager { get; private set; } = new MiCakeModuleManager();
+        public MiCakeApplicationOptions ApplicationOptions { get; private set; }
 
-        private readonly IServiceCollection _services = services;
-        private IServiceScope _appServiceScope;
+        /// <summary>
+        /// Module context - provides read-only access to loaded modules
+        /// </summary>
+        public IMiCakeModuleContext ModuleContext => _moduleContext;
 
-        private IServiceProvider _appServiceProvider;
-        public IServiceProvider AppServiceProvider
+        /// <summary>
+        /// Service provider for the application
+        /// </summary>
+        public IServiceProvider AppServiceProvider => _serviceProvider;
+
+        /// <summary>
+        /// Creates a new MiCake application instance.
+        /// This constructor is called by the DI container after all services are registered.
+        /// </summary>
+        /// <param name="serviceProvider">Service provider (injected by DI container)</param>
+        /// <param name="moduleContext">Module context with all discovered modules</param>
+        /// <param name="options">Application options</param>
+        /// <param name="entryType">Entry module type</param>
+        public MiCakeApplication(
+            IServiceProvider serviceProvider,
+            IMiCakeModuleContext moduleContext,
+            IOptions<MiCakeApplicationOptions> options,
+            Type entryType)
         {
-            get
-            {
-                if (_appServiceProvider == null)
-                {
-                    if (_needNewScope)
-                        _appServiceScope = _serviceProvider.CreateScope();
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _moduleContext = moduleContext ?? throw new ArgumentNullException(nameof(moduleContext));
+            ApplicationOptions = options.Value ?? new MiCakeApplicationOptions();
+            _ = entryType ?? throw new ArgumentNullException(nameof(entryType));
 
-                    _appServiceProvider = _appServiceScope == null ?
-                                                    _serviceProvider :
-                                                    _appServiceScope.ServiceProvider;
-                }
-                return _appServiceProvider;
-            }
+            _logger = (_serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance).CreateLogger<MiCakeApplication>();
         }
 
-        private IMiCakeModuleContext ModuleContext => ModuleManager?.ModuleContext;
-
-        private Type _entryType;
-        private IMiCakeModuleBoot _miCakeModuleBoot;
-        private IServiceProvider _serviceProvider;
-        private readonly bool _needNewScope = needNewScope;
-
-        private readonly bool _isInitialized = false;
-        private readonly bool _isStarted = false;
-        private readonly bool _isShutdown = false;
-
         /// <summary>
-        /// Start micake application.
-        /// Must provider <see cref="IServiceProvider"/>
+        /// Start MiCake application.
+        /// Executes the initialization lifecycle for all modules.
         /// </summary>
-        public virtual async Task Start()
+        public virtual void Start()
         {
-            if (AppServiceProvider == null)
-                throw new ArgumentNullException(nameof(AppServiceProvider));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_isStarted)
-                throw new InvalidOperationException($"MiCake has already started.");
+                throw new InvalidOperationException("MiCake has already started.");
 
-            //Pre activation ServiceLocator
-            AppServiceProvider.GetService(typeof(IServiceLocator));
+            if (AppServiceProvider == null)
+                throw new InvalidOperationException("ServiceProvider is not available.");
 
-            //Module Inspection.
-            var inspectContext = new ModuleInspectionContext(AppServiceProvider, ModuleContext.MiCakeModules);
-            foreach (var module in ModuleContext.MiCakeModules)
+            _logger?.LogInformation("Starting MiCake Application...");
+
+            // Initialize module boot if not already done
+            if (_miCakeModuleBoot == null)
             {
-                if (module is IModuleSelfInspection selfInspection)
-                    await selfInspection.Inspect(inspectContext);
+                var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+                _miCakeModuleBoot = new MiCakeModuleBoot(loggerFactory, _moduleContext.MiCakeModules);
             }
 
-            var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
-            await _miCakeModuleBoot.Initialization(context);
+            // Module Inspection
+            var inspectContext = new ModuleInspectionContext(AppServiceProvider, _moduleContext.MiCakeModules);
+            foreach (var module in _moduleContext.MiCakeModules)
+            {
+                if (module is IModuleSelfInspection selfInspection)
+                {
+                    selfInspection.Inspect(inspectContext);
+                }
+            }
 
-            //Release options additional infomation.
-            ApplicationOptions.ExtraDataStash.Release();
+            var context = new ModuleInitializationContext(AppServiceProvider, _moduleContext.MiCakeModules, ApplicationOptions);
+            _miCakeModuleBoot.Initialization(context);
+
+            // Release options additional info
+            ApplicationOptions.BuildPhaseData.ReleaseAll();
+
+            _isStarted = true;
+            _logger?.LogInformation("MiCake Application Started Successfully.");
         }
 
         /// <summary>
-        /// Shudown micake application
+        /// Shutdown MiCake application
         /// </summary>
-        public virtual async Task ShutDown()
+        public virtual void ShutDown()
         {
             if (_isShutdown)
-                throw new InvalidOperationException($"MiCake has already shutdown.");
+                throw new InvalidOperationException("MiCake has already shutdown.");
 
-            var context = new ModuleLoadContext(AppServiceProvider, ModuleContext.MiCakeModules, ApplicationOptions);
-            await _miCakeModuleBoot.ShutDown(context);
+            _logger?.LogInformation("Shutting Down MiCake Application...");
 
-            _appServiceScope?.Dispose();
-        }
-
-        /// <summary>
-        /// Initialize micake services
-        /// </summary>
-        public async Task Initialize()
-        {
-            if (_isInitialized)
-                throw new InvalidOperationException($"MiCake has already build common services." +
-                                        $"The {nameof(Initialize)} method only can called once!");
-
-            if (_entryType == null)
-                throw new NullReferenceException($"Cannot find entry module type,Please make sure you has already call {nameof(SetEntry)} method.");
-
-            AddMiCakeCoreSerivces(_services);
-
-            //Find all micake modules according to the entry module type
-            await ModuleManager.PopulateModules(_entryType);
-            _services.AddSingleton(ModuleContext);
-
-            var loggerFactory = _services.BuildServiceProvider().GetRequiredService<ILoggerFactory>()
-                                ?? NullLoggerFactory.Instance;
-
-            _miCakeModuleBoot = new MiCakeModuleBoot(loggerFactory, ModuleContext.MiCakeModules);
-            //auto register services to di.
-            await _miCakeModuleBoot.AddConfigService(AutoRegisterServices);
-
-            var configServiceContext = new ModuleConfigServiceContext(
-                                                _services,
-                                                ModuleContext.MiCakeModules,
-                                                ApplicationOptions);
-
-            await _miCakeModuleBoot.ConfigServices(configServiceContext);
-        }
-
-        /// <summary>
-        /// Set entry module type.
-        /// </summary>
-        public void SetEntry(Type type)
-        {
-            _entryType = type ?? throw new ArgumentException("Please add startup type when you use AddMiCake().");
-        }
-
-        /// <summary>
-        /// Set <see cref="IServiceProvider"/>.
-        /// </summary>
-        void IDependencyReceiver<IServiceProvider>.AddDependency(IServiceProvider parts)
-        {
-            _serviceProvider = parts ??
-                              throw new ArgumentNullException($"{nameof(IServiceProvider)} cannot be null.");
-        }
-
-        private void AddMiCakeCoreSerivces(IServiceCollection services)
-        {
-            services.AddSingleton<IMiCakeApplication>(this);
-            services.Configure<MiCakeApplicationOptions>(op => op.Apply(ApplicationOptions));
-
-            services.AddSingleton<IServiceLocator, ServiceLocator>(provider =>
+            if (_miCakeModuleBoot != null)
             {
-                ServiceLocator.Instance.Locator = provider;
-                return ServiceLocator.Instance;
-            });
+                var context = new ModuleShutdownContext(AppServiceProvider, _moduleContext.MiCakeModules, ApplicationOptions);
+                _miCakeModuleBoot.ShutDown(context);
+            }
+
+            _isShutdown = true;
+            _logger?.LogInformation("MiCake Application Shutdown Completed.");
         }
 
-        //Inject service into container according to matching rules
-        private void AutoRegisterServices(ModuleConfigServiceContext context)
+        /// <summary>
+        /// Dispose the MiCake application and release resources.
+        /// </summary>
+        public void Dispose()
         {
-            var serviceRegistrar = new DefaultServiceRegistrar(context.Services);
-            if (ApplicationOptions.FindAutoServiceTypes != null)
-                serviceRegistrar.SetServiceTypesFinder(ApplicationOptions.FindAutoServiceTypes);
-
-            serviceRegistrar.Register(context.MiCakeModules);
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
-
-        public async ValueTask DisposeAsync()
+        /// <summary>
+        /// Protected implementation of Dispose pattern.
+        /// </summary>
+        /// <param name="disposing">True if called from Dispose(), false if called from finalizer</param>
+        protected virtual void Dispose(bool disposing)
         {
-            if (!_isShutdown)
-                await ShutDown();
+            if (_disposed)
+                return;
 
-            ModuleManager = null;
+            if (disposing && !_isShutdown)
+            {
+                // Dispose managed resources
+                ShutDown();
+            }
+
+            _disposed = true;
         }
     }
 }

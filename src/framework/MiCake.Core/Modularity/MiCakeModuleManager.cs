@@ -1,106 +1,119 @@
-﻿using MiCake.Core.Util.Collections;
+﻿using MiCake.Util.Extensions;
+using MiCake.Util.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MiCake.Core.Modularity
 {
+    /// <summary>
+    /// Manages MiCake modules - handles module discovery, dependency resolution, and lifecycle.
+    /// </summary>
     public class MiCakeModuleManager : IMiCakeModuleManager
     {
-        public Func<Type, object> ServiceCtor { get; private set; } = Activator.CreateInstance;
-
-        private MiCakeModuleContext _moduleContext;
-        public IMiCakeModuleContext ModuleContext => _moduleContext;
-
-        private bool _isPopulate;
-        public bool IsPopulated => _isPopulate;
-
+        private MiCakeModuleContext? _moduleContext;
+        private bool _isPopulated;
         private readonly List<Type> _normalModulesTypes = [];
+        private ModuleDependencyResolver? _dependencyResolver;
 
-        public Task PopulateModules(Type entryType)
+        /// <summary>
+        /// Function used to create module instances.
+        /// Uses compiled expression trees for better performance.
+        /// </summary>
+        public Func<Type, object> ServiceCtor { get; private set; } = CompiledActivator.CreateInstance;
+
+        /// <summary>
+        /// Gets the module context containing all registered modules.
+        /// </summary>
+        public IMiCakeModuleContext ModuleContext => _moduleContext ?? throw new InvalidOperationException("ModuleContext has not been initialized. Call PopulateModules first.");
+
+        /// <summary>
+        /// Indicates whether modules have been populated.
+        /// </summary>
+        public bool IsPopulated => _isPopulated;
+
+        /// <summary>
+        /// Gets the module dependency resolver (available after PopulateModules is called).
+        /// </summary>
+        internal ModuleDependencyResolver? DependencyResolver => _dependencyResolver;
+
+        /// <summary>
+        /// Discovers and registers all modules starting from the entry module.
+        /// This method performs dependency resolution and topological sorting.
+        /// </summary>
+        /// <param name="entryType">The entry module type</param>
+        /// <exception cref="InvalidOperationException">When called more than once</exception>
+        /// <exception cref="ArgumentNullException">When entryType is null</exception>
+        public void PopulateModules(Type entryType)
         {
-            if (_isPopulate)
-                throw new InvalidOperationException("PopulateDefaultModule can only be called once.");
+            ArgumentNullException.ThrowIfNull(entryType);
 
-            _isPopulate = true;
+            if (_isPopulated)
+                throw new InvalidOperationException("PopulateModules can only be called once. Modules have already been populated.");
 
+            _isPopulated = true;
+
+            // Find all modules recursively from entry module
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, entryType);
+
+            // Resolve and sort modules by dependencies
             IMiCakeModuleCollection modules = ResolvingMiCakeModules(_normalModulesTypes).ToMiCakeModuleCollection();
 
-            //Ensure that the position of the entry module is the last
+            // Ensure that the entry module is the last in the collection
+            // This guarantees it runs after all its dependencies
             if (modules[^1].ModuleType != entryType)
             {
                 modules.ExchangeOrder(s => s.ModuleType == entryType, modules.Count - 1);
             }
 
             _moduleContext = new MiCakeModuleContext(modules);
-
-            return Task.CompletedTask;
         }
 
-        public MiCakeModuleDescriptor GetMiCakeModule(Type moduleType)
+        /// <summary>
+        /// Gets a specific module descriptor by type.
+        /// </summary>
+        /// <param name="moduleType">The module type to find</param>
+        /// <returns>The module descriptor, or null if not found</returns>
+        public MiCakeModuleDescriptor? GetMiCakeModule(Type moduleType)
         {
-            return _moduleContext.MiCakeModules.FirstOrDefault(s => s.ModuleType == moduleType);
+            ArgumentNullException.ThrowIfNull(moduleType);
+
+            return _moduleContext?.MiCakeModules.FirstOrDefault(s => s.ModuleType == moduleType);
         }
 
-        public Task AddMiCakeModule(Type moduleType)
+        /// <summary>
+        /// Adds a module and its dependencies to the module collection.
+        /// This method is typically used to add modules dynamically.
+        /// </summary>
+        /// <param name="moduleType">The module type to add</param>
+        public void AddMiCakeModule(Type moduleType)
         {
             MiCakeModuleHelper.CheckModule(moduleType);
 
-            //add denpend on modules
+            // Add the module and all its dependencies
             MiCakeModuleHelper.FindAllModulesFromEntry(_normalModulesTypes, moduleType);
-
-            return Task.CompletedTask;
         }
 
-        // Get the description information (including dependency and order) of the module according to its type
-        private IEnumerable<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
+        /// <summary>
+        /// Creates module descriptors from module types and resolves their dependencies.
+        /// Uses ModuleDependencyResolver with Kahn's algorithm for topological sorting.
+        /// </summary>
+        /// <param name="moduleTypes">The list of module types to process</param>
+        /// <returns>A sorted list of module descriptors in dependency order</returns>
+        private List<MiCakeModuleDescriptor> ResolvingMiCakeModules(List<Type> moduleTypes)
         {
-            List<MiCakeModuleDescriptor> miCakeModuleDescriptors = new();
+            _dependencyResolver = new ModuleDependencyResolver();
 
-            foreach (var moduleTye in moduleTypes)
+            // Create instances and register all modules
+            foreach (var moduleType in moduleTypes)
             {
-                MiCakeModule instance = (MiCakeModule)ServiceCtor(moduleTye);
-                miCakeModuleDescriptors.Add(new MiCakeModuleDescriptor(moduleTye, instance));
+                MiCakeModule instance = (MiCakeModule)ServiceCtor(moduleType);
+                var descriptor = new MiCakeModuleDescriptor(moduleType, instance);
+                _dependencyResolver.RegisterModule(descriptor);
             }
 
-            return SortModulesDepencyies(miCakeModuleDescriptors);
-        }
-
-        private List<MiCakeModuleDescriptor> SortModulesDepencyies(List<MiCakeModuleDescriptor> miCakeModuleDescriptors)
-        {
-            foreach (var miCakeModuleDescriptor in miCakeModuleDescriptors)
-            {
-                var depencies = GetMiCakeModuleDescriptorDepencyies(miCakeModuleDescriptors, miCakeModuleDescriptor);
-
-                foreach (var depency in depencies)
-                {
-                    miCakeModuleDescriptor.AddDependency(depency);
-                }
-            }
-            // sort by modules dependencies
-            miCakeModuleDescriptors = miCakeModuleDescriptors.SortByDependencies(s => s.RelyOnModules);
-
-            return miCakeModuleDescriptors;
-        }
-
-        //Get module dependencies
-        private static List<MiCakeModuleDescriptor> GetMiCakeModuleDescriptorDepencyies(
-            List<MiCakeModuleDescriptor> modules,
-            MiCakeModuleDescriptor moduleDescriptor)
-        {
-            List<MiCakeModuleDescriptor> descriptors = new();
-
-            var depencyTypes = MiCakeModuleHelper.FindDependedModuleTypes(moduleDescriptor.ModuleType);
-
-            foreach (var depencyType in depencyTypes)
-            {
-                var existDescriptor = modules.FirstOrDefault(s => s.ModuleType == depencyType);
-                if (existDescriptor != null) moduleDescriptor.AddDependency(existDescriptor);
-            }
-
-            return descriptors;
+            // Resolve and return sorted modules
+            return _dependencyResolver.ResolveLoadOrder();
         }
     }
 }

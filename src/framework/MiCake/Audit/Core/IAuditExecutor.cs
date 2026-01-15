@@ -1,17 +1,17 @@
-﻿using MiCake.DDD.Extensions;
+﻿using MiCake.DDD.Infrastructure;
 
 namespace MiCake.Audit.Core
 {
     /// <summary>
-    /// Perform audit process according to <see cref="IAuditProvider"/>
+    /// A contract for executing audit operations which will use different <see cref="IAuditProvider"/> to apply audit.
     /// </summary>
-    public interface IAuditExecutor
+    internal interface IAuditExecutor
     {
         /// <summary>
-        /// Execute audit
+        /// Execute audit operation for the given entity and its state.
         /// </summary>
-        /// <param name="needAuditEntity"></param>
-        /// <param name="entityState"><see cref="RepositoryEntityState"/></param>
-        void Execute(object needAuditEntity, RepositoryEntityState entityState);
+        /// <param name="needAuditEntity">The entity that requires auditing.</param>
+        /// <param name="entityState"><see cref="RepositoryEntityStates"/></param>
+        void Execute(object needAuditEntity, RepositoryEntityStates entityState);
     }
 }

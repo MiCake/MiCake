@@ -8,7 +8,7 @@ namespace MiCake.DDD.Tests.Fakes.DomainEvents
     {
         public static int HanlderChangedValue = 500;
 
-        public Task HandleAysnc(CreateOrderEvents domainEvent, CancellationToken cancellationToken = default)
+        public Task HandleAsync(CreateOrderEvents domainEvent, CancellationToken cancellationToken = default)
         {
             domainEvent.OrderID = OrderCreatedHandler.HanlderChangedValue;
 

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace MiCake.DDD.Domain
 {
     /// <summary>
-    /// Defined a DDD repository interface.Please use <see cref="IRepository{TAggregateRoot, TKey}"/>.
+    /// A common interface is given to implement aggregateroot operations
     /// </summary>
     public interface IRepository
     {
@@ -17,6 +17,7 @@ namespace MiCake.DDD.Domain
     /// <typeparam name="TKey">Primary key of aggregateroot</typeparam>
     public interface IRepository<TAggregateRoot, TKey> : IReadOnlyRepository<TAggregateRoot, TKey>
         where TAggregateRoot : class, IAggregateRoot<TKey>
+        where TKey : notnull
     {
         /// <summary>
         /// Add a new aggregateRoot.
@@ -24,17 +25,17 @@ namespace MiCake.DDD.Domain
         Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Add a new aggregateRoot.and return this aggregate.sometimes can use this way to get primary key.
+        /// Add a new aggregateRoot and return this aggregate. Sometimes can use this way to get primary key.
         /// 
         /// <para>
-        /// For some types whose ID is self increasing, the result can be obtained only after the database operation is performed.
-        /// So,you need keep <paramref name="autoExecute"/> true.
+        /// For some types whose ID is self-increasing, the result can be obtained only after the database operation is performed.
+        /// So, you need to keep <paramref name="saveNow"/> true.
         /// </para>
         /// </summary>
         /// <param name="aggregateRoot">The aggregate root to be added.</param>
-        /// <param name="autoExecute">Auto execute save method(sql).Default value:true</param>
+        /// <param name="saveNow">Whether to immediately save changes to the database. Default value: true</param>
         /// <param name="cancellationToken"></param>
-        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool autoExecute = true, CancellationToken cancellationToken = default);
+        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool saveNow = true, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.
@@ -49,9 +50,23 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Delete aggregateRoot form repository by id.
         /// </summary>
-        /// <param name="ID"></param>
+        /// <param name="id"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task DeleteByIdAsync(TKey ID, CancellationToken cancellationToken = default);
+        Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Save changes of this repository to database.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Clear change tracking for the repository.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default);
     }
 }

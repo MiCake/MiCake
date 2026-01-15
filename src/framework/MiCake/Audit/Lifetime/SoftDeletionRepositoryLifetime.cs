@@ -1,6 +1,6 @@
 ﻿using MiCake.Audit.SoftDeletion;
-using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Lifetime;
+using MiCake.DDD.Infrastructure;
+using MiCake.DDD.Infrastructure.Lifetime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,14 +13,14 @@ namespace MiCake.Audit.Lifetime
         /// </summary>
         public int Order { get; set; } = 1000;
 
-        public static RepositoryEntityState PreSaveChanges(RepositoryEntityState entityState, object entity)
+        public static RepositoryEntityStates PreSaveChanges(RepositoryEntityStates entityState, object entity)
         {
-            if (entity is ISoftDeletion softDeletion)
+            if (entity is ISoftDeletable softDeletion)
             {
-                if (entityState == RepositoryEntityState.Deleted)
+                if (entityState == RepositoryEntityStates.Deleted)
                 {
                     softDeletion.IsDeleted = true;
-                    entityState = RepositoryEntityState.Modified;
+                    entityState = RepositoryEntityStates.Modified;
                 }
                 else
                 {
@@ -30,12 +30,12 @@ namespace MiCake.Audit.Lifetime
             return entityState;
         }
 
-        public ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState,
+        public ValueTask<RepositoryEntityStates> PreSaveChangesAsync(RepositoryEntityStates entityState,
                                                                     object entity,
                                                                     CancellationToken cancellationToken = default)
         {
             entityState = PreSaveChanges(entityState, entity);
-            return new ValueTask<RepositoryEntityState>(entityState);
+            return new ValueTask<RepositoryEntityStates>(entityState);
         }
     }
 }

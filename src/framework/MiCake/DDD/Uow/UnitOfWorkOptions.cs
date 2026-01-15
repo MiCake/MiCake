@@ -1,76 +1,86 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Data;
 
 namespace MiCake.DDD.Uow
 {
+    /// <summary>
+    /// Defines when transactions should be initialized
+    /// </summary>
+    public enum TransactionInitializationMode
+    {
+        /// <summary>
+        /// Lazy initialization - Transaction is started when first resource (DbContext) is accessed.
+        /// This is the default mode and provides better performance for operations that may not need transactions.
+        /// </summary>
+        Lazy = 0,
+
+        /// <summary>
+        /// Immediate initialization - Transaction is started immediately when UoW is created.
+        /// Use this when you need guaranteed transaction semantics from the start.
+        /// Note: Requires registered DbContext types to be specified via IUnitOfWorkManager extensions.
+        /// </summary>
+        Immediate = 1
+    }
+
+    /// <summary>
+    /// Options for configuring unit of work behavior
+    /// </summary>
     public class UnitOfWorkOptions
     {
         /// <summary>
-        /// Specifies the transaction locking behavior for the connection.
-        /// <see cref="IsolationLevel"/>
+        /// Defines the persistence strategy for how data changes are persisted.
         /// </summary>
-        public IsolationLevel? IsolationLevel { get; set; }
+        public PersistenceStrategy Strategy { get; set; } = PersistenceStrategy.OptimizeForSingleWrite;
 
         /// <summary>
-        /// Time out config.
+        /// Transaction isolation level. Default is ReadCommitted.
         /// </summary>
-        public TimeSpan? Timeout { get; set; }
+        public IsolationLevel? IsolationLevel { get; set; } = System.Data.IsolationLevel.ReadCommitted;
 
         /// <summary>
-        /// Indicate the scope of the unit of work to be created.
-        /// <see cref="UnitOfWorkScope"/>
+        /// Determines when transactions should be initialized.
+        /// Default is Lazy (transactions start when first resource is accessed).
+        /// Set to Immediate to start transactions as soon as UoW is created.
         /// </summary>
-        public UnitOfWorkScope Scope { get; set; }
+        public TransactionInitializationMode InitializationMode { get; set; } = TransactionInitializationMode.Lazy;
 
         /// <summary>
-        /// Specifies a <see cref="IServiceScope"/> to get the unit of work. 
-        /// If the value is not specified, a new scope is created using the default <see cref="IServiceProvider"/>.
-        /// <para>
-        ///     If you specify this parameter, it means you will control the release of the scope yourself.
-        /// </para>
+        /// Timeout for the transaction in seconds. Null means no timeout.
         /// </summary>
-        public IServiceScope ServiceScope { get; set; }
+        public int? Timeout { get; set; }
 
         /// <summary>
-        /// Specifies events which the <see cref="IUnitOfWork"/> invokes to enable developer control unit of work process.
-        /// <see cref="UnitOfWorkEvents"/>
+        /// Whether this is a read-only unit of work (optimization for queries).
+        /// When true, transactions will not be started.
         /// </summary>
-        public UnitOfWorkEvents Events { get; set; } = new UnitOfWorkEvents();
-
-        public UnitOfWorkOptions() : this(default)
-        {
-        }
-
-        public UnitOfWorkOptions(IsolationLevel? isolationLevel) :
-            this(isolationLevel, null)
-        {
-        }
-
-        public UnitOfWorkOptions(IsolationLevel? isolationLevel, TimeSpan? timeOut)
-            : this(isolationLevel, timeOut, UnitOfWorkScope.Required)
-        {
-        }
-
-        public UnitOfWorkOptions(IsolationLevel? isolationLevel, TimeSpan? timeOut, UnitOfWorkScope unitOfWorkLimit)
-        {
-            IsolationLevel = isolationLevel;
-            Timeout = timeOut;
-            Scope = unitOfWorkLimit;
-        }
+        public bool IsReadOnly { get; set; } = false;
 
         /// <summary>
-        /// Clone this options config to a new instance.
+        /// Creates default options with OptimizeForSingleWrite strategy and lazy initialization.
+        /// This is the recommended default for most operations.
         /// </summary>
-        public UnitOfWorkOptions Clone()
+        public static UnitOfWorkOptions Default => new()
         {
-            return new UnitOfWorkOptions()
-            {
-                Events = Events,
-                IsolationLevel = IsolationLevel,
-                Scope = Scope,
-                Timeout = Timeout,
-            };
-        }
+            Strategy = PersistenceStrategy.OptimizeForSingleWrite,
+            InitializationMode = TransactionInitializationMode.Lazy
+        };
+
+        /// <summary>
+        /// Creates options with TransactionManaged strategy and immediate transaction initialization.
+        /// Use this for complex multi-operation scenarios requiring explicit transaction control.
+        /// </summary>
+        public static UnitOfWorkOptions Immediate => new()
+        {
+            Strategy = PersistenceStrategy.TransactionManaged,
+            InitializationMode = TransactionInitializationMode.Immediate
+        };
+
+        /// <summary>
+        /// Creates read-only options (no transaction, optimized for queries).
+        /// Useful for read-only operations that don't require transaction protection.
+        /// </summary>
+        public static UnitOfWorkOptions ReadOnly => new()
+        {
+            IsReadOnly = true
+        };
     }
 }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace MiCake.Core.Util.Reflection
+namespace MiCake.Util.Reflection
 {
     public static class AssemblyHelper
     {
@@ -29,7 +29,7 @@ namespace MiCake.Core.Util.Reflection
             }
             catch (ReflectionTypeLoadException ex)
             {
-                return ex.Types;
+                return ex.Types.Where(t => t != null).ToList()!;
             }
         }
     }

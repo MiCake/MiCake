@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace MiCake.Core.Util.Reflection.Emit
+namespace MiCake.Util.Reflection.Emit
 {
     public static class EmitHelper
     {
@@ -29,7 +29,7 @@ namespace MiCake.Core.Util.Reflection.Emit
                                        string assemblyName = "",
                                        string moduleName = "",
                                        TypeAttributes typeAttributes = TypeAttributes.Public,
-                                       Type baseType = null)
+                                       Type? baseType = null)
         {
             CheckValue.NotNullOrEmpty(className, nameof(className));
 
@@ -40,7 +40,7 @@ namespace MiCake.Core.Util.Reflection.Emit
             var builder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
             var moduleBuilder = builder.DefineDynamicModule(moduleNameStr);
 
-            return moduleBuilder.DefineType(className, typeAttributes, baseType); ;
+            return moduleBuilder.DefineType(className, typeAttributes, baseType);
         }
 
         /// <summary>

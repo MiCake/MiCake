@@ -12,7 +12,7 @@ namespace MiCake.DDD.Domain.Internal
     {
         //Base on MediatR.Registration
         //see https://github.com/jbogard/MediatR.Extensions.Microsoft.DependencyInjection
-        public static void ResigterDomainEventHandler(this IServiceCollection services, IMiCakeModuleCollection miCakeModules)
+        public static void RegisterDomainEventHandler(this IServiceCollection services, IMiCakeModuleCollection miCakeModules)
         {
             var assemblies = miCakeModules.GetAssemblies(false).ToList();
 
@@ -31,8 +31,17 @@ namespace MiCake.DDD.Domain.Internal
             IEnumerable<Assembly> assembliesToScan,
             bool addIfAlreadyExists)
         {
+            var (concretions, interfaces) = ScanTypesForInterfaceImplementations(openRequestInterface, assembliesToScan);
+            RegisterInterfaceImplementations(services, concretions, interfaces, addIfAlreadyExists);
+        }
+
+        private static (List<Type> concretions, List<Type> interfaces) ScanTypesForInterfaceImplementations(
+            Type openRequestInterface,
+            IEnumerable<Assembly> assembliesToScan)
+        {
             var concretions = new List<Type>();
             var interfaces = new List<Type>();
+
             foreach (var type in assembliesToScan.SelectMany(a => a.DefinedTypes).Where(t => !t.IsOpenGeneric()))
             {
                 var interfaceTypes = type.FindInterfacesThatClose(openRequestInterface).ToArray();
@@ -49,32 +58,50 @@ namespace MiCake.DDD.Domain.Internal
                 }
             }
 
+            return (concretions, interfaces);
+        }
+
+        private static void RegisterInterfaceImplementations(
+            IServiceCollection services,
+            List<Type> concretions,
+            List<Type> interfaces,
+            bool addIfAlreadyExists)
+        {
             foreach (var @interface in interfaces)
             {
                 var exactMatches = concretions.Where(x => x.CanBeCastTo(@interface)).ToList();
-                if (addIfAlreadyExists)
-                {
-                    foreach (var type in exactMatches)
-                    {
-                        services.AddTransient(@interface, type);
-                    }
-                }
-                else
-                {
-                    if (exactMatches.Count > 1)
-                    {
-                        exactMatches.RemoveAll(m => !IsMatchingWithInterface(m, @interface));
-                    }
-
-                    foreach (var type in exactMatches)
-                    {
-                        services.TryAddTransient(@interface, type);
-                    }
-                }
+                RegisterExactMatches(services, @interface, exactMatches, addIfAlreadyExists);
 
                 if (!@interface.IsOpenGeneric())
                 {
                     AddConcretionsThatCouldBeClosed(@interface, concretions, services);
+                }
+            }
+        }
+
+        private static void RegisterExactMatches(
+            IServiceCollection services,
+            Type @interface,
+            List<Type> exactMatches,
+            bool addIfAlreadyExists)
+        {
+            if (addIfAlreadyExists)
+            {
+                foreach (var type in exactMatches)
+                {
+                    services.AddTransient(@interface, type);
+                }
+            }
+            else
+            {
+                if (exactMatches.Count > 1)
+                {
+                    exactMatches.RemoveAll(m => !IsMatchingWithInterface(m, @interface));
+                }
+
+                foreach (var type in exactMatches)
+                {
+                    services.TryAddTransient(@interface, type);
                 }
             }
         }
@@ -95,7 +122,13 @@ namespace MiCake.DDD.Domain.Internal
             }
             else
             {
-                return IsMatchingWithInterface(handlerType.GetInterface(handlerInterface.Name), handlerInterface);
+                var interfaceType = handlerType.GetInterface(handlerInterface.Name);
+                if (interfaceType == null)
+                {
+                    return false;
+                }
+
+                return IsMatchingWithInterface(interfaceType, handlerInterface);
             }
 
             return false;
@@ -112,6 +145,7 @@ namespace MiCake.DDD.Domain.Internal
                 }
                 catch (Exception)
                 {
+                    // ignored
                 }
             }
         }
@@ -160,15 +194,15 @@ namespace MiCake.DDD.Domain.Internal
                     yield return interfaceType;
                 }
             }
-            else if (pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType &&
-                     (pluggedType.GetTypeInfo().BaseType.GetGenericTypeDefinition() == templateType))
+            else if (pluggedType.GetTypeInfo().BaseType?.GetTypeInfo()?.IsGenericType is true &&
+                     (pluggedType.GetTypeInfo().BaseType?.GetGenericTypeDefinition() == templateType))
             {
-                yield return pluggedType.GetTypeInfo().BaseType;
+                yield return pluggedType.GetTypeInfo().BaseType!;
             }
 
             if (pluggedType.GetTypeInfo().BaseType == typeof(object)) yield break;
 
-            foreach (var interfaceType in FindInterfacesThatClosesCore(pluggedType.GetTypeInfo().BaseType, templateType))
+            foreach (var interfaceType in FindInterfacesThatClosesCore(pluggedType.GetTypeInfo().BaseType!, templateType))
             {
                 yield return interfaceType;
             }

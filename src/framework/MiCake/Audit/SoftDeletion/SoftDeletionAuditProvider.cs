@@ -1,24 +1,27 @@
 ﻿using MiCake.Audit.Core;
-using MiCake.DDD.Extensions;
+using MiCake.DDD.Infrastructure;
 using System;
 
 namespace MiCake.Audit.SoftDeletion
 {
     internal class SoftDeletionAuditProvider : IAuditProvider
     {
-        public virtual void ApplyAudit(AuditObjectModel auditObjectModel)
+        public virtual void ApplyAudit(AuditOperationContext context)
         {
-            if (auditObjectModel.EntityState != RepositoryEntityState.Deleted)
+            if (context?.Entity == null)
                 return;
 
-            var entity = auditObjectModel.AuditEntity;
-            if (entity is not ISoftDeletion softDeletionObj)
+            if (context.EntityState != RepositoryEntityStates.Deleted)
+                return;
+
+            var entity = context.Entity;
+            if (entity is not ISoftDeletable softDeletionObj)
                 return;
 
             softDeletionObj.IsDeleted = true;
 
-            if (entity is IHasDeletionTime hasDeletionTimeObj)
-                hasDeletionTimeObj.DeletionTime = DateTime.Now;
+            if (entity is IHasDeletedAt hasDeletionTimeObj)
+                hasDeletionTimeObj.DeletedAt = DefaultTimeAuditProvider.CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
         }
     }
 }

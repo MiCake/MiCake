@@ -4,23 +4,33 @@ using System;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
-    public static class AddCoreUowServicesExtension
+    /// <summary>
+    /// Extension methods for registering EF Core Unit of Work services
+    /// </summary>
+    internal static class AddCoreUowServicesExtension
     {
-        public static IServiceCollection AddUowCoreServices(this IServiceCollection services, Type dbContextType)
+        /// <summary>
+        /// Registers core Unit of Work services for the specified DbContext type.
+        /// This includes the context factory, repository dependencies wrapper, and DbContext type registration.
+        /// </summary>
+        /// <param name="services">The service collection</param>
+        /// <param name="dbContextType">The DbContext type to register services for</param>
+        /// <returns>The service collection for method chaining</returns>
+        internal static IServiceCollection AddUowCoreServices(this IServiceCollection services, Type dbContextType)
         {
-            //DbContext Provider.
-            var dbContextProviderServiceType = typeof(IDbContextProvider<>).MakeGenericType(dbContextType);
-            var dbContextProvider = typeof(DbContextProvider<>).MakeGenericType(dbContextType);
+            // Register DbContext factory
+            var interfaceType = typeof(IEFCoreContextFactory<>).MakeGenericType(dbContextType);
+            var implementationType = typeof(EFCoreContextFactory<>).MakeGenericType(dbContextType);
+            services.AddScoped(interfaceType, implementationType);
 
-            services.AddScoped(typeof(IDbContextProvider), dbContextProvider);
-            services.AddScoped(dbContextProviderServiceType, dbContextProvider);
+            // Register repository dependencies wrapper for the DbContext
+            // This enables the dependency wrapper pattern for repositories
+            var dependenciesType = typeof(Repository.EFRepositoryDependencies<>).MakeGenericType(dbContextType);
+            services.AddScoped(dependenciesType);
 
-            //IDbExecutor
-            var dbExecutor = typeof(DbContextExecutor<>).MakeGenericType(dbContextType);
-            services.AddTransient(typeof(IDbExecutor), dbExecutor);
-
-            //TransactionProvider
-            services.AddTransient<ITransactionProvider, EFCoreTransactionProvider>();
+            services.AddScoped<IUnitOfWorkLifetimeHook, ImmediateTransactionLifetimeHook>();
+            services.AddSingleton<IDbContextTypeRegistry, DbContextTypeRegistry>();
+            services.AddScoped<IImmediateTransactionInitializer, ImmediateTransactionInitializer>();
 
             return services;
         }

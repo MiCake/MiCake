@@ -1,6 +1,6 @@
-﻿using MiCake.Core.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace BaseMiCakeApplication.EFCore
 {
@@ -10,11 +10,16 @@ namespace BaseMiCakeApplication.EFCore
         {
             var builder = new DbContextOptionsBuilder<BaseAppDbContext>();
 
-            var connectionString = "Server=localhost;Database=MiCakeApp;User=root;Password=yourpassword;";
-            builder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-                             mySqlOptions => mySqlOptions.EnableRetryOnFailure());
-                             
-            return new BaseAppDbContext(builder.Options, ServiceLocator.Instance.Locator);
+            // get from the configuration file or environment variables in real scenarios
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var connectionString = config.GetConnectionString("DefaultConnection");
+            builder.UseNpgsql(connectionString);
+
+            return new BaseAppDbContext(builder.Options);
         }
 
         // use [dotnet ef migrations add <MigrationName>] to create migration

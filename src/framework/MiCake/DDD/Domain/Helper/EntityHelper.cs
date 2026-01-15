@@ -6,17 +6,7 @@ namespace MiCake.DDD.Domain.Helper
 {
     public static class EntityHelper
     {
-        public static bool IsEntity(Type type)
-        {
-            return typeof(IEntity).IsAssignableFrom(type);
-        }
-
-        public static bool IsAggregateRoot(Type type)
-        {
-            return typeof(IAggregateRoot).IsAssignableFrom(type);
-        }
-
-        public static bool HasDefaultId<TKey>(IEntity<TKey> entity)
+        public static bool HasDefaultId<TKey>(IEntity<TKey> entity) where TKey : notnull
         {
             if (EqualityComparer<TKey>.Default.Equals(entity.Id, default))
             {
@@ -26,13 +16,13 @@ namespace MiCake.DDD.Domain.Helper
             return false;
         }
 
-        public static Type FindPrimaryKeyType<TEntity>()
+        public static Type? FindPrimaryKeyType<TEntity>()
             where TEntity : IEntity
         {
             return FindPrimaryKeyType(typeof(TEntity));
         }
 
-        public static Type FindPrimaryKeyType(Type entityType)
+        public static Type? FindPrimaryKeyType(Type entityType)
         {
             if (!typeof(IEntity).IsAssignableFrom(entityType))
             {
@@ -49,6 +39,5 @@ namespace MiCake.DDD.Domain.Helper
 
             return null;
         }
-
     }
 }

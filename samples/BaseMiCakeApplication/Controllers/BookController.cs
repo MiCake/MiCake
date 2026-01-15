@@ -1,70 +1,136 @@
 ﻿using BaseMiCakeApplication.Domain.Aggregates;
+using BaseMiCakeApplication.Domain.Repositories;
 using BaseMiCakeApplication.Dto;
+using MiCake.AspNetCore.ApiLogging;
 using MiCake.Core;
-using MiCake.DDD.Domain;
-using Microsoft.AspNetCore.Authorization;
+using MiCake.Util.Query.Dynamic;
+using MiCake.Util.Query.Paging;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BaseMiCakeApplication.Controllers
 {
+    /// <summary>
+    /// API controller for book management operations.
+    /// </summary>
+    /// <remarks>
+    /// This controller demonstrates:
+    /// 1. Dependency injection of repositories
+    /// 2. CRUD operations on aggregate roots
+    /// 3. Pagination support
+    /// 4. Exception handling (BusinessException, DomainException)
+    /// 5. Proper async/await patterns
+    /// 6. API Logging attributes (AlwaysLog, LogFullResponse)
+    /// </remarks>
+    /// <remarks>
+    /// Initializes a new instance of the BookController.
+    /// </remarks>
+    /// <param name="bookRepositoryPaging">The book repository with pagination support</param>
+    /// <param name="logger">The logger</param>
     [ApiController]
-    [Route("[controller]/[action]")]
-    public class BookController : ControllerBase
+    [Route("api/[controller]/[action]")]
+    public class BookController(IBookRepository bookRepositoryPaging, ILogger<BookController> logger) : ControllerBase
     {
-        private readonly IRepository<Book, Guid> _bookRepository;
+        private readonly IBookRepository _bookRepositoryPaging = bookRepositoryPaging;
+        private readonly ILogger<BookController> _logger = logger;
 
-        public BookController(IRepository<Book, Guid> repository)
+        /// <summary>
+        /// Gets a book by its ID.
+        /// </summary>
+        /// <param name="bookId">The book ID</param>
+        /// <returns>The book if found; otherwise null</returns>
+        /// <remarks>
+        /// This endpoint uses [LogFullResponse] to capture the complete response,
+        /// which is useful for debugging entity serialization issues.
+        /// </remarks>
+        [HttpGet("{bookId}")]
+        [LogFullResponse]
+        public async Task<ActionResult<Book>> GetBook(Guid bookId)
         {
-            _bookRepository = repository;
+            _logger.LogInformation($"Getting book with ID: {bookId}");
+            var book = await _bookRepositoryPaging.FindAsync(bookId);
+
+            if (book == null)
+                return NotFound("Book not found");
+
+            return Ok(book);
         }
 
-        [HttpGet]
-        public async Task<Book> GetBook(Guid bookId)
-        {
-            return await _bookRepository.FindAsync(bookId);
-        }
-
-        [HttpGet]
-        public IActionResult GetNoFound() => NotFound("No Found Action");
-
-        [HttpGet]
-        public IActionResult GetMiCakeException() => throw new MiCakeException("This is MiCake exception. http code is 500.");
-
-        [HttpGet]
-        public string GetStringResult() => "MiCake";
-
-        [HttpGet]
-        public List<int> GetListResult() => [1, 3, 4];
-
-        [HttpGet]
-        public IActionResult GetSoftlyMiCakeException() => throw new SlightMiCakeException("This is MiCake softly exception. http code is 200.");
-
-        [HttpGet]
-        public IActionResult GetUnauthorized()
-        {
-            return Unauthorized();
-        }
-
+        /// <summary>
+        /// Retrieves a paginated list of books with optional filtering.
+        /// </summary>
+        /// <param name="filterDto">The filter criteria</param>
+        /// <returns>A paginated list of books</returns>
         [HttpPost]
-        public async Task AddBook([FromBody] AddBookDto bookDto)
+        public async Task<ActionResult<PagingResponse<Book>>> GetBookList([FromBody] BookFilterDto filterDto)
         {
-            var book = new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName);
+            _logger.LogInformation("Getting book list with pagination");
 
-            await _bookRepository.AddAsync(book);
+            var filterGroup = filterDto.GenerateFilterGroup();
+            var books = await _bookRepositoryPaging.FilterPagingQueryAsync(
+                new PagingRequest(filterDto.PageNumber ?? 1, filterDto.PageSize ?? 10),
+                filterGroup);
+
+            return Ok(books);
         }
 
+        /// <summary>
+        /// Creates a new book.
+        /// </summary>
+        /// <param name="bookDto">The book data</param>
+        /// <returns>The created book ID</returns>
+        /// <remarks>
+        /// This endpoint uses [AlwaysLog] to ensure all book creation operations
+        /// are logged for audit purposes, even if successful responses (200/201)
+        /// are normally excluded from logging.
+        /// </remarks>
         [HttpPost]
-        public async Task<bool> ChangeAuthor([FromBody] ChangeBookAuthorDto bookDto)
+        [AlwaysLog]
+        public async Task<ActionResult<Guid>> AddBook([FromBody] AddBookDto bookDto)
         {
-            var _bookInfo = await _bookRepository.FindAsync(bookDto.BookID)
-                                ?? throw new SlightMiCakeException("未找到对应书籍信息");
+            _logger.LogInformation($"Adding new book: {bookDto.BookName}");
 
-            _bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
+            try
+            {
+                var book = new Book(bookDto.BookName, bookDto.AuthorFirstName, bookDto.AuthroLastName);
 
-            return true;
+                // Optional: Set additional properties if provided
+                if (!string.IsNullOrEmpty(bookDto.ISBN))
+                    book.SetISBN(bookDto.ISBN);
+
+                if (bookDto.PublicationYear.HasValue)
+                    book.SetPublicationYear(bookDto.PublicationYear.Value);
+
+                await _bookRepositoryPaging.AddAsync(book);
+
+                return CreatedAtAction(nameof(GetBook), new { bookId = book.Id }, book.Id);
+            }
+            catch (BusinessException ex)
+            {
+                _logger.LogWarning($"Book creation failed: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Updates a book's author information.
+        /// </summary>
+        /// <param name="bookDto">The update data</param>
+        /// <returns>Success status</returns>
+        [HttpPut]
+        public async Task<IActionResult> ChangeAuthor([FromBody] ChangeBookAuthorDto bookDto)
+        {
+            _logger.LogInformation($"Updating author for book: {bookDto.BookID}");
+
+            var bookInfo = await _bookRepositoryPaging.FindAsync(bookDto.BookID)
+                ?? throw new BusinessException("Book not found");
+
+            bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
+            await _bookRepositoryPaging.SaveChangesAsync();
+
+            return Ok(true);
         }
     }
 }

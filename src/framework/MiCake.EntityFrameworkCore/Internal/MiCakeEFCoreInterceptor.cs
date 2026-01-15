@@ -1,8 +1,7 @@
-﻿using MiCake.DDD.Extensions.Lifetime;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -11,63 +10,170 @@ using System.Threading.Tasks;
 namespace MiCake.EntityFrameworkCore.Internal
 {
     /// <summary>
-    /// This interceptor is designed to execute the <see cref="IRepositoryLifetime"/> events.
+    /// EF Core interceptor for MiCake repository lifecycle events.
+    /// Optimized for performance by caching changed entities and minimizing repeated scanning.
+    /// Uses singleton pattern with lazy scoped service resolution.
     /// </summary>
     internal class MiCakeEFCoreInterceptor : ISaveChangesInterceptor
     {
-        private readonly IServiceProvider _services;
         private readonly IEFSaveChangesLifetime _saveChangesLifetime;
+        private readonly ILogger<MiCakeEFCoreInterceptor> _logger;
 
-        private IEnumerable<EntityEntry> _efcoreEntries;
+        private IReadOnlyList<EntityEntry> _changedEntries = [];
 
-        public MiCakeEFCoreInterceptor(IServiceProvider services)
+        /// <summary>
+        /// Constructor that takes IEFSaveChangesLifetime service.
+        /// The service is registered as Singleton with lazy scoped service resolution.
+        /// </summary>
+        /// <param name="saveChangesLifetime">The save changes lifetime service</param>
+        /// <param name="logger">Logger for diagnostics</param>
+        public MiCakeEFCoreInterceptor(
+            IEFSaveChangesLifetime saveChangesLifetime,
+            ILogger<MiCakeEFCoreInterceptor> logger)
         {
-            _services = services ?? throw new ArgumentException($"{nameof(MiCakeEFCoreInterceptor)} received a null value of {nameof(IServiceProvider)}");
-            _saveChangesLifetime = _services.GetService<IEFSaveChangesLifetime>() ??
-                                    throw new ArgumentNullException($"Can not reslove {nameof(IEFSaveChangesLifetime)},Please check has added UseEFCore() in MiCake.");
+            _saveChangesLifetime = saveChangesLifetime ?? throw new ArgumentNullException(nameof(saveChangesLifetime));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void SaveChangesFailed(DbContextErrorEventData eventData)
         {
+            _changedEntries = [];
         }
 
         public Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
         {
-            // do nothing.
+            _changedEntries = [];
             return Task.CompletedTask;
         }
 
         public int SavedChanges(SaveChangesCompletedEventData eventData, int result)
         {
-            //be careful ,this will risks a deadlock.
-            //when save data in aspnet core ,shuold use DbContext.SaveChangesAsync().
-            SavedChangesAsync(eventData, result).GetAwaiter().GetResult();
-            return result;
+            _logger.LogWarning(
+                "Synchronous SaveChanges detected in {ContextType}. " +
+                "This may cause deadlocks in .NET Core applications. " +
+                "Please use SaveChangesAsync instead.",
+                eventData.Context?.GetType().Name);
+
+            try
+            {
+                return SavedChangesAsync(eventData, result, default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in synchronous SavedChanges for {ContextType}",
+                    eventData.Context?.GetType().Name);
+                throw;
+            }
         }
 
         public async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime.AfterSaveChangesAsync(_efcoreEntries);
+            try
+            {
+                if (_saveChangesLifetime != null && _changedEntries.Count > 0)
+                {
+                    await _saveChangesLifetime.AfterSaveChangesAsync(_changedEntries, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in AfterSaveChangesAsync for {ContextType}",
+                    eventData.Context?.GetType().Name);
+                throw;
+            }
+            finally
+            {
+                _changedEntries = [];
+            }
             return result;
         }
 
         public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
         {
-            //be careful ,this will risks a deadlock.
-            //when save data in aspnet core ,shuold use DbContext.SaveChangesAsync().
-            SavingChangesAsync(eventData, result).GetAwaiter().GetResult();
-            return result;
+            _logger.LogWarning(
+                "Synchronous SaveChanges detected in {ContextType}. " +
+                "This may cause deadlocks in .NET Core applications. " +
+                "Please use SaveChangesAsync instead.",
+                eventData.Context?.GetType().Name);
+
+            try
+            {
+                return SavingChangesAsync(eventData, result, default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in synchronous SavingChanges for {ContextType}",
+                    eventData.Context?.GetType().Name);
+                throw;
+            }
         }
 
         public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            await _saveChangesLifetime.BeforeSaveChangesAsync(GetChangeEntities(eventData.Context), cancellationToken);
+            if (eventData.Context == null || _saveChangesLifetime == null)
+                return result;
+
+            try
+            {
+                _changedEntries = GetChangedEntities(eventData.Context);
+
+                _logger.LogDebug("SavingChangesAsync called with {Count} changed entities in {ContextType}",
+                    _changedEntries.Count, eventData.Context.GetType().Name);
+
+                if (_changedEntries.Count > 0)
+                {
+                    await _saveChangesLifetime.BeforeSaveChangesAsync(_changedEntries, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in BeforeSaveChangesAsync for {ContextType}",
+                    eventData.Context.GetType().Name);
+                throw;
+            }
+
             return result;
         }
 
-        private IEnumerable<EntityEntry> GetChangeEntities(DbContext dbContext)
+        /// <summary>
+        /// Gets only entities that have been changed (Added, Modified, Deleted).
+        /// </summary>
+        private static List<EntityEntry> GetChangedEntities(DbContext dbContext)
         {
-            return _efcoreEntries = dbContext.ChangeTracker.Entries();   // ChangeTracker.Entries() and ChangeTracker.Entries<TEntity>() will trigger ChangeTracker.DetectChanges();
+            ArgumentNullException.ThrowIfNull(dbContext);
+
+            var changeTracker = dbContext.ChangeTracker;
+            if (!changeTracker.AutoDetectChangesEnabled && !changeTracker.HasChanges())
+            {
+                return [];
+            }
+
+            var allEntries = changeTracker.Entries();
+            var changedEntries = new List<EntityEntry>(capacity: 16);
+
+            foreach (var entry in allEntries)
+            {
+                var state = entry.State;
+
+                if (state == EntityState.Added || state == EntityState.Modified || state == EntityState.Deleted)
+                {
+                    changedEntries.Add(entry);
+                }
+            }
+
+            // Trim excess if we over-allocated significantly
+            if (changedEntries.Capacity > changedEntries.Count * 4 && changedEntries.Count > 100)
+            {
+                changedEntries.TrimExcess();
+            }
+
+            return changedEntries;
         }
     }
 }

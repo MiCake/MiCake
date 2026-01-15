@@ -1,40 +1,37 @@
-﻿using MiCake.DDD.Uow.Internal;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow
 {
     /// <summary>
-    /// A <see cref="UnitOfWork"/> manager.
-    /// Responsible for creating and managing work <see cref="UnitOfWork"/>
+    /// Unit of Work Manager interface.
+    /// Manages the lifecycle of Unit of Work instances and supports nested transactions.
     /// </summary>
     public interface IUnitOfWorkManager : IDisposable
     {
         /// <summary>
-        /// Get units of work in the current scope.
+        /// Gets the current Unit of Work instance (may be null if no UoW is active)
         /// </summary>
-        IUnitOfWork GetCurrentUnitOfWork();
+        IUnitOfWork? Current { get; }
 
         /// <summary>
-        /// Get <see cref="UnitOfWork"/> by unit of work id.
+        /// Begins a new Unit of Work asynchronously with default options.
+        /// If a UoW already exists and requiresNew is false, returns a nested UoW.
         /// </summary>
-        /// <param name="Id">the unit of work id</param>
-        IUnitOfWork GetUnitOfWork(Guid Id);
+        /// <param name="requiresNew">Whether to create a new root UoW even if one already exists</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>The Unit of Work instance</returns>
+        Task<IUnitOfWork> BeginAsync(bool requiresNew = false, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Create a <see cref="IUnitOfWork"/> with a default options.
+        /// Begins a new Unit of Work asynchronously with custom options.
+        /// If a UoW already exists and requiresNew is false, returns a nested UoW (options are inherited from parent).
         /// </summary>
-        IUnitOfWork Create();
-
-        /// <summary>
-        /// Create a <see cref="IUnitOfWork"/> with a unit of work scope.
-        /// </summary>
-        /// <param name="unitOfWorkScope"><see cref="UnitOfWorkScope"/></param>
-        IUnitOfWork Create(UnitOfWorkScope unitOfWorkScope);
-
-        /// <summary>
-        ///  Create a <see cref="IUnitOfWork"/> with a custom options.
-        /// </summary>
-        /// <param name="options"><see cref="UnitOfWorkOptions"/></param>
-        IUnitOfWork Create(UnitOfWorkOptions options);
+        /// <param name="options">Configuration options for the unit of work</param>
+        /// <param name="requiresNew">Whether to create a new root UoW even if one already exists</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>The Unit of Work instance</returns>
+        Task<IUnitOfWork> BeginAsync(UnitOfWorkOptions options, bool requiresNew = false, CancellationToken cancellationToken = default);
     }
 }

@@ -1,38 +1,35 @@
-﻿using MiCake.Core;
-using MiCake.Core.DependencyInjection;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.EntityFrameworkCore;
 using MiCake.EntityFrameworkCore.Modules;
-using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace MiCake.EntityFrameworkCore
+namespace MiCake.Core
 {
     public static class MiCakeBuilderEFCoreExtension
     {
         /// <summary>
-        /// Add MiCake EFCore services.
+        /// Add MiCake EFCore services with default conventions.
         /// </summary>
-        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseEFCore<TDbContext>(this IMiCakeBuilder builder)
             where TDbContext : DbContext
         {
-            UseEFCore<TDbContext>(builder, null);
-            return builder;
+            return UseEFCore<TDbContext>(builder, null);
         }
 
         /// <summary>
-        /// Add MiCake EFCore services.
+        /// Enable Entity Framework Core integration without any conventions
         /// </summary>
-        /// <typeparam name="TDbContext"><see cref="MiCakeDbContext"/></typeparam>
-        /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
-        /// <param name="optionsBuilder">The config for MiCake EFCore extension</param>
-        /// <returns><see cref="IMiCakeBuilder"/></returns>
+        /// <typeparam name="TDbContext">The DbContext type to configure</typeparam>
+        /// <param name="builder">The MiCake builder instance</param>
+        /// <param name="optionsBuilder">Optional configuration for MiCake EF Core options</param>
+        /// <returns>The MiCake builder for method chaining</returns>
         public static IMiCakeBuilder UseEFCore<TDbContext>(
             this IMiCakeBuilder builder,
-            Action<MiCakeEFCoreOptions> optionsBuilder)
+            Action<MiCakeEFCoreOptions>? optionsBuilder)
             where TDbContext : DbContext
         {
             return UseEFCore(builder, typeof(TDbContext), optionsBuilder);
@@ -43,26 +40,19 @@ namespace MiCake.EntityFrameworkCore
         /// </summary>
         /// <param name="builder"><see cref="IMiCakeBuilder"/></param>
         /// <param name="miCakeDbContextType"><see cref="MiCakeDbContext"/></param>
-        /// <param name="optionsBulder">The config for MiCake EFCore extension</param>
+        /// <param name="optionsBuilder">The config for MiCake EFCore extension</param>
         /// <returns><see cref="IMiCakeBuilder"/></returns>
         public static IMiCakeBuilder UseEFCore(
             this IMiCakeBuilder builder,
             Type miCakeDbContextType,
-            Action<MiCakeEFCoreOptions> optionsBulder)
+            Action<MiCakeEFCoreOptions>? optionsBuilder = null)
         {
             MiCakeEFCoreOptions options = new(miCakeDbContextType);
-            optionsBulder?.Invoke(options);
+            optionsBuilder?.Invoke(options);
 
-            builder.ConfigureApplication((app, services) =>
-            {
-                //register ef module to micake module collection
-                app.ModuleManager.AddMiCakeModule(typeof(MiCakeEFCoreModule));
-
-                services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
-
-                //add efcore uow services.
-                services.AddUowCoreServices(miCakeDbContextType);
-            });
+            // Register services directly on the builder's service collection
+            builder.Services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(options);
+            builder.GetApplicationOptions().BuildPhaseData.Deposit(MiCakeEFCoreModuleInternalKeys.DBContextType, miCakeDbContextType);
 
             return builder;
         }

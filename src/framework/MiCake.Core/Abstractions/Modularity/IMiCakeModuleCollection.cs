@@ -13,6 +13,6 @@ namespace MiCake.Core.Modularity
         /// </summary>
         /// <param name="includeFrameworkModule">is include framework module</param>
         /// <returns>All assemblies containing <see cref="MiCakeModule"/></returns>
-        Assembly[] GetAssemblies(bool includeFrameworkModule = false);
+        Assembly[] GetAssemblies(bool includeFrameworkModule);
     }
 }

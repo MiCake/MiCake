@@ -1,6 +1,5 @@
-﻿using MiCake.Core.Data;
-using MiCake.Core.DependencyInjection;
-using MiCake.Core.Handlers;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.Util.Store;
 using System.Reflection;
 
 namespace MiCake.Core
@@ -17,26 +16,26 @@ namespace MiCake.Core
         /// or <see cref="IScopedService"/> interface will be injected automatically.
         /// But we need to determine which type of service this class is.
         /// 
-        /// defalut: find class all interfaces.The service whose interface name contains the class name.
+        /// default: find class all interfaces. The service whose interface name contains the class name.
         /// </summary>
-        public FindAutoServiceTypesDelegate FindAutoServiceTypes { get; set; }
+        public ServiceTypeDiscoveryHandler? FindAutoServiceTypes { get; set; }
 
         /// <summary>
         /// Assemblies of domain layer
         /// Providing this parameter will facilitate micake to better scan related domain objects in the program.
         /// </summary>
-        public Assembly[] DomainLayerAssemblies { get; set; }
+        public Assembly[]? DomainLayerAssemblies { get; set; }
 
         /// <summary>
-        /// The collection for <see cref="IMiCakeHandler"/>.
+        /// Configuration options for printing module information during initialization.
         /// </summary>
-        public MiCakeHandlerCollection Handlers { get; set; } = [];
+        public PrintingOptions Printing { get; set; } = new PrintingOptions();
 
         /// <summary>
-        /// Some additional information.
-        /// Be careful:These data will be released after the app is started
+        /// A data stash that only exists during the build process.
+        /// It can be used to store data cross modules during the build phase.
         /// </summary>
-        public DataDepositPool ExtraDataStash { get; set; } = new DataDepositPool();
+        public DataDepositPool BuildPhaseData { get; set; } = new DataDepositPool();
 
         /// <summary>
         /// Use given option value.
@@ -46,8 +45,53 @@ namespace MiCake.Core
         {
             FindAutoServiceTypes = applicationOptions.FindAutoServiceTypes;
             DomainLayerAssemblies = applicationOptions.DomainLayerAssemblies;
-            Handlers = applicationOptions.Handlers;
-            ExtraDataStash = applicationOptions.ExtraDataStash;
+            Printing = applicationOptions.Printing ?? new PrintingOptions();
+            BuildPhaseData = applicationOptions.BuildPhaseData;
+        }
+
+
+        /// <summary>
+        /// Configuration options for printing module information during initialization.
+        /// </summary>
+        public class PrintingOptions
+        {
+            /// <summary>
+            /// Whether to print the welcome brand string during module initialization.
+            /// Default is true.
+            /// </summary>
+            public bool WelcomeBrand { get; set; } = true;
+
+            /// <summary>
+            /// Whether to print the module dependency graph during module initialization.
+            /// Default is true.
+            /// </summary>
+            public bool DependencyGraph { get; set; } = true;
+
+            /// <summary>
+            /// Creates a new instance of PrintingOptions with all printing enabled.
+            /// </summary>
+            /// <returns>A new PrintingOptions instance with all features enabled</returns>
+            public static PrintingOptions EnableAll()
+            {
+                return new PrintingOptions
+                {
+                    WelcomeBrand = true,
+                    DependencyGraph = true
+                };
+            }
+
+            /// <summary>
+            /// Creates a new instance of PrintingOptions with all printing disabled.
+            /// </summary>
+            /// <returns>A new PrintingOptions instance with all features disabled</returns>
+            public static PrintingOptions DisableAll()
+            {
+                return new PrintingOptions
+                {
+                    WelcomeBrand = false,
+                    DependencyGraph = false
+                };
+            }
         }
     }
 }

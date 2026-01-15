@@ -74,13 +74,13 @@ namespace MiCake.DDD.Tests
         {
             var entityA = new EntityA() { Id = 1 };
             var eventInfo = new CreateOrderEvents(1);
-            entityA.AddDomainEvent(eventInfo);
+            entityA.AddDomainEventPublic(eventInfo);  // Use public wrapper
 
-            Assert.Single(entityA.GetDomainEvents());
+            Assert.Single(entityA.DomainEvents);
 
-            entityA.RemoveDomainEvent(eventInfo);
+            entityA.ClearDomainEvents();
 
-            Assert.Empty(entityA.GetDomainEvents());
+            Assert.Empty(entityA.DomainEvents);
         }
 
         [Fact]

@@ -7,19 +7,19 @@ using System.Threading.Tasks;
 
 namespace MiCake.DDD.Domain.EventDispatch
 {
-    internal abstract class DomainEventHandlerWrapper
+    internal interface IDomainEventHandler
     {
-        public abstract Task Handle(IDomainEvent domainEvent, CancellationToken cancellationToken, IServiceProvider serviceProvider, Func<IEnumerable<Func<Task>>, Task> publish);
+        Task Handle(IDomainEvent domainEvent, IServiceProvider serviceProvider, Func<IEnumerable<Func<Task>>, Task> publish, CancellationToken cancellationToken);
     }
 
-    internal class DomainEventHandlerWrapperImp<TDomainEvent> : DomainEventHandlerWrapper
+    internal class DomainEventHandlerWrapperImp<TDomainEvent> : IDomainEventHandler
         where TDomainEvent : IDomainEvent
     {
-        public override Task Handle(IDomainEvent domainEvent, CancellationToken cancellationToken, IServiceProvider serviceProvider, Func<IEnumerable<Func<Task>>, Task> publish)
+        public Task Handle(IDomainEvent domainEvent, IServiceProvider serviceProvider, Func<IEnumerable<Func<Task>>, Task> publish, CancellationToken cancellationToken)
         {
             var handlers = serviceProvider
                  .GetServices<IDomainEventHandler<TDomainEvent>>()
-                 .Select(x => new Func<Task>(() => x.HandleAysnc((TDomainEvent)domainEvent, cancellationToken)));
+                 .Select(x => new Func<Task>(() => x.HandleAsync((TDomainEvent)domainEvent, cancellationToken)));
 
             return publish(handlers);
         }

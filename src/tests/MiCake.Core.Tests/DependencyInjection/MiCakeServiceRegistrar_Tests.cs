@@ -26,22 +26,22 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void InheritInterface_ShouldHasCurrentLifeTime()
         {
-            var singlethonClass = Services.Where(service => service.ImplementationType == typeof(SinglethonClass)).FirstOrDefault();
+            var singlethonClass = Services.FirstOrDefault(service => service.ImplementationType == typeof(SinglethonClass));
 
             Assert.NotNull(singlethonClass);
             Assert.Equal(ServiceLifetime.Singleton, singlethonClass.Lifetime);
 
-            var transientClass = Services.Where(service => service.ImplementationType == typeof(TransientClass)).FirstOrDefault();
+            var transientClass = Services.FirstOrDefault(service => service.ImplementationType == typeof(TransientClass));
 
             Assert.NotNull(transientClass);
             Assert.Equal(ServiceLifetime.Transient, transientClass.Lifetime);
 
-            var scpoedClass = Services.Where(service => service.ImplementationType == typeof(ScopedClass)).FirstOrDefault();
+            var scpoedClass = Services.FirstOrDefault(service => service.ImplementationType == typeof(ScopedClass));
 
             Assert.NotNull(scpoedClass);
             Assert.Equal(ServiceLifetime.Scoped, scpoedClass.Lifetime);
 
-            var injectServiceCount = Services.Where(service => service.ImplementationType == typeof(SinglethonClass)).Count();
+            var injectServiceCount = Services.Count(service => service.ImplementationType == typeof(SinglethonClass));
 
             Assert.Equal(1, injectServiceCount);
         }
@@ -49,8 +49,8 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void InheritInterface_HasTwoInterface_ShouldOnlyOneCount()
         {
-            var injectServiceCount = Services.Where(service =>
-                                    service.ImplementationType == typeof(HasTwoInterfaceClass)).Count();
+            var injectServiceCount = Services.Count(service =>
+                                    service.ImplementationType == typeof(HasTwoInterfaceClass));
 
             Assert.Equal(1, injectServiceCount);
         }
@@ -59,8 +59,8 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void HasAttribute_ShouldHasItSelf()
         {
-            var injectServiceCount = Services.Where(service =>
-                                    service.ImplementationType == typeof(DefaultAttributeClass)).Count();
+            var injectServiceCount = Services.Count(service =>
+                                    service.ImplementationType == typeof(DefaultAttributeClass));
 
             Assert.Equal(1, injectServiceCount);
         }
@@ -68,8 +68,8 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void HasAttribute_ShouldNotHasItSelf()
         {
-            var injectServiceCount = Services.Where(service =>
-                                    service.ImplementationType == typeof(NotIncludeItSelfAttributeClass)).Count();
+            var injectServiceCount = Services.Count(service =>
+                                    service.ImplementationType == typeof(NotIncludeItSelfAttributeClass));
 
             Assert.Equal(0, injectServiceCount);
         }
@@ -77,18 +77,18 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void HasAttribute_ShouldHasRightLifetime()
         {
-            var singlethonClass = Services.Where(service =>
-                                    service.ImplementationType == typeof(SinglethonAttributeClass)).FirstOrDefault();
+            var singlethonClass = Services.FirstOrDefault(service =>
+                                    service.ImplementationType == typeof(SinglethonAttributeClass));
 
             Assert.Equal(ServiceLifetime.Singleton, singlethonClass.Lifetime);
 
-            var scpoedClass = Services.Where(service =>
-                        service.ImplementationType == typeof(ScopedAttributeClass)).FirstOrDefault();
+            var scpoedClass = Services.FirstOrDefault(service =>
+                        service.ImplementationType == typeof(ScopedAttributeClass));
 
             Assert.Equal(ServiceLifetime.Scoped, scpoedClass.Lifetime);
 
-            var defaultClass = Services.Where(service =>
-                        service.ImplementationType == typeof(DefaultAttributeClass)).FirstOrDefault();
+            var defaultClass = Services.FirstOrDefault(service =>
+                        service.ImplementationType == typeof(DefaultAttributeClass));
 
             Assert.Equal(ServiceLifetime.Transient, defaultClass.Lifetime);
         }
@@ -96,8 +96,8 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void HasAttribute_ShouldMoreServices()
         {
-            var injectServiceCount = Services.Where(service =>
-                                    service.ImplementationType == typeof(HasMoreServiceAttributeClass)).Count();
+            var injectServiceCount = Services.Count(service =>
+                                    service.ImplementationType == typeof(HasMoreServiceAttributeClass));
 
             Assert.Equal(4, injectServiceCount);
         }
@@ -105,8 +105,8 @@ namespace MiCake.Core.Tests.DependencyInjection
         [Fact]
         public void HasTwoFeature_ShouldOnlyOneService()
         {
-            var injectServiceCount = Services.Where(service =>
-                                                service.ImplementationType == typeof(TwoFeatureFake)).Count();
+            var injectServiceCount = Services.Count(service =>
+                                                service.ImplementationType == typeof(TwoFeatureFake));
 
             Assert.Equal(1, injectServiceCount);
         }

@@ -1,62 +1,51 @@
-﻿using System.Threading.Tasks;
-
-namespace MiCake.Core.Modularity
+﻿namespace MiCake.Core.Modularity
 {
+    /// <summary>
+    /// Base class for MiCake modules - Provides default implementation.
+    /// <para>
+    /// All MiCake modules should inherit from this base class.
+    /// For fine-grained lifecycle control, inherit from <see cref="MiCakeModuleAdvanced"/>.
+    /// </para>
+    /// </summary>
     public abstract class MiCakeModule : IMiCakeModule
     {
         /// <summary>
-        /// Tag this module is farmework level.
-        /// Framework level modules do not need to be traversed.
+        /// <inheritdoc/>
         /// </summary>
         public virtual bool IsFrameworkLevel => false;
 
         /// <summary>
-        /// Auto register service to dependency injection framework.
+        /// <inheritdoc/>
         /// </summary>
-        public virtual bool IsAutoRegisterServices => true;
+        public virtual bool EnableAutoServiceRegistration => true;
 
-        public MiCakeModule()
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public virtual string Description => string.Empty;
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public virtual void ConfigureServices(ModuleConfigServiceContext context)
         {
+            // Default implementation - no services to configure
         }
 
-        public virtual Task ConfigServices(ModuleConfigServiceContext context)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public virtual void OnApplicationInitialization(ModuleInitializationContext context)
         {
-            return Task.CompletedTask;
+            // Default implementation - no initialization needed
         }
 
-        public virtual Task Initialization(ModuleLoadContext context)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public virtual void OnApplicationShutdown(ModuleShutdownContext context)
         {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task PostConfigServices(ModuleConfigServiceContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task PostInitialization(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task PreConfigServices(ModuleConfigServiceContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task PreInitialization(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task PreShutDown(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task Shutdown(ModuleLoadContext context)
-        {
-            return Task.CompletedTask;
+            // Default implementation - no cleanup needed
         }
     }
 }

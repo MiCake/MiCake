@@ -1,18 +1,16 @@
-﻿using System.Threading.Tasks;
+﻿using System;
 using MiCake.Audit;
+using MiCake.Audit.Conventions;
 using MiCake.Audit.Core;
 using MiCake.Audit.Lifetime;
 using MiCake.Audit.SoftDeletion;
-using MiCake.Audit.Store;
+using MiCake.Core;
 using MiCake.Core.Modularity;
-using MiCake.DDD.Domain;
 using MiCake.DDD.Domain.EventDispatch;
 using MiCake.DDD.Domain.Internal;
-using MiCake.DDD.Extensions;
-using MiCake.DDD.Extensions.Internal;
-using MiCake.DDD.Extensions.Lifetime;
-using MiCake.DDD.Extensions.Metadata;
-using MiCake.DDD.Extensions.Store.Configure;
+using MiCake.DDD.Infrastructure.Lifetime;
+using MiCake.DDD.Infrastructure.Metadata;
+using MiCake.DDD.Infrastructure.Store;
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,67 +18,73 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Modules
 {
-    public class MiCakeEssentialModule : MiCakeModule
+    public static class MiCakeEssentialModuleInternalKeys
+    {
+        public const string MiCakeAuditSettingOptions = "MiCake.Module.Essential.MiCakeAuditOptions";
+        public const string StoreConventionRegistry = "MiCake.Module.Essential.StoreConventionRegistry";
+    }
+
+    [RelyOn(typeof(MiCakeRootModule))]
+    public class MiCakeEssentialModule : MiCakeModuleAdvanced
     {
         public override bool IsFrameworkLevel => true;
 
-        public override Task PreConfigServices(ModuleConfigServiceContext context)
+        public override void PreConfigureServices(ModuleConfigServiceContext context)
         {
-            StoreConfig.Instance.AddModelProvider(new SoftDeletionStoreEntityConfig());
-
-            return Task.CompletedTask;
-        }
-
-        public override Task ConfigServices(ModuleConfigServiceContext context)
-        {
-            var auditOptions = (MiCakeAuditOptions)context.MiCakeApplicationOptions.ExtraDataStash.TakeOut(MiCakeBuilderAuditCoreExtension.AuditForApplicationOptionsKey);
+            var auditOptions = context.MiCakeApplicationOptions.BuildPhaseData.TakeOut(MiCakeEssentialModuleInternalKeys.MiCakeAuditSettingOptions) as MiCakeAuditOptions;
             var services = context.Services;
+            var storeConventionRegistry = new StoreConventionRegistry();
 
             if (auditOptions?.UseAudit == true)
             {
                 //Audit Executor
                 services.AddScoped<IAuditExecutor, DefaultAuditExecutor>();
-                //Audit CreationTime and ModifationTime
+                //Audit timestamp provider
                 services.AddScoped<IAuditProvider, DefaultTimeAuditProvider>();
                 //RepositoryLifeTime
-                services.AddTransient<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
+                services.AddScoped<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
+
+                if (auditOptions?.AuditTimeProvider is not null)
+                {
+                    DefaultTimeAuditProvider.CurrentTimeProvider = auditOptions.AuditTimeProvider;
+                }
+                storeConventionRegistry.AddConvention(new AuditTimeConvention());
 
                 if (auditOptions?.UseSoftDeletion == true)
                 {
-                    //Audit Deletion Time
+                    //Audit soft deletion provider
                     services.AddScoped<IAuditProvider, SoftDeletionAuditProvider>();
                     //RepositoryLifeTime
-                    services.AddTransient<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
+                    services.AddScoped<IRepositoryPreSaveChanges, SoftDeletionRepositoryLifetime>();
+
+                    storeConventionRegistry.AddConvention(new SoftDeletionConvention());
                 }
             }
 
-            services.AddTransient<IDomainObjectModelProvider, DefaultDomainObjectModelProvider>();
-            services.AddSingleton<DomainObjectFactory>();
+            // Domain Metadata
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
-            services.AddSingleton(factory =>
-            {
-                var provider = factory.GetService<IDomainMetadataProvider>();
-                return provider.GetDomainMetadata();
-            });
-
-            services.AddScoped(typeof(IRepository<,>), typeof(ProxyRepository<,>));
-            services.AddScoped(typeof(IReadOnlyRepository<,>), typeof(ProxyReadOnlyRepository<,>));
-            services.AddScoped(typeof(IRepositoryFactory<,>), typeof(DefaultRepositoryFacotry<,>));
 
             //LifeTime
-            services.AddTransient<IRepositoryPreSaveChanges, DomainEventsRepositoryLifetime>();
+            services.AddScoped<IRepositoryPreSaveChanges, DomainEventDispatchLifetime>();
+            services.AddScoped<IRepositoryPostSaveChanges, DomainEventCleanupLifetime>();
 
-            // UOW 
+            // Unit of Work - Register with options support
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
-            context.Services.TryAddScoped<ICurrentUnitOfWork, CurrentUnitOfWork>();
-            context.Services.TryAddTransient<IUnitOfWork, UnitOfWork>();
 
-            //regiter all domain event handler to services
-            services.ResigterDomainEventHandler(context.MiCakeModules);
+            // Register current UoW accessor (returns Current from manager, may be null)
+            services.TryAddScoped(provider =>
+            {
+                var manager = provider.GetRequiredService<IUnitOfWorkManager>();
+                return manager.Current ?? throw new InvalidOperationException(
+                    "No active Unit of Work. Call IUnitOfWorkManager.Begin() to start a new Unit of Work.");
+            });
 
+            //register all domain event handler to services
+            services.RegisterDomainEventHandler(context.MiCakeModules);
             services.AddScoped<IEventDispatcher, EventDispatcher>();
 
-            return Task.CompletedTask;
+            // Store Convention Registry to build chain
+            context.MiCakeApplicationOptions.BuildPhaseData.Deposit(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry, storeConventionRegistry);
         }
     }
 }
