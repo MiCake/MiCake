@@ -86,7 +86,7 @@ jobs:
     
     - name: Pack preview NuGet packages
       run: |
-        dotnet pack src/framework/**/*.csproj \
+        dotnet pack MiCake.All.sln \
           --configuration ${{ env.BUILD_CONFIGURATION }} \
           --no-build \
           --include-symbols \

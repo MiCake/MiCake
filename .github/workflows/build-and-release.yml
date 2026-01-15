@@ -134,7 +134,7 @@ jobs:
             - name: Pack NuGet packages
               if: github.event.inputs.push_to_nuget == 'true'
               run: |
-                  dotnet pack src/framework/**/*.csproj \
+                  dotnet pack MiCake.All.sln \
                     --configuration ${{ env.BUILD_CONFIGURATION }} \
                     --no-build \
                     --include-symbols \
