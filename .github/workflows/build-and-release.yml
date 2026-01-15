@@ -1,206 +1,215 @@
 name: Build, Test and Release
 
 on:
-    workflow_dispatch:
-        inputs:
-            push_to_nuget:
-                description: "Push packages to NuGet.org (ensure version is correct)"
-                required: true
-                type: boolean
-                default: false
-            create_release:
-                description: "Create GitHub Release and Git Tag"
-                required: true
-                type: boolean
-                default: false
-            version_tag:
-                description: "Version tag override (leave empty to use Directory.Build.props version)"
-                required: false
-                type: string
-                default: ""
+  workflow_dispatch:
+    inputs:
+      push_to_nuget:
+        description: "Push packages to NuGet.org (ensure version is correct)"
+        required: true
+        type: boolean
+        default: false
+      create_release:
+        description: "Create GitHub Release and Git Tag"
+        required: true
+        type: boolean
+        default: false
+      version_tag:
+        description: "Version tag override (leave empty to use Directory.Build.props version)"
+        required: false
+        type: string
+        default: ""
 
 # Prevent concurrent releases
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Explicit permissions for security
 permissions:
-    contents: write # For creating releases and tags
-    pull-requests: write # For PR comments
-    actions: read
-    checks: write
+  contents: write # For creating releases and tags
+  pull-requests: write # For PR comments
+  actions: read
+  checks: write
+  id-token: write # enable GitHub OIDC token issuance for this job
 
 env:
-    DOTNET_VERSION: ${{ vars.DOTNET_VERSION }}
-    BUILD_CONFIGURATION: "Release"
-    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-    DOTNET_CLI_TELEMETRY_OPTOUT: true
-    NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  DOTNET_VERSION: ${{ vars.DOTNET_VERSION }}
+  BUILD_CONFIGURATION: "Release"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
-    build-and-test:
-        runs-on: ubuntu-latest
+  build-and-test:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0 # Full history for proper versioning
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for proper versioning
 
-            - name: Extract and validate version
-              id: version
-              run: |
-                  # Read version from Directory.Build.props
-                  PROPS_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
-                  echo "Version from Directory.Build.props: $PROPS_VERSION"
-                  
-                  # Use input version if provided, otherwise use props version
-                  if [ -n "${{ github.event.inputs.version_tag }}" ]; then
-                    FINAL_VERSION="${{ github.event.inputs.version_tag }}"
-                    echo "Using manually specified version: $FINAL_VERSION"
-                  else
-                    FINAL_VERSION="$PROPS_VERSION"
-                    echo "Using version from Directory.Build.props: $FINAL_VERSION"
-                  fi
-                  
-                  # Validate version format (must be x.x.x)
-                  if [[ ! "$FINAL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                    echo "Error: Version '$FINAL_VERSION' must match pattern x.x.x (e.g., 1.0.0)"
-                    echo "Prerelease suffixes like '-preview1' are not allowed for releases."
-                    exit 1
-                  fi
-                  
-                  echo "version=$FINAL_VERSION" >> $GITHUB_OUTPUT
-                  echo "tag=v$FINAL_VERSION" >> $GITHUB_OUTPUT
-                  echo "::notice ::Release version: $FINAL_VERSION (tag: v$FINAL_VERSION)"
+      - name: Extract and validate version
+        id: version
+        run: |
+          # Read version from Directory.Build.props
+          PROPS_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+          echo "Version from Directory.Build.props: $PROPS_VERSION"
 
-            - name: Setup .NET
-              uses: actions/setup-dotnet@v4
-              with:
-                  dotnet-version: ${{ env.DOTNET_VERSION }}
+          # Use input version if provided, otherwise use props version
+          if [ -n "${{ github.event.inputs.version_tag }}" ]; then
+            FINAL_VERSION="${{ github.event.inputs.version_tag }}"
+            echo "Using manually specified version: $FINAL_VERSION"
+          else
+            FINAL_VERSION="$PROPS_VERSION"
+            echo "Using version from Directory.Build.props: $FINAL_VERSION"
+          fi
 
-            # Cache NuGet packages for faster builds
-            - name: Cache NuGet packages
-              uses: actions/cache@v4
-              with:
-                  path: ${{ env.NUGET_PACKAGES }}
-                  key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
-                  restore-keys: |
-                      ${{ runner.os }}-nuget-
+          # Validate version format (must be x.x.x)
+          if [[ ! "$FINAL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version '$FINAL_VERSION' must match pattern x.x.x (e.g., 1.0.0)"
+            echo "Prerelease suffixes like '-preview1' are not allowed for releases."
+            exit 1
+          fi
 
-            - name: Restore dependencies
-              run: dotnet restore
+          echo "version=$FINAL_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$FINAL_VERSION" >> $GITHUB_OUTPUT
+          echo "::notice ::Release version: $FINAL_VERSION (tag: v$FINAL_VERSION)"
 
-            - name: Build
-              run: dotnet build MiCake.All.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-            - name: Run tests with coverage
-              run: |
-                  dotnet test MiCake.All.sln \
-                    --configuration ${{ env.BUILD_CONFIGURATION }} \
-                    --no-build \
-                    --settings src/tests/runsettings.xml \
-                    --collect:"XPlat Code Coverage" \
-                    --results-directory ./coverage \
-                    -- RunConfiguration.DisableAppDomain=true
+      # Cache NuGet packages for faster builds
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-            - name: Generate coverage report
-              run: |
-                  dotnet tool install --global dotnet-reportgenerator-globaltool
-                  reportgenerator \
-                    -reports:./coverage/**/coverage.cobertura.xml \
-                    -targetdir:./coverlet/reports \
-                    -reporttypes:"Cobertura;HtmlInline_AzurePipelines"
+      - name: Restore dependencies
+        run: dotnet restore
 
-            - name: Upload coverage to Codecov
-              uses: codecov/codecov-action@v4
-              with:
-                  files: ./coverage/**/coverage.cobertura.xml
-                  flags: unittests
-                  fail_ci_if_error: false
-                  verbose: true
-              env:
-                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Build
+        run: dotnet build MiCake.All.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-            - name: Upload coverage report as artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: coverage-report
-                  path: ./coverlet/reports
-                  retention-days: 30
+      - name: Run tests with coverage
+        run: |
+          dotnet test MiCake.All.sln \
+            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --no-build \
+            --settings src/tests/runsettings.xml \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage \
+            -- RunConfiguration.DisableAppDomain=true
 
-            # Package and publish to NuGet
-            - name: Pack NuGet packages
-              if: github.event.inputs.push_to_nuget == 'true'
-              run: |
-                  dotnet pack MiCake.All.sln \
-                    --configuration ${{ env.BUILD_CONFIGURATION }} \
-                    --no-build \
-                    --include-symbols \
-                    --include-source \
-                    -p:SymbolPackageFormat=snupkg \
-                    --output ./artifacts
+      - name: Generate coverage report
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:./coverage/**/coverage.cobertura.xml \
+            -targetdir:./coverlet/reports \
+            -reporttypes:"Cobertura;HtmlInline_AzurePipelines"
 
-            - name: Push to NuGet.org
-              if: github.event.inputs.push_to_nuget == 'true'
-              run: |
-                  for package in ./artifacts/*.nupkg; do
-                    echo "Pushing $package..."
-                    dotnet nuget push "$package" \
-                      --source https://api.nuget.org/v3/index.json \
-                      --skip-duplicate
-                  done
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/**/coverage.cobertura.xml
+          flags: unittests
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-            - name: Upload NuGet packages as artifacts
-              if: github.event.inputs.push_to_nuget == 'true'
-              uses: actions/upload-artifact@v4
-              with:
-                  name: nuget-packages
-                  path: ./artifacts/*.nupkg
-                  retention-days: 90
+      - name: Upload coverage report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverlet/reports
+          retention-days: 30
 
-            # Create Git tag and GitHub Release
-            - name: Create Git Tag
-              if: github.event.inputs.create_release == 'true'
-              run: |
-                  git config user.name "github-actions[bot]"
-                  git config user.email "micake_bot@users.noreply.github.com"
-                  git tag -a ${{ steps.version.outputs.tag }} -m "Release ${{ steps.version.outputs.version }}"
-                  git push origin ${{ steps.version.outputs.tag }}
+      # Package and publish to NuGet
+      - name: Pack NuGet packages
+        if: github.event.inputs.push_to_nuget == 'true'
+        run: |
+          dotnet pack MiCake.All.sln \
+            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --no-build \
+            --include-symbols \
+            --include-source \
+            -p:SymbolPackageFormat=snupkg \
+            --output ./artifacts
 
-            - name: Create GitHub Release
-              if: github.event.inputs.create_release == 'true'
-              uses: softprops/action-gh-release@v2
-              with:
-                  tag_name: ${{ steps.version.outputs.tag }}
-                  name: MiCake ${{ steps.version.outputs.tag }}
-                  generate_release_notes: true
-                  body: |
-                      ## MiCake ${{ steps.version.outputs.version }}
+      # Get a short-lived NuGet API key
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: MiCake
 
-                      ### 📦 NuGet Packages
+      - name: Push to NuGet.org
+        if: github.event.inputs.push_to_nuget == 'true'
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "Pushing $package..."
+            dotnet nuget push "$package" \
+              --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
 
-                      Install via NuGet:
-                      ```bash
-                      dotnet add package MiCake --version ${{ steps.version.outputs.version }}
-                      ```
+      - name: Upload NuGet packages as artifacts
+        if: github.event.inputs.push_to_nuget == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/*.nupkg
+          retention-days: 90
 
-                      | Package | Version |
-                      |---------|---------|
-                      | [MiCake](https://www.nuget.org/packages/MiCake/) | ${{ steps.version.outputs.version }} |
-                      | [MiCake.EntityFrameworkCore](https://www.nuget.org/packages/MiCake.EntityFrameworkCore/) | ${{ steps.version.outputs.version }} |
-                      | [MiCake.AspNetCore](https://www.nuget.org/packages/MiCake.AspNetCore/) | ${{ steps.version.outputs.version }} |
+      # Create Git tag and GitHub Release
+      - name: Create Git Tag
+        if: github.event.inputs.create_release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "micake_bot@users.noreply.github.com"
+          git tag -a ${{ steps.version.outputs.tag }} -m "Release ${{ steps.version.outputs.version }}"
+          git push origin ${{ steps.version.outputs.tag }}
 
-                      ### 📖 Documentation
-                      Visit [https://micake.github.io](https://micake.github.io) for full documentation.
+      - name: Create GitHub Release
+        if: github.event.inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: MiCake ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          body: |
+            ## MiCake ${{ steps.version.outputs.version }}
 
-                      ---
+            ### 📦 NuGet Packages
 
-                  draft: false
-                  prerelease: false
-                  files: |
-                      ./artifacts/*.nupkg
-                      ./artifacts/*.snupkg
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            Install via NuGet:
+            ```bash
+            dotnet add package MiCake --version ${{ steps.version.outputs.version }}
+            ```
+
+            | Package | Version |
+            |---------|---------|
+            | [MiCake](https://www.nuget.org/packages/MiCake/) | ${{ steps.version.outputs.version }} |
+            | [MiCake.EntityFrameworkCore](https://www.nuget.org/packages/MiCake.EntityFrameworkCore/) | ${{ steps.version.outputs.version }} |
+            | [MiCake.AspNetCore](https://www.nuget.org/packages/MiCake.AspNetCore/) | ${{ steps.version.outputs.version }} |
+
+            ### 📖 Documentation
+            Visit [https://micake.github.io](https://micake.github.io) for full documentation.
+
+            ---
+
+          draft: false
+          prerelease: false
+          files: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
