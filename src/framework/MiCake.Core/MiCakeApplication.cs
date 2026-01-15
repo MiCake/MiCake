@@ -16,13 +16,13 @@ namespace MiCake.Core
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IMiCakeModuleContext _moduleContext;
-        private readonly Type _entryType;
         private readonly ILogger _logger;
 
         private MiCakeModuleBoot? _miCakeModuleBoot;
 
         private bool _isStarted;
         private bool _isShutdown;
+        private bool _disposed;
 
         /// <summary>
         /// Application options
@@ -56,7 +56,7 @@ namespace MiCake.Core
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _moduleContext = moduleContext ?? throw new ArgumentNullException(nameof(moduleContext));
             ApplicationOptions = options.Value ?? new MiCakeApplicationOptions();
-            _entryType = entryType ?? throw new ArgumentNullException(nameof(entryType));
+            _ = entryType ?? throw new ArgumentNullException(nameof(entryType));
 
             _logger = (_serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance).CreateLogger<MiCakeApplication>();
         }
@@ -67,6 +67,8 @@ namespace MiCake.Core
         /// </summary>
         public virtual void Start()
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (_isStarted)
                 throw new InvalidOperationException("MiCake has already started.");
 
@@ -122,10 +124,31 @@ namespace MiCake.Core
             _logger?.LogInformation("MiCake Application Shutdown Completed.");
         }
 
+        /// <summary>
+        /// Dispose the MiCake application and release resources.
+        /// </summary>
         public void Dispose()
         {
-            if (!_isShutdown)
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Protected implementation of Dispose pattern.
+        /// </summary>
+        /// <param name="disposing">True if called from Dispose(), false if called from finalizer</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing && !_isShutdown)
+            {
+                // Dispose managed resources
                 ShutDown();
+            }
+
+            _disposed = true;
         }
     }
 }

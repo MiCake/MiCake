@@ -18,7 +18,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.Modules
 {
-    public class MiCakeEssentialModuleInternalKeys
+    public static class MiCakeEssentialModuleInternalKeys
     {
         public const string MiCakeAuditSettingOptions = "MiCake.Module.Essential.MiCakeAuditOptions";
         public const string StoreConventionRegistry = "MiCake.Module.Essential.StoreConventionRegistry";
