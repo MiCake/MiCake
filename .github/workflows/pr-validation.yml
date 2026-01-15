@@ -39,7 +39,7 @@ jobs:
     
     - name: Run tests
       run: |
-        dotnet test src/tests/**/*.csproj \
+        dotnet test MiCake.All.sln \
           --configuration Release \
           --no-build \
           --logger "trx;LogFileName=test-results.trx" \

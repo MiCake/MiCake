@@ -3,8 +3,14 @@ name: CodeQL Security Analysis
 on:
   push:
     branches: [ master ]
+    paths:
+      - 'src/framework/**'
+      - '.github/workflows/codeql-analysis.yml'
   pull_request:
     branches: [ master ]
+    paths:
+      - 'src/framework/**'
+      - '.github/workflows/codeql-analysis.yml'
   schedule:
     # Run every month at 9:00 AM UTC
     - cron: '0 9 1 * *'
@@ -40,7 +46,12 @@ jobs:
         queries: +security-extended,security-and-quality
 
     - name: Build
-      run: dotnet build MiCake.All.sln --configuration Release
+      run: |
+        # Only build framework projects for CodeQL analysis
+        for project in src/framework/*/*.csproj; do
+          echo "Building $project for CodeQL analysis..."
+          dotnet build "$project" --configuration Release
+        done
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
