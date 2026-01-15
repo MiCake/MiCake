@@ -36,61 +36,125 @@ public abstract partial class HttpPaginationProvider<TData>
                     return result;
                 }
 
-                // If there's an error message, treat as failure that can be retried
-                if (!string.IsNullOrEmpty(result.ErrorMessage))
+                // Handle error response
+                var errorHandlingResult = await HandleErrorResponseAsync(result, request, attemptNumber, healingState, cancellationToken).ConfigureAwait(false);
+                if (errorHandlingResult.ShouldBreak)
                 {
-                    lastException = new HttpRequestException(result.ErrorMessage);
-                    OnHttpRequestFailed(lastException, request, attemptNumber);
-                    
-                    // Check if we should continue retrying
-                    if (!ShouldContinueRetry(lastException, attemptNumber, request))
-                    {
-                        break; // Exit loop to return failure response
-                    }
-
-                    // Attempt self-healing
-                    var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(lastException, request, attemptNumber, healingState).ConfigureAwait(false);
-                    healingState = newHealingState;
-                    
-                    if (!continueRetry)
-                    {
-                        break; // Exit loop to return failure response
-                    }
-
-                    // Wait before next attempt
-                    await WaitBeforeRetryAsync(lastException, request, ++attemptNumber, cancellationToken).ConfigureAwait(false);
-                    continue;
+                    lastException = errorHandlingResult.Exception;
+                    break;
                 }
 
-                // No data and no error - treat as retriable
-                lastException = new InvalidOperationException("Request returned no data and no error");
+                healingState = errorHandlingResult.HealingState;
+                attemptNumber = errorHandlingResult.NextAttemptNumber;
+                lastException = errorHandlingResult.Exception;
             }
             catch (Exception ex)
             {
-                lastException = ex;
-                OnHttpRequestFailed(ex, request, attemptNumber);
-
-                // Check if we should continue retrying
-                if (!ShouldContinueRetry(ex, attemptNumber, request))
+                var exceptionHandlingResult = await HandleExceptionAsync(ex, request, attemptNumber, healingState, cancellationToken).ConfigureAwait(false);
+                if (exceptionHandlingResult.ShouldBreak)
                 {
+                    lastException = ex;
                     break;
                 }
 
-                // Attempt self-healing
-                var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(ex, request, attemptNumber, healingState).ConfigureAwait(false);
-                healingState = newHealingState;
-                
-                if (!continueRetry)
-                {
-                    break;
-                }
-
-                // Wait before next attempt
-                await WaitBeforeRetryAsync(ex, request, ++attemptNumber, cancellationToken).ConfigureAwait(false);
+                healingState = exceptionHandlingResult.HealingState;
+                attemptNumber = exceptionHandlingResult.NextAttemptNumber;
             }
         }
 
         return HttpPaginationProvider<TData>.CreateFailureResponse(attemptNumber, lastException);
+    }
+
+    /// <summary>
+    /// Handle error response from a successful HTTP call
+    /// </summary>
+    private async Task<RetryLoopResult> HandleErrorResponseAsync(
+        PaginationResponse<TData> result,
+        PaginationRequest<HttpPaginationRequest> request,
+        int attemptNumber,
+        object? healingState,
+        CancellationToken cancellationToken)
+    {
+        // If there's an error message, treat as failure that can be retried
+        if (string.IsNullOrEmpty(result.ErrorMessage))
+        {
+            // No data and no error - treat as retriable
+            return new RetryLoopResult
+            {
+                ShouldBreak = true,
+                Exception = new InvalidOperationException("Request returned no data and no error")
+            };
+        }
+
+        var exception = new HttpRequestException(result.ErrorMessage);
+        OnHttpRequestFailed(exception, request, attemptNumber);
+
+        if (!ShouldContinueRetry(exception, attemptNumber, request))
+        {
+            return new RetryLoopResult { ShouldBreak = true, Exception = exception };
+        }
+
+        var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(exception, request, attemptNumber, healingState).ConfigureAwait(false);
+        
+        if (!continueRetry)
+        {
+            return new RetryLoopResult { ShouldBreak = true, Exception = exception, HealingState = newHealingState };
+        }
+
+        await WaitBeforeRetryAsync(exception, request, attemptNumber + 1, cancellationToken).ConfigureAwait(false);
+        
+        return new RetryLoopResult
+        {
+            ShouldBreak = false,
+            Exception = exception,
+            HealingState = newHealingState,
+            NextAttemptNumber = attemptNumber + 1
+        };
+    }
+
+    /// <summary>
+    /// Handle exception thrown during HTTP request
+    /// </summary>
+    private async Task<RetryLoopResult> HandleExceptionAsync(
+        Exception exception,
+        PaginationRequest<HttpPaginationRequest> request,
+        int attemptNumber,
+        object? healingState,
+        CancellationToken cancellationToken)
+    {
+        OnHttpRequestFailed(exception, request, attemptNumber);
+
+        if (!ShouldContinueRetry(exception, attemptNumber, request))
+        {
+            return new RetryLoopResult { ShouldBreak = true };
+        }
+
+        var (continueRetry, newHealingState) = await TryHealAndPrepareRetryAsync(exception, request, attemptNumber, healingState).ConfigureAwait(false);
+        
+        if (!continueRetry)
+        {
+            return new RetryLoopResult { ShouldBreak = true, HealingState = newHealingState };
+        }
+
+        await WaitBeforeRetryAsync(exception, request, attemptNumber + 1, cancellationToken).ConfigureAwait(false);
+        
+        return new RetryLoopResult
+        {
+            ShouldBreak = false,
+            HealingState = newHealingState,
+            NextAttemptNumber = attemptNumber + 1
+        };
+    }
+
+    /// <summary>
+    /// Result of retry loop iteration
+    /// </summary>
+    private struct RetryLoopResult
+    {
+        public bool ShouldBreak { get; init; }
+        public Exception? Exception { get; init; }
+        public object? HealingState { get; init; }
+        public int NextAttemptNumber { get; init; }
     }
 
     /// <summary>

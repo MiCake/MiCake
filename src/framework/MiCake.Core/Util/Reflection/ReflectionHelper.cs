@@ -192,7 +192,7 @@ namespace MiCake.Util.Reflection
 
             if (properties.Length == 1)
             {
-                property = objectType.GetProperty(properties.First());
+                property = objectType.GetProperty(properties[0]);
                 property?.SetValue(obj, value);
                 return;
             }
@@ -204,7 +204,7 @@ namespace MiCake.Util.Reflection
                 currentType = property?.PropertyType ?? currentType;
             }
 
-            property = currentType.GetProperty(properties.Last());
+            property = currentType.GetProperty(properties[^1]);
             property?.SetValue(obj, value);
         }
 
@@ -253,14 +253,10 @@ namespace MiCake.Util.Reflection
         /// <exception cref="ArgumentNullException">Thrown when classType or attributeType is null</exception>
         public static IEnumerable<PropertyInfo> GetHasAttributeProperties(Type classType, Type attributeType)
         {
-            ArgumentNullException.ThrowIfNull(classType, nameof(classType));
-            ArgumentNullException.ThrowIfNull(attributeType, nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(classType);
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            foreach (var property in classType.GetProperties())
-            {
-                if (property.GetCustomAttribute(attributeType) != null)
-                    yield return property;
-            }
+            return classType.GetProperties().Where(property => property.GetCustomAttribute(attributeType) != null);
         }
     }
 }

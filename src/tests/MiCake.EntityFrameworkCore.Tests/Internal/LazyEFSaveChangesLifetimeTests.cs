@@ -199,7 +199,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             Order = order;
         }
 
-        public ValueTask<RepositoryEntityState> PostSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public ValueTask<RepositoryEntityStates> PostSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
             return ValueTask.FromResult(entityState);
         }
@@ -217,7 +217,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             Order = order;
         }
 
-        public ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public ValueTask<RepositoryEntityStates> PreSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
             return ValueTask.FromResult(entityState);
         }
@@ -230,7 +230,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
     {
         public int Order { get; set; } = 1;
 
-        public ValueTask<RepositoryEntityState> PostSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public ValueTask<RepositoryEntityStates> PostSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
             // This could potentially cause issues, but the LazyEFSaveChangesLifetime should handle it
             return ValueTask.FromResult(entityState);

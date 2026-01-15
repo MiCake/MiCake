@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 
 namespace MiCake.Util.Diagnostics.Environment
@@ -18,7 +17,8 @@ namespace MiCake.Util.Diagnostics.Environment
             {
                 if (_isDebugMode == null)
                 {
-                    var assembly = Assembly.GetEntryAssembly() ?? (new StackTrace().GetFrames()?.Last()?.GetMethod()?.Module.Assembly);
+                    var frames = new StackTrace().GetFrames();
+                    var assembly = Assembly.GetEntryAssembly() ?? (frames != null && frames.Length > 0 ? frames[^1]?.GetMethod()?.Module.Assembly : null);
                     var debuggableAttribute = assembly?.GetCustomAttribute<DebuggableAttribute>();
                     _isDebugMode = debuggableAttribute?.DebuggingFlags
                         .HasFlag(DebuggableAttribute.DebuggingModes.EnableEditAndContinue);

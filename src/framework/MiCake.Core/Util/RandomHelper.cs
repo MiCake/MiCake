@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace MiCake.Util
 {
-    public class RandomHelper
+    public static class RandomHelper
     {
         private static readonly Random Rnd = new();
 

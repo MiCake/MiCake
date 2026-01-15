@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace MiCake.Util.Extensions
@@ -128,6 +129,18 @@ namespace MiCake.Util.Extensions
             }
         }
 
+        public static void ReplaceOne<T>(this IList<T> source, T item, T replaceWith)
+        {
+            for (int i = 0; i < source.Count; i++)
+            {
+                if (Comparer<T>.Default.Compare(source[i], item) == 0)
+                {
+                    source[i] = replaceWith;
+                    return;
+                }
+            }
+        }
+
         /// <summary>
         /// Move an element in the collection to the specified location
         /// </summary>
@@ -165,32 +178,20 @@ namespace MiCake.Util.Extensions
 
             var findItem = source.FirstOrDefault(findPredicate);
 
-            if (findItem == null)
-                throw new ArgumentException($"this predicate cannot find any item in souce.");
+            if (EqualityComparer<T>.Default.Equals(findItem, default))
+                throw new ArgumentException($"this predicate cannot find any item in source.");
 
-            source.Remove(findItem);
-            source.Insert(index, findItem);
+            source.Remove(findItem!);
+            source.Insert(index, findItem!);
 
             return source;
-        }
-
-        public static void ReplaceOne<T>(this IList<T> source, T item, T replaceWith)
-        {
-            for (int i = 0; i < source.Count; i++)
-            {
-                if (Comparer<T>.Default.Compare(source[i], item) == 0)
-                {
-                    source[i] = replaceWith;
-                    return;
-                }
-            }
         }
 
         public static void MoveItem<T>(this List<T> source, Predicate<T> selector, int targetIndex)
         {
             if (!targetIndex.IsBetween(0, source.Count - 1))
             {
-                throw new IndexOutOfRangeException("targetIndex should be between 0 and " + (source.Count - 1));
+                throw new ArgumentOutOfRangeException(nameof(targetIndex), targetIndex, $"targetIndex should be between 0 and {source.Count - 1}");
             }
 
             var currentIndex = source.FindIndex(0, selector);
@@ -204,19 +205,19 @@ namespace MiCake.Util.Extensions
             source.Insert(targetIndex, item);
         }
 
-        public static T GetOrAdd<T>(this IList<T> source, Func<T, bool> selector, Func<T> factory)
+        public static T GetOrAdd<T>(this IList<T> source, Func<T, bool> selector, Func<T> factory) where T : notnull
         {
             CheckValue.NotNull(source, nameof(source));
 
             var item = source.FirstOrDefault(selector);
 
-            if (item == null)
+            if (EqualityComparer<T>.Default.Equals(item, default))
             {
                 item = factory();
                 source.Add(item);
             }
 
-            return item;
+            return item!;
         }
 
         /// <summary>
@@ -251,10 +252,10 @@ namespace MiCake.Util.Extensions
         /// <param name="getDependencies">Function to resolve the dependencies</param>
         /// <param name="sorted">List with the sortet items</param>
         /// <param name="visited">Dictionary with the visited items</param>
+        [SuppressMessage("SonarQube", "S4143:Collection elements should not be replaced unconditionally", Justification = "Intentional: topological sort marks item as 'in-process' (true) then 'completed' (false)")]
         private static void SortByDependenciesVisit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited) where T : notnull
         {
-            bool inProcess;
-            var alreadyVisited = visited.TryGetValue(item, out inProcess);
+            var alreadyVisited = visited.TryGetValue(item, out bool inProcess);
 
             if (alreadyVisited)
             {

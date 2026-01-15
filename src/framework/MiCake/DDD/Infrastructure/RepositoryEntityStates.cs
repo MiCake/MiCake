@@ -6,7 +6,7 @@ namespace MiCake.DDD.Infrastructure
     /// The state in which the domain object is about to be changed in the repository
     /// </summary>
     [Flags]
-    public enum RepositoryEntityState
+    public enum RepositoryEntityStates
     {
         Unchanged = 1,
         Deleted = 2,

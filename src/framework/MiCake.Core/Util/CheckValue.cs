@@ -21,11 +21,11 @@ namespace MiCake.Util
         /// <exception cref="ArgumentException">Thrown when collection is empty</exception>
         public static IReadOnlyList<T> NotEmpty<T>(IReadOnlyList<T> value, string parameterName)
         {
-            ArgumentNullException.ThrowIfNull(value, parameterName);
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value.Count == 0)
             {
-                ArgumentException.ThrowIfNullOrWhiteSpace(parameterName, nameof(parameterName));
+                ArgumentException.ThrowIfNullOrWhiteSpace(parameterName);
                 throw new ArgumentException($"The collection argument '{parameterName}' must contain at least one element.", parameterName);
             }
 
@@ -42,7 +42,7 @@ namespace MiCake.Util
         /// <exception cref="ArgumentException">Thrown when value is empty after trimming</exception>
         public static string NotEmpty(string value, string parameterName)
         {
-            ArgumentNullException.ThrowIfNull(value, parameterName);
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value.Trim().Length == 0)
             {
@@ -62,7 +62,7 @@ namespace MiCake.Util
         /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
         public static T NotNull<T>(T value, string parameterName)
         {
-            ArgumentNullException.ThrowIfNull(value, parameterName);
+            ArgumentNullException.ThrowIfNull(value);
             return value;
         }
 
@@ -77,7 +77,7 @@ namespace MiCake.Util
         /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
         public static T NotNull<T>(T value, string parameterName, string message)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(parameterName, message);
             }

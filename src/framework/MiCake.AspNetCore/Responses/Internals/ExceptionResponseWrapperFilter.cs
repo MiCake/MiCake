@@ -16,12 +16,12 @@ namespace MiCake.AspNetCore.Responses.Internals
     internal class ExceptionResponseWrapperFilter : IAsyncExceptionFilter
     {
         private readonly ResponseWrapperExecutor _executor;
-        private readonly ResponseWrapperOptions _options;
         private readonly ILogger<ExceptionResponseWrapperFilter> _logger;
 
         public ExceptionResponseWrapperFilter(IOptions<MiCakeAspNetOptions> options, ILogger<ExceptionResponseWrapperFilter> logger)
         {
-            _options = options.Value?.DataWrapperOptions ?? new ResponseWrapperOptions();
+            var _options = options.Value?.DataWrapperOptions ?? new ResponseWrapperOptions();
+            
             _executor = new ResponseWrapperExecutor(_options);
             _logger = logger;
         }

@@ -38,7 +38,7 @@ namespace MiCake.Util.Reflection
         /// <returns>True if the object is a Func&lt;TReturn&gt; delegate; otherwise, false</returns>
         public static bool IsFunc<TReturn>(object obj)
         {
-            return obj != null && obj.GetType() == typeof(Func<TReturn>);
+            return obj is Func<TReturn>;
         }
 
         /// <summary>
@@ -119,9 +119,7 @@ namespace MiCake.Util.Reflection
         /// <returns>The matching generic interface type, or null if not found</returns>
         public static Type? GetGenericInterface(Type type, Type genericType)
         {
-            return type.GetInterfaces()
-                            .Where(i => IsGenericType(i))
-                            .FirstOrDefault();
+            return type.GetInterfaces().FirstOrDefault(i => IsGenericType(i));
 
             bool IsGenericType(Type type1)
                 => type1.IsGenericType && type1.GetGenericTypeDefinition() == genericType;

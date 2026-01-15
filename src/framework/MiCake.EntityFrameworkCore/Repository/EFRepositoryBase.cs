@@ -43,7 +43,7 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         private readonly HashSet<Guid> _subscribedUowIds = new();
 
-        private class CacheContext
+        private sealed class CacheContext
         {
             public Guid UowId { get; set; }
             public required TDbContext DbContext { get; set; }

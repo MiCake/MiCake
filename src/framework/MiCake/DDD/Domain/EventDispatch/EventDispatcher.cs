@@ -9,7 +9,7 @@ namespace MiCake.DDD.Domain.EventDispatch
 {
     public class EventDispatcher : IEventDispatcher
     {
-        private static readonly ConcurrentDictionary<Type, DomainEventHandlerWrapper> _domainEventHandlers = new();
+        private static readonly ConcurrentDictionary<Type, IDomainEventHandler> _domainEventHandlers = new();
 
         private readonly IServiceProvider _serviceProvider;
 
@@ -21,7 +21,7 @@ namespace MiCake.DDD.Domain.EventDispatch
         public Task DispatchAsync<TDomainEvent>(TDomainEvent domainEvent, CancellationToken cancellationToken = default)
             where TDomainEvent : IDomainEvent
         {
-            if (domainEvent == null)
+            if (domainEvent is null)
                 return Task.CompletedTask;
 
             return PublishDomainEvents(domainEvent, cancellationToken);
@@ -39,9 +39,9 @@ namespace MiCake.DDD.Domain.EventDispatch
         {
             var domainEventType = domainEvent.GetType();
             var handler = _domainEventHandlers.GetOrAdd(domainEventType,
-                factory => (DomainEventHandlerWrapper)CompiledActivator.CreateInstance(typeof(DomainEventHandlerWrapperImp<>).MakeGenericType(domainEventType)));
+                eventType => (IDomainEventHandler)CompiledActivator.CreateInstance(typeof(DomainEventHandlerWrapperImp<>).MakeGenericType(eventType)));
 
-            return handler.Handle(domainEvent, cancellationToken, _serviceProvider, PublishCore);
+            return handler.Handle(domainEvent, _serviceProvider, PublishCore, cancellationToken);
         }
     }
 }

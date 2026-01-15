@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -132,12 +133,10 @@ namespace MiCake.Util.Extensions
                 return str;
             }
 
-            foreach (var postFix in postFixes)
+            var postFix = postFixes.FirstOrDefault(p => str.EndsWith(p, comparisonType));
+            if (postFix != null)
             {
-                if (str.EndsWith(postFix, comparisonType))
-                {
-                    return str.Left(str.Length - postFix.Length);
-                }
+                return str.Left(str.Length - postFix.Length);
             }
 
             return str;
@@ -170,12 +169,10 @@ namespace MiCake.Util.Extensions
                 return str;
             }
 
-            foreach (var preFix in preFixes)
+            var preFix = preFixes.FirstOrDefault(p => str.StartsWith(p, comparisonType));
+            if (preFix != null)
             {
-                if (str.StartsWith(preFix, comparisonType))
-                {
-                    return str.Right(str.Length - preFix.Length);
-                }
+                return str.Right(str.Length - preFix.Length);
             }
 
             return str;

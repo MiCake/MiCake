@@ -8,62 +8,62 @@ namespace MiCake.DDD.Domain.Helper
     {
         // Cache flags for each evaluated type to avoid repeated reflection work.
         // Use a bounded LRU cache so a malicious or extreme workload does not cause unbounded memory growth.
-        private static readonly BoundedLruCache<Type, DomainTypeFlags> _typeFlagsCache = new(1024);
+        private static readonly BoundedLruCache<Type, DomainTypes> _typeFlagsCache = new(1024);
 
         public static bool IsDomainObject(Type type)
-            => GetFlags(type) != DomainTypeFlags.None;
+            => GetFlags(type) != DomainTypes.None;
 
         public static bool IsRepository(Type type)
-            => GetFlags(type).HasFlag(DomainTypeFlags.Repository);
+            => GetFlags(type).HasFlag(DomainTypes.Repository);
 
         public static bool IsEntity(Type type)
-            => GetFlags(type).HasFlag(DomainTypeFlags.Entity);
+            => GetFlags(type).HasFlag(DomainTypes.Entity);
 
         public static bool IsValueObject(Type type)
-            => GetFlags(type).HasFlag(DomainTypeFlags.ValueObject);
+            => GetFlags(type).HasFlag(DomainTypes.ValueObject);
 
         public static bool IsAggregateRoot(Type type)
-            => GetFlags(type).HasFlag(DomainTypeFlags.AggregateRoot);
+            => GetFlags(type).HasFlag(DomainTypes.AggregateRoot);
 
         public static bool IsDomainEvent(Type type)
-            => GetFlags(type).HasFlag(DomainTypeFlags.DomainEvent);
+            => GetFlags(type).HasFlag(DomainTypes.DomainEvent);
 
         public static bool IsDomainService(Type type)
-            => GetFlags(type).HasFlag(DomainTypeFlags.DomainService);
+            => GetFlags(type).HasFlag(DomainTypes.DomainService);
 
-        private static DomainTypeFlags GetFlags(Type type)
+        private static DomainTypes GetFlags(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
             return _typeFlagsCache.GetOrAdd(type, ComputeFlags);
         }
 
-        private static DomainTypeFlags ComputeFlags(Type type)
+        private static DomainTypes ComputeFlags(Type type)
         {
-            DomainTypeFlags flags = DomainTypeFlags.None;
+            DomainTypes flags = DomainTypes.None;
 
             if (typeof(IRepository).IsAssignableFrom(type))
-                flags |= DomainTypeFlags.Repository;
+                flags |= DomainTypes.Repository;
 
             if (typeof(IEntity).IsAssignableFrom(type))
-                flags |= DomainTypeFlags.Entity;
+                flags |= DomainTypes.Entity;
 
             if (typeof(IValueObject).IsAssignableFrom(type))
-                flags |= DomainTypeFlags.ValueObject;
+                flags |= DomainTypes.ValueObject;
 
             if (typeof(IAggregateRoot).IsAssignableFrom(type))
-                flags |= DomainTypeFlags.AggregateRoot;
+                flags |= DomainTypes.AggregateRoot;
 
             if (typeof(IDomainEvent).IsAssignableFrom(type))
-                flags |= DomainTypeFlags.DomainEvent;
+                flags |= DomainTypes.DomainEvent;
 
             if (typeof(IDomainService).IsAssignableFrom(type))
-                flags |= DomainTypeFlags.DomainService;
+                flags |= DomainTypes.DomainService;
 
             return flags;
         }
 
         [Flags]
-        private enum DomainTypeFlags : byte
+        private enum DomainTypes : byte
         {
             None = 0,
             Repository = 1 << 0,

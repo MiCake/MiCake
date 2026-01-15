@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.Responses.Internals
@@ -35,7 +34,7 @@ namespace MiCake.AspNetCore.Responses.Internals
             {
                 var statusCode = objectResult.StatusCode ?? context.HttpContext.Response.StatusCode;
 
-                if (!_options.IgnoreStatusCodes.Any(s => s == statusCode))
+                if (!_options.IgnoreStatusCodes.Contains(statusCode))
                 {
                     var wrappedData = _executor.WrapSuccess(
                         objectResult?.Value,

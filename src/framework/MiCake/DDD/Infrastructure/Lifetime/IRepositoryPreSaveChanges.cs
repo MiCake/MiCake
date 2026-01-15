@@ -11,6 +11,6 @@ namespace MiCake.DDD.Infrastructure.Lifetime
         /// <summary>
         /// Operations before domain object persistence
         /// </summary>
-        ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default);
+        ValueTask<RepositoryEntityStates> PreSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default);
     }
 }

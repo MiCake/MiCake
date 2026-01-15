@@ -16,7 +16,7 @@ namespace MiCake.Audit.Core
             _providers = providers;
         }
 
-        public virtual void Execute(object needAuditEntity, RepositoryEntityState entityState)
+        public virtual void Execute(object needAuditEntity, RepositoryEntityStates entityState)
         {
             //Only deal with micake domain object.
             var entityType = needAuditEntity.GetType();

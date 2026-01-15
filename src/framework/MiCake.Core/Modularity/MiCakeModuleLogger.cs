@@ -86,7 +86,10 @@ namespace MiCake.Core.Modularity
             if (moduleDescriptor.Instance.IsFrameworkLevel)
                 return;
 
-            _logger.LogInformation(preInfo + GetModuleInfoString(moduleDescriptor));
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("{PreInfo}{ModuleInfo}", preInfo, GetModuleInfoString(moduleDescriptor));
+            }
         }
 
         private static string GetModuleInfoString(MiCakeModuleDescriptor moduleDesciptor)

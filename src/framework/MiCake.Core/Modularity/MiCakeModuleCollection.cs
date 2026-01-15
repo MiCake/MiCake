@@ -45,16 +45,12 @@ namespace MiCake.Core.Modularity
             _descriptors.CopyTo(array, arrayIndex);
         }
 
-        public Assembly[] GetAssemblies(bool includeFrameworkModule = true)
+        public Assembly[] GetAssemblies(bool includeFrameworkModule)
         {
-            Assembly[] assemblies = [];
-            assemblies = _descriptors.Where(s =>
-                                            includeFrameworkModule ?
-                                            true :
-                                            s.Instance.IsFrameworkLevel == includeFrameworkModule)
-                                        .Select(s => s.Assembly).Distinct().ToArray();
-
-            return assemblies;
+            return [.. _descriptors
+                .Where(s => includeFrameworkModule || !s.Instance.IsFrameworkLevel)
+                .Select(s => s.Assembly)
+                .Distinct()];
         }
 
         public IEnumerator<MiCakeModuleDescriptor> GetEnumerator()

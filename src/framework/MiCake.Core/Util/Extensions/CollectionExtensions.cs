@@ -30,7 +30,7 @@ namespace MiCake.Util.Extensions
         /// <exception cref="ArgumentNullException">Thrown when source is null</exception>
         public static bool AddIfNotContains<T>(this ICollection<T> source, T item)
         {
-            ArgumentNullException.ThrowIfNull(source, nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
 
             if (source.Contains(item))
             {
@@ -52,8 +52,8 @@ namespace MiCake.Util.Extensions
         /// <exception cref="ArgumentNullException">Thrown when source or predicate is null</exception>
         public static bool AddIfNotContains<T>(this ICollection<T> source, T item, Func<T, bool> predicate)
         {
-            ArgumentNullException.ThrowIfNull(source, nameof(source));
-            ArgumentNullException.ThrowIfNull(predicate, nameof(predicate));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             if (source.Any(predicate))
             {
@@ -74,7 +74,7 @@ namespace MiCake.Util.Extensions
         /// <exception cref="ArgumentNullException">Thrown when source is null</exception>
         public static IEnumerable<T> AddIfNotContains<T>(this ICollection<T> source, IEnumerable<T> items)
         {
-            ArgumentNullException.ThrowIfNull(source, nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
 
             var addedItems = new List<T>();
 
@@ -104,9 +104,9 @@ namespace MiCake.Util.Extensions
         /// <exception cref="ArgumentNullException">Thrown when source, predicate, or itemFactory is null</exception>
         public static bool AddIfNotContains<T>(this ICollection<T> source, Func<T, bool> predicate, Func<T> itemFactory)
         {
-            ArgumentNullException.ThrowIfNull(source, nameof(source));
-            ArgumentNullException.ThrowIfNull(predicate, nameof(predicate));
-            ArgumentNullException.ThrowIfNull(itemFactory, nameof(itemFactory));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(itemFactory);
 
             if (source.Any(predicate))
             {

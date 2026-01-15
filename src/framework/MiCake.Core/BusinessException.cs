@@ -5,7 +5,6 @@ namespace MiCake.Core
     /// <summary>
     /// Indicates an exception that can be safely shown to end users.
     /// </summary>
-    [Serializable]
     public class BusinessException : Exception, IBusinessException
     {
         /// <summary>

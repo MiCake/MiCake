@@ -41,55 +41,62 @@ namespace MiCake.AspNetCore.Responses
         {
             return new ResponseWrapperFactory
             {
-                SuccessFactory = context =>
-                {
-                    if (context.OriginalData is Internals.BusinessExceptionData slightData)
-                    {
-                        var code = string.IsNullOrWhiteSpace(slightData.Code)
-                            ? options.DefaultCodeSetting.Success
-                            : slightData.Code;
-
-                        return new ApiResponse(
-                            code: code,
-                            message: slightData.Message,
-                            data: slightData.Details
-                        );
-                    }
-
-                    if (options.WrapProblemDetails && context.OriginalData != null)
-                    {
-                        if (context.OriginalData is HttpValidationProblemDetails validationProblemDetails)
-                        {
-                            return new ApiResponse(
-                                code: options.DefaultCodeSetting.ProblemDetails,
-                                message: validationProblemDetails.Title,
-                                data: string.Join("; ", validationProblemDetails.Errors.SelectMany(kvp => kvp.Value))
-                            );
-                        }
-
-                        if (context.OriginalData is ProblemDetails problemDetails)
-                        {
-                            return new ApiResponse(
-                                code: options.DefaultCodeSetting.ProblemDetails,
-                                message: problemDetails.Title,
-                                data: problemDetails.Detail
-                            );
-                        }
-                    }
-
-                    return new ApiResponse(
-                        code: options.DefaultCodeSetting.Success,
-                        message: null,
-                        data: context.OriginalData
-                    );
-                },
-                ErrorFactory = context => new ErrorResponse(
-                    code: options.DefaultCodeSetting.Error,
-                    message: context.Exception?.Message ?? "An error occurred",
-                    details: null,
-                    stackTrace: options.ShowStackTraceWhenError ? context.Exception?.StackTrace : null
-                )
+                SuccessFactory = context => CreateSuccessResponse(context, options),
+                ErrorFactory = context => CreateErrorResponse(context, options)
             };
+        }
+
+        private static object CreateSuccessResponse(ResponseWrapperContext context, ResponseWrapperOptions options)
+        {
+            if (context.OriginalData is Internals.BusinessExceptionData slightData)
+            {
+                var code = string.IsNullOrWhiteSpace(slightData.Code)
+                    ? options.DefaultCodeSetting.Success
+                    : slightData.Code;
+
+                return new ApiResponse(
+                    code: code,
+                    message: slightData.Message,
+                    data: slightData.Details
+                );
+            }
+
+            if (options.WrapProblemDetails && context.OriginalData != null)
+            {
+                if (context.OriginalData is HttpValidationProblemDetails validationProblemDetails)
+                {
+                    return new ApiResponse(
+                        code: options.DefaultCodeSetting.ProblemDetails,
+                        message: validationProblemDetails.Title,
+                        data: string.Join("; ", validationProblemDetails.Errors.SelectMany(kvp => kvp.Value))
+                    );
+                }
+
+                if (context.OriginalData is ProblemDetails problemDetails)
+                {
+                    return new ApiResponse(
+                        code: options.DefaultCodeSetting.ProblemDetails,
+                        message: problemDetails.Title,
+                        data: problemDetails.Detail
+                    );
+                }
+            }
+
+            return new ApiResponse(
+                code: options.DefaultCodeSetting.Success,
+                message: null,
+                data: context.OriginalData
+            );
+        }
+
+        private static ErrorResponse CreateErrorResponse(ErrorWrapperContext context, ResponseWrapperOptions options)
+        {
+            return new ErrorResponse(
+                code: options.DefaultCodeSetting.Error,
+                message: context.Exception?.Message ?? "An error occurred",
+                details: null,
+                stackTrace: options.ShowStackTraceWhenError ? context.Exception?.StackTrace : null
+            );
         }
     }
 }

@@ -20,11 +20,10 @@ namespace MiCake.DDD.Uow.Internal
         private readonly UnitOfWorkOptions _options;
         private readonly Lock _lock = new();
 
-        private bool _disposed = false;
-        private bool _completed = false;
-        private bool _transactionsStarted = false;
-        private bool _skipCommit = false;
-        private bool _shouldRollback = false;
+        private bool _disposed;
+        private bool _completed;
+        private bool _transactionsStarted;
+        private bool _shouldRollback;
 
         #endregion
 
@@ -205,9 +204,9 @@ namespace MiCake.DDD.Uow.Internal
                 }
 
                 // Root UoW: do actual commit
-                if (_skipCommit || _options.IsReadOnly)
+                if (_options.IsReadOnly)
                 {
-                    _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (SkipCommit: {SkipCommit}, ReadOnly: {ReadOnly})", Id, _skipCommit, _options.IsReadOnly);
+                    _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly})", Id, _options.IsReadOnly);
                     MarkAsCompleted();
 
                     // Raise OnCommitted event even for skipped commit
@@ -461,23 +460,32 @@ namespace MiCake.DDD.Uow.Internal
 
         public void Dispose()
         {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             if (_disposed) return;
 
-            _logger.LogDebug("Disposing UnitOfWork {UnitOfWorkId} (Completed: {Completed}, Nested: {Nested})",
-                Id, _completed, Parent != null);
-
-            HandleDisposalCleanup();
-
-            // Only dispose resources if this is root UoW
-            if (Parent == null)
+            if (disposing)
             {
-                DisposeAllResources();
-                _resources.Clear();
+                _logger.LogDebug("Disposing UnitOfWork {UnitOfWorkId} (Completed: {Completed}, Nested: {Nested})",
+                    Id, _completed, Parent != null);
+
+                HandleDisposalCleanup();
+
+                // Only dispose resources if this is root UoW
+                if (Parent == null)
+                {
+                    DisposeAllResources();
+                    _resources.Clear();
+                }
+
+                _logger.LogDebug("Disposed UnitOfWork {UnitOfWorkId}", Id);
             }
 
             _disposed = true;
-
-            _logger.LogDebug("Disposed UnitOfWork {UnitOfWorkId}", Id);
         }
 
         #endregion
@@ -607,10 +615,10 @@ namespace MiCake.DDD.Uow.Internal
 
         private void HandleDisposalCleanup()
         {
-            // If not completed and not marked to skip commit, log warning
+            // If not completed, log warning
             // We cannot call async RollbackAsync from synchronous Dispose
             // Users should explicitly call CommitAsync() or RollbackAsync() before disposal
-            if (!_completed && !_skipCommit && Parent == null)
+            if (!_completed && Parent == null)
             {
                 _logger.LogWarning(
                     "UnitOfWork {UnitOfWorkId} disposed without being completed. " +
@@ -620,12 +628,6 @@ namespace MiCake.DDD.Uow.Internal
 
                 // Mark as completed to prevent further operations
                 MarkAsCompleted();
-            }
-            else if (_skipCommit && !_completed)
-            {
-                // Mark as completed if skip commit was set but CommitAsync wasn't called
-                MarkAsCompleted();
-                _logger.LogDebug("Marked UnitOfWork {UnitOfWorkId} as completed during disposal", Id);
             }
         }
 

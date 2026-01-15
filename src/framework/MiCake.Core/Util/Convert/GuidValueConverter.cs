@@ -26,7 +26,7 @@ namespace MiCake.Util.Convert
         /// <returns>The converted Guid, or empty Guid if conversion fails.</returns>
         public override Guid Convert(TSource value)
         {
-            Guid result = default;
+            Guid result = Guid.Empty;
 
             if (value is Guid guidValue)
             {

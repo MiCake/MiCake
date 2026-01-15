@@ -20,7 +20,7 @@ namespace MiCake.Util.Reflection
         // parameterized factories cache - bounded using a LRU cache keyed by (Type, Type[])
         private static readonly BoundedLruCache<ParameterizedFactoryKey, CacheEntry> _parameterizedFactoryCache = new(MaxParameterizedCacheSize);
 
-        private class CacheEntry
+        private sealed class CacheEntry
         {
             public Func<object[], object> Factory { get; set; } = null!;
         }

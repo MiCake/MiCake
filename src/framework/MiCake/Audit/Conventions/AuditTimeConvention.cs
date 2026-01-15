@@ -9,13 +9,13 @@ namespace MiCake.Audit.Conventions
     public class AuditTimeConvention : IPropertyConvention
     {
         public int Priority => 200;
-        
+
         public bool CanApply(Type entityType)
         {
             return typeof(IHasCreatedAt).IsAssignableFrom(entityType) ||
                    typeof(IHasUpdatedAt).IsAssignableFrom(entityType);
         }
-        
+
         public void Configure(Type entityType, string propertyName, PropertyConventionContext context)
         {
             ArgumentNullException.ThrowIfNull(entityType);
@@ -28,8 +28,6 @@ namespace MiCake.Audit.Conventions
             {
                 // dont need to do anything, just ignore
                 // usually, these properties are handled by efcore correctly
-                
-                return;
             }
         }
     }

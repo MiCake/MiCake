@@ -20,7 +20,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         private readonly DbContext _dbContext;
         private readonly ILogger<EFCoreDbContextWrapper> _logger;
         private readonly bool _shouldDisposeDbContext;
-        private readonly MiCakeEFCoreOptions _options;
         private IDbContextTransaction? _currentTransaction;
         private bool _disposed = false;
 
@@ -66,7 +65,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _shouldDisposeDbContext = shouldDisposeDbContext;
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _ = options ?? throw new ArgumentNullException(nameof(options));
 
             // Check if DbContext already has a transaction (user-managed)
             _currentTransaction = dbContext.Database.CurrentTransaction;

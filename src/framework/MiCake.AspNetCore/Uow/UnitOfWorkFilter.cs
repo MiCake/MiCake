@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.AspNetCore.Uow
@@ -85,26 +86,39 @@ namespace MiCake.AspNetCore.Uow
             bool isReadOnly = DetermineIfReadOnly(controllerActionDes.ActionName);
 
             // Create UoW options
-            UnitOfWorkOptions options;
+            var options = CreateOptions(uowAttribute, isReadOnly);
+
+            // Execute the entire unit of work flow in a helper to reduce cognitive complexity
+            await ExecuteWithinUnitOfWorkAsync(controllerActionDes, options, isReadOnly, context.HttpContext.RequestAborted, next).ConfigureAwait(false);
+        }
+
+        private static UnitOfWorkOptions CreateOptions(UnitOfWorkAttribute? uowAttribute, bool isReadOnly)
+        {
             if (uowAttribute != null)
             {
-                // Use attribute settings
-                options = uowAttribute.CreateOptions();
+                var options = uowAttribute.CreateOptions();
                 if (isReadOnly)
                 {
                     options.IsReadOnly = true;
                 }
-            }
-            else
-            {
-                // Use default settings
-                options = isReadOnly ? UnitOfWorkOptions.ReadOnly : UnitOfWorkOptions.Default;
+
+                return options;
             }
 
+            return isReadOnly ? UnitOfWorkOptions.ReadOnly : UnitOfWorkOptions.Default;
+        }
+
+        private async Task ExecuteWithinUnitOfWorkAsync(
+            ControllerActionDescriptor controllerActionDes,
+            UnitOfWorkOptions options,
+            bool isReadOnly,
+            CancellationToken cancellationToken,
+            ActionExecutionDelegate next)
+        {
             IUnitOfWork? unitOfWork = null;
             try
             {
-                unitOfWork = await _unitOfWorkManager.BeginAsync(options, requiresNew: false, context.HttpContext.RequestAborted).ConfigureAwait(false);
+                unitOfWork = await _unitOfWorkManager.BeginAsync(options, requiresNew: false, cancellationToken).ConfigureAwait(false);
 
                 _logger.LogDebug(
                     "Started Unit of Work {UowId} for action {ActionName}. IsReadOnly: {IsReadOnly}, InitMode: {InitMode}",

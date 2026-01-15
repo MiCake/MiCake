@@ -50,7 +50,7 @@ namespace MiCake.Util.Query.Dynamic
 
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
-            var expression = CreateFilterExpression<T>(filters, pe);
+            var expression = CreateFilterExpression(filters, pe);
 
             return ApplyFilter(query, expression, pe);
         }
@@ -71,7 +71,7 @@ namespace MiCake.Util.Query.Dynamic
 
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
-            var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FiltersJoinType);
+            var expression = CreateFilterExpression(filterGroup.Filters, pe, filterGroup.FiltersJoinType);
 
             return ApplyFilter(query, expression, pe);
         }
@@ -100,7 +100,7 @@ namespace MiCake.Util.Query.Dynamic
                     continue;
                 }
 
-                var expression = CreateFilterExpression<T>(filterGroup.Filters, pe, filterGroup.FiltersJoinType);
+                var expression = CreateFilterExpression(filterGroup.Filters, pe, filterGroup.FiltersJoinType);
                 exp = CombineExpressions(exp, expression, filterGroupsHolder.FilterGroupsJoinType);
             }
 
@@ -122,7 +122,7 @@ namespace MiCake.Util.Query.Dynamic
 
             ParameterExpression pe = Expression.Parameter(typeof(T), "x");
 
-            var expression = CreateFilterExpression<T>(filters, pe);
+            var expression = CreateFilterExpression(filters, pe);
             if (expression == null)
             {
                 return null;
@@ -142,12 +142,12 @@ namespace MiCake.Util.Query.Dynamic
                "Where",
                [query.ElementType],
                query.Expression,
-               Expression.Lambda<Func<T, bool>>(expression, [parameter]));
+               Expression.Lambda<Func<T, bool>>(expression, parameter));
 
             return query.Provider.CreateQuery<T>(whereCallExpression);
         }
 
-        private static Expression? CreateFilterExpression<T>(IEnumerable<Filter> filters, ParameterExpression parameter, FilterJoinType filterGroupJoinType = FilterJoinType.And)
+        private static Expression? CreateFilterExpression(IEnumerable<Filter> filters, ParameterExpression parameter, FilterJoinType filterGroupJoinType = FilterJoinType.And)
         {
             Expression? combined = null;
             foreach (var filter in filters)
@@ -248,13 +248,9 @@ namespace MiCake.Util.Query.Dynamic
 
         private static void ValidateFilterValue(FilterValue filterValue, Type targetType)
         {
-            if (filterValue.Value == null)
+            if (filterValue.Value == null && targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null)
             {
-                if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null)
-                {
-                    throw new ArgumentException($"Cannot convert null to non-nullable type {targetType.Name}");
-                }
-                return;
+                throw new ArgumentException($"Cannot convert null to non-nullable type {targetType.Name}");
             }
         }
 

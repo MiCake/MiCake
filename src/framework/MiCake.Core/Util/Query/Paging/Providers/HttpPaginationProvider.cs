@@ -27,14 +27,14 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
     private HttpClient? _httpClient;
     private bool _ownsHttpClient;
     private RetryPolicy? _retryPolicy;
-    
+
     protected HttpClient CurrentHttpClient
     {
         get
         {
             if (_httpClient == null)
             {
-                _httpClient = CreateHttpClient() ?? throw new ArgumentNullException(nameof(_httpClient), "HttpClient cannot be null");
+                _httpClient = CreateHttpClient() ?? throw new InvalidOperationException("HttpClient cannot be null");
                 _ownsHttpClient = true;
             }
             return _httpClient;
@@ -251,17 +251,16 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
             catch (Exception ex)
             {
                 OnHttpRequestFailed(ex, request, 1);
-                
+
                 // Return error response instead of throwing
+                var errorMsg = ex is HttpRequestException ? $"HTTP error: {ex.Message}" : ex.Message;
                 return new PaginationResponse<TData>
                 {
                     Data = null,
                     HasMore = false,
                     ErrorMessage = ex is TaskCanceledException tce && tce.InnerException is TimeoutException
                         ? "Request timeout"
-                        : ex is HttpRequestException
-                            ? $"HTTP error: {ex.Message}"
-                            : ex.Message
+                        : errorMsg
                 };
             }
         }
@@ -282,6 +281,7 @@ public abstract partial class HttpPaginationProvider<TData>(ILogger logger) : Pa
         // This ensures consistency even if SetHttpClient is called during execution
         var httpClient = CurrentHttpClient;
 
+        _ = healingState; // Currently unused, but available for derived classes
         try
         {
             using var httpRequest = CreateHttpRequest(request);

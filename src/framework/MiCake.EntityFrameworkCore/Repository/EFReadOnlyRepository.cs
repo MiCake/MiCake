@@ -49,15 +49,6 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public async Task<long> GetCountAsync(CancellationToken cancellationToken = default)
-        {
-            var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
-            return await dbset.LongCountAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
         public async Task<TAggregateRoot?> FindAsync(TKey id, Func<IQueryable<TAggregateRoot>, IQueryable<TAggregateRoot>> includeFunc, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
@@ -69,6 +60,15 @@ namespace MiCake.EntityFrameworkCore.Repository
             }
 
             return await query.FirstOrDefaultAsync(e => e.Id.Equals(id), cancellationToken);
+        }
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public async Task<long> GetCountAsync(CancellationToken cancellationToken = default)
+        {
+            var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
+            return await dbset.LongCountAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

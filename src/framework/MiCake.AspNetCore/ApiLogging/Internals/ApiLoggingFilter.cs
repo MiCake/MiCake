@@ -199,14 +199,7 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
 
         private static bool IsPathExcluded(string path, List<string> excludedPaths)
         {
-            foreach (var pattern in excludedPaths)
-            {
-                if (MatchesGlobPattern(path, pattern))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return excludedPaths != null && excludedPaths.Any(pattern => MatchesGlobPattern(path, pattern));
         }
 
         private static bool MatchesGlobPattern(string path, string pattern)
@@ -284,15 +277,23 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
             // Try to get body from ObjectResult
             if (context.Result is ObjectResult objectResult && objectResult.Value != null)
             {
+                string? responseText;
                 try
                 {
-                    var json = System.Text.Json.JsonSerializer.Serialize(objectResult.Value);
-                    return json;
+                    responseText = System.Text.Json.JsonSerializer.Serialize(objectResult.Value);
                 }
                 catch
                 {
-                    return objectResult.Value.ToString();
+                    responseText = objectResult.Value.ToString();
                 }
+
+                // Truncate if exceeds max size
+                if (responseText != null && responseText.Length > maxSize)
+                {
+                    return string.Concat(responseText.AsSpan(0, maxSize), "... [truncated]");
+                }
+
+                return responseText;
             }
 
             return null;
@@ -300,22 +301,10 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
 
         private static bool IsContentTypeExcluded(string contentType, List<string> excludedContentTypes)
         {
-            foreach (var pattern in excludedContentTypes)
-            {
-                if (pattern.EndsWith("/*"))
-                {
-                    var prefix = pattern[..^2];
-                    if (contentType.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-                else if (contentType.Equals(pattern, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return excludedContentTypes != null && excludedContentTypes.Any(pattern =>
+                pattern.EndsWith("/*")
+                    ? contentType.StartsWith(pattern[..^2], StringComparison.OrdinalIgnoreCase)
+                    : contentType.Equals(pattern, StringComparison.OrdinalIgnoreCase));
         }
 
         private async Task<ApiLogEntry?> ProcessEntryAsync(

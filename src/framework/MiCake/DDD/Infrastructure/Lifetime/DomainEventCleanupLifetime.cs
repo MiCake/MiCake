@@ -11,14 +11,14 @@ namespace MiCake.DDD.Infrastructure.Lifetime
     {
         public int Order { get; set; } = 1000; // Run after other post-save handlers
 
-        public ValueTask<RepositoryEntityState> PostSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public ValueTask<RepositoryEntityStates> PostSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
             if (entity is IEntity domainEntity)
             {
                 domainEntity.ClearDomainEvents();
             }
 
-            return new ValueTask<RepositoryEntityState>(entityState);
+            return new ValueTask<RepositoryEntityStates>(entityState);
         }
     }
 }

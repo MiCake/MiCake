@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using MiCake.Util.Reflection;
 
@@ -92,15 +93,9 @@ namespace MiCake.Util.Store
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(type);
 
-            var results = new List<object>();
-
-            foreach (var item in _cachePool.Values)
-            {
-                if (TypeHelper.IsInheritedFrom(item.GetType(), type))
-                {
-                    results.Add(item);
-                }
-            }
+            var results = _cachePool.Values
+                .Where(item => TypeHelper.IsInheritedFrom(item.GetType(), type))
+                .ToList();
 
             return results;
         }

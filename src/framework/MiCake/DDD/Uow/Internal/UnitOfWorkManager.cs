@@ -15,7 +15,7 @@ namespace MiCake.DDD.Uow.Internal
         private readonly AsyncLocal<IUnitOfWork?> _current = new();
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UnitOfWorkManager> _logger;
-        private bool _disposed = false;
+        private bool _disposed;
 
         public IUnitOfWork? Current => _current.Value;
 
@@ -97,23 +97,20 @@ namespace MiCake.DDD.Uow.Internal
                 }
             }
 
-            if (options.InitializationMode == TransactionInitializationMode.Immediate)
+            if (options.InitializationMode == TransactionInitializationMode.Immediate && unitOfWork is IUnitOfWorkInternal internalUow)
             {
                 // Immediately activate all registered resources
-                if (unitOfWork is IUnitOfWorkInternal internalUow)
+                try
                 {
-                    try
-                    {
-                        await internalUow.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
-                        _logger.LogDebug("Immediately activated resources for UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to activate resources during immediate initialization for UnitOfWork {UnitOfWorkId}",
-                            unitOfWork.Id);
-                        wrapper.Dispose();
-                        throw;
-                    }
+                    await internalUow.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+                    _logger.LogDebug("Immediately activated resources for UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to activate resources during immediate initialization for UnitOfWork {UnitOfWorkId}",
+                        unitOfWork.Id);
+                    wrapper.Dispose();
+                    throw;
                 }
             }
 
@@ -136,14 +133,23 @@ namespace MiCake.DDD.Uow.Internal
 
         public void Dispose()
         {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             if (_disposed)
                 return;
 
-            _logger.LogDebug("Disposing UnitOfWorkManager");
+            if (disposing)
+            {
+                _logger.LogDebug("Disposing UnitOfWorkManager");
 
-            // Dispose current UOW if exists
-            _current.Value?.Dispose();
-            _current.Value = null;
+                // Dispose current UOW if exists
+                _current.Value?.Dispose();
+                _current.Value = null;
+            }
 
             _disposed = true;
         }
@@ -151,7 +157,7 @@ namespace MiCake.DDD.Uow.Internal
         /// <summary>
         /// Wrapper for root UnitOfWork to handle cleanup of AsyncLocal context
         /// </summary>
-        private class RootUnitOfWorkWrapper : UnitOfWorkWrapperBase
+        private sealed class RootUnitOfWorkWrapper : UnitOfWorkWrapperBase
         {
             private readonly AsyncLocal<IUnitOfWork?> _currentRef;
 
@@ -166,23 +172,23 @@ namespace MiCake.DDD.Uow.Internal
                 _currentRef.Value = this;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
-                base.Dispose();
-
-                // Clear current if this is still the current UoW
-                if (_currentRef.Value == this)
+                if (disposing && _currentRef.Value == this)
                 {
+                    // Clear current if this is still the current UoW
                     _logger.LogDebug("Clearing current UoW {UowId}", _inner.Id);
                     _currentRef.Value = null;
                 }
+
+                base.Dispose(disposing);
             }
         }
 
         /// <summary>
         /// Wrapper for nested UnitOfWork (doesn't modify AsyncLocal)
         /// </summary>
-        private class NestedUnitOfWorkWrapper : UnitOfWorkWrapperBase
+        private sealed class NestedUnitOfWorkWrapper : UnitOfWorkWrapperBase
         {
             private readonly IUnitOfWork _parentWrapper;
             private readonly AsyncLocal<IUnitOfWork?> _currentRef;
@@ -199,14 +205,15 @@ namespace MiCake.DDD.Uow.Internal
             // Override Parent to return the wrapper instead of inner UoW
             public override IUnitOfWork? Parent => _parentWrapper;
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
-                base.Dispose();
-                // Restore parent as current when this nested UoW is disposed
-                if (_currentRef.Value == this)
+                if (disposing && _currentRef.Value == this)
                 {
+                    // Restore parent as current when this nested UoW is disposed
                     _currentRef.Value = _parentWrapper;
                 }
+
+                base.Dispose(disposing);
             }
         }
 
@@ -217,6 +224,7 @@ namespace MiCake.DDD.Uow.Internal
         {
             protected readonly UnitOfWork _inner;
             protected readonly ILogger _logger;
+            private bool _disposed;
 
             protected UnitOfWorkWrapperBase(UnitOfWork inner, ILogger logger)
             {
@@ -298,9 +306,22 @@ namespace MiCake.DDD.Uow.Internal
                 await _inner.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
             }
 
-            public virtual void Dispose()
+            public void Dispose()
             {
-                _inner.Dispose();
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (_disposed) return;
+
+                if (disposing)
+                {
+                    _inner.Dispose();
+                }
+
+                _disposed = true;
             }
 
             public Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)

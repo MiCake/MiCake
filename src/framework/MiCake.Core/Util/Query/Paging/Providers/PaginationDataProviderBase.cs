@@ -54,75 +54,117 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
 
         while (hasMoreData && currentPage < config.MaxPages)
         {
-            if (config.MaxTotalItems > 0 && allData.Count >= config.MaxTotalItems)
+            if (ShouldStopDueToItemLimit(config, allData.Count, identifier))
             {
-                _logger.LogDebug("Reached maximum total items limit: {MaxTotal} for {Identifier}",
-                    config.MaxTotalItems, identifier);
                 break;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            try
+            var fetchResult = await FetchSinglePageAsync(
+                initialRequest, config, identifier, currentOffset, currentPage, cancellationToken).ConfigureAwait(false);
+
+            if (fetchResult.ShouldBreak)
             {
-                var paginationRequest = new PaginationRequest<TRequest>
-                {
-                    Request = initialRequest,
-                    Offset = currentOffset,
-                    Limit = config.MaxItemsPerRequest,
-                    Identifier = identifier
-                };
-
-                _logger.LogTrace("Making request {RequestCount} for {Identifier} at offset {Offset}",
-                    currentPage + 1, identifier, currentOffset);
-
-                var response = await FetchPageAsync(paginationRequest, cancellationToken).ConfigureAwait(false);
-
-                if (!response.IsSuccess)
-                {
-                    _logger.LogWarning("Request failed for {Identifier} at offset {Offset}: {Error}",
-                        identifier, currentOffset, response.ErrorMessage);
-                    break;
-                }
-
-                if (response.Data == null || response.Data.Count == 0)
-                {
-                    _logger.LogDebug("No more data available for {Identifier} at offset {Offset}",
-                        identifier, currentOffset);
-                    break;
-                }
-
-                allData.AddRange(response.Data);
-                hasMoreData = response.HasMore;
-                currentPage++;
-
-                // Update offset for next request
-                if (response.NextOffset.HasValue)
-                {
-                    currentOffset = response.NextOffset.Value;
-                }
-                else
-                {
-                    currentOffset += response.Data.Count;
-                }
-
-                _logger.LogTrace("Fetched {Count} items in request {RequestCount} for {Identifier}, total: {Total}, hasMore: {HasMore}",
-                    response.Data.Count, currentPage, identifier, allData.Count, hasMoreData);
-
-                // Respect rate limiting
-                if (hasMoreData && currentPage < config.MaxPages && config.DelayBetweenRequests > 0)
-                {
-                    await Task.Delay(config.DelayBetweenRequests, cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while fetching data for {Identifier} at offset {Offset}",
-                    identifier, currentOffset);
                 break;
+            }
+
+            allData.AddRange(fetchResult.Data!);
+            hasMoreData = fetchResult.HasMore;
+            currentPage++;
+            currentOffset = fetchResult.NextOffset;
+
+            if (hasMoreData && currentPage < config.MaxPages && config.DelayBetweenRequests > 0)
+            {
+                await Task.Delay(config.DelayBetweenRequests, cancellationToken).ConfigureAwait(false);
             }
         }
 
+        LogCompletionStatus(config, identifier, allData.Count, currentPage);
+
+        return allData.Count > 0 ? allData : null;
+    }
+
+    /// <summary>
+    /// Check if pagination should stop due to item limit
+    /// </summary>
+    private bool ShouldStopDueToItemLimit(PaginationConfig config, int currentCount, string? identifier)
+    {
+        if (config.MaxTotalItems > 0 && currentCount >= config.MaxTotalItems)
+        {
+            _logger.LogDebug("Reached maximum total items limit: {MaxTotal} for {Identifier}",
+                config.MaxTotalItems, identifier);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Fetch a single page of data
+    /// </summary>
+    private async Task<PageFetchResult> FetchSinglePageAsync(
+        TRequest initialRequest,
+        PaginationConfig config,
+        string? identifier,
+        int currentOffset,
+        int currentPage,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var paginationRequest = new PaginationRequest<TRequest>
+            {
+                Request = initialRequest,
+                Offset = currentOffset,
+                Limit = config.MaxItemsPerRequest,
+                Identifier = identifier
+            };
+
+            _logger.LogTrace("Making request {RequestCount} for {Identifier} at offset {Offset}",
+                currentPage + 1, identifier, currentOffset);
+
+            var response = await FetchPageAsync(paginationRequest, cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccess)
+            {
+                _logger.LogWarning("Request failed for {Identifier} at offset {Offset}: {Error}",
+                    identifier, currentOffset, response.ErrorMessage);
+                return new PageFetchResult { ShouldBreak = true };
+            }
+
+            if (response.Data == null || response.Data.Count == 0)
+            {
+                _logger.LogDebug("No more data available for {Identifier} at offset {Offset}",
+                    identifier, currentOffset);
+                return new PageFetchResult { ShouldBreak = true };
+            }
+
+            var nextOffset = response.NextOffset ?? currentOffset + response.Data.Count;
+
+            _logger.LogTrace("Fetched {Count} items in request {RequestCount} for {Identifier}, hasMore: {HasMore}",
+                response.Data.Count, currentPage + 1, identifier, response.HasMore);
+
+            return new PageFetchResult
+            {
+                ShouldBreak = false,
+                Data = response.Data,
+                HasMore = response.HasMore,
+                NextOffset = nextOffset
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while fetching data for {Identifier} at offset {Offset}",
+                identifier, currentOffset);
+            return new PageFetchResult { ShouldBreak = true };
+        }
+    }
+
+    /// <summary>
+    /// Log completion status of pagination
+    /// </summary>
+    private void LogCompletionStatus(PaginationConfig config, string? identifier, int totalItems, int currentPage)
+    {
         if (currentPage >= config.MaxPages)
         {
             _logger.LogWarning("Reached maximum request limit ({MaxPages}) for {Identifier}",
@@ -130,8 +172,17 @@ public abstract class PaginationDataProviderBase<TRequest, TData>
         }
 
         _logger.LogInformation("Completed paginated loading for {Identifier}: {TotalItems} items in {RequestCount} requests",
-            identifier, allData.Count, currentPage);
+            identifier, totalItems, currentPage);
+    }
 
-        return allData.Count > 0 ? allData : null;
+    /// <summary>
+    /// Result of a single page fetch
+    /// </summary>
+    private struct PageFetchResult
+    {
+        public bool ShouldBreak { get; init; }
+        public List<TData>? Data { get; init; }
+        public bool HasMore { get; init; }
+        public int NextOffset { get; init; }
     }
 }

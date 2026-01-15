@@ -458,7 +458,7 @@ public class GenericCircuitBreaker<TRequest, TResponse>
     /// </summary>
     protected virtual bool IsSuccessfulResponse(TResponse? response)
     {
-        return response != null;
+        return response is not null;
     }
 
     #endregion

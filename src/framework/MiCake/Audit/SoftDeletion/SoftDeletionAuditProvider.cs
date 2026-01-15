@@ -11,7 +11,7 @@ namespace MiCake.Audit.SoftDeletion
             if (context?.Entity == null)
                 return;
 
-            if (context.EntityState != RepositoryEntityState.Deleted)
+            if (context.EntityState != RepositoryEntityStates.Deleted)
                 return;
 
             var entity = context.Entity;

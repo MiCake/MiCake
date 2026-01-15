@@ -22,11 +22,11 @@ namespace MiCake.Audit.Core
 
             switch (context.EntityState)
             {
-                case RepositoryEntityState.Added:
+                case RepositoryEntityStates.Added:
                     SetCreationTime(context.Entity);
                     break;
 
-                case RepositoryEntityState.Modified:
+                case RepositoryEntityStates.Modified:
                     SetModificationTime(context.Entity);
                     break;
             }

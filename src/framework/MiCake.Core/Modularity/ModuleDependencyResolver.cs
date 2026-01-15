@@ -25,7 +25,7 @@ namespace MiCake.Core.Modularity
 
             var node = new ModuleNode(descriptor);
             _moduleNodes[descriptor.ModuleType] = node;
-            
+
             // Invalidate cache when new module is registered
             _isGraphBuilt = false;
             _cachedLoadOrder = null;
@@ -194,7 +194,7 @@ namespace MiCake.Core.Modularity
         /// <summary>
         /// Represents a node in the module dependency graph.
         /// </summary>
-        private class ModuleNode
+        private sealed class ModuleNode
         {
             /// <summary>
             /// Gets the module descriptor for this node.

@@ -111,7 +111,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             if (handlers.Count == 0)
                 return;
 
-            var entityStates = new (EntityEntry entry, object entity, RepositoryEntityState state)[entries.Count];
+            var entityStates = new (EntityEntry entry, object entity, RepositoryEntityStates state)[entries.Count];
             for (int i = 0; i < entries.Count; i++)
             {
                 var entry = entries[i];

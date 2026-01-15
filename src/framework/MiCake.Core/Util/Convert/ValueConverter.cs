@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace MiCake.Util.Convert
 {
@@ -49,7 +50,7 @@ namespace MiCake.Util.Convert
             where TSource : notnull
             where TDestination : notnull
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -57,15 +58,17 @@ namespace MiCake.Util.Convert
             try
             {
                 // Try each registered converter in order
+                // Note: Cannot use LINQ Where().Select().FirstOrDefault() pattern here because
+                // it doesn't handle value types correctly (e.g., valid int 0 would be treated as conversion failure)
                 foreach (var converter in _registry.GetConverters<TSource, TDestination>())
                 {
-                    if (converter.CanConvert(source))
+                    if (!converter.CanConvert(source))
+                        continue;
+
+                    var result = converter.Convert(source);
+                    if (!EqualityComparer<TDestination>.Default.Equals(result, default))
                     {
-                        var result = converter.Convert(source);
-                        if (result != null)
-                        {
-                            return result;
-                        }
+                        return result;
                     }
                 }
 

@@ -8,7 +8,7 @@ namespace MiCake.Audit.Core
     /// </summary>
     /// <param name="entity"></param>
     /// <param name="state"></param>
-    public class AuditOperationContext(object entity, RepositoryEntityState state)
+    public class AuditOperationContext(object entity, RepositoryEntityStates state)
     {
         /// <summary>
         /// The entity being audited, It should be the instance of domain object.
@@ -18,7 +18,7 @@ namespace MiCake.Audit.Core
         /// <summary>
         /// The state of the entity.
         /// </summary>
-        public RepositoryEntityState EntityState { get; set; } = state;
+        public RepositoryEntityStates EntityState { get; set; } = state;
 
         /// <summary>
         /// Some additional information.

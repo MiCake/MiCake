@@ -28,7 +28,7 @@ namespace MiCake.DDD.Infrastructure.Lifetime
 
         public int Order { get; set; } = -1000;
 
-        public async ValueTask<RepositoryEntityState> PreSaveChangesAsync(RepositoryEntityState entityState, object entity, CancellationToken cancellationToken = default)
+        public async ValueTask<RepositoryEntityStates> PreSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
             if (entity is not IDomainEventAccessor domainEventAccessor)
                 return entityState;

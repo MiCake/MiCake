@@ -10,8 +10,7 @@ namespace MiCake.Core.Modularity
     /// </summary>
     internal class MiCakeModuleConfigurationContext : IMiCakeModuleConfigurationContext
     {
-        private readonly IServiceCollection _services;
-        private readonly List<ModuleRegistration> _moduleRegistrations = new();
+        private readonly List<ModuleRegistration> _moduleRegistrations = [];
 
         public MiCakeApplicationOptions Options { get; }
 
@@ -21,7 +20,7 @@ namespace MiCake.Core.Modularity
             IServiceCollection services,
             MiCakeApplicationOptions options)
         {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _ = services ?? throw new ArgumentNullException(nameof(services));
             Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 

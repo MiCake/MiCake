@@ -11,7 +11,7 @@ namespace MiCake.Audit.Core
         /// Execute audit operation for the given entity and its state.
         /// </summary>
         /// <param name="needAuditEntity">The entity that requires auditing.</param>
-        /// <param name="entityState"><see cref="RepositoryEntityState"/></param>
-        void Execute(object needAuditEntity, RepositoryEntityState entityState);
+        /// <param name="entityState"><see cref="RepositoryEntityStates"/></param>
+        void Execute(object needAuditEntity, RepositoryEntityStates entityState);
     }
 }

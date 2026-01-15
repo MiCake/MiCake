@@ -12,24 +12,19 @@ namespace MiCake.Core.DependencyInjection
     /// Base implementation for service registration in MiCake framework.
     /// Handles the core logic of scanning assemblies and registering services.
     /// </summary>
-    internal abstract class MiCakeServiceRegistrarBase : IMiCakeServiceRegistrar
+    /// <remarks>
+    /// Initializes a new instance of the <see cref="MiCakeServiceRegistrarBase"/> class.
+    /// </remarks>
+    /// <param name="serviceCollection">The service collection to register services into</param>
+    internal abstract class MiCakeServiceRegistrarBase(IServiceCollection serviceCollection) : IMiCakeServiceRegistrar
     {
-        private readonly IServiceCollection _services;
+        private readonly IServiceCollection _services = serviceCollection;
         private ServiceTypeDiscoveryHandler? _serviceTypesFinder;
 
         /// <summary>
         /// Gets the current service type finder, using the default if none is set.
         /// </summary>
         protected ServiceTypeDiscoveryHandler CurrentFinder => _serviceTypesFinder ?? DefaultFindServiceTypes.Finder;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MiCakeServiceRegistrarBase"/> class.
-        /// </summary>
-        /// <param name="serviceCollection">The service collection to register services into</param>
-        public MiCakeServiceRegistrarBase(IServiceCollection serviceCollection)
-        {
-            _services = serviceCollection;
-        }
 
         /// <summary>
         /// Registers all services from modules that have automatic registration enabled.
@@ -45,7 +40,7 @@ namespace MiCake.Core.DependencyInjection
             var needRegisterModules = miCakeModules.Where(s => s.Instance.EnableAutoServiceRegistration)
                                                     .ToMiCakeModuleCollection();
 
-            var assemblies = needRegisterModules.GetAssemblies();
+            var assemblies = needRegisterModules.GetAssemblies(true);
             foreach (var assembly in assemblies)
             {
                 // Only scan non-sealed classes (sealed classes cannot be derived from)

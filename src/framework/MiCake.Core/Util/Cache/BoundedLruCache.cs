@@ -121,7 +121,7 @@ namespace MiCake.Util.Cache
         {
             ThrowIfDisposed();
 
-            if (key == null)
+            if (key is null)
                 return false;
 
             var seg = LocateSegment(key);
@@ -176,11 +176,24 @@ namespace MiCake.Util.Cache
         /// </summary>
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            foreach (var s in _segments)
-                s.Dispose();
+        /// <summary>
+        /// Protected dispose pattern implementation.
+        /// </summary>
+        /// <param name="disposing">True when called from Dispose(); false when called from finalizer.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                foreach (var s in _segments)
+                    s.Dispose();
+            }
+
+            _disposed = true;
         }
 
         private void ThrowIfDisposed()
@@ -249,7 +262,7 @@ namespace MiCake.Util.Cache
             public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
             {
                 ThrowIfDisposed();
-                if (key == null) throw new ArgumentNullException(nameof(key));
+                if (key is null) throw new ArgumentNullException(nameof(key));
 
                 if (_useLockFree)
                 {
@@ -261,11 +274,8 @@ namespace MiCake.Util.Cache
 
                     var ts = Interlocked.Increment(ref _timestamp);
                     var newValue = valueFactory(key);
-                    if (!_lfCache.TryAdd(key, new TimestampedValue(newValue, ts)))
-                    {
-                        if (_lfCache.TryGetValue(key, out var raceValue))
-                            return raceValue.Value;
-                    }
+                    if (!_lfCache.TryAdd(key, new TimestampedValue(newValue, ts)) && _lfCache.TryGetValue(key, out var raceValue))
+                        return raceValue.Value;
 
                     TrimLockFreeIfNeeded();
                     return newValue;
@@ -365,19 +375,30 @@ namespace MiCake.Util.Cache
 
             public void Dispose()
             {
-                _disposed = true;
-                if (_useLockFree)
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            private void Dispose(bool disposing)
+            {
+                if (_disposed) return;
+                if (disposing)
                 {
-                    _lfCache.Clear();
-                }
-                else
-                {
-                    lock (_segLock)
+                    if (_useLockFree)
                     {
-                        _cache.Clear();
-                        _accessOrder.Clear();
+                        _lfCache.Clear();
+                    }
+                    else
+                    {
+                        lock (_segLock)
+                        {
+                            _cache.Clear();
+                            _accessOrder.Clear();
+                        }
                     }
                 }
+
+                _disposed = true;
             }
 
             private void ThrowIfDisposed()

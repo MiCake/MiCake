@@ -114,13 +114,11 @@ namespace MiCake.EntityFrameworkCore
                 {
                     // Entity is configured as owned/complex type by user - skip
                     System.Diagnostics.Debug.WriteLine($"Skipping conventions for {entityType.Name} - configured as owned/complex type");
-                    continue;
                 }
                 catch (Exception ex)
                 {
                     // Log other exceptions but continue processing
                     System.Diagnostics.Debug.WriteLine($"Failed to apply conventions for {entityType.Name}: {ex.Message}");
-                    continue;
                 }
             }
         }
@@ -155,7 +153,7 @@ namespace MiCake.EntityFrameworkCore
                     // Skip owned entities for entity-level conventions
                     return;
                 }
-                
+
                 EntityTypeBuilder? entityBuilder = modelBuilder.Entity(entityType);
                 // Apply soft deletion query filter
                 if (entityContext.EnableSoftDeletion && entityContext.QueryFilter != null)
@@ -191,44 +189,66 @@ namespace MiCake.EntityFrameworkCore
             {
                 try
                 {
-                    // Get cached property context
-                    var propertyContext = EntityConventionCache.GetOrCreatePropertyContext(
-                        engineKey,
-                        entityType,
-                        property.Name,
-                        () => engine.ApplyPropertyConventions(entityType, property));
-
-                    if (!propertyContext.NeedApplyPropertyConvention)
-                        continue;
-
-                    var entityBuilder = modelBuilder.Entity(entityType);
-
-                    // Skip ignored properties for owned entities (they might be navigation properties)
-                    if (propertyContext.IsIgnored)
-                    {
-                        var existingProperty = entityBuilder.Metadata.FindProperty(property.Name);
-                        if (existingProperty == null && !IsNavigationProperty(entityBuilder.Metadata, property.Name))
-                        {
-                            entityBuilder.Ignore(property.Name);
-                        }
-                    }
-
-                    // Apply default value if property exists and doesn't have a default value set
-                    if (propertyContext.HasDefaultValue)
-                    {
-                        var existingProperty = entityBuilder.Metadata.FindProperty(property.Name);
-                        var currentDefaultValue = existingProperty?.GetDefaultValue();
-                        if (currentDefaultValue == null)
-                        {
-                            entityBuilder.Property(property.Name).HasDefaultValue(propertyContext.DefaultValue);
-                        }
-                    }
+                    ApplyConventionsForProperty(modelBuilder, entityType, property, engine, engineKey);
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to apply property conventions for {entityType.Name}.{property.Name}: {ex.Message}");
-                    continue;
                 }
+            }
+        }
+
+        private static void ApplyConventionsForProperty(
+            ModelBuilder modelBuilder,
+            Type entityType,
+            System.Reflection.PropertyInfo property,
+            StoreConventionEngine engine,
+            string engineKey)
+        {
+            // Get cached property context
+            var propertyContext = EntityConventionCache.GetOrCreatePropertyContext(
+                engineKey,
+                entityType,
+                property.Name,
+                () => engine.ApplyPropertyConventions(entityType, property));
+
+            if (!propertyContext.NeedApplyPropertyConvention)
+                return;
+
+            var entityBuilder = modelBuilder.Entity(entityType);
+
+            ApplyIgnoredPropertyConvention(entityBuilder, property.Name, propertyContext);
+            ApplyDefaultValueConvention(entityBuilder, property.Name, propertyContext);
+        }
+
+        private static void ApplyIgnoredPropertyConvention(
+            EntityTypeBuilder entityBuilder,
+            string propertyName,
+            PropertyConventionContext propertyContext)
+        {
+            if (!propertyContext.IsIgnored)
+                return;
+
+            var existingProperty = entityBuilder.Metadata.FindProperty(propertyName);
+            if (existingProperty == null && !IsNavigationProperty(entityBuilder.Metadata, propertyName))
+            {
+                entityBuilder.Ignore(propertyName);
+            }
+        }
+
+        private static void ApplyDefaultValueConvention(
+            EntityTypeBuilder entityBuilder,
+            string propertyName,
+            PropertyConventionContext propertyContext)
+        {
+            if (!propertyContext.HasDefaultValue)
+                return;
+
+            var existingProperty = entityBuilder.Metadata.FindProperty(propertyName);
+            var currentDefaultValue = existingProperty?.GetDefaultValue();
+            if (currentDefaultValue == null)
+            {
+                entityBuilder.Property(propertyName).HasDefaultValue(propertyContext.DefaultValue);
             }
         }
 

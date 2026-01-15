@@ -28,4 +28,7 @@
     <ProjectReference Include="..\..\src\framework\MiCake.AspNetCore\MiCake.AspNetCore.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SonarQubeExclude>true</SonarQubeExclude>
+  </PropertyGroup>
 </Project>

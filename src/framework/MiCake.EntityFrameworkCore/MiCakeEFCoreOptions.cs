@@ -48,7 +48,7 @@ namespace MiCake.EntityFrameworkCore
 
         public MiCakeEFCoreOptions(Type dbContextType)
         {
-            DbContextType = dbContextType ?? throw new ArgumentNullException($"{nameof(DbContextType)} can not be null.");
+            DbContextType = dbContextType ?? throw new ArgumentNullException(nameof(dbContextType));
         }
     }
 }

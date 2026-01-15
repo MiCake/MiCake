@@ -34,9 +34,6 @@ namespace MiCake.Core.Modularity
 
         public void ConfigServices(ModuleConfigServiceContext context)
         {
-            var services = context.Services ??
-                throw new ArgumentNullException(nameof(context.Services));
-
             // Print welcome brand and dependency graph on first lifecycle call
             if (_dependencyResolver != null && _applicationOptions != null)
             {

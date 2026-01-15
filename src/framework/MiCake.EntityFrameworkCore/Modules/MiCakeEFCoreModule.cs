@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {
-    public class MiCakeEFCoreModuleInternalKeys
+    public static class MiCakeEFCoreModuleInternalKeys
     {
         public const string DBContextType = "MiCake.Module.EFCore.DBContextType";
     }

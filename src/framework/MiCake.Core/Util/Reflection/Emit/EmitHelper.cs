@@ -40,7 +40,7 @@ namespace MiCake.Util.Reflection.Emit
             var builder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
             var moduleBuilder = builder.DefineDynamicModule(moduleNameStr);
 
-            return moduleBuilder.DefineType(className, typeAttributes, baseType); ;
+            return moduleBuilder.DefineType(className, typeAttributes, baseType);
         }
 
         /// <summary>

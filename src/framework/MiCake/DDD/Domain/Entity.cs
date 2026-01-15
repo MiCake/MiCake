@@ -73,7 +73,7 @@ namespace MiCake.DDD.Domain
         /// <returns>True if the specified object is equal to the current entity; otherwise, false</returns>
         public override bool Equals(object? obj)
         {
-            if (obj is null or not Entity<TKey>)
+            if (obj is not Entity<TKey>)
             {
                 return false;
             }
@@ -104,7 +104,7 @@ namespace MiCake.DDD.Domain
 
         public override int GetHashCode()
         {
-            if (Id == null)
+            if (Id is null)
             {
                 return 0;
             }
