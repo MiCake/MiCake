@@ -10,7 +10,9 @@
 
 基于 .NET 的轻量级领域驱动设计（DDD）工具包
 
-[![Nuget Version](https://img.shields.io/nuget/v/MiCake?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake/) [![Build Status](https://github.com/MiCake/MiCake/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/MiCake/MiCake/actions/workflows/build-and-release.yml) [![codecov](https://codecov.io/gh/MiCake/MiCake/branch/master/graph/badge.svg)](https://codecov.io/gh/MiCake/MiCake) [![License](https://img.shields.io/github/license/MiCake/MiCake)](https://github.com/MiCake/MiCake/blob/master/LICENSE)
+[![Nuget Version](https://img.shields.io/nuget/v/MiCake?label=nuget%20version&logo=nuget)](https://www.nuget.org/packages/MiCake/) [![Nuget Downloads](https://img.shields.io/nuget/dt/MiCake?color=green&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/MiCake/) [![Build Status](https://github.com/MiCake/MiCake/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/MiCake/MiCake/actions/workflows/build-and-release.yml) [![codecov](https://codecov.io/gh/MiCake/MiCake/branch/master/graph/badge.svg)](https://codecov.io/gh/MiCake/MiCake)
+
+[![License](https://img.shields.io/github/license/MiCake/MiCake)](https://github.com/MiCake/MiCake/blob/master/LICENSE) [![.NET Version](https://img.shields.io/badge/.NET-10.0+-512BD4?logo=dotnet)](https://dotnet.microsoft.com/) [![Last Commit](https://img.shields.io/github/last-commit/MiCake/MiCake)](https://github.com/MiCake/MiCake/commits/master) [![GitHub Issues](https://img.shields.io/github/issues/MiCake/MiCake)](https://github.com/MiCake/MiCake/issues) [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/MiCake/MiCake)](https://github.com/MiCake/MiCake/pulls)
 
 </div>
 

@@ -1,9 +1,11 @@
 name: Preview Release
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - "releases/preview*"
+  workflow_dispatch: # Allow manual trigger for emergency releases
 
 # Prevent concurrent preview releases
 concurrency:
@@ -24,6 +26,7 @@ env:
 
 jobs:
   build-and-publish-preview:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
