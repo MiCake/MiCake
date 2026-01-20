@@ -112,17 +112,17 @@ namespace MiCake.DDD.Domain
             return Id.GetHashCode();
         }
 
-        public static bool operator ==(Entity<TKey> left, Entity<TKey> right)
+        public static bool operator ==(Entity<TKey>? left, Entity<TKey>? right)
         {
-            if (Equals(left, null))
+            if (left is null)
             {
-                return Equals(right, null);
+                return right is null;
             }
 
             return left.Equals(right);
         }
 
-        public static bool operator !=(Entity<TKey> left, Entity<TKey> right)
+        public static bool operator !=(Entity<TKey>? left, Entity<TKey>? right)
         {
             return !(left == right);
         }
