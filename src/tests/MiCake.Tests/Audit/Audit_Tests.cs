@@ -202,26 +202,15 @@ namespace MiCake.Audit.Tests
         {
             // Arrange
             var fixedTime = new DateTime(2025, 1, 1, 12, 0, 0);
-            var originalProvider = DefaultTimeAuditProvider.CurrentTimeProvider;
+            var fakeTimeProvider = new FakeTimeProvider(new DateTimeOffset(fixedTime));
+            var provider = new DefaultTimeAuditProvider(fakeTimeProvider);
+            var entity = new HasCreationTimeModel();
 
-            try
-            {
-                DefaultTimeAuditProvider.CurrentTimeProvider = () => fixedTime;
-                var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
-                var executor = provider.GetService<IAuditExecutor>();
-                var entity = new HasCreationTimeModel();
+            // Act
+            provider.ApplyAudit(new AuditOperationContext(entity, RepositoryEntityStates.Added));
 
-                // Act
-                executor.Execute(entity, RepositoryEntityStates.Added);
-
-                // Assert
-                Assert.Equal(fixedTime, entity.CreatedAt);
-            }
-            finally
-            {
-                // Restore original provider
-                DefaultTimeAuditProvider.CurrentTimeProvider = originalProvider;
-            }
+            // Assert
+            Assert.Equal(fixedTime, entity.CreatedAt);
         }
 
         [Fact]
@@ -229,88 +218,55 @@ namespace MiCake.Audit.Tests
         {
             // Arrange
             var fixedTime = new DateTime(2025, 6, 15, 10, 30, 0);
-            var originalProvider = DefaultTimeAuditProvider.CurrentTimeProvider;
+            var fakeTimeProvider = new FakeTimeProvider(new DateTimeOffset(fixedTime));
+            var provider = new DefaultTimeAuditProvider(fakeTimeProvider);
+            var entity = new HasModificationTimeModel();
 
-            try
-            {
-                DefaultTimeAuditProvider.CurrentTimeProvider = () => fixedTime;
-                var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
-                var executor = provider.GetService<IAuditExecutor>();
-                var entity = new HasModificationTimeModel();
+            // Act
+            provider.ApplyAudit(new AuditOperationContext(entity, RepositoryEntityStates.Modified));
 
-                // Act
-                executor.Execute(entity, RepositoryEntityStates.Modified);
-
-                // Assert
-                Assert.Equal(fixedTime, entity.UpdatedAt);
-            }
-            finally
-            {
-                // Restore original provider
-                DefaultTimeAuditProvider.CurrentTimeProvider = originalProvider;
-            }
+            // Assert
+            Assert.Equal(fixedTime, entity.UpdatedAt);
         }
 
         [Fact]
-        public void DefaultTimeAuditProvider_AfterResettingProvider_ShouldUseNewProvider()
+        public void DefaultTimeAuditProvider_WithDifferentTimeProviders_ShouldUseDifferentTimes()
         {
             // Arrange
             var firstTime = new DateTime(2025, 1, 1);
             var secondTime = new DateTime(2025, 12, 31);
-            var originalProvider = DefaultTimeAuditProvider.CurrentTimeProvider;
+            
+            var firstProvider = new DefaultTimeAuditProvider(new FakeTimeProvider(new DateTimeOffset(firstTime)));
+            var secondProvider = new DefaultTimeAuditProvider(new FakeTimeProvider(new DateTimeOffset(secondTime)));
+            
+            var entity1 = new HasCreationTimeModel();
+            var entity2 = new HasCreationTimeModel();
 
-            try
-            {
-                // Set first time provider
-                DefaultTimeAuditProvider.CurrentTimeProvider = () => firstTime;
-                var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
-                var executor = provider.GetService<IAuditExecutor>();
-                var entity1 = new HasCreationTimeModel();
-                executor.Execute(entity1, RepositoryEntityStates.Added);
+            // Act
+            firstProvider.ApplyAudit(new AuditOperationContext(entity1, RepositoryEntityStates.Added));
+            secondProvider.ApplyAudit(new AuditOperationContext(entity2, RepositoryEntityStates.Added));
 
-                // Change time provider
-                DefaultTimeAuditProvider.CurrentTimeProvider = () => secondTime;
-                var entity2 = new HasCreationTimeModel();
-                executor.Execute(entity2, RepositoryEntityStates.Added);
-
-                // Assert
-                Assert.Equal(firstTime, entity1.CreatedAt);
-                Assert.Equal(secondTime, entity2.CreatedAt);
-            }
-            finally
-            {
-                // Restore original provider
-                DefaultTimeAuditProvider.CurrentTimeProvider = originalProvider;
-            }
+            // Assert
+            Assert.Equal(firstTime, entity1.CreatedAt);
+            Assert.Equal(secondTime, entity2.CreatedAt);
         }
 
         [Fact]
         public void DefaultTimeAuditProvider_WithDefaultProvider_ShouldUseCurrentTime()
         {
-            // Arrange - ensure using default provider
-            var originalProvider = DefaultTimeAuditProvider.CurrentTimeProvider;
-            try
-            {
-                DefaultTimeAuditProvider.CurrentTimeProvider = () => DateTime.Now;
-                var provider = BuildServicesWithAuditProvider().BuildServiceProvider();
-                var executor = provider.GetService<IAuditExecutor>();
-                var entity = new HasAuditModel();
+            // Arrange
+            var provider = new DefaultTimeAuditProvider(TimeProvider.System);
+            var entity = new HasAuditModel();
+            var beforeTime = DateTime.UtcNow;
 
-                var beforeTime = DateTime.Now;
+            // Act
+            provider.ApplyAudit(new AuditOperationContext(entity, RepositoryEntityStates.Added));
 
-                // Act
-                executor.Execute(entity, RepositoryEntityStates.Added);
+            var afterTime = DateTime.UtcNow;
 
-                var afterTime = DateTime.Now;
-
-                // Assert
-                Assert.True(entity.CreatedAt >= beforeTime);
-                Assert.True(entity.CreatedAt <= afterTime);
-            }
-            finally
-            {
-                DefaultTimeAuditProvider.CurrentTimeProvider = originalProvider;
-            }
+            // Assert
+            Assert.True(entity.CreatedAt >= beforeTime);
+            Assert.True(entity.CreatedAt <= afterTime);
         }
 
         private static ServiceCollection BuildServices()

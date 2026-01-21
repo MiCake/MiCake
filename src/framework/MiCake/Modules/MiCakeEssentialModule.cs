@@ -35,6 +35,9 @@ namespace MiCake.Modules
             var services = context.Services;
             var storeConventionRegistry = new StoreConventionRegistry();
 
+            // Register TimeProvider
+            services.TryAddSingleton(TimeProvider.System);
+
             if (auditOptions?.UseAudit == true)
             {
                 //Audit Executor
@@ -44,10 +47,6 @@ namespace MiCake.Modules
                 //RepositoryLifeTime
                 services.AddScoped<IRepositoryPreSaveChanges, AuditRepositoryLifetime>();
 
-                if (auditOptions?.AuditTimeProvider is not null)
-                {
-                    DefaultTimeAuditProvider.CurrentTimeProvider = auditOptions.AuditTimeProvider;
-                }
                 storeConventionRegistry.AddConvention(new AuditTimeConvention());
 
                 if (auditOptions?.UseSoftDeletion == true)

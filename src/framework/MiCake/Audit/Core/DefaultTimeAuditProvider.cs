@@ -5,15 +5,17 @@ namespace MiCake.Audit.Core
 {
     /// <summary>
     /// Provides creation and modification time for entities.
-    /// Supports customization of time generation logic through <see cref="CurrentTimeProvider"/>.
+    /// <para>
+    /// Supports both <see cref="DateTime"/> and <see cref="DateTimeOffset"/> timestamp types.
+    /// </para>
     /// </summary>
-    public class DefaultTimeAuditProvider : IAuditProvider
+    /// <remarks>
+    /// Initializes a new instance of <see cref="DefaultTimeAuditProvider"/>.
+    /// </remarks>
+    /// <param name="timeProvider">The time provider. If null, uses <see cref="TimeProvider.System"/>.</param>
+    public class DefaultTimeAuditProvider(TimeProvider? timeProvider = null) : IAuditProvider
     {
-        /// <summary>
-        /// Gets or sets the function that provides the current time for audit operations.
-        /// Default: <see cref="DateTime.UtcNow"/>
-        /// </summary>
-        public static Func<DateTime> CurrentTimeProvider { get; set; } = () => DateTime.UtcNow;
+        private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
 
         public virtual void ApplyAudit(AuditOperationContext context)
         {
@@ -32,26 +34,43 @@ namespace MiCake.Audit.Core
             }
         }
 
-        private static void SetCreationTime(object entity)
+        private void SetCreationTime(object entity)
         {
             if (entity == null)
                 return;
 
-            if (entity is IHasCreatedAt hasCreationTime &&
+            var now = _timeProvider.GetUtcNow();
+
+            if (entity is IHasCreatedAt<DateTimeOffset> hasCreationTimeOffset &&
+                hasCreationTimeOffset.CreatedAt == default)
+            {
+                hasCreationTimeOffset.CreatedAt = now;
+                return;
+            }
+
+            if (entity is IHasCreatedAt<DateTime> hasCreationTime &&
                 hasCreationTime.CreatedAt == default)
             {
-                hasCreationTime.CreatedAt = CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
+                hasCreationTime.CreatedAt = now.DateTime;
             }
         }
 
-        private static void SetModificationTime(object entity)
+        private void SetModificationTime(object entity)
         {
             if (entity == null)
                 return;
 
-            if (entity is IHasUpdatedAt hasModificationTime)
+            var now = _timeProvider.GetUtcNow();
+
+            if (entity is IHasUpdatedAt<DateTimeOffset> hasModificationTimeOffset)
             {
-                hasModificationTime.UpdatedAt = CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
+                hasModificationTimeOffset.UpdatedAt = now;
+                return;
+            }
+
+            if (entity is IHasUpdatedAt<DateTime> hasModificationTime)
+            {
+                hasModificationTime.UpdatedAt = now.DateTime;
             }
         }
     }

@@ -1,12 +1,10 @@
 using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Data;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 

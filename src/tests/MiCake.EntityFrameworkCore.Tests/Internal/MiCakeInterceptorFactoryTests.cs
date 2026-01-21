@@ -1,5 +1,4 @@
 using MiCake.EntityFrameworkCore.Internal;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;

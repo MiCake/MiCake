@@ -1,13 +1,11 @@
 using MiCake.Core;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Helper;
 using MiCake.DDD.Infrastructure.Metadata;
 using Microsoft.Extensions.Options;
 using Moq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;

@@ -4,16 +4,30 @@ using System;
 namespace MiCake.Audit.Conventions
 {
     /// <summary>
-    /// Convention for audit time properties
+    /// Convention for audit time properties.
+    /// <para>
+    /// Supports both legacy interfaces (<see cref="IHasCreatedAt"/>, <see cref="IHasUpdatedAt"/>) 
+    /// and generic interfaces (<see cref="IHasCreatedAt{T}"/>, <see cref="IHasUpdatedAt{T}"/>).
+    /// Since legacy interfaces inherit from generic ones, a simple type check is sufficient.
+    /// </para>
     /// </summary>
     public class AuditTimeConvention : IPropertyConvention
     {
+        private static readonly Type DateTimeCreatedAtType = typeof(IHasCreatedAt<DateTime>);
+        private static readonly Type DateTimeUpdatedAtType = typeof(IHasUpdatedAt<DateTime>);
+        private static readonly Type DateTimeOffsetCreatedAtType = typeof(IHasCreatedAt<DateTimeOffset>);
+        private static readonly Type DateTimeOffsetUpdatedAtType = typeof(IHasUpdatedAt<DateTimeOffset>);
+
         public int Priority => 200;
 
         public bool CanApply(Type entityType)
         {
-            return typeof(IHasCreatedAt).IsAssignableFrom(entityType) ||
-                   typeof(IHasUpdatedAt).IsAssignableFrom(entityType);
+            ArgumentNullException.ThrowIfNull(entityType);
+            
+            return DateTimeCreatedAtType.IsAssignableFrom(entityType) ||
+                   DateTimeUpdatedAtType.IsAssignableFrom(entityType) ||
+                   DateTimeOffsetCreatedAtType.IsAssignableFrom(entityType) ||
+                   DateTimeOffsetUpdatedAtType.IsAssignableFrom(entityType);
         }
 
         public void Configure(Type entityType, string propertyName, PropertyConventionContext context)

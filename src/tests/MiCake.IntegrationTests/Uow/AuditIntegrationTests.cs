@@ -128,21 +128,43 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task DefaultTimeAuditProvider_ShouldUseCustomTimeProvider()
         {
+            // Arrange - Create a new scope with custom TimeProvider
             var fixedTime = new DateTime(2025, 1, 1, 12, 0, 0);
-            var originalProvider = DefaultTimeAuditProvider.CurrentTimeProvider;
+            var customScope = _fixture.CreateServiceProvider(services =>
+            {
+                services.AddLogging();
+
+                var dbName = Guid.NewGuid().ToString();
+                services.AddDbContext<TestDbContext>((sp, options) =>
+                {
+                    options.UseInMemoryDatabase(dbName);
+                    options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
+                    options.UseMiCakeInterceptors(sp);
+                });
+
+                // Register custom TimeProvider
+                services.AddSingleton<TimeProvider>(new FakeTimeProvider(new DateTimeOffset(fixedTime)));
+
+                var builder = services.AddMiCake<TestMiCakeModule>();
+                builder.UseEFCore<TestDbContext>();
+                builder.UseAudit(opts => opts.UseSoftDeletion = true);
+                builder.Build();
+            });
+
             try
             {
-                DefaultTimeAuditProvider.CurrentTimeProvider = () => fixedTime;
+                var scopedApp = customScope.GetRequiredService<IMiCakeApplication>();
+                var scopedDb = customScope.GetRequiredService<TestDbContext>();
 
                 var entity = new AuditEntityWithCreationTime { Name = "CustomTime" };
-                _dbContext.AuditEntities.Add(entity);
-                await _dbContext.SaveChangesAsync();
+                scopedDb.AuditEntities.Add(entity);
+                await scopedDb.SaveChangesAsync();
 
                 Assert.Equal(fixedTime, entity.CreatedAt);
             }
             finally
             {
-                DefaultTimeAuditProvider.CurrentTimeProvider = originalProvider;
+                _fixture?.ReleaseServiceProvider(customScope);
             }
         }
 
@@ -199,6 +221,18 @@ namespace MiCake.IntegrationTests.Uow
             public DateTime? UpdatedAt { get; set; }
         }
 
+        // Fake TimeProvider for testing
+        private class FakeTimeProvider : TimeProvider
+        {
+            private readonly DateTimeOffset _fixedTime;
+
+            public FakeTimeProvider(DateTimeOffset fixedTime)
+            {
+                _fixedTime = fixedTime;
+            }
+
+            public override DateTimeOffset GetUtcNow() => _fixedTime;
+        }
 
         #endregion
     }

@@ -2,7 +2,6 @@ using MiCake.AspNetCore.ApiLogging;
 using MiCake.AspNetCore.ApiLogging.Internals;
 using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace MiCake.AspNetCore.Tests.ApiLogging

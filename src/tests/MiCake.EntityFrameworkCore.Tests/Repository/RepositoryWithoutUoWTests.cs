@@ -1,4 +1,3 @@
-using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Repository;
@@ -8,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 

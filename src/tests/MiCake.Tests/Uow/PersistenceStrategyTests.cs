@@ -1,7 +1,6 @@
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.Logging;
-using Moq;
 using System;
 using System.Data;
 using System.Threading;
