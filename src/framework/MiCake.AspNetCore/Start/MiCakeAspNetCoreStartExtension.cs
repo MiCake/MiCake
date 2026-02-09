@@ -1,6 +1,7 @@
 ﻿using MiCake.AspNetCore;
 using MiCake.Audit;
 using MiCake.Core.Modularity;
+using MiCake.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -26,6 +27,11 @@ namespace MiCake.Core
         /// Configuration action for <see cref="MiCakeAspNetOptions"/>.
         /// </summary>
         public Action<MiCakeAspNetOptions>? AspNetConfig { get; set; }
+
+        /// <summary>
+        /// Configuration action for <see cref="MiCakeEFCoreOptions"/>.
+        /// </summary>
+        public Action<MiCakeEFCoreOptions>? EFCoreConfig { get; set; }
     }
 
     public static class MiCakeAspNetCoreStartExtension
@@ -100,7 +106,7 @@ namespace MiCake.Core
 
             return services.AddMiCake(entryModule, options.AppConfig)
                            .UseAudit(options.AuditConfig)
-                           .UseEFCore(miCakeDbContextType)
+                           .UseEFCore(miCakeDbContextType, options.EFCoreConfig)
                            .UseAspNetCore(options.AspNetConfig);
         }
     }
