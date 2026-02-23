@@ -51,7 +51,7 @@ namespace MiCake.Audit.Core
             if (entity is IHasCreatedAt<DateTime> hasCreationTime &&
                 hasCreationTime.CreatedAt == default)
             {
-                hasCreationTime.CreatedAt = now.DateTime;
+                hasCreationTime.CreatedAt = now.UtcDateTime;
             }
         }
 
@@ -70,7 +70,7 @@ namespace MiCake.Audit.Core
 
             if (entity is IHasUpdatedAt<DateTime> hasModificationTime)
             {
-                hasModificationTime.UpdatedAt = now.DateTime;
+                hasModificationTime.UpdatedAt = now.UtcDateTime;
             }
         }
     }
