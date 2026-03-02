@@ -51,7 +51,7 @@ namespace MiCake.AspNetCore.Responses
             if (context.OriginalData is Internals.BusinessExceptionData slightData)
             {
                 var code = string.IsNullOrWhiteSpace(slightData.Code)
-                    ? options.DefaultCodeSetting.Success
+                    ? options.DefaultCodeSetting.Error
                     : slightData.Code;
 
                 return new ApiResponse(

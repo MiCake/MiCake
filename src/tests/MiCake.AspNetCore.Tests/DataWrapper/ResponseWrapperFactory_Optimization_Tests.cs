@@ -182,7 +182,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_BusinessExceptionData_EmptyCode_UsesDefault()
         {
             // Arrange
-            var customCodeSetting = new ResponseWrapperDefaultCodes { Success = "SUCCESS_CODE" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Error = "SUCCESS_CODE" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new BusinessExceptionData { Code = "", Message = "Message", Details = null };
@@ -200,7 +200,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void DefaultFactory_BusinessExceptionData_NullCode_UsesDefault()
         {
             // Arrange
-            var customCodeSetting = new ResponseWrapperDefaultCodes { Success = "DEFAULT_CODE" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Error = "DEFAULT_CODE" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var factory = ResponseWrapperFactory.CreateDefault(options);
             var slightData = new BusinessExceptionData { Code = null, Message = "Message", Details = null };

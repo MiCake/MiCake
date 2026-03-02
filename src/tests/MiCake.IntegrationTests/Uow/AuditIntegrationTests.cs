@@ -160,7 +160,7 @@ namespace MiCake.IntegrationTests.Uow
                 scopedDb.AuditEntities.Add(entity);
                 await scopedDb.SaveChangesAsync();
 
-                Assert.Equal(fixedTime, entity.CreatedAt);
+                Assert.Equal(new DateTimeOffset(fixedTime).UtcDateTime, entity.CreatedAt);
             }
             finally
             {

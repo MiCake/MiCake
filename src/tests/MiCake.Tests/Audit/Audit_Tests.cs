@@ -210,7 +210,7 @@ namespace MiCake.Audit.Tests
             provider.ApplyAudit(new AuditOperationContext(entity, RepositoryEntityStates.Added));
 
             // Assert
-            Assert.Equal(fixedTime, entity.CreatedAt);
+            Assert.Equal(new DateTimeOffset(fixedTime).UtcDateTime, entity.CreatedAt);
         }
 
         [Fact]
@@ -226,7 +226,7 @@ namespace MiCake.Audit.Tests
             provider.ApplyAudit(new AuditOperationContext(entity, RepositoryEntityStates.Modified));
 
             // Assert
-            Assert.Equal(fixedTime, entity.UpdatedAt);
+            Assert.Equal(new DateTimeOffset(fixedTime).UtcDateTime, entity.UpdatedAt);
         }
 
         [Fact]
@@ -235,10 +235,10 @@ namespace MiCake.Audit.Tests
             // Arrange
             var firstTime = new DateTime(2025, 1, 1);
             var secondTime = new DateTime(2025, 12, 31);
-            
+
             var firstProvider = new DefaultTimeAuditProvider(new FakeTimeProvider(new DateTimeOffset(firstTime)));
             var secondProvider = new DefaultTimeAuditProvider(new FakeTimeProvider(new DateTimeOffset(secondTime)));
-            
+
             var entity1 = new HasCreationTimeModel();
             var entity2 = new HasCreationTimeModel();
 
@@ -247,8 +247,8 @@ namespace MiCake.Audit.Tests
             secondProvider.ApplyAudit(new AuditOperationContext(entity2, RepositoryEntityStates.Added));
 
             // Assert
-            Assert.Equal(firstTime, entity1.CreatedAt);
-            Assert.Equal(secondTime, entity2.CreatedAt);
+            Assert.Equal(new DateTimeOffset(firstTime).UtcDateTime, entity1.CreatedAt);
+            Assert.Equal(new DateTimeOffset(secondTime).UtcDateTime, entity2.CreatedAt);
         }
 
         [Fact]
