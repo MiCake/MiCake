@@ -14,6 +14,8 @@
 
 [![License](https://img.shields.io/github/license/MiCake/MiCake)](https://github.com/MiCake/MiCake/blob/master/LICENSE) [![.NET Version](https://img.shields.io/badge/.NET-10.0+-512BD4?logo=dotnet)](https://dotnet.microsoft.com/) [![Last Commit](https://img.shields.io/github/last-commit/MiCake/MiCake)](https://github.com/MiCake/MiCake/commits/master) [![GitHub Issues](https://img.shields.io/github/issues/MiCake/MiCake)](https://github.com/MiCake/MiCake/issues) [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/MiCake/MiCake)](https://github.com/MiCake/MiCake/pulls)
 
+**简体中文** | [English](README.en.md)
+
 </div>
 
 ---
