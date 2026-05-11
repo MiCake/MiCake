@@ -1,7 +1,6 @@
 using MiCake.AspNetCore.ApiLogging;
 using MiCake.AspNetCore.ApiLogging.Internals;
 using Microsoft.AspNetCore.Http;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;

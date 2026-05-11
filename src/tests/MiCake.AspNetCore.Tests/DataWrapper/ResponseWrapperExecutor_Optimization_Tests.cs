@@ -141,7 +141,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
         public void WrapSuccess_WithBusinessExceptionEmptyCode_UsesDefaultCode()
         {
             // Arrange
-            var customCodeSetting = new ResponseWrapperDefaultCodes { Success = "200" };
+            var customCodeSetting = new ResponseWrapperDefaultCodes { Error = "500" };
             var options = new ResponseWrapperOptions { DefaultCodeSetting = customCodeSetting };
             var executor = new ResponseWrapperExecutor(options);
             var httpContext = CreateHttpContext(200);
@@ -154,7 +154,7 @@ namespace MiCake.AspNetCore.Tests.DataWrapper
             // Assert
             Assert.IsType<ApiResponse>(result);
             var response = result as ApiResponse;
-            Assert.Equal("200", response.Code); // Uses default code
+            Assert.Equal("500", response.Code); // Uses default code
         }
 
         [Fact]

@@ -1,3 +1,4 @@
+using System;
 using MiCake.Util.Query.Dynamic;
 
 namespace BaseMiCakeApplication.Dto
@@ -23,6 +24,9 @@ namespace BaseMiCakeApplication.Dto
         /// </summary>
         [DynamicFilter(OperatorType = ValueOperatorType.Contains, PropertyName = "Author.FirstName")]
         public string AuthorFirstName { get; set; }
+
+        [DynamicFilter(OperatorType = ValueOperatorType.GreaterThanOrEqual)]
+        public DateTimeOffset? CreatedAt { get; set; } 
 
         /// <summary>
         /// Gets or sets the page number for pagination (default: 1).

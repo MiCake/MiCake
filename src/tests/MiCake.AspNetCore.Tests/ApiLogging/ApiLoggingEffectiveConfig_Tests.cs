@@ -1,5 +1,4 @@
 using MiCake.AspNetCore.ApiLogging;
-using System.Collections.Generic;
 using Xunit;
 
 namespace MiCake.AspNetCore.Tests.ApiLogging

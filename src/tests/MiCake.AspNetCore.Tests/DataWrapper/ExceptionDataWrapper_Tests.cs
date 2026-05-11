@@ -1,5 +1,4 @@
-﻿using Castle.Core.Logging;
-using MiCake.AspNetCore.Responses;
+﻿using MiCake.AspNetCore.Responses;
 using MiCake.AspNetCore.Responses.Internals;
 using MiCake.Core;
 using Microsoft.AspNetCore.Http;

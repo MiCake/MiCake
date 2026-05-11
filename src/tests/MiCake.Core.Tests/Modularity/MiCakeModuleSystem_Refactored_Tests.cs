@@ -1,7 +1,5 @@
 using MiCake.Core.Modularity;
-using MiCake.Core.Tests.Modularity.Fakes;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using Xunit;
 
 namespace MiCake.Core.Tests.Modularity

@@ -1,10 +1,7 @@
 using MiCake.DDD.Domain;
-using MiCake.DDD.Domain.Helper;
 using MiCake.DDD.Infrastructure.Metadata;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace MiCake.Tests.Metadata

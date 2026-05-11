@@ -1,4 +1,3 @@
-using MiCake.AspNetCore;
 using MiCake.AspNetCore.ApiLogging;
 using MiCake.AspNetCore.ApiLogging.Internals;
 using Microsoft.Extensions.Options;

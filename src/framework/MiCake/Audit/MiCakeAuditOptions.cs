@@ -1,7 +1,4 @@
-﻿using System;
-using MiCake.Audit.Core;
-
-namespace MiCake.Audit
+﻿namespace MiCake.Audit
 {
     public class MiCakeAuditOptions
     {
@@ -18,12 +15,6 @@ namespace MiCake.Audit
         /// Default value is true.
         /// </summary>
         public bool UseAudit { get; set; } = true;
-
-        /// <summary>
-        /// The time provider for audit.
-        /// Will set the value of <see cref="DefaultTimeAuditProvider.CurrentTimeProvider"/>
-        /// </summary>
-        public Func<DateTime>? AuditTimeProvider { get; set; }
 
         public MiCakeAuditOptions()
         {

@@ -1,12 +1,15 @@
-﻿namespace MiCake.Audit.SoftDeletion
+﻿using System;
+
+namespace MiCake.Audit.SoftDeletion
 {
     /// <summary>
     /// Mark a class with audit timestamps and soft deletion properties.
     /// <para>
-    /// It is the combination of <see cref="IHasAuditTimestamps"/>, <see cref="ISoftDeletable"/>, and <see cref="IHasDeletedAt"/>.
+    /// This interface inherits from <see cref="IAuditableWithSoftDeletion{T}"/> with <see cref="DateTime"/> type.
+    /// Consider using <see cref="IAuditableWithSoftDeletion{T}"/> directly with <see cref="DateTimeOffset"/> for better timezone support.
     /// </para>
     /// </summary>
-    public interface IAuditableWithSoftDeletion : IHasAuditTimestamps, ISoftDeletable, IHasDeletedAt
+    public interface IAuditableWithSoftDeletion : IAuditableWithSoftDeletion<DateTime>
     {
     }
 }

@@ -7,10 +7,14 @@ namespace MiCake.DDD.Domain
     /// <summary>
     /// Base class for value objects following Domain-Driven Design principles.
     /// Value objects are immutable and compared by their property values rather than identity.
+    /// <para>
+    /// Prefer using C# record for value objects when possible, as they provide built-in
+    /// value-based equality and immutability. see <see cref="RecordValueObject"/>.
+    /// </para>
     /// </summary>
     public abstract class ValueObject : IValueObject
     {
-        protected static bool EqualOperator(ValueObject left, ValueObject right)
+        protected static bool EqualOperator(ValueObject? left, ValueObject? right)
         {
             if (left is null ^ right is null)
             {
@@ -19,7 +23,7 @@ namespace MiCake.DDD.Domain
             return left is null || left.Equals(right);
         }
 
-        protected static bool NotEqualOperator(ValueObject left, ValueObject right)
+        protected static bool NotEqualOperator(ValueObject? left, ValueObject? right)
         {
             return !EqualOperator(left, right);
         }
@@ -33,7 +37,7 @@ namespace MiCake.DDD.Domain
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || obj.GetType() != GetType())
+            if (obj is null || obj.GetType() != GetType())
             {
                 return false;
             }
@@ -53,17 +57,17 @@ namespace MiCake.DDD.Domain
             return hash.ToHashCode();
         }
 
-        public static bool operator ==(ValueObject left, ValueObject right)
+        public static bool operator ==(ValueObject? left, ValueObject? right)
         {
-            if (Equals(left, null))
+            if (left is null)
             {
-                return Equals(right, null);
+                return right is null;
             }
 
             return left.Equals(right);
         }
 
-        public static bool operator !=(ValueObject left, ValueObject right)
+        public static bool operator !=(ValueObject? left, ValueObject? right)
         {
             return !(left == right);
         }

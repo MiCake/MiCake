@@ -1,4 +1,3 @@
-using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Uow;
@@ -11,7 +10,6 @@ using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.EntityFrameworkCore.Tests.Repository

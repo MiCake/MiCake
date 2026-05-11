@@ -4,8 +4,13 @@ using System;
 
 namespace MiCake.Audit.SoftDeletion
 {
-    internal class SoftDeletionAuditProvider : IAuditProvider
+    /// <summary>
+    /// Provides soft deletion audit functionality for entities.
+    /// </summary>
+    internal class SoftDeletionAuditProvider(TimeProvider? timeProvider = null) : IAuditProvider
     {
+        private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+
         public virtual void ApplyAudit(AuditOperationContext context)
         {
             if (context?.Entity == null)
@@ -20,8 +25,17 @@ namespace MiCake.Audit.SoftDeletion
 
             softDeletionObj.IsDeleted = true;
 
-            if (entity is IHasDeletedAt hasDeletionTimeObj)
-                hasDeletionTimeObj.DeletedAt = DefaultTimeAuditProvider.CurrentTimeProvider?.Invoke() ?? DateTime.UtcNow;
+            var now = _timeProvider.GetUtcNow();
+            if (entity is IHasDeletedAt<DateTimeOffset> hasDeletionTimeOffset)
+            {
+                hasDeletionTimeOffset.DeletedAt = now;
+                return;
+            }
+
+            if (entity is IHasDeletedAt<DateTime> hasDeletionTime)
+            {
+                hasDeletionTime.DeletedAt = now.DateTime;
+            }
         }
     }
 }
