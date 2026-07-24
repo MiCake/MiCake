@@ -1,0 +1,27 @@
+preferences:
+  # Language used for interactive responses
+  # Options: en-US (English), zh-CN (简体中文)
+  interaction_language: zh-CN
+
+  # Language used for persistent document output
+  # Options: en-US (English), zh-CN (简体中文)
+  document_output_language: en-US
+
+  # Output style
+  output:
+    no_emojis: true
+    data_format: yaml
+
+  # AI routing for skill selection in /mvt-manage-context
+  context_routing:
+    relevance_threshold: 70
+
+  # Session history limits
+  history_limits:
+    history: 10
+    changes: 10
+
+  # Planning granularity for /mvt-plan-dev
+  # Options: coarse (fewer, larger tasks) | medium (balanced) | fine (more, smaller tasks)
+  planning:
+    granularity: medium

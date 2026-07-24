@@ -1,0 +1,60 @@
+last_updated: "2026-05-23"
+knowledge: {}
+skills:
+  mvt-init:
+    description: "Initialize or refresh a project: scan structure, detect tech stack, infer project type."
+  mvt-status:
+    description: "Display current project and workflow status: skill history, active changes, session state."
+  mvt-config:
+    description: "Manage framework configuration: language, output format, and other settings."
+  mvt-sync-context:
+    description: "Synchronize workspace context with code after manual edits or git operations."
+  mvt-cleanup:
+    description: "Clean up workspace artifacts, summarize completed changes, and archive change records."
+  mvt-analyze:
+    description: "Analyze requirements and extract domain concepts, features, and business rules."
+    template: ".ai-agents/skills/_templates/analyze-output.md"
+  mvt-analyze-code:
+    description: "Reverse-analyze existing code into project-context.md (terms, modules, layers, rules)."
+    template: ".ai-agents/skills/_templates/project-context.md"
+  mvt-decompose:
+    description: "Decompose epic-scale requirements into right-sized sub-changes with DAG dependencies."
+    template: ".ai-agents/skills/_templates/decompose-output.md"
+  mvt-design:
+    description: "Create architecture design from analyzed requirements."
+    template: ".ai-agents/skills/_templates/design-output.md"
+  mvt-plan-dev:
+    description: "Generate a tracked development plan (plan.yaml) for a large change."
+  mvt-update-plan:
+    description: "Update one task in the active plan.yaml: status, artifacts, notes; auto-advance current_task."
+  mvt-bug-detect:
+    description: "Diagnose a bug (root cause, severity, impact scope) without applying fixes."
+  mvt-consult:
+    description: "Answer questions about project logic and verify implementation details, grounded in knowledge and source code."
+  mvt-implement:
+    description: "Implement features from architecture design; write production code."
+    template: ".ai-agents/skills/_templates/implement-output.md"
+  mvt-fix:
+    description: "Diagnose and fix bugs or errors in the codebase."
+  mvt-refactor:
+    description: "Refactor existing code while preserving behavior."
+  mvt-quick-dev:
+    description: "Quickly implement small, well-scoped changes (1-3 files) without the full workflow."
+  mvt-review:
+    description: "Review code for quality, standards compliance, and best practices."
+    template: ".ai-agents/skills/_templates/review-output.md"
+  mvt-test:
+    description: "Generate and design tests to validate implementations."
+    template: ".ai-agents/skills/_templates/test-output.md"
+  mvt-help:
+    description: "Show available skills, project status, and workflow guidance."
+  mvt-resume:
+    description: "Resume an in-progress task in a new conversation from session.yaml and recent artifacts."
+  mvt-create-skill:
+    description: "Create custom MVTT skills through an interactive guided workflow."
+  mvt-manage-context:
+    description: "Manage knowledge and registry: add (with AI routing), remove, move, rename, list."
+  mvt-check-context:
+    description: "Analyze context token load and provide optimization recommendations."
+  mvt-template:
+    description: "View, customize, and manage output templates for MVTT skills."

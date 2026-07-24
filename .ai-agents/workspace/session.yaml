@@ -1,0 +1,36 @@
+session:
+  initialized_at: ""
+  last_synced_at: ""
+
+active_epic:
+  id: ""
+  title: ""
+  created_at: ""
+  epic_path: ""
+
+epics: []
+  # - id: "epic-20260608-ecommerce-platform"
+  #   title: "ecommerce platform"
+  #   epic_path: ".ai-agents/workspace/artifacts/epic-20260608-ecommerce-platform/epic.yaml"
+  #   status: "active"   # active | done | abandoned
+  #   updated_at: "..."
+
+active_change:
+  id: ""
+  title: ""
+  created_at: ""
+  plan_path: ""
+  epic_id: ""            # epic parent id or empty
+
+changes: []
+  # - id: "chg-001"
+  #   title: "User authentication"
+  #   plan_path: ".ai-agents/workspace/artifacts/chg-001/plan.yaml"
+  #   status: "active"           # active | done | abandoned
+  #   updated_at: "2026-05-23T14:30:00"
+
+history: []
+  # - skill: "/mvt-analyze"
+  #   completed_at: "2026-05-23T14:30:00"
+  #   summary: "Analyzed user authentication requirements"
+  #   change_id: ""   # set when work belongs to an active change
