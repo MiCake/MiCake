@@ -1,85 +1,241 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MiCake.DDD.Uow.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow.Internal
 {
     /// <summary>
-    /// Implementation of Unit of Work Manager with support for nested transactions using AsyncLocal
+    /// Implementation of Unit of Work Manager with ambient frames, shared nested units of work,
+    /// and isolated requiresNew execution scopes.
+    /// The manager owns ambient frame bookkeeping; the caller or boundary owns the returned unit of work.
     /// </summary>
     internal class UnitOfWorkManager : IUnitOfWorkManager
     {
-        private readonly AsyncLocal<IUnitOfWork?> _current = new();
         private readonly IServiceProvider _serviceProvider;
+        private readonly AmbientUnitOfWorkAccessor _ambientAccessor;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<UnitOfWorkManager> _logger;
         private bool _disposed;
 
-        public IUnitOfWork? Current => _current.Value;
+        public IUnitOfWork? Current => _ambientAccessor.Current?.UnitOfWork;
 
-        public UnitOfWorkManager(IServiceProvider serviceProvider, ILogger<UnitOfWorkManager> logger)
+        public UnitOfWorkManager(
+            IServiceProvider serviceProvider,
+            AmbientUnitOfWorkAccessor ambientAccessor,
+            IServiceScopeFactory scopeFactory,
+            ILogger<UnitOfWorkManager> logger)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _ambientAccessor = ambientAccessor ?? throw new ArgumentNullException(nameof(ambientAccessor));
+            _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<IUnitOfWork> BeginAsync(bool requiresNew = false, CancellationToken cancellationToken = default)
-        {
-            return BeginAsync(UnitOfWorkOptions.Default, requiresNew, cancellationToken);
-        }
-
-        public Task<IUnitOfWork> BeginAsync(UnitOfWorkOptions options, bool requiresNew = false, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Begins a unit of work. Ambient frame writes MUST happen in this synchronous segment so they
+        /// land in the caller's execution context (async method bodies run on an execution-context copy).
+        /// </summary>
+        public Task<IUnitOfWork> BeginAsync(
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            ArgumentNullException.ThrowIfNull(options);
+            options ??= UnitOfWorkOptions.Default;
 
-            // If we already have a UoW and don't require a new one, return nested UoW
-            if (!requiresNew && _current.Value != null && !_current.Value.IsDisposed)
+            var currentFrame = _ambientAccessor.Current;
+
+            // Shared nested unit of work: inherits the parent's isolation and read-only intent and
+            // delegates all physical work to the root.
+            if (currentFrame != null &&
+                !currentFrame.UnitOfWork.IsDisposed &&
+                !currentFrame.UnitOfWork.IsCompleted)
             {
-                var parentUowWrapper = _current.Value;  // This is the wrapper!
-
-                _logger.LogDebug("Creating nested UnitOfWork under parent {ParentId}", parentUowWrapper.Id);
-
-                // Get the inner UnitOfWork from parent (for internal linking)
-                var parentInner = GetInnerUnitOfWork(parentUowWrapper);
-
-                // Create nested UoW (inherits parent's options for isolation level)
-                // Nested UoW is read-only and doesn't manage its own transactions
-                var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
                 var nestedOptions = new UnitOfWorkOptions
                 {
-                    IsolationLevel = parentUowWrapper.IsolationLevel,
-                    IsReadOnly = true,  // Nested UoW doesn't manage transactions
+                    IsReadOnly = currentFrame.UnitOfWork.IsReadOnly,
+                    IsolationLevel = currentFrame.UnitOfWork.IsolationLevel,
                     InitializationMode = options.InitializationMode
                 };
 
-                var nestedUow = new UnitOfWork(logger, nestedOptions, parentInner);
+                var token = UnitOfWorkFrameToken.New();
+                var nestedUow = new UnitOfWork(
+                    _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>(),
+                    nestedOptions,
+                    parent: currentFrame.UnitOfWork,
+                    _ambientAccessor,
+                    token);
 
-                // Return wrapper that stores parent wrapper reference and updates AsyncLocal
-                return Task.FromResult<IUnitOfWork>(new NestedUnitOfWorkWrapper(nestedUow, parentUowWrapper, _current, _logger));
+                _ambientAccessor.Push(new UnitOfWorkFrame(token, nestedUow, currentFrame.ServiceProvider, currentFrame));
+                _logger.LogDebug("Created nested UnitOfWork {UnitOfWorkId} under parent {ParentId}",
+                    nestedUow.Id, currentFrame.UnitOfWork.Id);
+                return Task.FromResult<IUnitOfWork>(nestedUow);
             }
 
-            var uowLogger = _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>();
-            var unitOfWork = new UnitOfWork(uowLogger, options, parent: null);
+            var rootToken = UnitOfWorkFrameToken.New();
+            var unitOfWork = new UnitOfWork(
+                _serviceProvider.GetRequiredService<ILogger<UnitOfWork>>(),
+                options,
+                parent: null,
+                _ambientAccessor,
+                rootToken);
 
-            _logger.LogDebug("Created new root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
+            _ambientAccessor.Push(new UnitOfWorkFrame(rootToken, unitOfWork, _serviceProvider, currentFrame));
+            _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
 
-            // Create wrapper and set AsyncLocal BEFORE any async operations
-            var wrapper = new RootUnitOfWorkWrapper(unitOfWork, _current, _logger);
+            return InitializeUnitOfWorkAsync(unitOfWork, _serviceProvider, options, cancellationToken);
+        }
 
-            return InitializeUnitOfWorkAsync(unitOfWork, wrapper, options, cancellationToken);
+        public Task ExecuteRequiresNewAsync(
+            Func<IServiceProvider, CancellationToken, Task> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(operation);
+
+            return ExecuteRequiresNewCoreAsync(
+                async (provider, ct) =>
+                {
+                    await operation(provider, ct).ConfigureAwait(false);
+                    return true;
+                },
+                options,
+                cancellationToken);
+        }
+
+        public Task<TResult> ExecuteRequiresNewAsync<TResult>(
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(operation);
+
+            return ExecuteRequiresNewCoreAsync(operation, options, cancellationToken);
+        }
+
+        private async Task<TResult> ExecuteRequiresNewCoreAsync<TResult>(
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options,
+            CancellationToken cancellationToken)
+        {
+            var outerFrame = _ambientAccessor.Current;
+            if (outerFrame == null)
+            {
+                throw new InvalidOperationException(
+                    "ExecuteRequiresNewAsync requires an active outer unit of work.");
+            }
+
+            options ??= UnitOfWorkOptions.Default;
+
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var innerProvider = scope.ServiceProvider;
+
+            var token = UnitOfWorkFrameToken.New();
+            var innerUow = new UnitOfWork(
+                innerProvider.GetRequiredService<ILogger<UnitOfWork>>(),
+                options,
+                parent: null,
+                _ambientAccessor,
+                token);
+
+            _ambientAccessor.Push(new UnitOfWorkFrame(token, innerUow, innerProvider, outerFrame));
+            _logger.LogDebug("Started isolated requiresNew UnitOfWork {UnitOfWorkId} under outer {OuterId}",
+                innerUow.Id, outerFrame.UnitOfWork.Id);
+
+            TResult result = default!;
+            ExceptionDispatchInfo? primaryEDI = null;
+            var rollbackFailures = new List<Exception>();
+            Exception? cleanupFailure = null;
+
+            try
+            {
+                // The inner UoW goes through the same initialization pipeline as BeginAsync
+                // (lifecycle hooks and immediate activation) using the isolated scope's provider.
+                await InitializeUnitOfWorkAsync(innerUow, innerProvider, options, cancellationToken).ConfigureAwait(false);
+
+                result = await operation(innerProvider, cancellationToken).ConfigureAwait(false);
+                await innerUow.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (PartialUnitOfWorkCommitException ex)
+            {
+                // Partial commit is a terminal state: no overall rollback is attempted and no
+                // rolled-back event may be raised; the original exception propagates as-is.
+                primaryEDI = ExceptionDispatchInfo.Capture(ex);
+            }
+            catch (Exception ex)
+            {
+                primaryEDI = ExceptionDispatchInfo.Capture(ex);
+                if (!innerUow.IsCompleted)
+                {
+                    try
+                    {
+                        // Cleanup rollback must not be cancelled by the operation's token.
+                        await innerUow.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (UnitOfWorkBoundaryException rollbackEx)
+                    {
+                        rollbackFailures.AddRange(rollbackEx.RollbackExceptions);
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        rollbackFailures.Add(rollbackEx);
+                    }
+                }
+            }
+            finally
+            {
+                // Token-based compare-and-pop restores the outer frame on every exit path.
+                _ambientAccessor.Pop(token);
+                try
+                {
+                    await innerUow.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    cleanupFailure = ex;
+                    _logger.LogError(ex, "Failed to dispose requiresNew UnitOfWork {UnitOfWorkId}", innerUow.Id);
+                }
+
+                _logger.LogDebug("Restored ambient frame after requiresNew UnitOfWork {UnitOfWorkId}", innerUow.Id);
+            }
+
+            if (cleanupFailure != null)
+            {
+                throw new UnitOfWorkBoundaryException(
+                    "The requiresNew operation completed but cleanup of the inner unit of work failed.",
+                    primaryEDI?.SourceException,
+                    rollbackFailures.Count > 0 ? rollbackFailures : null,
+                    [cleanupFailure]);
+            }
+
+            if (rollbackFailures.Count > 0)
+            {
+                throw new UnitOfWorkBoundaryException(
+                    "The requiresNew operation failed and rollback of eligible resources also failed.",
+                    primaryEDI?.SourceException,
+                    rollbackFailures);
+            }
+
+            primaryEDI?.Throw();
+            return result;
         }
 
         private async Task<IUnitOfWork> InitializeUnitOfWorkAsync(
             UnitOfWork unitOfWork,
-            IUnitOfWork wrapper,
+            IServiceProvider provider,
             UnitOfWorkOptions options,
             CancellationToken cancellationToken)
         {
-            // Get hooks applicable to the initialization mode
-            var hooks = _serviceProvider.GetServices<IUnitOfWorkLifetimeHook>()
+            // Get hooks applicable to the initialization mode; hooks are resolved from the provider
+            // that owns the unit of work (root provider for BeginAsync, isolated scope for requiresNew).
+            var hooks = provider.GetServices<IUnitOfWorkLifetimeHook>()
                 .Where(h => h.ApplicableMode == null || h.ApplicableMode == options.InitializationMode);
 
             foreach (var hook in hooks)
@@ -90,45 +246,31 @@ namespace MiCake.DDD.Uow.Internal
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error calling lifecycle hook {HookType} for UnitOfWork {UnitOfWorkId}",
+                    _logger.LogError(ex, "Lifecycle hook {HookType} failed for UnitOfWork {UnitOfWorkId}; disposing",
                         hook.GetType().Name, unitOfWork.Id);
-                    wrapper.Dispose();
+                    await unitOfWork.DisposeAsync().ConfigureAwait(false);
                     throw;
                 }
             }
 
-            if (options.InitializationMode == TransactionInitializationMode.Immediate && unitOfWork is IUnitOfWorkInternal internalUow)
+            if (options.InitializationMode == TransactionInitializationMode.Immediate)
             {
                 // Immediately activate all registered resources
                 try
                 {
-                    await internalUow.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+                    await unitOfWork.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
                     _logger.LogDebug("Immediately activated resources for UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to activate resources during immediate initialization for UnitOfWork {UnitOfWorkId}",
                         unitOfWork.Id);
-                    wrapper.Dispose();
+                    await unitOfWork.DisposeAsync().ConfigureAwait(false);
                     throw;
                 }
             }
 
-            return wrapper;
-        }
-
-        /// <summary>
-        /// Extracts the inner UnitOfWork from a wrapper
-        /// </summary>
-        private static UnitOfWork GetInnerUnitOfWork(IUnitOfWork wrapper)
-        {
-            return wrapper switch
-            {
-                RootUnitOfWorkWrapper root => root.Inner,
-                NestedUnitOfWorkWrapper nested => nested.Inner,
-                UnitOfWork uow => uow,
-                _ => throw new InvalidOperationException($"Unknown wrapper type: {wrapper.GetType()}")
-            };
+            return unitOfWork;
         }
 
         public void Dispose()
@@ -144,194 +286,18 @@ namespace MiCake.DDD.Uow.Internal
 
             if (disposing)
             {
+                // The manager does not own the ambient unit of work; callers or request boundaries dispose it.
                 _logger.LogDebug("Disposing UnitOfWorkManager");
-
-                // Dispose current UOW if exists
-                _current.Value?.Dispose();
-                _current.Value = null;
             }
 
             _disposed = true;
         }
 
-        /// <summary>
-        /// Wrapper for root UnitOfWork to handle cleanup of AsyncLocal context
-        /// </summary>
-        private sealed class RootUnitOfWorkWrapper : UnitOfWorkWrapperBase
+        public ValueTask DisposeAsync()
         {
-            private readonly AsyncLocal<IUnitOfWork?> _currentRef;
-
-            public RootUnitOfWorkWrapper(UnitOfWork inner, AsyncLocal<IUnitOfWork?> currentRef, ILogger logger)
-                : base(inner, logger)
-            {
-                _currentRef = currentRef;
-
-                // CRITICAL: Set AsyncLocal value in constructor, which executes in caller's context
-                // Store THIS (the wrapper) as current, not the inner UnitOfWork
-                // This ensures the value persists after BeginAsync returns
-                _currentRef.Value = this;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing && _currentRef.Value == this)
-                {
-                    // Clear current if this is still the current UoW
-                    _logger.LogDebug("Clearing current UoW {UowId}", _inner.Id);
-                    _currentRef.Value = null;
-                }
-
-                base.Dispose(disposing);
-            }
-        }
-
-        /// <summary>
-        /// Wrapper for nested UnitOfWork (doesn't modify AsyncLocal)
-        /// </summary>
-        private sealed class NestedUnitOfWorkWrapper : UnitOfWorkWrapperBase
-        {
-            private readonly IUnitOfWork _parentWrapper;
-            private readonly AsyncLocal<IUnitOfWork?> _currentRef;
-
-            public NestedUnitOfWorkWrapper(UnitOfWork inner, IUnitOfWork parentWrapper, AsyncLocal<IUnitOfWork?> currentRef, ILogger logger)
-                : base(inner, logger)
-            {
-                _parentWrapper = parentWrapper;
-                _currentRef = currentRef;
-                // Update current to point to this nested UoW
-                _currentRef.Value = this;
-            }
-
-            // Override Parent to return the wrapper instead of inner UoW
-            public override IUnitOfWork? Parent => _parentWrapper;
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing && _currentRef.Value == this)
-                {
-                    // Restore parent as current when this nested UoW is disposed
-                    _currentRef.Value = _parentWrapper;
-                }
-
-                base.Dispose(disposing);
-            }
-        }
-
-        /// <summary>
-        /// Base wrapper class for UnitOfWork
-        /// </summary>
-        private abstract class UnitOfWorkWrapperBase : IUnitOfWork, IUnitOfWorkInternal
-        {
-            protected readonly UnitOfWork _inner;
-            protected readonly ILogger _logger;
-            private bool _disposed;
-
-            protected UnitOfWorkWrapperBase(UnitOfWork inner, ILogger logger)
-            {
-                _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            }
-
-            /// <summary>
-            /// Exposes the inner UnitOfWork for wrapper type checking
-            /// </summary>
-            internal UnitOfWork Inner => _inner;
-
-            public Guid Id => _inner.Id;
-            public bool IsDisposed => _inner.IsDisposed;
-            public bool IsCompleted => _inner.IsCompleted;
-            public bool HasActiveTransactions => _inner.HasActiveTransactions;
-            public System.Data.IsolationLevel? IsolationLevel => _inner.IsolationLevel;
-            public virtual IUnitOfWork? Parent => _inner.Parent;
-
-            public event EventHandler<UnitOfWorkEventArgs>? OnCommitting
-            {
-                add => _inner.OnCommitting += value;
-                remove => _inner.OnCommitting -= value;
-            }
-
-            public event EventHandler<UnitOfWorkEventArgs>? OnCommitted
-            {
-                add => _inner.OnCommitted += value;
-                remove => _inner.OnCommitted -= value;
-            }
-
-            public event EventHandler<UnitOfWorkEventArgs>? OnRollingBack
-            {
-                add => _inner.OnRollingBack += value;
-                remove => _inner.OnRollingBack -= value;
-            }
-
-            public event EventHandler<UnitOfWorkEventArgs>? OnRolledBack
-            {
-                add => _inner.OnRolledBack += value;
-                remove => _inner.OnRolledBack -= value;
-            }
-
-            public async Task CommitAsync(CancellationToken cancellationToken = default)
-            {
-                await _inner.CommitAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            public async Task RollbackAsync(CancellationToken cancellationToken = default)
-            {
-                await _inner.RollbackAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            public void RegisterResource(IUnitOfWorkResource resource)
-            {
-                if (_inner is IUnitOfWorkInternal internalUow)
-                {
-                    internalUow.RegisterResource(resource);
-                }
-            }
-
-            public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
-            {
-                return _inner.MarkAsCompletedAsync(cancellationToken);
-            }
-
-            public async Task<string> CreateSavepointAsync(string name, CancellationToken cancellationToken = default)
-            {
-                return await _inner.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
-            }
-
-            public async Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default)
-            {
-                await _inner.RollbackToSavepointAsync(name, cancellationToken).ConfigureAwait(false);
-            }
-
-            public async Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default)
-            {
-                await _inner.ReleaseSavepointAsync(name, cancellationToken).ConfigureAwait(false);
-            }
-
-            public void Dispose()
-            {
-                Dispose(disposing: true);
-                GC.SuppressFinalize(this);
-            }
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (_disposed) return;
-
-                if (disposing)
-                {
-                    _inner.Dispose();
-                }
-
-                _disposed = true;
-            }
-
-            public Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)
-            {
-                if (_inner is IUnitOfWorkInternal internalUow)
-                {
-                    return internalUow.ActivatePendingResourcesAsync(cancellationToken);
-                }
-                return Task.CompletedTask;
-            }
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
     }
 }

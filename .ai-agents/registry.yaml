@@ -1,4 +1,4 @@
-last_updated: "2026-05-23"
+last_updated: "2026-08-06"
 knowledge: {}
 skills:
   mvt-init:
@@ -34,15 +34,39 @@ skills:
   mvt-implement:
     description: "Implement features from architecture design; write production code."
     template: ".ai-agents/skills/_templates/implement-output.md"
+    knowledge:
+      _all:
+        - type: static
+          source: knowledge/principle/
+          files:
+            - coding-standards.md
   mvt-fix:
     description: "Diagnose and fix bugs or errors in the codebase."
   mvt-refactor:
     description: "Refactor existing code while preserving behavior."
+    knowledge:
+      _all:
+        - type: static
+          source: knowledge/principle/
+          files:
+            - coding-standards.md
   mvt-quick-dev:
     description: "Quickly implement small, well-scoped changes (1-3 files) without the full workflow."
+    knowledge:
+      _all:
+        - type: static
+          source: knowledge/principle/
+          files:
+            - coding-standards.md
   mvt-review:
     description: "Review code for quality, standards compliance, and best practices."
     template: ".ai-agents/skills/_templates/review-output.md"
+    knowledge:
+      _all:
+        - type: static
+          source: knowledge/principle/
+          files:
+            - coding-standards.md
   mvt-test:
     description: "Generate and design tests to validate implementations."
     template: ".ai-agents/skills/_templates/test-output.md"

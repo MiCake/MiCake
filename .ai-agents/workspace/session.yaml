@@ -1,36 +1,71 @@
 session:
-  initialized_at: ""
+  initialized_at: 2026-08-06T03:34:39.998Z
   last_synced_at: ""
-
 active_epic:
   id: ""
   title: ""
   created_at: ""
   epic_path: ""
-
 epics: []
-  # - id: "epic-20260608-ecommerce-platform"
-  #   title: "ecommerce platform"
-  #   epic_path: ".ai-agents/workspace/artifacts/epic-20260608-ecommerce-platform/epic.yaml"
-  #   status: "active"   # active | done | abandoned
-  #   updated_at: "..."
-
 active_change:
-  id: ""
-  title: ""
-  created_at: ""
-  plan_path: ""
-  epic_id: ""            # epic parent id or empty
-
-changes: []
-  # - id: "chg-001"
-  #   title: "User authentication"
-  #   plan_path: ".ai-agents/workspace/artifacts/chg-001/plan.yaml"
-  #   status: "active"           # active | done | abandoned
-  #   updated_at: "2026-05-23T14:30:00"
-
-history: []
-  # - skill: "/mvt-analyze"
-  #   completed_at: "2026-05-23T14:30:00"
-  #   summary: "Analyzed user authentication requirements"
-  #   change_id: ""   # set when work belongs to an active change
+  id: 20260806-uow-transaction-reliability
+  title: UoW Transaction Reliability
+  created_at: 2026-08-06T03:19:32.429Z
+  plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
+  epic_id: ""
+changes:
+  - id: 20260806-uow-transaction-reliability
+    title: UoW Transaction Reliability
+    plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
+    status: active
+    updated_at: 2026-08-06T11:19:25.847Z
+    epic_id: ""
+history:
+  - skill: /mvt-update-plan
+    completed_at: 2026-08-06T08:21:37.396Z
+    summary: t3-write-transaction-guards 完成：实现 ADR-002 写守卫与命令绑定后 EF Core 217/217、UoW 108/108、构建 0 警告，deliverables 已生成并标记 t5/t7 stale；计划推进至 t4-lifecycle-reentry-state（3/8）
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-implement
+    completed_at: 2026-08-06T08:59:33.049Z
+    summary: 完成 t4-lifecycle-reentry-state：SaveOperationStateAccessor per-DbContext 根操作帧（快照/事件身份/re-entry/cycle，IResettableService 池化重置）、拦截器重写驱动 root/nested/re-entry 状态机、无进展与 MaxSaveCycles 抛
+      SaveChangesReentryException、handlers 从 UoW scope provider 解析、移除全部静态/单例可变状态、EF Core 224/224 与 MiCake 258/258 通过、构建 0 警告；deliverables 已生成并标记 t5/t7 stale
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-06T10:02:18.111Z
+    summary: 完成 t3/t4 独立复审：Request changes，发现 6 个 Critical、5 个 Warning、2 个 Suggestion；默认 MiCakeDbContext 写守卫旁路、未知 non-query 放行、静态工厂跨 host 污染、re-entry 未标 rollback-only、事件去重未接线及 post-save re-entry
+      重入为阻断问题；24/24 聚焦测试通过但覆盖不足，用户选择不写 review artifact
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-06T10:33:12.091Z
+    summary: 修复 t3/t4 复审 6 Critical+4 Warning+2 Suggestion：默认 MiCakeDbContext 无 provider 写路径 fail-fast、未知 non-query 保守拒绝且仅 Migrations 放行、移除模块级静态工厂跨 host 污染、re-entry 异常标记 UoW rollback-only、事件实例去重接入
+      DomainEventDispatchTracker、被抑制嵌套回调 no-op 且按吸收/无进展判别收敛；回归测试新增约 15 个，EF Core 234/234、MiCake 260/260、聚焦 59/59、生产构建 0 警告；用户选择不写 fix-notes
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-06T10:37:26.183Z
+    summary: 复审 t3/t4 修复：Approve with comments，0 Critical、4 Warning、4 Suggestion；6 个原 Critical 均正确修复（fail-fast/命令分类/静态工厂移除/rollback-only/事件去重/吸收-无进展判别）；新 Warning 为样本与 README 继承模式仍无写守卫、事件 tracker 未绑定 UoW
+      生命周期、follow-up 周期控制流脆弱、池化测试用 InMemory；234/234 EF Core 与 260/260 MiCake 测试通过，用户选择不写 review artifact
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-update-plan
+    completed_at: 2026-08-06T10:49:34.854Z
+    summary: t4-lifecycle-reentry-state 完成：实现+复审修复（fail-fast 守卫、命令分类、静态工厂移除、rollback-only、事件去重、吸收-无进展判别）后复审 Approve with comments 0 Critical、EF Core 234/234 与 MiCake 260/260、构建 0 警告；计划推进至
+      t5-repository-contracts（4/8）
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-implement
+    completed_at: 2026-08-06T11:02:51.941Z
+    summary: 完成 t5-repository-contracts：IRepository 移除 AddAndReturnAsync/SaveChangesAsync/ClearChangeTrackingAsync（UoW 唯一持久化所有者）、DeleteByIdAsync 加载+tracked 生命周期删除（缺失 no-op）、EFRepositoryBase 移除仓库级 context
+      cache 改帧稳定工厂透传、新增 IEFCorePhysicalOperationExecutor 显式物理删除（事务内/绕过生命周期）、分页全序（主键升序追加+keyless 拒绝）；新增契约测试 6 个，EF Core 239/239、MiCake 260/260、构建 0 警告；deliverables 已生成并标记 t6/t7 stale
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-06T11:07:30.432Z
+    summary: 完成 t5 独立评审：Request changes，发现 2 Critical（物理删除在未安装命令拦截器时可事务外自动提交且 rollback 无效；shadow 主键分页因 CLR 成员表达式崩溃）、1 Warning（无 UoW 仓储测试 mock 掉真实 factory 并宣称错误 fallback 契约）、1 Suggestion；聚焦测试 33/33
+      通过但未覆盖阻断路径，用户选择不写 review artifact
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-06T11:17:41.633Z
+    summary: 修复 t5 评审 2 Critical+1 Warning+1 Suggestion：物理删除执行前显式激活 UoW 事务（不依赖命令拦截器，新增无拦截器 SQLite 回滚测试）；分页改按 EF IProperty 构造排序表达式（shadow 走 EF.Property，新增纯 shadow/复合含 shadow/部分键 tie-breaker 3
+      测试）；RepositoryWithoutUoWTests 重写为真实 factory 契约测试（默认拒绝+显式 bypass）；接口文档补 ChangeTracker 说明；EF Core 240/240、MiCake 260/260、构建 0 警告，用户选择不写 fix-notes
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-update-plan
+    completed_at: 2026-08-06T11:19:25.847Z
+    summary: t5-repository-contracts 完成：实现 ADR-001 仓储契约 + 独立复审 2 Critical/1 Warning 修复（物理删除显式激活事务、shadow/复合键分页、无 UoW 契约测试重写）后 EF Core 240/240、MiCake 260/260、构建 0 警告；计划推进至 t6-boundary-migration-docs（5/8）
+    change_id: 20260806-uow-transaction-reliability

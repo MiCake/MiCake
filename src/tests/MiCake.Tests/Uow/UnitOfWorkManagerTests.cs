@@ -1,4 +1,5 @@
 using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Exceptions;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,253 +14,109 @@ using Xunit;
 namespace MiCake.Tests.Uow
 {
     /// <summary>
-    /// Unit tests for Unit
-    /// Tests cover both Lazy and Immediate initialization modes, nested transactions, and lifecycle hooks
+    /// Unit tests for UnitOfWorkManager: ambient frames, shared nested units of work,
+    /// lifecycle hooks, and isolated requiresNew execution.
     /// </summary>
     public class UnitOfWorkManagerTests
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<UnitOfWorkManager> _logger;
+        private readonly AmbientUnitOfWorkAccessor _ambientAccessor;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly UnitOfWorkManager _manager;
 
         public UnitOfWorkManagerTests()
         {
             var services = new ServiceCollection();
-            var loggerFactory = LoggerFactory.Create(builder => { });
-            _logger = loggerFactory.CreateLogger<UnitOfWorkManager>();
-            services.AddSingleton(_logger);
-            services.AddSingleton(loggerFactory.CreateLogger<UnitOfWork>());
+            services.AddLogging();
+            services.AddSingleton<AmbientUnitOfWorkAccessor>();
+            services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
+            services.AddScoped<IStandaloneUnitOfWorkExecutor, StandaloneUnitOfWorkExecutor>();
             _serviceProvider = services.BuildServiceProvider();
 
-            _manager = new UnitOfWorkManager(_serviceProvider, _logger);
+            _ambientAccessor = _serviceProvider.GetRequiredService<AmbientUnitOfWorkAccessor>();
+            _scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+            var logger = _serviceProvider.GetRequiredService<ILogger<UnitOfWorkManager>>();
+            _manager = new UnitOfWorkManager(_serviceProvider, _ambientAccessor, _scopeFactory, logger);
         }
 
         #region BeginAsync Tests
 
         [Fact]
-        public async Task BeginAsync_WithDefaultOptions_ShouldCreateLazyUnitOfWork()
+        public async Task BeginAsync_WithDefaultOptions_ShouldCreateRootUnitOfWork()
         {
-            // Act
             var uow = await _manager.BeginAsync();
 
-            // Assert
             Assert.NotNull(uow);
             Assert.NotEqual(Guid.Empty, uow.Id);
             Assert.Null(uow.Parent);
+            Assert.False(uow.IsReadOnly);
             Assert.False(uow.IsCompleted);
-        }
-
-        [Fact]
-        public async Task BeginAsync_WithImmediateMode_ShouldCreateImmediateUnitOfWork()
-        {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                InitializationMode = TransactionInitializationMode.Immediate
-            };
-
-            // Act
-            var uow = await _manager.BeginAsync(options);
-
-            // Assert
-            Assert.NotNull(uow);
-            Assert.NotEqual(Guid.Empty, uow.Id);
-        }
-
-        [Fact]
-        public async Task BeginAsync_WithReadOnlyOption_ShouldCreateReadOnlyUnitOfWork()
-        {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                IsReadOnly = true
-            };
-
-            // Act
-            var uow = await _manager.BeginAsync(options);
-
-            // Assert
-            Assert.NotNull(uow);
-            // Read-only check: nested UoWs are always read-only, can't test directly
         }
 
         [Fact]
         public async Task BeginAsync_WithIsolationLevel_ShouldCreateUnitOfWorkWithSpecifiedIsolationLevel()
         {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                IsolationLevel = IsolationLevel.Serializable
-            };
+            var options = new UnitOfWorkOptions { IsolationLevel = IsolationLevel.Serializable };
 
-            // Act
             var uow = await _manager.BeginAsync(options);
 
-            // Assert
-            Assert.NotNull(uow);
             Assert.Equal(IsolationLevel.Serializable, uow.IsolationLevel);
         }
 
         [Fact]
-        public async Task BeginAsync_WithTimeout_ShouldCreateUnitOfWorkWithSpecifiedTimeout()
+        public async Task BeginAsync_WithReadOnlyOption_ShouldCreateReadOnlyUnitOfWork()
         {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                Timeout = 60
-            };
+            var uow = await _manager.BeginAsync(UnitOfWorkOptions.ReadOnly);
 
-            // Act
-            var uow = await _manager.BeginAsync(options);
-
-            // Assert
-            Assert.NotNull(uow);
-            // Timeout is internal to options, can't be verified via IUnitOfWork interface
+            Assert.True(uow.IsReadOnly);
         }
 
-        #endregion
-
-        #region Nested Transaction Tests
-
         [Fact]
-        public async Task BeginAsync_WithExistingAmbientUow_ShouldCreateNestedUnitOfWork()
+        public async Task BeginAsync_WithExistingAmbientUow_ShouldCreateSharedNestedUnitOfWork()
         {
-            // Arrange
             using var outerUow = await _manager.BeginAsync();
 
-            // Act
             using var innerUow = await _manager.BeginAsync();
 
-            // Assert
             Assert.NotNull(innerUow);
             Assert.Equal(outerUow.Id, innerUow.Parent?.Id);
+            Assert.Same(outerUow, _manager.Current?.Parent);
         }
 
         [Fact]
-        public async Task BeginAsync_WithRequiresNew_ShouldCreateNewRootUnitOfWork()
+        public async Task BeginAsync_CalledMultipleTimes_ShouldCreateNestedChain()
         {
-            // Arrange
-            var outerUow = await _manager.BeginAsync();
+            using var uow1 = await _manager.BeginAsync();
+            using var uow2 = await _manager.BeginAsync();
+            using var uow3 = await _manager.BeginAsync();
 
-            // Act
-            var newRootUow = await _manager.BeginAsync(requiresNew: true);
-
-            // Assert
-            Assert.NotNull(newRootUow);
-            Assert.Null(newRootUow.Parent);
-            Assert.NotSame(outerUow, newRootUow);
+            Assert.Same(uow1, uow2.Parent);
+            Assert.Same(uow2, uow3.Parent);
         }
 
         [Fact]
-        public async Task BeginAsync_NestedWithDifferentOptions_ShouldInheritParentTransaction()
+        public async Task BeginAsync_AfterCompletion_ShouldCreateNewRoot()
         {
-            // Arrange
-            var outerOptions = new UnitOfWorkOptions
+            using (var uow1 = await _manager.BeginAsync())
             {
-                IsolationLevel = IsolationLevel.ReadCommitted
-            };
-            var innerOptions = new UnitOfWorkOptions
-            {
-                IsolationLevel = IsolationLevel.Serializable  // Should be ignored
-            };
+                await uow1.CommitAsync();
+            }
 
-            using var outerUow = await _manager.BeginAsync(outerOptions);
+            using var uow2 = await _manager.BeginAsync();
 
-            // Act
-            using var innerUow = await _manager.BeginAsync(innerOptions);
-
-            // Assert
-            Assert.Equal(outerUow?.Id, innerUow.Parent?.Id);
-        }
-
-        #endregion
-
-        #region Lifecycle Hook Tests
-
-        [Fact]
-        public async Task BeginAsync_WithLifecycleHooks_ShouldInvokeApplicableHooks()
-        {
-            // Arrange
-            var hookInvoked = false;
-            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
-            mockHook.Setup(h => h.ApplicableMode).Returns(TransactionInitializationMode.Immediate);
-            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
-                .Callback(() => hookInvoked = true)
-                .Returns(Task.CompletedTask);
-
-            var services = new ServiceCollection();
-            services.AddSingleton(_logger);
-            services.AddSingleton<ILogger<UnitOfWork>>(NullLogger<UnitOfWork>.Instance);
-            services.AddSingleton(mockHook.Object);
-            var serviceProvider = services.BuildServiceProvider();
-
-            var manager = new UnitOfWorkManager(serviceProvider, _logger);
-            var options = new UnitOfWorkOptions
-            {
-                InitializationMode = TransactionInitializationMode.Immediate
-            };
-
-            // Act
-            var uow = await manager.BeginAsync(options);
-
-            // Assert
-            Assert.True(hookInvoked);
+            Assert.Null(uow2.Parent);
+            Assert.False(uow2.IsCompleted);
         }
 
         [Fact]
-        public async Task BeginAsync_WithNonApplicableHook_ShouldNotInvokeHook()
+        public async Task BeginAsync_NestedWithDifferentOptions_ShouldInheritParentIsolationAndReadOnly()
         {
-            // Arrange
-            var hookInvoked = false;
-            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
-            mockHook.Setup(h => h.ApplicableMode).Returns(TransactionInitializationMode.Immediate);
-            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
-                .Callback(() => hookInvoked = true)
-                .Returns(Task.CompletedTask);
+            using var outerUow = await _manager.BeginAsync(new UnitOfWorkOptions { IsolationLevel = IsolationLevel.ReadCommitted });
 
-            var services = new ServiceCollection();
-            services.AddSingleton(_logger);
-            services.AddSingleton<ILogger<UnitOfWork>>(NullLogger<UnitOfWork>.Instance);
-            services.AddSingleton(mockHook.Object);
-            var serviceProvider = services.BuildServiceProvider();
+            using var innerUow = await _manager.BeginAsync(new UnitOfWorkOptions { IsolationLevel = IsolationLevel.Serializable });
 
-            var manager = new UnitOfWorkManager(serviceProvider, _logger);
-            var options = new UnitOfWorkOptions
-            {
-                InitializationMode = TransactionInitializationMode.Lazy  // Different from hook's mode
-            };
-
-            // Act
-            var uow = await manager.BeginAsync(options);
-
-            // Assert
-            Assert.False(hookInvoked);
-        }
-
-        [Fact]
-        public async Task BeginAsync_WithApplicableToAllModesHook_ShouldAlwaysInvokeHook()
-        {
-            // Arrange
-            var hookInvoked = false;
-            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
-            mockHook.Setup(h => h.ApplicableMode).Returns((TransactionInitializationMode?)null);  // Applies to all
-            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
-                .Callback(() => hookInvoked = true)
-                .Returns(Task.CompletedTask);
-
-            var services = new ServiceCollection();
-            services.AddSingleton(_logger);
-            services.AddSingleton<ILogger<UnitOfWork>>(NullLogger<UnitOfWork>.Instance);
-            services.AddSingleton(mockHook.Object);
-            var serviceProvider = services.BuildServiceProvider();
-
-            var manager = new UnitOfWorkManager(serviceProvider, _logger);
-
-            // Act
-            var uow = await manager.BeginAsync();  // Lazy mode
-
-            // Assert
-            Assert.True(hookInvoked);
+            Assert.Equal(IsolationLevel.ReadCommitted, innerUow.IsolationLevel);
+            Assert.Equal(outerUow.IsReadOnly, innerUow.IsReadOnly);
         }
 
         #endregion
@@ -269,124 +126,260 @@ namespace MiCake.Tests.Uow
         [Fact]
         public void Current_WithNoActiveUow_ShouldReturnNull()
         {
-            // Act
-            var current = _manager.Current;
-
-            // Assert
-            Assert.Null(current);
+            Assert.Null(_manager.Current);
         }
 
         [Fact]
         public async Task Current_WithActiveUow_ShouldReturnActiveUow()
         {
-            // Arrange
             var uow = await _manager.BeginAsync();
 
-            // Act
-            var current = _manager.Current;
+            Assert.Same(uow, _manager.Current);
 
-            // Assert
-            Assert.Same(uow, current);
-        }
-
-        [Fact]
-        public async Task BeginAsync_LazyMode_ReturnsWrapper_IsInternal()
-        {
-            // Arrange & Act
-            var uow = await _manager.BeginAsync(); // Lazy mode by default
-
-            Assert.True(uow is IUnitOfWorkInternal);
-            Assert.NotNull(uow);
             await uow.MarkAsCompletedAsync();
         }
 
         [Fact]
-        public async Task RegisterResource_OnManager_ShouldRegisterWithInnerUow()
+        public async Task Current_AfterCompletion_ShouldReturnOuterOrNull()
         {
-            // Arrange
-            using var uow = await _manager.BeginAsync();
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.ResourceIdentifier).Returns(Guid.NewGuid().ToString());
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>())).Verifiable();
+            var outer = await _manager.BeginAsync();
+            var inner = await _manager.BeginAsync();
+            Assert.Same(inner, _manager.Current);
 
-            // Act
-            (uow as IUnitOfWorkInternal).RegisterResource(mockResource.Object);
+            await inner.CommitAsync();
+            Assert.Same(outer, _manager.Current);
 
-            // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task RegisterResource_DuplicateResource_ShouldNotCallPrepareTwice()
-        {
-            // Arrange
-            using var uow = await _manager.BeginAsync();
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            var id = Guid.NewGuid().ToString();
-            mockResource.Setup(r => r.ResourceIdentifier).Returns(id);
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>())).Verifiable();
-
-            // Act
-            (uow as IUnitOfWorkInternal).RegisterResource(mockResource.Object);
-            (uow as IUnitOfWorkInternal).RegisterResource(mockResource.Object);
-
-            // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task UnitOfWork_OnCommitting_OnCommitted_ShouldFireEvents()
-        {
-            // Arrange
-            using var uow = await _manager.BeginAsync();
-            var onCommittingCalled = false;
-            var onCommittedCalled = false;
-
-            uow.OnCommitting += (s, e) => { onCommittingCalled = true; };
-            uow.OnCommitted += (s, e) => { onCommittedCalled = true; };
-
-            // Act
-            await uow.CommitAsync();
-
-            // Assert
-            Assert.True(onCommittingCalled);
-            Assert.True(onCommittedCalled);
+            await outer.CommitAsync();
+            Assert.Null(_manager.Current);
         }
 
         #endregion
 
-        #region Edge Cases
+        #region Lifecycle Hook Tests
 
         [Fact]
-        public async Task BeginAsync_CalledMultipleTimes_ShouldCreateMultipleNestedUnitsOfWork()
+        public async Task BeginAsync_WithApplicableHook_ShouldInvokeHook()
         {
-            // Act
-            using var uow1 = await _manager.BeginAsync();
-            using var uow2 = await _manager.BeginAsync();
-            using var uow3 = await _manager.BeginAsync();
+            var hookInvoked = false;
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
+            mockHook.Setup(h => h.ApplicableMode).Returns(TransactionInitializationMode.Immediate);
+            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
+                .Callback(() => hookInvoked = true)
+                .Returns(Task.CompletedTask);
 
-            // Assert
-            Assert.NotNull(uow1);
-            Assert.NotNull(uow2);
-            Assert.NotNull(uow3);
-            Assert.Same(uow1, uow2.Parent);
-            Assert.Same(uow2, uow3.Parent);
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton(mockHook.Object);
+            var provider = services.BuildServiceProvider();
+            var manager = new UnitOfWorkManager(
+                provider,
+                new AmbientUnitOfWorkAccessor(),
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                provider.GetRequiredService<ILogger<UnitOfWorkManager>>());
+
+            var uow = await manager.BeginAsync(new UnitOfWorkOptions { InitializationMode = TransactionInitializationMode.Immediate });
+
+            Assert.True(hookInvoked);
         }
 
         [Fact]
-        public async Task BeginAsync_WithCancellationToken_ShouldPassTokenToLifecycleHooks()
+        public async Task BeginAsync_WithNonApplicableHook_ShouldNotInvokeHook()
         {
-            // Arrange
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
+            var hookInvoked = false;
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
+            mockHook.Setup(h => h.ApplicableMode).Returns(TransactionInitializationMode.Immediate);
+            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
+                .Callback(() => hookInvoked = true)
+                .Returns(Task.CompletedTask);
 
-            // Act & Assert
-            // Should not throw, but lifecycle hooks would receive the cancelled token
-            var uow = await _manager.BeginAsync(cancellationToken: cts.Token);
-            Assert.NotNull(uow);
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton(mockHook.Object);
+            var provider = services.BuildServiceProvider();
+            var manager = new UnitOfWorkManager(
+                provider,
+                new AmbientUnitOfWorkAccessor(),
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                provider.GetRequiredService<ILogger<UnitOfWorkManager>>());
+
+            var uow = await manager.BeginAsync(new UnitOfWorkOptions { InitializationMode = TransactionInitializationMode.Lazy });
+
+            Assert.False(hookInvoked);
+        }
+
+        [Fact]
+        public async Task BeginAsync_ImmediateMode_ShouldActivateResourcesRegisteredByHook()
+        {
+            var resource = new TestUowResource();
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
+            mockHook.Setup(h => h.ApplicableMode).Returns((TransactionInitializationMode?)null);
+            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
+                .Callback((IUnitOfWork uow, UnitOfWorkOptions options, CancellationToken ct) =>
+                    ((IUnitOfWorkInternal)uow).RegisterResource(resource))
+                .Returns(Task.CompletedTask);
+
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton(mockHook.Object);
+            var provider = services.BuildServiceProvider();
+            var manager = new UnitOfWorkManager(
+                provider,
+                new AmbientUnitOfWorkAccessor(),
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                provider.GetRequiredService<ILogger<UnitOfWorkManager>>());
+
+            var uow = await manager.BeginAsync(new UnitOfWorkOptions { InitializationMode = TransactionInitializationMode.Immediate });
+
+            Assert.Equal(1, resource.EnsureTransactionCount);
+            Assert.True(uow.HasActiveTransactions);
+        }
+
+        #endregion
+
+        #region ExecuteRequiresNewAsync Tests
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_WithoutOuterUow_ShouldThrow()
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _manager.ExecuteRequiresNewAsync((sp, ct) => Task.CompletedTask));
+        }
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_ShouldCommitInnerAndRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+            TestUowResource? innerResource = null;
+
+            await _manager.ExecuteRequiresNewAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = innerManager.Current!;
+                Assert.Null(inner.Parent);
+                Assert.NotEqual(outer.Id, inner.Id);
+
+                innerResource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(innerResource);
+            });
+
+            Assert.NotNull(innerResource);
+            Assert.Equal(1, innerResource!.CommitCount);
+            Assert.Equal(0, innerResource.RollbackCount);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_OperationFailure_ShouldRollbackInnerAndRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+            TestUowResource? innerResource = null;
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteRequiresNewAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = innerManager.Current!;
+                innerResource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(innerResource);
+
+                throw new InvalidOperationException("boom");
+            }));
+
+            Assert.NotNull(innerResource);
+            Assert.Equal(1, innerResource!.RollbackCount);
+            Assert.Equal(0, innerResource.CommitCount);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_CommitFailure_ShouldRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+
+            // A single resource failing to commit means zero resources committed: the original
+            // commit exception is preserved rather than reported as a partial commit.
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteRequiresNewAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = innerManager.Current!;
+                var resource = new TestUowResource { CommitException = new InvalidOperationException("commit failed") };
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+            }));
+
+            Assert.Equal("commit failed", ex.Message);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_OperationAndRollbackFailure_ShouldThrowBoundaryException()
+        {
+            using var outer = await _manager.BeginAsync();
+
+            var ex = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => _manager.ExecuteRequiresNewAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = innerManager.Current!;
+                var resource = new TestUowResource { RollbackException = new InvalidOperationException("rollback failed") };
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+
+                throw new InvalidOperationException("boom");
+            }));
+
+            Assert.IsType<InvalidOperationException>(ex.PrimaryException);
+            Assert.Single(ex.RollbackExceptions);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_ShouldReturnResultAndCommit()
+        {
+            using var outer = await _manager.BeginAsync();
+            TestUowResource? innerResource = null;
+
+            var result = await _manager.ExecuteRequiresNewAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = innerManager.Current!;
+                innerResource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(innerResource);
+                return 42;
+            });
+
+            Assert.Equal(42, result);
+            Assert.Equal(1, innerResource!.CommitCount);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteRequiresNewAsync_InnerBeginAsync_ShouldCreateNestedUnderInner()
+        {
+            using var outer = await _manager.BeginAsync();
+
+            await _manager.ExecuteRequiresNewAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                using var nested = await innerManager.BeginAsync();
+                Assert.NotNull(nested.Parent);
+                Assert.Same(nested, innerManager.Current);
+                Assert.Same(nested.Parent, innerManager.Current!.Parent);
+            });
+        }
+
+        #endregion
+
+        #region Disposal Tests
+
+        [Fact]
+        public async Task ManagerDispose_ShouldNotDisposeAmbientUnitOfWork()
+        {
+            var uow = await _manager.BeginAsync();
+
+            _manager.Dispose();
+
+            Assert.False(uow.IsDisposed);
+
+            await uow.MarkAsCompletedAsync();
         }
 
         #endregion
     }
 }
-

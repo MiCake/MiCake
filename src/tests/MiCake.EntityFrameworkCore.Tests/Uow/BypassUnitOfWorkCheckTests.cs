@@ -279,6 +279,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             services.AddLogging();
 
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
+            var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
+            services.AddSingleton(ambientAccessorType!);
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
@@ -307,40 +309,57 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         [Fact]
         public async Task Integration_WithBypassEnabled_ShouldStillWorkWithUoW()
         {
-            // Arrange
-            var services = new ServiceCollection();
-            var dbName = Guid.NewGuid().ToString();
-            services.AddDbContext<TestDbContext>(opt => opt.UseInMemoryDatabase(dbName));
-            services.AddLogging();
-
-            var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
-            services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
-            services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
-
-            // Enable bypass
-            var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
+            // Arrange - file-backed SQLite because the UoW now requires explicit transactions,
+            // which the InMemory provider does not support.
+            var dbPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"micake-bypass-{Guid.NewGuid():N}.db");
+            ServiceProvider? provider = null;
+            try
             {
-                BypassUnitOfWorkCheck = true
-            };
-            services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(efCoreOptions);
+                var services = new ServiceCollection();
+                services.AddDbContext<TestDbContext>(opt => opt.UseSqlite($"Data Source={dbPath};Pooling=False"));
+                services.AddLogging();
 
-            var provider = services.BuildServiceProvider();
+                var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
+                var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
+                services.AddSingleton(ambientAccessorType!);
+                services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
+                services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
-            var factory = provider.GetRequiredService<IEFCoreContextFactory<TestDbContext>>();
-            var uowManager = provider.GetRequiredService<IUnitOfWorkManager>();
-            var dbContext = provider.GetRequiredService<TestDbContext>();
+                // Enable bypass
+                var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
+                {
+                    BypassUnitOfWorkCheck = true
+                };
+                services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(efCoreOptions);
 
-            // Act - Use DbContext within UoW (normal pattern)
-            using (var uow = await uowManager.BeginAsync())
-            {
-                var wrapper = factory.GetDbContextWrapper();
-                dbContext.Set<SampleEntity>().Add(new SampleEntity { Name = "Test" });
-                await uow.CommitAsync();
+                var provider2 = services.BuildServiceProvider();
+                provider = provider2;
+
+                var factory = provider.GetRequiredService<IEFCoreContextFactory<TestDbContext>>();
+                var uowManager = provider.GetRequiredService<IUnitOfWorkManager>();
+                var dbContext = provider.GetRequiredService<TestDbContext>();
+                await dbContext.Database.EnsureCreatedAsync();
+
+                // Act - Use DbContext within UoW (normal pattern)
+                using (var uow = await uowManager.BeginAsync())
+                {
+                    var wrapper = factory.GetDbContextWrapper();
+                    dbContext.Set<SampleEntity>().Add(new SampleEntity { Name = "Test" });
+                    await uow.CommitAsync();
+                }
+
+                // Assert
+                var count = await dbContext.Set<SampleEntity>().CountAsync();
+                Assert.Equal(1, count);
             }
-
-            // Assert
-            var count = await dbContext.Set<SampleEntity>().CountAsync();
-            Assert.Equal(1, count);
+            finally
+            {
+                provider?.Dispose();
+                if (System.IO.File.Exists(dbPath))
+                {
+                    System.IO.File.Delete(dbPath);
+                }
+            }
         }
 
         [Fact]
@@ -353,6 +372,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             services.AddLogging();
 
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
+            var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
+            services.AddSingleton(ambientAccessorType!);
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 

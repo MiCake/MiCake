@@ -1,0 +1,263 @@
+version: 1
+change_id: 20260806-uow-transaction-reliability
+title: UoW Transaction Reliability
+created_at: 2026-08-06T12:03:44+08:00
+updated_at: 2026-08-06T11:19:17.307Z
+status: in_progress
+current_tasks:
+  default: t6-boundary-migration-docs
+tasks:
+  - id: t1-uow-runtime-contracts
+    title: Rebuild provider-neutral UoW runtime
+    status: done
+    completed_at: 2026-08-06T06:35:17.379Z
+    depends_on: []
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake/DDD/Uow/IUnitOfWork.cs
+        - src/framework/MiCake/DDD/Uow/IUnitOfWorkManager.cs
+        - src/framework/MiCake/DDD/Uow/IUnitOfWorkResource.cs
+        - src/framework/MiCake/DDD/Uow/IStandaloneUnitOfWorkExecutor.cs
+        - src/framework/MiCake/DDD/Uow/UnitOfWorkOptions.cs
+        - src/framework/MiCake/DDD/Uow/UnitOfWorkCommitOutcome.cs
+        - src/framework/MiCake/DDD/Uow/Internal/UnitOfWork.cs
+        - src/framework/MiCake/DDD/Uow/Internal/UnitOfWorkManager.cs
+        - src/framework/MiCake/DDD/Uow/Internal/AmbientUnitOfWorkAccessor.cs
+        - src/framework/MiCake/DDD/Uow/Internal/StandaloneUnitOfWorkExecutor.cs
+        - src/framework/MiCake/Modules/MiCakeEssentialModule.cs
+        - src/tests/MiCake.Tests/Uow
+        - src/tests/MiCake.Tests/Uow/UnitOfWorkReviewRegressionTests.cs
+    notes: >
+      Implement ADR-001, ADR-003, ADR-006, ADR-007, and ADR-011 in the provider-neutral MiCake package. Remove PersistenceStrategy, Timeout, IDbContextWrapper, and requiresNew boolean overloads; add
+      explicit resource, flush, ambient-frame, standalone, partial-commit, event, and async-disposal contracts. Preserve shared nested rollback-only behavior and deterministic registration-order
+      coordination without referencing EF Core.
+    acceptance:
+      - Every writable root UoW uses explicit resource transactions; read-only UoWs reject resource flush and write activation
+      - FlushAsync activates and flushes resources in registration order without committing or raising commit events
+      - Shared nested commit performs no physical commit, while nested rollback marks the root rollback-only
+      - Partial commit and rollback failure expose per-resource outcomes and preserve all primary and cleanup exceptions
+      - ExecuteRequiresNewAsync restores the previous ambient frame on success, failure, cancellation, commit failure, and rollback failure
+      - Standalone execution rejects an existing ambient UoW and owns its async scope, UoW, commit, rollback, and disposal lifecycle
+      - MiCake.Tests UoW tests pass and dotnet build src/framework/MiCake/MiCake.csproj succeeds
+    deliverables:
+      freshness: current
+  - id: t2-ef-resource-identity
+    title: Implement EF resource and context identity
+    status: done
+    completed_at: 2026-08-06T07:54:16.107Z
+    depends_on:
+      - t1-uow-runtime-contracts
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake.EntityFrameworkCore/Uow/EFCoreContextFactory.cs
+        - src/framework/MiCake.EntityFrameworkCore/Uow/EFCoreDbContextWrapper.cs
+        - src/framework/MiCake.EntityFrameworkCore/Uow/AddCoreUowServicesExtension.cs
+        - src/framework/MiCake.EntityFrameworkCore/Uow/ImmediateTransactionInitializer.cs
+        - src/framework/MiCake.EntityFrameworkCore/Modules/MiCakeEFCoreModule.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Uow
+    notes: "实现+两轮修复完成：savepoint 委托、flush 前置事务、commit/rollback 终态状态机与 cleanup 传播、DI lifetime 启动验证；复审 0 Critical（Approve with comments）。Follow-up: W-1 FlushAsync 未封闭 terminal 状态（commit 后调用可触发 EF
+      隐式事务，需在后续任务封闭）；W-2 ValidateDbContextLifetimes 缺 pooled 测试；S-1 反射注入测试脆弱、S-2 _preparedIsReadOnly 死字段、S-3 启动验证重复解析可合并"
+    acceptance:
+      - The same ambient frame and DbContext type always resolve the same context and resource instance
+      - A context or resource bound to one live frame cannot be reused by another frame
+      - Immediate mode resolves and activates every registered DbContext type without reflective best-effort probing
+      - Scoped and supported pooled registrations pass validation; unsupported lifetimes and retrying strategies fail with context-specific diagnostics
+      - Provider rollback and asynchronous disposal failures propagate to the UoW boundary
+      - EF Core resource/context tests pass and dotnet build src/framework/MiCake.EntityFrameworkCore/MiCake.EntityFrameworkCore.csproj succeeds
+    deliverables:
+      freshness: current
+  - id: t3-write-transaction-guards
+    title: Guard and bind every EF write
+    status: done
+    completed_at: 2026-08-06T08:21:26.805Z
+    depends_on:
+      - t2-ef-resource-identity
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake.EntityFrameworkCore/Internal/EFCoreWriteCoordinator.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeDbCommandInterceptor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeEFCoreInterceptor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Extensions/DbContextExtensions.cs
+        - src/framework/MiCake.EntityFrameworkCore/MiCakeDbContext.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Internal
+    notes: 实现 ADR-002 写守卫与命令绑定：EFCoreWriteCoordinator（无/只读 UoW 拒绝、帧稳定 wrapper、事务激活与绑定）、MiCakeDbCommandInterceptor（ExecuteSqlRaw/BulkUpdate/Migrations 分类实证修正）、SavingChanges 前置激活、DDL 无 UoW 放行；拦截器经 scope
+      provider 解析；14 个新测试，EF Core 217/217、UoW 108/108、构建 0 警告；deliverables 已生成并标记 t5/t7 stale；待独立复审
+    acceptance:
+      - The first direct SaveChanges command executes inside the active UoW transaction
+      - The first ExecuteUpdate, ExecuteDelete, and ExecuteSqlRaw command is explicitly bound to the activated transaction
+      - Missing-UoW, read-only, connection-mismatch, conflicting-transaction, and unavailable-provider-transaction cases fail before SQL execution
+      - Sync writes either activate and bind synchronously or fail clearly when the provider cannot support the path
+      - Multiple hosts in one process cannot overwrite or clear each other's interceptor configuration
+      - Focused write coordinator/interceptor tests pass and the EF Core project builds cleanly
+    deliverables:
+      freshness: current
+  - id: t4-lifecycle-reentry-state
+    title: Isolate save lifecycle and re-entry
+    status: done
+    completed_at: 2026-08-06T10:49:28.061Z
+    depends_on:
+      - t3-write-transaction-guards
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake.EntityFrameworkCore/Internal/SaveOperationStateAccessor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeEFCoreInterceptor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/LazyEFSaveChangesLifetime.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeInterceptorFactory.cs
+        - src/framework/MiCake.EntityFrameworkCore/MiCakeEFCoreOptions.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Internal/SaveOperationConcurrencyTests.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/EFCoreWriteCoordinator.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeDbCommandInterceptor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeSaveOperationOptionsExtension.cs
+        - src/framework/MiCake.EntityFrameworkCore/Internal/SaveOperationEntityHelper.cs
+        - src/framework/MiCake.EntityFrameworkCore/Extensions/DbContextExtensions.cs
+        - src/framework/MiCake.EntityFrameworkCore/Modules/MiCakeEFCoreModule.cs
+        - src/framework/MiCake/DDD/Uow/Internal/IUnitOfWorkInternal.cs
+        - src/framework/MiCake/DDD/Uow/Internal/UnitOfWork.cs
+        - src/framework/MiCake/DDD/Infrastructure/Lifetime/DomainEventDispatchTracker.cs
+        - src/framework/MiCake/DDD/Infrastructure/Lifetime/DomainEventDispatchLifetime.cs
+        - src/framework/MiCake/Modules/MiCakeEssentialModule.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Internal/SaveOperationReentryFailureTests.cs
+        - src/tests/MiCake.Tests/DomainEventDispatchLifetime_Tests.cs
+    notes: "实现+复审修复完成：fail-fast 写守卫、命令分类、静态工厂移除、re-entry rollback-only、事件实例去重、吸收-无进展判别；复审 Approve with comments 0 Critical；EF Core 234/234、MiCake 260/260、构建 0 警告。Follow-up: W-1 样本/README 继承模式仍无写守卫（t6
+      迁移）；W-2 DomainEventDispatchTracker 未绑定 UoW 生命周期（建议 t7 前修复）；W-3 follow-up 周期控制流依赖嵌套回调；W-4 池化测试用 InMemory（t7 关系型验收）"
+    acceptance:
+      - Post-save handlers receive the Added, Modified, or Deleted state captured before persistence
+      - Concurrent contexts and shared interceptor/options instances never exchange handlers, snapshots, or event identities
+      - Success, pre-save failure, database failure, concurrency failure, cancellation, post-save failure, pool reset, and disposal all release operation state
+      - Nested SaveChanges remains in the same transaction, dispatches each event instance at most once, and terminates on quiescence
+      - No-progress and MaxSaveCycles paths throw SaveChangesReentryException and leave the UoW rollback-only
+      - Save lifecycle concurrency/re-entry tests pass and the EF Core project builds cleanly
+    deliverables:
+      freshness: current
+  - id: t5-repository-contracts
+    title: Migrate repository and paging behavior
+    status: done
+    completed_at: 2026-08-06T11:19:17.307Z
+    depends_on:
+      - t3-write-transaction-guards
+      - t4-lifecycle-reentry-state
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake/DDD/Domain/IRepository.cs
+        - src/framework/MiCake.EntityFrameworkCore/Repository/EFRepository.cs
+        - src/framework/MiCake.EntityFrameworkCore/Repository/EFRepositoryBase.cs
+        - src/framework/MiCake.EntityFrameworkCore/Repository/IEFCorePhysicalOperationExecutor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Repository/EFCorePhysicalOperationExecutor.cs
+        - src/framework/MiCake.EntityFrameworkCore/Repository/EFRepositoryHasPaging.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Repository
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Repository/EFRepositoryContractTests.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Repository/EFRepositoryHasPagingTests.cs
+        - src/tests/MiCake.EntityFrameworkCore.Tests/Repository/RepositoryWithoutUoWTests.cs
+    notes: t5 完成：实现 ADR-001 仓储契约（移除仓库持久化 API、DeleteByIdAsync tracked 生命周期删除、frame-stable 工厂透传、显式物理删除、分页全序）+ 独立复审修复（物理删除显式激活 UoW 事务、shadow/复合键 EF.Property 排序、无 UoW 契约测试重写）；EF Core 240/240、MiCake 260/260、构建
+      0 警告
+    acceptance:
+      - Repository mutations never save or commit independently of the ambient writable UoW
+      - DeleteByIdAsync executes audit, soft-delete, domain-event, and UoW lifecycle behavior equivalent to tracked DeleteAsync
+      - Physical delete is explicitly named, transaction-bound, and documented as bypassing aggregate lifecycle behavior
+      - Detached stale aggregate replacement raises a concurrency conflict instead of silently overwriting detected concurrent changes
+      - Paging appends every missing primary-key property after caller sorting and rejects keyless entities
+      - Repository tests pass and MiCake plus MiCake.EntityFrameworkCore projects build cleanly
+    deliverables:
+      freshness: current
+  - id: t6-boundary-migration-docs
+    title: Migrate ASP.NET boundary and public guidance
+    status: in_progress
+    completed_at: null
+    depends_on:
+      - t1-uow-runtime-contracts
+      - t5-repository-contracts
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake.AspNetCore/Uow/UnitOfWorkAttribute.cs
+        - src/framework/MiCake.AspNetCore/Uow/UnitOfWorkFilter.cs
+        - src/framework/MiCake.AspNetCore/MiCakeAspNetOptions.cs
+        - src/tests/MiCake.AspNetCore.Tests/Uow/UnitOfWorkFilterTests.cs
+        - samples/BaseMiCakeApplication/Controllers/BookController.cs
+        - src/framework/MiCake/README.md
+        - src/framework/MiCake.EntityFrameworkCore/README.md
+        - src/framework/MiCake.AspNetCore/README.md
+    notes: >
+      Make ASP.NET read-only intent explicit, keep action-name inference opt-in, and ensure request boundaries roll back and dispose asynchronously on every failure. Migrate the sample and public
+      documentation for AddAsync plus FlushAsync, requiresNew callbacks, standalone execution, removed strategy/timeout/wrapper APIs, physical/bulk lifecycle bypass, transactional domain events,
+      application- owned integration events, and best-effort multi-resource semantics.
+    acceptance:
+      - Explicit action/controller read-only metadata overrides compatibility name inference and blocks every supported write path
+      - Request cancellation, action failure, commit failure, and rollback failure preserve the correct exception and asynchronously dispose the UoW
+      - The sample no longer calls repository SaveChangesAsync and demonstrates FlushAsync only where a generated key is required
+      - Migration guidance lists replacements for AddAndReturnAsync, SaveChangesAsync, ClearChangeTrackingAsync, requiresNew overloads, PersistenceStrategy, Timeout, and IDbContextWrapper
+      - Documentation distinguishes domain events inside the transaction from integration events after durable commit and describes all operation modes
+      - ASP.NET Core tests pass and the sample plus framework solution build cleanly
+    deliverables:
+      freshness: stale
+  - id: t7-relational-acceptance
+    title: Prove relational transaction guarantees
+    status: pending
+    completed_at: null
+    depends_on:
+      - t2-ef-resource-identity
+      - t3-write-transaction-guards
+      - t4-lifecycle-reentry-state
+      - t5-repository-contracts
+      - t6-boundary-migration-docs
+    project:
+      - default
+    skill_hint: mvt-test
+    artifacts:
+      files:
+        - src/tests/MiCake.IntegrationTests/Uow/SqliteUnitOfWorkFixture.cs
+        - src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkCompositionMatrixTests.cs
+        - src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkWritePathTests.cs
+        - src/tests/MiCake.IntegrationTests/Uow
+    notes: >
+      Build a temporary file-backed SQLite acceptance fixture with independent connections per isolated scope. Replace or supersede skipped transaction tests and exercise the full root/shared
+      nested/requiresNew/read-only/savepoint matrix, first-write binding, generated identity flush, direct DbContext, bulk/raw SQL, rollback failure, detached concurrency, partial commit, ambient
+      restoration, lifecycle cleanup, and host/pool concurrency paths.
+    acceptance:
+      - The first SaveChanges, bulk, and raw SQL writes are rolled back by the enclosing UoW on file-backed SQLite
+      - Inner requiresNew commit and rollback do not persist or mutate outer pending state, and the outer ambient UoW is restored afterward
+      - Savepoint tests prove all covered resources are active before creation and reject resources registered too late
+      - Read-only, no-UoW, rollback-failure, partial-commit, lifecycle-failure, re-entry, and detached concurrency scenarios produce the documented outcomes
+      - No transaction/savepoint guarantee relies solely on EF Core InMemory or remains skipped without an explicit superseding test
+      - dotnet test src/tests/MiCake.IntegrationTests/MiCake.IntegrationTests.csproj passes
+  - id: t8-performance-final-review
+    title: Baseline performance and review delivery
+    status: pending
+    completed_at: null
+    depends_on:
+      - t7-relational-acceptance
+    project:
+      - default
+    skill_hint: mvt-review
+    artifacts:
+      files:
+        - src/tests
+        - samples/BaseMiCakeApplication
+        - src/framework
+    notes: >
+      Establish the repeatable read/write/flush/lifecycle/activation performance baseline from ADR-010, run the complete solution verification, inspect structured diagnostics for sensitive-data
+      exclusion and correlation fields, and perform a final architecture/API review against R1-R50. Any median throughput regression above 10 percent or allocation increase above 15 percent requires
+      investigation or an amended ADR before acceptance.
+    acceptance:
+      - Baseline records runtime, provider, warmup, operation count, elapsed distribution, and allocations for common read and write paths
+      - Transaction activation, lifecycle isolation, and state capture remain within the documented 10 percent throughput and 15 percent allocation thresholds or have an accepted ADR amendment
+      - Structured diagnostics correlate UoW, resource, DbContext, operation, and lifecycle phase without SQL parameters, entity values, or connection strings
+      - The final review finds no undocumented deviation from the accepted design and traces every R1-R50 requirement to implementation or executable verification
+      - dotnet test MiCake.All.sln and dotnet build MiCake.All.sln complete successfully

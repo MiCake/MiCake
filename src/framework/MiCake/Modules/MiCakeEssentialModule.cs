@@ -64,11 +64,15 @@ namespace MiCake.Modules
             services.AddSingleton<IDomainMetadataProvider, DomainMetadataProvider>();
 
             //LifeTime
+            services.TryAddScoped<DomainEventDispatchTracker>();
             services.AddScoped<IRepositoryPreSaveChanges, DomainEventDispatchLifetime>();
             services.AddScoped<IRepositoryPostSaveChanges, DomainEventCleanupLifetime>();
 
             // Unit of Work - Register with options support
+            // Host-local ambient accessor keeps immutable AsyncLocal frames per execution context.
+            context.Services.TryAddSingleton<AmbientUnitOfWorkAccessor>();
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
+            context.Services.TryAddScoped<IStandaloneUnitOfWorkExecutor, StandaloneUnitOfWorkExecutor>();
 
             // Register current UoW accessor (returns Current from manager, may be null)
             services.TryAddScoped(provider =>

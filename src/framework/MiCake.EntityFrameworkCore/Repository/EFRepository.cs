@@ -31,33 +31,10 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public virtual async Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool saveNow = true, CancellationToken cancellationToken = default)
-        {
-            var dbcontext = await GetDbContextAsync(cancellationToken).ConfigureAwait(false);
-            var entityInfo = await dbcontext.Set<TAggregateRoot>().AddAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
-
-            if (saveNow)
-                await dbcontext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            return entityInfo.Entity;
-        }
-
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
         public virtual async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             await dbset.AddAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
-        public async Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default)
-        {
-            var dbcontext = await GetDbContextAsync(cancellationToken).ConfigureAwait(false);
-            dbcontext.ChangeTracker.Clear();
         }
 
         /// <summary>
@@ -74,17 +51,14 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         public virtual async Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
         {
-            var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
-            await dbset.Where(e => e.Id.Equals(id)).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
-        public virtual async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            var dbcontext = await GetDbContextAsync(cancellationToken).ConfigureAwait(false);
-            return await dbcontext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            // Loads the aggregate into the stable UoW context and then performs tracked
+            // deletion so audit, soft deletion, domain events, and rollback semantics match
+            // DeleteAsync. No operation when no aggregate with the id exists.
+            var aggregate = await FindAsync(id, cancellationToken).ConfigureAwait(false);
+            if (aggregate != null)
+            {
+                await DeleteAsync(aggregate, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         /// <summary>

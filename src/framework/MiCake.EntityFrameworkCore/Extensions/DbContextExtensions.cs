@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Domain.Helper;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Util.Cache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -93,16 +97,14 @@ namespace MiCake.EntityFrameworkCore
         /// <returns>The same DbContextOptionsBuilder for chaining</returns>
         public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder)
         {
-            if (!MiCakeInterceptorFactoryHelper.IsConfigured)
-            {
-                return optionsBuilder;
-            }
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(new MiCakeSaveOperationOptionsExtension());
 
-            var interceptor = MiCakeInterceptorFactoryHelper.CreateInterceptor();
-            if (interceptor != null)
-            {
-                optionsBuilder.AddInterceptors(interceptor);
-            }
+            // Without a scope provider the interceptor cannot resolve the write pipeline or
+            // lifecycle handlers; it is still installed so write attempts fail fast with
+            // guidance instead of silently bypassing the unit of work.
+            optionsBuilder.AddInterceptors(
+                new MiCakeEFCoreInterceptor(NullLogger<MiCakeEFCoreInterceptor>.Instance, null),
+                new MiCakeDbCommandInterceptor(NullLogger<MiCakeDbCommandInterceptor>.Instance, null));
 
             return optionsBuilder;
         }
@@ -120,35 +122,43 @@ namespace MiCake.EntityFrameworkCore
             if (serviceProvider == null)
                 return optionsBuilder;
 
+            var maxSaveCycles = serviceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>()?.Value?.MaxSaveCycles ?? 16;
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(
+                new MiCakeSaveOperationOptionsExtension { MaxSaveCycles = maxSaveCycles });
+
             var factory = serviceProvider.GetService<IMiCakeInterceptorFactory>();
-            var interceptor = factory?.CreateInterceptor() ?? MiCakeInterceptorFactoryHelper.CreateInterceptor();
-            if (interceptor != null)
+            var interceptor = factory?.CreateInterceptor(serviceProvider) ?? MiCakeInterceptorFactoryHelper.CreateInterceptor(serviceProvider);
+            var commandInterceptor = factory?.CreateCommandInterceptor(serviceProvider) ?? MiCakeInterceptorFactoryHelper.CreateCommandInterceptor(serviceProvider);
+            var interceptors = new List<IInterceptor>(2);
+            if (interceptor != null) interceptors.Add(interceptor);
+            if (commandInterceptor != null) interceptors.Add(commandInterceptor);
+            if (interceptors.Count > 0)
             {
-                optionsBuilder.AddInterceptors(interceptor);
+                optionsBuilder.AddInterceptors([.. interceptors]);
             }
 
             return optionsBuilder;
         }
 
         /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors with specific lifetime service.
-        /// This overload provides direct control over the lifetime service instance.
-        /// Internal API for advanced scenarios.
+        /// Configure DbContextOptionsBuilder to use MiCake interceptors with the write pipeline
+        /// resolved from the given provider. Internal API for advanced scenarios.
         /// </summary>
         /// <param name="optionsBuilder">The DbContextOptionsBuilder instance</param>
-        /// <param name="saveChangesLifetime">The save changes lifetime service</param>
+        /// <param name="serviceProvider">The provider of the scope that owns the DbContext</param>
         /// <param name="logger">Optional logger instance for the interceptor (uses NullLogger if not provided)</param>
         /// <returns>The same DbContextOptionsBuilder for chaining</returns>
         internal static DbContextOptionsBuilder UseMiCakeInterceptors(
             this DbContextOptionsBuilder optionsBuilder,
-            IEFSaveChangesLifetime saveChangesLifetime,
+            IServiceProvider serviceProvider,
             ILogger<MiCakeEFCoreInterceptor>? logger = null)
         {
-            if (saveChangesLifetime != null)
-            {
-                logger ??= NullLogger<MiCakeEFCoreInterceptor>.Instance;
-                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(saveChangesLifetime, logger));
-            }
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(new MiCakeSaveOperationOptionsExtension());
+
+            logger ??= NullLogger<MiCakeEFCoreInterceptor>.Instance;
+            optionsBuilder.AddInterceptors(
+                new MiCakeEFCoreInterceptor(logger, serviceProvider),
+                new MiCakeDbCommandInterceptor(NullLogger<MiCakeDbCommandInterceptor>.Instance, serviceProvider));
 
             return optionsBuilder;
         }

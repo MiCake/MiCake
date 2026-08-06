@@ -10,6 +10,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
     /// End-to-end integration tests to verify the complete flow:
     /// Module initialization → Factory configuration → DbContext creation → Interceptor work → Domain event handling
     /// </summary>
+[Collection("MiCakeStaticFactory")]
     public class EndToEndIntegrationTests
     {
         [Fact]
@@ -123,27 +124,19 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
         }
 
         [Fact]
-        public void CompleteFlow_MiCakeDbContextInheritance_ShouldWorkCorrectly()
+        public void CompleteFlow_MiCakeDbContextInheritance_WriteWithoutProvider_ThrowsWithGuidance()
         {
-            // Arrange: Test with actual MiCakeDbContext inheritance
             var options = new DbContextOptionsBuilder<MiCakeTestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            // Act
             using var context = new MiCakeTestDbContext(options);
-            
+
             var entity = new TestEntity { Name = "MiCake Inheritance Test" };
             context.TestEntities.Add(entity);
-            
-            var result = context.SaveChanges();
-            
-            // Assert
-            Assert.Equal(1, result);
-            
-            var savedEntity = context.TestEntities.First();
-            Assert.NotNull(savedEntity);
-            Assert.Equal("MiCake Inheritance Test", savedEntity.Name);
+
+            var exception = Assert.Throws<InvalidOperationException>(() => context.SaveChanges());
+            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", exception.Message);
         }
 
         [Fact]
@@ -158,38 +151,32 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
                 .UseInMemoryDatabase("micake")
                 .Options;
 
-            // Act: Use both contexts
+            // Act: The plain context writes normally; the MiCake context without a provider fails fast.
             using var regularContext = new TestDbContext(regularOptions);
             using var miCakeContext = new MiCakeTestDbContext(miCakeOptions);
-            
+
             regularContext.TestEntities.Add(new TestEntity { Name = "Regular Context" });
             miCakeContext.TestEntities.Add(new TestEntity { Name = "MiCake Context" });
-            
+
             regularContext.SaveChanges();
-            miCakeContext.SaveChanges();
-            
-            // Assert: Both should work independently
+            var miCakeException = Assert.Throws<InvalidOperationException>(() => miCakeContext.SaveChanges());
+
+            // Assert: The plain context persisted its data; the MiCake write was rejected with guidance.
             Assert.Equal(1, regularContext.TestEntities.Count());
-            Assert.Equal(1, miCakeContext.TestEntities.Count());
-            
             Assert.Equal("Regular Context", regularContext.TestEntities.First().Name);
-            Assert.Equal("MiCake Context", miCakeContext.TestEntities.First().Name);
+            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", miCakeException.Message);
         }
 
         [Fact]
-        public void CompleteFlow_ParameterlessConstructor_ShouldWorkCorrectly()
+        public void CompleteFlow_ParameterlessConstructor_WriteWithoutProvider_ThrowsWithGuidance()
         {
-            // Act & Assert: Test parameterless constructor scenario
             using var context = new MiCakeTestDbContextWithParameterlessConstructor();
-            
+
             var entity = new TestEntity { Name = "Parameterless Constructor Test" };
             context.TestEntities.Add(entity);
-            
-            var result = context.SaveChanges();
-            Assert.Equal(1, result);
-            
-            var savedEntity = context.TestEntities.First();
-            Assert.Equal("Parameterless Constructor Test", savedEntity.Name);
+
+            var exception = Assert.Throws<InvalidOperationException>(() => context.SaveChanges());
+            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", exception.Message);
         }
 
         /// <summary>

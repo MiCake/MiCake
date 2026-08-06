@@ -44,6 +44,15 @@ namespace MiCake.EntityFrameworkCore
         /// </summary>
         public bool BypassUnitOfWorkCheck { get; set; } = false;
 
+        /// <summary>
+        /// The maximum number of save cycles a root save operation may execute while
+        /// handling controlled SaveChanges re-entry requests from lifecycle or
+        /// domain-event handlers. When the limit is reached, the save operation throws
+        /// <see cref="MiCake.DDD.Uow.Exceptions.SaveChangesReentryException"/> and the unit
+        /// of work is left rollback-only.
+        /// </summary>
+        public int MaxSaveCycles { get; set; } = 16;
+
         MiCakeEFCoreOptions IObjectAccessor<MiCakeEFCoreOptions>.Value => this;
 
         public MiCakeEFCoreOptions(Type dbContextType)

@@ -15,15 +15,18 @@ namespace MiCake.DDD.Infrastructure.Lifetime
         private readonly IEventDispatcher _eventDispatcher;
         private readonly ILogger<DomainEventDispatchLifetime> _logger;
         private readonly DomainEventOptions _options;
+        private readonly DomainEventDispatchTracker _dispatchTracker;
 
         public DomainEventDispatchLifetime(
             IEventDispatcher eventDispatcher, 
             ILoggerFactory loggerFactory,
-            IOptions<DomainEventOptions> options)
+            IOptions<DomainEventOptions> options,
+            DomainEventDispatchTracker dispatchTracker)
         {
             _eventDispatcher = eventDispatcher;
             _logger = loggerFactory.CreateLogger<DomainEventDispatchLifetime>();
             _options = options?.Value ?? new DomainEventOptions();
+            _dispatchTracker = dispatchTracker;
         }
 
         public int Order { get; set; } = -1000;
@@ -45,6 +48,14 @@ namespace MiCake.DDD.Infrastructure.Lifetime
 
             foreach (var @event in entityEvents)
             {
+                if (!_dispatchTracker.TryMarkDispatched(@event))
+                {
+                    // The same event instance was already dispatched in this unit of work
+                    // scope (for example, during an earlier save cycle).
+                    _logger.LogDebug("Skipping already dispatched domain event of type {EventType}", @event.GetType().Name);
+                    continue;
+                }
+
                 try
                 {
                     _logger.LogDebug("Dispatching event {EventType}", @event.GetType().Name);
@@ -53,6 +64,9 @@ namespace MiCake.DDD.Infrastructure.Lifetime
                 }
                 catch (Exception ex)
                 {
+                    // A failed dispatch must remain eligible for retry after the unit of
+                    // work is rolled back, so the tracking record is removed here.
+                    _dispatchTracker.UnmarkDispatched(@event);
                     _logger.LogError(ex, "Failed to dispatch domain event of type {EventType}", @event.GetType().Name);
                     failedEvents.Add((@event, ex));
 

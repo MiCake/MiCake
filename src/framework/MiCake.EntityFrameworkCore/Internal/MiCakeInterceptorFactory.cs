@@ -11,35 +11,44 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// </summary>
     internal sealed class MiCakeInterceptorFactory : IMiCakeInterceptorFactory
     {
-        private readonly IEFSaveChangesLifetime _saveChangesLifetime;
         private readonly ILogger<MiCakeEFCoreInterceptor> _logger;
+        private readonly ILogger<MiCakeDbCommandInterceptor> _commandLogger;
 
         /// <summary>
         /// Initialize the factory with required dependencies
         /// </summary>
-        /// <param name="saveChangesLifetime">The singleton save changes lifetime service</param>
-        /// <param name="logger">Logger for the interceptor (optional)</param>
+        /// <param name="logger">Logger for the save interceptor (optional)</param>
+        /// <param name="commandLogger">Logger for the command interceptor (optional)</param>
         public MiCakeInterceptorFactory(
-            IEFSaveChangesLifetime saveChangesLifetime,
-            ILogger<MiCakeEFCoreInterceptor>? logger = null)
+            ILogger<MiCakeEFCoreInterceptor>? logger = null,
+            ILogger<MiCakeDbCommandInterceptor>? commandLogger = null)
         {
-            _saveChangesLifetime = saveChangesLifetime ?? throw new ArgumentNullException(nameof(saveChangesLifetime));
             _logger = logger ?? NullLogger<MiCakeEFCoreInterceptor>.Instance;
+            _commandLogger = commandLogger ?? NullLogger<MiCakeDbCommandInterceptor>.Instance;
         }
 
         /// <summary>
         /// Create a new interceptor instance using the injected dependencies.
         /// </summary>
         /// <returns>MiCake EF Core interceptor (never null)</returns>
-        public ISaveChangesInterceptor CreateInterceptor()
+        public ISaveChangesInterceptor CreateInterceptor(IServiceProvider? serviceProvider = null)
         {
-            return new MiCakeEFCoreInterceptor(_saveChangesLifetime, _logger);
+            return new MiCakeEFCoreInterceptor(_logger, serviceProvider);
+        }
+
+        /// <summary>
+        /// Create the write-guard command interceptor.
+        /// </summary>
+        /// <returns>The command interceptor instance (never null).</returns>
+        public IDbCommandInterceptor CreateCommandInterceptor(IServiceProvider? serviceProvider = null)
+        {
+            return new MiCakeDbCommandInterceptor(_commandLogger, serviceProvider);
         }
 
         /// <summary>
         /// Check if the factory can create interceptors
         /// </summary>
-        public bool CanCreateInterceptor => _saveChangesLifetime != null;
+        public bool CanCreateInterceptor => true;
     }
 
     /// <summary>
@@ -87,17 +96,35 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// Create a new interceptor using the configured factory
         /// </summary>
         /// <returns>MiCake EF Core interceptor (never null if factory is configured)</returns>
-        internal static ISaveChangesInterceptor? CreateInterceptor()
+        internal static ISaveChangesInterceptor? CreateInterceptor(IServiceProvider? serviceProvider = null)
         {
             var factory = _factory;
             try
             {
-                return factory?.CreateInterceptor();
+                return factory?.CreateInterceptor(serviceProvider);
             }
             catch (ObjectDisposedException)
             {
                 // If the underlying service provider was disposed, clear the reference
                 // to avoid throwing in future calls and let callers fallback to DI.
+                Reset();
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Create the write-guard command interceptor using the configured factory.
+        /// </summary>
+        /// <returns>The command interceptor, or null when no factory is configured.</returns>
+        internal static IDbCommandInterceptor? CreateCommandInterceptor(IServiceProvider? serviceProvider = null)
+        {
+            var factory = _factory;
+            try
+            {
+                return factory?.CreateCommandInterceptor(serviceProvider);
+            }
+            catch (ObjectDisposedException)
+            {
                 Reset();
                 return null;
             }

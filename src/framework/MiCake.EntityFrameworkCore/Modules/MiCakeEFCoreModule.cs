@@ -5,6 +5,9 @@ using MiCake.DDD.Infrastructure.Store;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using MiCake.Modules;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -35,7 +38,7 @@ namespace MiCake.EntityFrameworkCore.Modules
             var dbContextType = context.MiCakeApplicationOptions.BuildPhaseData.TakeOut<Type>(MiCakeEFCoreModuleInternalKeys.DBContextType)
                                             ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
-            services.TryAddSingleton<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
+            services.TryAddScoped<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
             services.TryAddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
 
             // Add Uow related services
@@ -47,27 +50,72 @@ namespace MiCake.EntityFrameworkCore.Modules
         /// </summary>
         public override void OnApplicationInitialization(ModuleInitializationContext context)
         {
-            // Configure the interceptor factory helper with the factory from DI container
-            var factory = context.ServiceProvider.GetService<IMiCakeInterceptorFactory>();
-            if (factory != null)
-            {
-                MiCakeInterceptorFactoryHelper.Configure(factory);
-            }
-
             var efcoreOptions = context.ServiceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>()?.Value
                                         ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
             var registry = context.ServiceProvider.GetService<IDbContextTypeRegistry>();
-            registry?.RegisterDbContextType(efcoreOptions.DbContextType);
+            if (registry != null)
+            {
+                registry.RegisterDbContextType(efcoreOptions.DbContextType);
+                ValidateDbContextLifetimes(context.ServiceProvider, registry);
+                ValidateExecutionStrategies(context.ServiceProvider, registry);
+            }
 
             var storeConventionRegistry = context.ApplicationOptions.BuildPhaseData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
             if (storeConventionRegistry != null)
                 RegisterMiCakeConventions(storeConventionRegistry);
         }
 
+        /// <summary>
+        /// Validates the effective DbContext lifetime from the built service provider.
+        /// A supported scoped or pooled registration returns one instance within a scope and
+        /// distinct instances from two simultaneously active scopes.
+        /// </summary>
+        internal static void ValidateDbContextLifetimes(IServiceProvider serviceProvider, IDbContextTypeRegistry registry)
+        {
+            foreach (var dbContextType in registry.GetRegisteredTypes())
+            {
+                using var firstScope = serviceProvider.CreateScope();
+                using var secondScope = serviceProvider.CreateScope();
+
+                var first = firstScope.ServiceProvider.GetRequiredService(dbContextType);
+                var firstAgain = firstScope.ServiceProvider.GetRequiredService(dbContextType);
+                var second = secondScope.ServiceProvider.GetRequiredService(dbContextType);
+
+                if (!ReferenceEquals(first, firstAgain) || ReferenceEquals(first, second))
+                {
+                    throw new InvalidOperationException(
+                        $"DbContext {dbContextType.Name} does not have a supported effective lifetime. " +
+                        "MiCake requires scoped or pooled DbContext registrations so each scope owns one stable context instance.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Validates that no registered DbContext uses an execution strategy that retries on failure.
+        /// Retrying strategies inside an ambient writable UoW can re-execute a partially completed
+        /// command sequence; MiCake requires application-owned replayable boundaries instead.
+        /// </summary>
+        internal static void ValidateExecutionStrategies(IServiceProvider serviceProvider, IDbContextTypeRegistry registry)
+        {
+            foreach (var dbContextType in registry.GetRegisteredTypes())
+            {
+                using var scope = serviceProvider.CreateScope();
+                var dbContext = (DbContext)scope.ServiceProvider.GetRequiredService(dbContextType);
+
+                var executionStrategy = dbContext.Database.GetService<IExecutionStrategyFactory>().Create();
+                if (executionStrategy.RetriesOnFailure)
+                {
+                    throw new InvalidOperationException(
+                        $"DbContext {dbContextType.Name} is configured with an execution strategy that retries on failure " +
+                        "(RetriesOnFailure=true). MiCake ambient writable units of work require application-owned replayable " +
+                        "boundaries; remove retry-on-failure configuration or wrap the operation in a replayable boundary.");
+                }
+            }
+        }
+
         public override void OnApplicationShutdown(ModuleShutdownContext context)
         {
-            MiCakeInterceptorFactoryHelper.Reset();
             base.OnApplicationShutdown(context);
         }
 

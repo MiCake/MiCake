@@ -12,6 +12,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
     /// <summary>
     /// Tests for MiCakeInterceptorFactory to ensure proper dependency injection behavior
     /// </summary>
+[Collection("MiCakeStaticFactory")]
     public class MiCakeInterceptorFactoryTests
     {
         public MiCakeInterceptorFactoryTests()
@@ -21,10 +22,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public void Constructor_WithNullSaveChangesLifetime_ShouldThrowArgumentNullException()
+        public void Constructor_WithoutDependencies_ShouldSucceed()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => new MiCakeInterceptorFactory(null));
+            Assert.NotNull(new MiCakeInterceptorFactory());
         }
 
         [Fact]
@@ -34,7 +35,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var mockLifetime = new MockEFSaveChangesLifetime();
 
             // Act
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
 
             // Assert
             Assert.NotNull(factory);
@@ -46,7 +47,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
 
             // Act & Assert
             Assert.True(factory.CanCreateInterceptor);
@@ -57,7 +58,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
 
             // Act
             var interceptor = factory.CreateInterceptor();
@@ -71,7 +72,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
 
             // Act
             var interceptor1 = factory.CreateInterceptor();
@@ -97,7 +98,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
 
             // Act
             MiCakeInterceptorFactoryHelper.Configure(factory);
@@ -129,7 +130,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             // Act
@@ -140,11 +141,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public void Helper_CreateInterceptor_WhenFactoryThrowsException_ShouldThrowException()
+        public void Helper_CreateInterceptor_WhenConfigured_ShouldReturnInterceptor()
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             // Act & Assert
@@ -158,7 +159,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             // Act
@@ -176,7 +177,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
             MiCakeInterceptorFactoryHelper.Configure(factory);
             Assert.True(MiCakeInterceptorFactoryHelper.IsConfigured);
 
@@ -193,10 +194,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime1 = new MockEFSaveChangesLifetime();
-            var factory1 = new MiCakeInterceptorFactory(mockLifetime1);
+            var factory1 = new MiCakeInterceptorFactory();
 
             var mockLifetime2 = new MockEFSaveChangesLifetime();
-            var factory2 = new MiCakeInterceptorFactory(mockLifetime2);
+            var factory2 = new MiCakeInterceptorFactory();
 
             MiCakeInterceptorFactoryHelper.Configure(factory1);
             var interceptor1 = MiCakeInterceptorFactoryHelper.CreateInterceptor();
@@ -217,7 +218,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             // Arrange
             var mockLifetime = new MockEFSaveChangesLifetime();
-            var factory = new MiCakeInterceptorFactory(mockLifetime);
+            var factory = new MiCakeInterceptorFactory();
             MiCakeInterceptorFactoryHelper.Configure(factory);
 
             ISaveChangesInterceptor interceptor1 = null;

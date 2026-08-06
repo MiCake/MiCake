@@ -1,7 +1,13 @@
-﻿using MiCake.Util.Cache;
+﻿using MiCake.DDD.Infrastructure;
+using MiCake.DDD.Infrastructure.Lifetime;
+using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Exceptions;
+using MiCake.DDD.Uow.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,44 +19,39 @@ namespace MiCake.EntityFrameworkCore.Internal
 {
     /// <summary>
     /// EF Core interceptor for MiCake repository lifecycle events.
-    /// Optimized for performance by caching changed entities and minimizing repeated scanning.
-    /// Uses singleton pattern with lazy scoped service resolution.
+    /// Drives the per-DbContext root save-operation state machine: the first SaveChanges
+    /// becomes the root operation (guard, snapshot, pre-save handlers), nested SaveChanges
+    /// from lifecycle handlers are suppressed and recorded as re-entry requests, and the
+    /// root coordinator re-scans changes into bounded follow-up save cycles in the same
+    /// transaction. Handlers are always resolved from the provider of the scope that owns
+    /// the unit of work.
     /// </summary>
     internal class MiCakeEFCoreInterceptor : ISaveChangesInterceptor
     {
-        private readonly IEFSaveChangesLifetime _saveChangesLifetime;
         private readonly ILogger<MiCakeEFCoreInterceptor> _logger;
+        private readonly IServiceProvider? _serviceProvider;
 
-        private IReadOnlyList<EntityEntry> _changedEntries = [];
-
-        // Cache for owner entity lookups to avoid repeated ChangeTracker scanning
-        // Key: (OwnerType, KeyValues hash), Value: EntityEntry
-        private static readonly BoundedLruCache<int, EntityEntry?> s_ownerLookupCache = new(maxSize: 100);
-
-        /// <summary>
-        /// Constructor that takes IEFSaveChangesLifetime service.
-        /// The service is registered as Singleton with lazy scoped service resolution.
-        /// </summary>
-        /// <param name="saveChangesLifetime">The save changes lifetime service</param>
-        /// <param name="logger">Logger for diagnostics</param>
         public MiCakeEFCoreInterceptor(
-            IEFSaveChangesLifetime saveChangesLifetime,
-            ILogger<MiCakeEFCoreInterceptor> logger)
+            ILogger<MiCakeEFCoreInterceptor> logger,
+            IServiceProvider? serviceProvider = null)
         {
-            _saveChangesLifetime = saveChangesLifetime ?? throw new ArgumentNullException(nameof(saveChangesLifetime));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _serviceProvider = serviceProvider;
         }
 
         public void SaveChangesFailed(DbContextErrorEventData eventData)
         {
-            _changedEntries = [];
-            s_ownerLookupCache.Clear();
+            var accessor = ResolveAccessor(eventData.Context);
+            if (accessor != null && accessor.IsOperationActive)
+            {
+                _logger.LogDebug("Ending save operation for {ContextType} after a save failure", eventData.Context?.GetType().Name);
+                accessor.EndOperation();
+            }
         }
 
         public Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
         {
-            _changedEntries = [];
-            s_ownerLookupCache.Clear();
+            SaveChangesFailed(eventData);
             return Task.CompletedTask;
         }
 
@@ -79,24 +80,102 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
+            var context = eventData.Context;
+            if (context == null)
+            {
+                return result;
+            }
+
+            var accessor = ResolveAccessor(context);
+            if (accessor == null || !accessor.IsOperationActive)
+            {
+                return result;
+            }
+
+            if (accessor.ConsumeSuppressedSave())
+            {
+                // This completed callback belongs to a nested SaveChanges that was suppressed
+                // in SavingChanges; the root operation's own callback drives post-save work.
+                return result;
+            }
+
             try
             {
-                if (_saveChangesLifetime != null && _changedEntries.Count > 0)
+                var maxSaveCycles = ResolveMaxSaveCycles(context);
+
+                while (true)
                 {
-                    await _saveChangesLifetime.AfterSaveChangesAsync(_changedEntries, cancellationToken);
+                    var frame = accessor.Current;
+                    if (frame == null)
+                    {
+                        // A nested root-cycle SaveChanges completed and ended the operation;
+                        // its SavedChanges already ran post-save handling and re-entry checks.
+                        break;
+                    }
+
+                    // Post-save handlers receive the pre-save repository states from the snapshot.
+                    await RunPostSaveAsync(frame.Snapshots, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
+
+                    frame.CycleCount++;
+
+                    var (reentryRequested, reentryHadChanges) = accessor.ConsumeReentryRequest();
+                    var hasPendingChanges = HasChangedEntries(context);
+                    if (!reentryRequested && !hasPendingChanges)
+                    {
+                        break;
+                    }
+
+                    if (reentryRequested && !hasPendingChanges)
+                    {
+                        if (!reentryHadChanges)
+                        {
+                            throw new SaveChangesReentryException(
+                                $"Save operation on {context.GetType().Name} received a re-entry request without new pending changes; " +
+                                "no progress is possible. The unit of work is left rollback-only; check lifecycle handlers that " +
+                                "call SaveChanges without modifying the tracker.");
+                        }
+
+                        // The re-entry's pending changes were absorbed by the current save,
+                        // so the operation is quiescent.
+                        break;
+                    }
+
+                    if (frame.CycleCount >= maxSaveCycles)
+                    {
+                        throw new SaveChangesReentryException(
+                            $"Save operation on {context.GetType().Name} exceeded the configured maximum of {maxSaveCycles} " +
+                            "save cycles while handling re-entry requests. The unit of work is left rollback-only; " +
+                            "check lifecycle handlers for unbounded change generation.");
+                    }
+
+                    // Follow-up cycle: rescan changes, run pre-save handlers, then save again in the same transaction.
+                    var entries = GetChangedEntities(context);
+                    frame.Snapshots = entries
+                        .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e)))
+                        .ToArray();
+
+                    await RunPreSaveCycleAsync(entries, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
+
+                    accessor.MarkRootCycleSave();
+                    await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 }
+
+                accessor.EndOperation();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in AfterSaveChangesAsync for {ContextType}",
-                    eventData.Context?.GetType().Name);
+                _logger.LogError(ex, "Save operation failed for {ContextType}; ending the operation", context.GetType().Name);
+                var handlerProvider = accessor.Current?.HandlerProvider;
+                accessor.EndOperation();
+
+                if (ex is SaveChangesReentryException && handlerProvider != null)
+                {
+                    MarkUnitOfWorkRollbackOnly(handlerProvider, context);
+                }
+
                 throw;
             }
-            finally
-            {
-                _changedEntries = [];
-                s_ownerLookupCache.Clear();
-            }
+
             return result;
         }
 
@@ -110,190 +189,287 @@ namespace MiCake.EntityFrameworkCore.Internal
 
             try
             {
-                return SavingChangesAsync(eventData, result, default)
-                    .ConfigureAwait(false)
-                    .GetAwaiter()
-                    .GetResult();
+                if (eventData.Context != null)
+                {
+                    RequireCoordinator(eventData.Context).BeforeWrite(eventData.Context, EFWriteOperationKind.SaveChanges);
+                }
+
+                return SavingChangesCore(eventData, result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in synchronous SavingChanges for {ContextType}",
                     eventData.Context?.GetType().Name);
+                ResolveAccessor(eventData.Context)?.EndOperation();
                 throw;
             }
         }
 
         public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            if (eventData.Context == null || _saveChangesLifetime == null)
+            if (eventData.Context == null)
+            {
                 return result;
+            }
+
+            if (eventData.Context != null)
+            {
+                await RequireCoordinator(eventData.Context)
+                    .BeforeWriteAsync(eventData.Context, EFWriteOperationKind.SaveChanges, cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             try
             {
-                _changedEntries = GetChangedEntities(eventData.Context);
-
-                _logger.LogDebug("SavingChangesAsync called with {Count} changed entities in {ContextType}",
-                    _changedEntries.Count, eventData.Context.GetType().Name);
-
-                if (_changedEntries.Count > 0)
-                {
-                    await _saveChangesLifetime.BeforeSaveChangesAsync(_changedEntries, cancellationToken);
-                }
+                return await SavingChangesCoreAsync(eventData, result, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in BeforeSaveChangesAsync for {ContextType}",
-                    eventData.Context.GetType().Name);
+                _logger.LogError(ex, "Error in SavingChangesAsync for {ContextType}", eventData.Context!.GetType().Name);
+                // EF Core does not raise SaveChangesFailed when the failure originates in
+                // this interceptor, so the operation frame must be ended here.
+                ResolveAccessor(eventData.Context)?.EndOperation();
                 throw;
             }
+        }
+
+        private InterceptionResult<int> SavingChangesCore(DbContextEventData eventData, InterceptionResult<int> result)
+        {
+            var context = eventData.Context!;
+            var accessor = ResolveAccessor(context);
+            if (accessor == null)
+            {
+                return result;
+            }
+
+            if (accessor.ConsumeRootCycleSave())
+            {
+                return result;
+            }
+
+            if (accessor.IsOperationActive)
+            {
+                accessor.RequestReentry(HasChangedEntries(context));
+                accessor.MarkSuppressedSave();
+                return InterceptionResult<int>.SuppressWithResult(0);
+            }
+
+            var entries = GetChangedEntities(context);
+            var snapshots = entries
+                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e)))
+                .ToArray();
+
+            if (snapshots.Length == 0)
+            {
+                return result;
+            }
+
+            if (!accessor.TryBeginRoot(_serviceProvider!, snapshots))
+            {
+                return result;
+            }
+
+            RunPreSaveCycleAsync(entries, _serviceProvider!, CancellationToken.None)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
 
             return result;
         }
 
-        /// <summary>
-        /// Gets only entities that have been changed (Added, Modified, Deleted).
-        /// Also includes owner entities of changed owned entities to properly handle
-        /// audit timestamps when value objects change via OwnsOne/OwnsMany.
-        /// </summary>
-        private static List<EntityEntry> GetChangedEntities(DbContext dbContext)
+        private async ValueTask<InterceptionResult<int>> SavingChangesCoreAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(dbContext);
-
-            var changeTracker = dbContext.ChangeTracker;
-            if (!changeTracker.AutoDetectChangesEnabled && !changeTracker.HasChanges())
+            var context = eventData.Context!;
+            var accessor = ResolveAccessor(context);
+            if (accessor == null)
             {
-                return [];
+                return result;
             }
 
-            var allEntries = changeTracker.Entries();
-            var changedEntries = new List<EntityEntry>(capacity: 16);
-            var ownerEntriesNeedingAudit = new HashSet<EntityEntry>();
-
-            foreach (var entry in allEntries.Where(IsEntityChanged))
+            if (accessor.ConsumeRootCycleSave())
             {
-                changedEntries.Add(entry);
-                CollectOwnerEntityIfNeeded(entry, ownerEntriesNeedingAudit);
+                return result;
             }
 
-            // Add owner entries that need audit updates (due to owned entity changes)
-            changedEntries.AddRange(ownerEntriesNeedingAudit);
-
-            TrimExcessCapacityIfNeeded(changedEntries);
-
-            return changedEntries;
-        }
-
-        /// <summary>
-        /// Checks if an entity has been changed (Added, Modified, or Deleted).
-        /// </summary>
-        private static bool IsEntityChanged(EntityEntry entry)
-        {
-            var state = entry.State;
-            return state == EntityState.Added || state == EntityState.Modified || state == EntityState.Deleted;
-        }
-
-        /// <summary>
-        /// Collects owner entities for owned entities that have changed.
-        /// </summary>
-        private static void CollectOwnerEntityIfNeeded(EntityEntry entry, HashSet<EntityEntry> ownerEntriesNeedingAudit)
-        {
-            if (!entry.Metadata.IsOwned())
-                return;
-
-            var ownerEntry = FindOwnerEntry(entry);
-            if (ownerEntry != null && 
-                ownerEntry.State == EntityState.Unchanged &&
-                !ownerEntriesNeedingAudit.Contains(ownerEntry))
+            if (accessor.IsOperationActive)
             {
-                ownerEntriesNeedingAudit.Add(ownerEntry);
+                // Nested SaveChanges from a lifecycle handler: suppress SQL and record a re-entry request.
+                accessor.RequestReentry(HasChangedEntries(context));
+                accessor.MarkSuppressedSave();
+                _logger.LogDebug(
+                    "Suppressed nested SaveChanges on {ContextType}; the root save operation will re-scan changes",
+                    context.GetType().Name);
+                return InterceptionResult<int>.SuppressWithResult(0);
             }
-        }
 
-        /// <summary>
-        /// Trims excess capacity if over-allocated significantly.
-        /// </summary>
-        private static void TrimExcessCapacityIfNeeded(List<EntityEntry> changedEntries)
-        {
-            if (changedEntries.Capacity > changedEntries.Count * 4 && changedEntries.Count > 100)
+            var entries = GetChangedEntities(context);
+            var snapshots = entries
+                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e)))
+                .ToArray();
+
+            if (snapshots.Length == 0)
             {
-                changedEntries.TrimExcess();
+                return result;
             }
+
+            if (!accessor.TryBeginRoot(_serviceProvider!, snapshots))
+            {
+                return result;
+            }
+
+            _logger.LogDebug(
+                "Started root save operation for {ContextType} with {Count} changed entities",
+                context.GetType().Name, snapshots.Length);
+
+            await RunPreSaveCycleAsync(entries, _serviceProvider!, cancellationToken).ConfigureAwait(false);
+            return result;
         }
 
-        /// <summary>
-        /// Finds the owner entity entry for an owned entity.
-        /// Uses caching to avoid repeated ChangeTracker scanning.
-        /// </summary>
-        /// <param name="ownedEntry">The owned entity entry</param>
-        /// <returns>The owner entity entry, or null if not found</returns>
-        private static EntityEntry? FindOwnerEntry(EntityEntry ownedEntry)
+        private IEFCoreWriteCoordinator RequireCoordinator(DbContext context)
         {
-            // Get the ownership relationship from metadata
-            var ownership = ownedEntry.Metadata.FindOwnership();
-            if (ownership == null)
+            var coordinator = ResolveCoordinator();
+            if (coordinator == null)
+            {
+                throw new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
+                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
+                    "inside AddDbContext (options => options.UseMiCakeInterceptors(sp)) and register the MiCake EF Core module.");
+            }
+
+            return coordinator;
+        }
+
+        private IEFCoreWriteCoordinator? ResolveCoordinator()
+        {
+            try
+            {
+                return (IEFCoreWriteCoordinator?)_serviceProvider?.GetService(typeof(IEFCoreWriteCoordinator));
+            }
+            catch (ObjectDisposedException)
+            {
                 return null;
-
-            var principalKey = ownership.PrincipalKey;
-            var foreignKeyProperties = ownership.Properties;
-            
-            if (principalKey.Properties.Count == foreignKeyProperties.Count)
-            {
-                // Build the primary key values from the owned entity's foreign key
-                var keyValues = new object?[principalKey.Properties.Count];
-                for (int i = 0; i < foreignKeyProperties.Count; i++)
-                {
-                    keyValues[i] = ownedEntry.Property(foreignKeyProperties[i].Name).CurrentValue;
-                    if (keyValues[i] == null)
-                        return null; // Cannot find owner without complete foreign key
-                }
-
-                var ownerEntityType = ownership.PrincipalEntityType.ClrType;
-                
-                // Create cache key from context, owner type, and key values
-                var cacheKey = keyValues.Aggregate(
-                    HashCode.Combine(ownedEntry.Context.GetHashCode(), ownerEntityType.GetHashCode()),
-                    (hash, val) => HashCode.Combine(hash, val));
-
-                return s_ownerLookupCache.GetOrAdd(cacheKey, _ =>
-                {
-                    var dbContext = ownedEntry.Context;
-                    try
-                    {
-                        var trackedOwner = dbContext.ChangeTracker.Entries()
-                            .FirstOrDefault(e => 
-                                e.Metadata.ClrType == ownerEntityType &&
-                                KeyValuesMatch(e, principalKey, keyValues));
-                        
-                        return trackedOwner;
-                    }
-                    catch (Exception)
-                    {
-                        // Fallback: if any error occurs (e.g., disposed context), return null
-                        return null;
-                    }
-                });
             }
-
-            return null;
         }
 
-        /// <summary>
-        /// Helper method to check if an entity's primary key matches the given values.
-        /// </summary>
-        private static bool KeyValuesMatch(EntityEntry entry, Microsoft.EntityFrameworkCore.Metadata.IKey primaryKey, object?[] keyValues)
+        private void MarkUnitOfWorkRollbackOnly(IServiceProvider handlerProvider, DbContext context)
         {
-            var pkProperties = primaryKey.Properties;
-            if (pkProperties.Count != keyValues.Length)
-                return false;
-
-            for (int i = 0; i < pkProperties.Count; i++)
+            try
             {
-                var currentValue = entry.Property(pkProperties[i].Name).CurrentValue;
-                if (!Equals(currentValue, keyValues[i]))
-                    return false;
+                var uow = handlerProvider.GetService<IUnitOfWorkManager>()?.Current;
+                if (uow is IUnitOfWorkInternal internalUow)
+                {
+                    internalUow.MarkRollbackOnly();
+                    _logger.LogDebug(
+                        "Marked unit of work {UowId} rollback-only after a save re-entry failure on {ContextType}",
+                        uow!.Id, context.GetType().Name);
+                }
+            }
+            catch (Exception markEx)
+            {
+                _logger.LogError(markEx, "Failed to mark the unit of work rollback-only for {ContextType}",
+                    context.GetType().Name);
+            }
+        }
+
+        private static SaveOperationStateAccessor? ResolveAccessor(DbContext? context)
+        {
+            if (context == null)
+            {
+                return null;
             }
 
-            return true;
+            try
+            {
+                return context.GetInfrastructure().GetService<SaveOperationStateAccessor>();
+            }
+            catch (ObjectDisposedException)
+            {
+                return null;
+            }
+        }
+
+        private static int ResolveMaxSaveCycles(DbContext context)
+        {
+            var options = context.GetInfrastructure().GetService<IDbContextOptions>();
+            var extension = options?.FindExtension<MiCakeSaveOperationOptionsExtension>();
+            return extension?.MaxSaveCycles ?? 16;
+        }
+
+        private static bool HasChangedEntries(DbContext context)
+            => SaveOperationEntityHelper.HasChangedEntries(context);
+
+        private static List<EntityEntry> GetChangedEntities(DbContext dbContext)
+            => SaveOperationEntityHelper.GetChangedEntities(dbContext);
+
+        private static RepositoryEntityStates ResolvePreSaveState(EntityEntry entry)
+            => SaveOperationEntityHelper.ResolvePreSaveState(entry);
+
+        private static async Task RunPreSaveCycleAsync(
+            IReadOnlyList<EntityEntry> entries,
+            IServiceProvider provider,
+            CancellationToken cancellationToken)
+        {
+            var handlers = provider.GetServices<IRepositoryPreSaveChanges>()
+                .OrderBy(h => h.Order)
+                .ToList();
+
+            if (handlers.Count == 0)
+            {
+                return;
+            }
+
+            var stateChanges = new List<(EntityEntry Entry, EntityState NewState)>(capacity: Math.Max(1, entries.Count / 10));
+
+            foreach (var handler in handlers)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                foreach (var entry in entries)
+                {
+                    var originalEFState = entry.State;
+                    var state = ResolvePreSaveState(entry);
+
+                    state = await handler.PreSaveChangesAsync(state, entry.Entity, cancellationToken).ConfigureAwait(false);
+
+                    var newEFState = state.ToEFState();
+                    if (newEFState != originalEFState)
+                    {
+                        stateChanges.Add((entry, newEFState));
+                    }
+                }
+            }
+
+            for (int i = 0; i < stateChanges.Count; i++)
+            {
+                var (entry, newState) = stateChanges[i];
+                entry.State = newState;
+            }
+        }
+
+        private static async Task RunPostSaveAsync(
+            IReadOnlyList<EntityStateSnapshot> snapshots,
+            IServiceProvider provider,
+            CancellationToken cancellationToken)
+        {
+            var handlers = provider.GetServices<IRepositoryPostSaveChanges>()
+                .OrderBy(h => h.Order)
+                .ToList();
+
+            if (handlers.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var handler in handlers)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                for (int i = 0; i < snapshots.Count; i++)
+                {
+                    var snapshot = snapshots[i];
+                    await handler.PostSaveChangesAsync(snapshot.State, snapshot.Entry.Entity, cancellationToken).ConfigureAwait(false);
+                }
+            }
         }
     }
 }

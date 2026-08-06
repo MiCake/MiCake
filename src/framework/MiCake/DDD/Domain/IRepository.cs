@@ -22,51 +22,44 @@ namespace MiCake.DDD.Domain
         /// <summary>
         /// Add a new aggregateRoot.
         /// </summary>
+        /// <remarks>
+        /// Only modifies the tracked state of the current unit of work; persistence is
+        /// owned by the unit of work (flush or commit). For identity-generating keys,
+        /// call <see cref="MiCake.DDD.Uow.IUnitOfWork.FlushAsync"/> afterwards to obtain
+        /// the generated key on the aggregate instance.
+        /// </remarks>
         Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Add a new aggregateRoot and return this aggregate. Sometimes can use this way to get primary key.
-        /// 
-        /// <para>
-        /// For some types whose ID is self-increasing, the result can be obtained only after the database operation is performed.
-        /// So, you need to keep <paramref name="saveNow"/> true.
-        /// </para>
-        /// </summary>
-        /// <param name="aggregateRoot">The aggregate root to be added.</param>
-        /// <param name="saveNow">Whether to immediately save changes to the database. Default value: true</param>
-        /// <param name="cancellationToken"></param>
-        Task<TAggregateRoot> AddAndReturnAsync(TAggregateRoot aggregateRoot, bool saveNow = true, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update aggregateRoot.
         /// </summary>
+        /// <remarks>
+        /// When the instance is not tracked, this performs a full detached aggregate
+        /// replacement: every property of the supplied instance is written. Configured
+        /// concurrency tokens are preserved, so a stale replacement that conflicts with
+        /// a concurrently saved version surfaces as <c>DbUpdateConcurrencyException</c>
+        /// during the unit of work flush or commit instead of silently overwriting it.
+        /// Load-and-modify is the preferred workflow for partial updates.
+        /// </remarks>
         Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Delete aggregateRoot from repository
+        /// Delete aggregateRoot from repository (tracked lifecycle deletion).
         /// </summary>
         Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Delete aggregateRoot form repository by id.
+        /// Delete aggregateRoot from repository by id.
         /// </summary>
+        /// <remarks>
+        /// Loads the aggregate into the stable unit of work context and performs tracked
+        /// deletion, so soft deletion, audit, domain events, and unit of work rollback
+        /// semantics apply exactly as with <see cref="DeleteAsync"/>. No operation when
+        /// no aggregate with the given id exists.
+        /// </remarks>
         /// <param name="id"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Save changes of this repository to database.
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Clear change tracking for the repository.
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        Task ClearChangeTrackingAsync(CancellationToken cancellationToken = default);
     }
 }
