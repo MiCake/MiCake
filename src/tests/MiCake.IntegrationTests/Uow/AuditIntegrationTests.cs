@@ -3,6 +3,7 @@ using MiCake.Audit.Core;
 // using MiCake.Audit.SoftDeletion; // already imported below
 using MiCake.Audit;
 using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -20,7 +21,6 @@ namespace MiCake.IntegrationTests.Uow
     public class AuditIntegrationTests : IDisposable
     {
         private readonly ServiceProvider _serviceProvider;
-        private readonly TestDbContext _dbContext;
         private readonly IMiCakeApplication _miCakeApp;
         private readonly MiCakeAppFixture _fixture;
 
@@ -52,40 +52,62 @@ namespace MiCake.IntegrationTests.Uow
             // Initialize MiCake application so modules register internal lifetimes
             // App will be started by fixture when creating provider
             _miCakeApp = _serviceProvider.GetRequiredService<IMiCakeApplication>();
+        }
 
-            _dbContext = _serviceProvider.GetRequiredService<TestDbContext>();
+        /// <summary>
+        /// Runs the test body inside a scope with an active writable unit of work.
+        /// The MiCake write guard rejects every framework-mediated write without an ambient
+        /// writable UoW, so audit behavior is asserted within the contracted boundary.
+        /// </summary>
+        private Task RunInUowAsync(Func<TestDbContext, Task> action)
+            => RunInUowAsync(_serviceProvider, action);
+
+        private static async Task RunInUowAsync(IServiceProvider provider, Func<TestDbContext, Task> action)
+        {
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await using var uow = await manager.BeginAsync();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            await action(dbContext);
+            await uow.CommitAsync();
         }
 
         [Fact]
         public async Task SaveChanges_ShouldSetCreationTime_ForEntitiesWithIHasCreatedAt()
         {
-            // Arrange
-            var entity = new AuditEntityWithCreationTime { Name = "Create" };
-            _dbContext.AuditEntities.Add(entity);
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new AuditEntityWithCreationTime { Name = "Create" };
+                dbContext.AuditEntities.Add(entity);
 
-            // Act
-            await _dbContext.SaveChangesAsync();
+                // Act
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.NotEqual(default, entity.CreatedAt);
+                // Assert
+                Assert.NotEqual(default, entity.CreatedAt);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_ShouldSetModificationTime_ForEntitiesWithIHasUpdatedAt()
         {
-            // Arrange
-            var entity = new AuditEntityWithCreateAndModify { Name = "Initial" };
-            _dbContext.AuditEntities2.Add(entity);
-            await _dbContext.SaveChangesAsync();
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new AuditEntityWithCreateAndModify { Name = "Initial" };
+                dbContext.AuditEntities2.Add(entity);
+                await dbContext.SaveChangesAsync();
+                dbContext.ChangeTracker.Clear();
 
-            // Act - update then save
-            var existing = await _dbContext.AuditEntities2.FindAsync(entity.Id);
-            existing.Name = "Updated";
-            await _dbContext.SaveChangesAsync();
+                // Act - update then save
+                var existing = await dbContext.AuditEntities2.FindAsync(entity.Id);
+                existing.Name = "Updated";
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.NotNull(existing.UpdatedAt);
+                // Assert
+                Assert.NotNull(existing.UpdatedAt);
+            });
         }
 
         [Fact]
@@ -112,17 +134,21 @@ namespace MiCake.IntegrationTests.Uow
 
             // Arrange
             var entity = new SoftDeletableEntity { Name = "ToDelete" };
-            _dbContext.SoftEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
 
-            // Act - remove and save
-            _dbContext.SoftEntities.Remove(entity);
-            await _dbContext.SaveChangesAsync();
+            await RunInUowAsync(async dbContext =>
+            {
+                dbContext.SoftEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert - entity still exists in store but marked as deleted
-            var fetched = await _dbContext.SoftEntities.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Id == entity.Id);
-            Assert.NotNull(fetched);
-            Assert.True(fetched.IsDeleted);
+                // Act - remove and save
+                dbContext.SoftEntities.Remove(entity);
+                await dbContext.SaveChangesAsync();
+
+                // Assert - entity still exists in store but marked as deleted
+                var fetched = await dbContext.SoftEntities.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Id == entity.Id);
+                Assert.NotNull(fetched);
+                Assert.True(fetched.IsDeleted);
+            });
         }
 
         [Fact]
@@ -154,11 +180,13 @@ namespace MiCake.IntegrationTests.Uow
             try
             {
                 var scopedApp = customScope.GetRequiredService<IMiCakeApplication>();
-                var scopedDb = customScope.GetRequiredService<TestDbContext>();
 
                 var entity = new AuditEntityWithCreationTime { Name = "CustomTime" };
-                scopedDb.AuditEntities.Add(entity);
-                await scopedDb.SaveChangesAsync();
+                await RunInUowAsync(customScope, async scopedDb =>
+                {
+                    scopedDb.AuditEntities.Add(entity);
+                    await scopedDb.SaveChangesAsync();
+                });
 
                 Assert.Equal(new DateTimeOffset(fixedTime).UtcDateTime, entity.CreatedAt);
             }

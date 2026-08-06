@@ -18,23 +18,9 @@ changes:
     title: UoW Transaction Reliability
     plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
     status: active
-    updated_at: 2026-08-06T11:19:25.847Z
+    updated_at: 2026-08-06T14:25:42.919Z
     epic_id: ""
 history:
-  - skill: /mvt-update-plan
-    completed_at: 2026-08-06T08:21:37.396Z
-    summary: t3-write-transaction-guards 完成：实现 ADR-002 写守卫与命令绑定后 EF Core 217/217、UoW 108/108、构建 0 警告，deliverables 已生成并标记 t5/t7 stale；计划推进至 t4-lifecycle-reentry-state（3/8）
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-implement
-    completed_at: 2026-08-06T08:59:33.049Z
-    summary: 完成 t4-lifecycle-reentry-state：SaveOperationStateAccessor per-DbContext 根操作帧（快照/事件身份/re-entry/cycle，IResettableService 池化重置）、拦截器重写驱动 root/nested/re-entry 状态机、无进展与 MaxSaveCycles 抛
-      SaveChangesReentryException、handlers 从 UoW scope provider 解析、移除全部静态/单例可变状态、EF Core 224/224 与 MiCake 258/258 通过、构建 0 警告；deliverables 已生成并标记 t5/t7 stale
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-review
-    completed_at: 2026-08-06T10:02:18.111Z
-    summary: 完成 t3/t4 独立复审：Request changes，发现 6 个 Critical、5 个 Warning、2 个 Suggestion；默认 MiCakeDbContext 写守卫旁路、未知 non-query 放行、静态工厂跨 host 污染、re-entry 未标 rollback-only、事件去重未接线及 post-save re-entry
-      重入为阻断问题；24/24 聚焦测试通过但覆盖不足，用户选择不写 review artifact
-    change_id: 20260806-uow-transaction-reliability
   - skill: /mvt-fix
     completed_at: 2026-08-06T10:33:12.091Z
     summary: 修复 t3/t4 复审 6 Critical+4 Warning+2 Suggestion：默认 MiCakeDbContext 无 provider 写路径 fail-fast、未知 non-query 保守拒绝且仅 Migrations 放行、移除模块级静态工厂跨 host 污染、re-entry 异常标记 UoW rollback-only、事件实例去重接入
@@ -68,4 +54,19 @@ history:
   - skill: /mvt-update-plan
     completed_at: 2026-08-06T11:19:25.847Z
     summary: t5-repository-contracts 完成：实现 ADR-001 仓储契约 + 独立复审 2 Critical/1 Warning 修复（物理删除显式激活事务、shadow/复合键分页、无 UoW 契约测试重写）后 EF Core 240/240、MiCake 260/260、构建 0 警告；计划推进至 t6-boundary-migration-docs（5/8）
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-implement
+    completed_at: 2026-08-06T14:05:23.379Z
+    summary: 完成 t6-boundary-migration-docs：UnitOfWorkAttribute 重构为 sealed（IsReadOnly+IsolationLevel?，修复 PersistenceStrategy 编译错误）、DisableUnitOfWorkAttribute 独立化、filter 两参
+      BeginAsync+显式只读覆盖推断+取消回滚+异步释放、EnableReadOnlyActionNameInference 默认关闭、sample 移除 SaveChangesAsync、三个 README 迁移文档（7 项替代表/领域vs集成事件/操作模式）；ASP.NET 425/425、构建 0 警告；deliverables 已生成并标记 t7 stale
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-update-plan
+    completed_at: 2026-08-06T14:25:42.919Z
+    summary: t6-boundary-migration-docs 完成：实施（ASP.NET 边界只读契约+文档迁移）+ 复审 Approve with comments 0 Critical + 修复（S1/S2/S3/S6/S7/S8，S5 判定无效；新增 7 测试，ASP.NET 432/432、构建 0 警告）；计划推进至
+      t7-relational-acceptance（6/8），变更保持打开
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-test
+    completed_at: 2026-08-06T16:15:29.048Z
+    summary: 完成 t7 关系型验收测试：文件型 SQLite fixture（含池化 provider）+ 组合矩阵/写路径/失败结果/LazyImmediate 重写，取代 5 个被跳过的 InMemory 事务测试；迁移审计与分页测试包入 UoW；集成测试 164/168 通过、0 跳过。发现 3 个实现缺陷：I-1 owned 变更 owner UpdatedAt
+      不更新（EntityEntry struct 比较 bug）、I-2 池化 DbContext 写事务死锁（coordinator 从错误 provider 解析第二实例）、I-3 MiCakeDbContext 回退拦截器冲突；test-design.md 已写入
     change_id: 20260806-uow-transaction-reliability

@@ -2,10 +2,10 @@ version: 1
 change_id: 20260806-uow-transaction-reliability
 title: UoW Transaction Reliability
 created_at: 2026-08-06T12:03:44+08:00
-updated_at: 2026-08-06T11:19:17.307Z
+updated_at: 2026-08-06T14:25:32.084Z
 status: in_progress
 current_tasks:
-  default: t6-boundary-migration-docs
+  default: t7-relational-acceptance
 tasks:
   - id: t1-uow-runtime-contracts
     title: Rebuild provider-neutral UoW runtime
@@ -176,8 +176,8 @@ tasks:
       freshness: current
   - id: t6-boundary-migration-docs
     title: Migrate ASP.NET boundary and public guidance
-    status: in_progress
-    completed_at: null
+    status: done
+    completed_at: 2026-08-06T14:25:32.084Z
     depends_on:
       - t1-uow-runtime-contracts
       - t5-repository-contracts
@@ -206,10 +206,10 @@ tasks:
       - Documentation distinguishes domain events inside the transaction from integration events after durable commit and describes all operation modes
       - ASP.NET Core tests pass and the sample plus framework solution build cleanly
     deliverables:
-      freshness: stale
+      freshness: current
   - id: t7-relational-acceptance
     title: Prove relational transaction guarantees
-    status: pending
+    status: in_progress
     completed_at: null
     depends_on:
       - t2-ef-resource-identity
@@ -237,6 +237,8 @@ tasks:
       - Read-only, no-UoW, rollback-failure, partial-commit, lifecycle-failure, re-entry, and detached concurrency scenarios produce the documented outcomes
       - No transaction/savepoint guarantee relies solely on EF Core InMemory or remains skipped without an explicit superseding test
       - dotnet test src/tests/MiCake.IntegrationTests/MiCake.IntegrationTests.csproj passes
+    deliverables:
+      freshness: stale
   - id: t8-performance-final-review
     title: Baseline performance and review delivery
     status: pending

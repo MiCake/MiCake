@@ -58,22 +58,18 @@ namespace MiCake.AspNetCore.Uow
 
             var controllerActionDes = ActionDescriptorHelper.AsControllerActionDescriptor(context.ActionDescriptor);
 
-            // Check for UnitOfWork attribute on action, controller, or endpoint metadata
-            UnitOfWorkAttribute? uowAttribute;
-            try
+            // An explicit disable attribute always wins over global configuration
+            if (HasDisableUnitOfWorkAttribute(controllerActionDes))
             {
-                uowAttribute = GetUnitOfWorkAttribute(controllerActionDes);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting UnitOfWork attribute");
-                throw;
+                _logger.LogDebug("Unit of Work disabled for action {ActionName}", controllerActionDes.ActionName);
+                await next().ConfigureAwait(false);
+                return;
             }
 
             // Determine if UoW should be enabled
-            // If attribute is present, it determines enablement (including DisableUnitOfWorkAttribute)
-            // Otherwise, use global configuration
-            bool isUowEnabled = uowAttribute?.IsUowEnabled ?? _uowOptions.EnableAutoUnitOfWork;
+            // If attribute is present, it enables UoW; otherwise use global configuration
+            var uowAttribute = GetUnitOfWorkAttribute(controllerActionDes);
+            bool isUowEnabled = uowAttribute != null || _uowOptions.EnableAutoUnitOfWork;
 
             if (!isUowEnabled)
             {
@@ -82,8 +78,18 @@ namespace MiCake.AspNetCore.Uow
                 return;
             }
 
-            // Determine if this is a read-only action based on naming convention
-            bool isReadOnly = DetermineIfReadOnly(controllerActionDes.ActionName);
+            // Determine if this is a read-only operation.
+            // Explicit action/controller metadata wins; action-name inference only applies when opted in.
+            bool isReadOnly;
+            if (uowAttribute != null)
+            {
+                isReadOnly = uowAttribute.IsReadOnly;
+            }
+            else
+            {
+                isReadOnly = _uowOptions.EnableReadOnlyActionNameInference &&
+                             DetermineIfReadOnly(controllerActionDes.ActionName);
+            }
 
             // Create UoW options
             var options = CreateOptions(uowAttribute, isReadOnly);
@@ -96,10 +102,14 @@ namespace MiCake.AspNetCore.Uow
         {
             if (uowAttribute != null)
             {
-                var options = uowAttribute.CreateOptions();
-                if (isReadOnly)
+                var options = new UnitOfWorkOptions
                 {
-                    options.IsReadOnly = true;
+                    IsReadOnly = uowAttribute.IsReadOnly
+                };
+
+                if (uowAttribute.IsolationLevel.HasValue)
+                {
+                    options.IsolationLevel = uowAttribute.IsolationLevel;
                 }
 
                 return options;
@@ -118,7 +128,7 @@ namespace MiCake.AspNetCore.Uow
             IUnitOfWork? unitOfWork = null;
             try
             {
-                unitOfWork = await _unitOfWorkManager.BeginAsync(options, requiresNew: false, cancellationToken).ConfigureAwait(false);
+                unitOfWork = await _unitOfWorkManager.BeginAsync(options, cancellationToken).ConfigureAwait(false);
 
                 _logger.LogDebug(
                     "Started Unit of Work {UowId} for action {ActionName}. IsReadOnly: {IsReadOnly}, InitMode: {InitMode}",
@@ -130,7 +140,10 @@ namespace MiCake.AspNetCore.Uow
                 // Execute the action
                 var result = await next().ConfigureAwait(false);
 
-                // Handle UoW based on action execution result
+                // Handle UoW based on action execution result.
+                // Commit/rollback intentionally do not take the request cancellation token:
+                // request cancellation is already detected via ActionExecutedContext.Canceled above,
+                // and interrupting an in-flight commit could leave resources in a partial-commit state.
                 if (ActionSucceeded(result))
                 {
                     // Action succeeded - commit unless read-only
@@ -154,16 +167,26 @@ namespace MiCake.AspNetCore.Uow
                             controllerActionDes.ActionName);
                     }
                 }
-                else if (result.Exception != null)
+                else
                 {
-                    // Action failed with exception - rollback
+                    // Action failed or was canceled - rollback
                     await unitOfWork.RollbackAsync().ConfigureAwait(false);
 
-                    _logger.LogWarning(
-                        result.Exception,
-                        "Rolled back Unit of Work {UowId} for action {ActionName} due to exception",
-                        unitOfWork.Id,
-                        controllerActionDes.ActionName);
+                    if (result.Exception != null && !result.ExceptionHandled)
+                    {
+                        _logger.LogWarning(
+                            result.Exception,
+                            "Rolled back Unit of Work {UowId} for action {ActionName} due to exception",
+                            unitOfWork.Id,
+                            controllerActionDes.ActionName);
+                    }
+                    else
+                    {
+                        _logger.LogDebug(
+                            "Rolled back Unit of Work {UowId} for canceled action {ActionName}",
+                            unitOfWork.Id,
+                            controllerActionDes.ActionName);
+                    }
                 }
             }
             catch (Exception ex)
@@ -196,8 +219,11 @@ namespace MiCake.AspNetCore.Uow
             }
             finally
             {
-                // Dispose the Unit of Work
-                unitOfWork?.Dispose();
+                // Dispose the Unit of Work asynchronously
+                if (unitOfWork != null)
+                {
+                    await unitOfWork.DisposeAsync().ConfigureAwait(false);
+                }
             }
         }
 
@@ -250,6 +276,36 @@ namespace MiCake.AspNetCore.Uow
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether the action, controller, or endpoint metadata carries a
+        /// <see cref="DisableUnitOfWorkAttribute"/>, which explicitly opts out of UoW management.
+        /// </summary>
+        private static bool HasDisableUnitOfWorkAttribute(ControllerActionDescriptor controllerActionDes)
+        {
+            if (controllerActionDes.MethodInfo?.GetCustomAttribute<DisableUnitOfWorkAttribute>(inherit: true) != null)
+            {
+                return true;
+            }
+
+            if (controllerActionDes.ControllerTypeInfo?.GetCustomAttribute<DisableUnitOfWorkAttribute>(inherit: true) != null)
+            {
+                return true;
+            }
+
+            if (controllerActionDes.EndpointMetadata != null)
+            {
+                foreach (var metadata in controllerActionDes.EndpointMetadata)
+                {
+                    if (metadata is DisableUnitOfWorkAttribute)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

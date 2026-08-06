@@ -438,3 +438,83 @@ Consumed by t6 (sample/README migration) and t7 (relational acceptance).
 - Physical delete requires `IUnitOfWorkManager.BeginAsync()`; read-only and no-UoW writes are rejected before SQL execution.
 - t6: sample controllers must migrate `SaveChangesAsync`/`AddAndReturnAsync` to the UoW contract; migration guidance must name replacements per R34.
 - t7: re-verify DeleteById lifecycle, physical delete rollback, and paging determinism on file-backed SQLite; unit coverage already runs on SQLite.
+
+## Task: t6-boundary-migration-docs — Migrate ASP.NET boundary and public guidance
+
+## Implementation Summary
+
+Made the ASP.NET request boundary's read-only intent explicit and migrated the sample and public documentation to the new UoW contract. `UnitOfWorkAttribute` is now a sealed attribute exposing only `IsReadOnly` and `IsolationLevel?`, matching the design's ASP.NET Core Contract; the removed `InitializationMode` and `CreateOptions` (which referenced the deleted `PersistenceStrategy`) are gone, fixing the pre-existing compile errors in `MiCake.AspNetCore`. `DisableUnitOfWorkAttribute` was kept as an independent sealed attribute (it can no longer inherit from the sealed `UnitOfWorkAttribute`) so explicit per-action opt-out remains available. `UnitOfWorkFilter` now calls the two-parameter `BeginAsync`, resolves read-only intent with the priority explicit metadata > opt-in action-name inference > default writable, rolls back on action failure and request cancellation (including cancellation without an exception), and always disposes the unit of work asynchronously, including on commit/rollback failure paths. `MiCakeAspNetUowOptions` gains `EnableReadOnlyActionNameInference` (default `false`), making action-name inference opt-in while `ReadOnlyActionKeywords` still configures the inferred names. The sample `BookController.ChangeAuthor` no longer calls the removed repository `SaveChangesAsync`; tracked changes are committed by the automatic request unit of work. The sample has no database-generated key, so no `FlushAsync` demo was added there; the three framework READMEs document `AddAsync` + `FlushAsync` for generated keys, `ExecuteRequiresNewAsync`/standalone execution, read-only UoWs, physical/bulk lifecycle bypass, transactional domain events vs post-commit integration events, and the full replacement table for removed APIs (`AddAndReturnAsync`, `SaveChangesAsync`, `ClearChangeTrackingAsync`, requiresNew overloads, `PersistenceStrategy`, `Timeout`, `IDbContextWrapper`). Read/write path blocking for read-only requests is enforced by the t3 write coordinator, which the filter feeds via `UnitOfWorkOptions.IsReadOnly`.
+
+## Files Touched
+
+| Path | Action | Intent |
+|---|---|---|
+| `src/framework/MiCake.AspNetCore/Uow/UnitOfWorkAttribute.cs` | modify | Sealed `UnitOfWorkAttribute` with `IsReadOnly` + `IsolationLevel?`; independent sealed `DisableUnitOfWorkAttribute`; remove `InitializationMode`/`CreateOptions`/`IsUowEnabled` (fixes `PersistenceStrategy` compile error) |
+| `src/framework/MiCake.AspNetCore/Uow/UnitOfWorkFilter.cs` | modify | Two-parameter `BeginAsync`; explicit read-only metadata overrides opt-in inference; rollback on failure/cancellation; async disposal in all paths |
+| `src/framework/MiCake.AspNetCore/MiCakeAspNetOptions.cs` | modify | Add `EnableReadOnlyActionNameInference` (default false); document inference behavior |
+| `src/tests/MiCake.AspNetCore.Tests/Uow/UnitOfWorkFilterTests.cs` | modify | Adapt to new signatures; explicit read-only/writable override tests, inference default-off and opt-in tests, cancellation rollback, async disposal, commit+rollback failure AggregateException |
+| `samples/BaseMiCakeApplication/Controllers/BookController.cs` | modify | Remove repository `SaveChangesAsync`; tracked changes committed by the request UoW |
+| `src/framework/MiCake/README.md` | modify | UoW contract documentation: flush/commit flows, read-only UoW, requiresNew/standalone, savepoints, multi-resource semantics, migration table |
+| `src/framework/MiCake.EntityFrameworkCore/README.md` | modify | Repository persistence ownership, physical/bulk lifecycle bypass, transactional domain events vs post-commit integration events, migration table |
+| `src/framework/MiCake.AspNetCore/README.md` | modify | Per-request UoW operation modes, explicit read-only metadata, opt-in inference, failure semantics |
+
+## Design Compliance
+
+| Check | Result | Reason |
+|---|---|---|
+| Files touched == Change Tracking ± deviation | passed | All 8 files are listed in the design's Modify table; no extra source files |
+| Module/layer placement | passed | ASP.NET boundary (`MiCake.AspNetCore/Uow`), ASP.NET tests, sample controller, framework READMEs only |
+| Public interfaces match Key Interfaces | passed | `UnitOfWorkAttribute` matches the normative sealed contract (`IsReadOnly`, `IsolationLevel?`); `MiCakeAspNetOptions` exposes `EnableReadOnlyActionNameInference` defaulting to `false` |
+| Forbidden cross-layer imports absent | passed | Filter consumes `MiCake.DDD.Uow` contracts only; no EF Core references added |
+| Error handling at boundaries only | passed | Filter handles rollback/commit/dispose failures at the request boundary; no interior catches |
+| No new external dependencies | passed | No manifest change |
+
+## Deviations from Design
+
+1. **`DisableUnitOfWorkAttribute` retained as an independent sealed attribute (design-consistent)** — the design declares `UnitOfWorkAttribute` sealed (which prohibits inheritance) and does not list `DisableUnitOfWorkAttribute` for deletion; the t6 acceptance criteria require explicit per-action opt-out. It was retained as a standalone `Attribute` subclass with identical semantics; confirmed with the user at scope confirmation. Recorded here (rather than treated as an unlisted change) for reviewer visibility.
+2. **No `FlushAsync` demo added to the sample** — `Book.Id` is application-generated (`Guid.NewGuid()`), so no generated-key scenario exists in the sample; the design requires demonstrating `FlushAsync` only where a generated key is required. The READMEs document the pattern instead.
+3. **`MiCake.IntegrationTests` legacy tests not migrated in t6** — they still reference the removed `PersistenceStrategy` (e.g. `UnitOfWorkCompleteWorkflowTests.cs`, `CommonFilterPagingQueryIntegrationTests.cs`) and belong to t7's "replace or supersede skipped transaction tests" scope; t7 owns rewriting them.
+
+## Self-Check Results
+
+- Type-checker: `dotnet build src/framework/MiCake.AspNetCore/MiCake.AspNetCore.csproj` — succeeded (0 warnings, 0 errors), fixing the 3 pre-existing compile errors.
+- Tests: `dotnet test src/tests/MiCake.AspNetCore.Tests/MiCake.AspNetCore.Tests.csproj` — 425/425 passed (25 filter tests, 0 failures).
+- Sample: `dotnet build samples/BaseMiCakeApplication/BaseMiCakeApplication.csproj` — succeeded (0 warnings, 0 errors).
+- Note: `MiCake.IntegrationTests` still fails to compile because of removed-API references; migrating it is t7's scope.
+
+## Open TODOs
+
+- t7: rewrite `MiCake.IntegrationTests` legacy tests that reference removed APIs (`PersistenceStrategy`, three-parameter `BeginAsync`, repository save APIs) into the SQLite relational acceptance matrix.
+- t7: prove explicit read-only write blocking and cancellation rollback against file-backed SQLite at the request boundary.
+- `mvt-review`: independently verify this artifact's compliance claims and the filter failure-path semantics.
+
+## Change Tracking
+
+- Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
+- Task: `t6-boundary-migration-docs` — implemented; status update deferred to `/mvt-update-plan`.
+- Acceptance status: explicit read-only metadata overrides inference and blocks writes via the t3 write coordinator (unit-tested at the filter boundary); cancellation/action failure/commit failure/rollback failure preserve the correct exception and asynchronously dispose the UoW (unit-tested, including the AggregateException path); the sample no longer calls repository `SaveChangesAsync` (built cleanly); migration guidance lists replacements for all seven removed/changed APIs (README tables); documentation distinguishes in-transaction domain events from post-commit integration events and describes all operation modes (ASP.NET README table); ASP.NET Core tests pass and the sample plus framework build cleanly.
+
+### Deliverables
+
+#### Public Interface
+
+Consumed by t7 (relational acceptance) and downstream users.
+
+- `UnitOfWorkAttribute` (sealed) — `bool IsReadOnly { get; set; }`, `IsolationLevel? IsolationLevel { get; set; }`; applies to classes and methods. Explicit read-only metadata overrides action-name inference. `InitializationMode`, `CreateOptions()`, and `IsUowEnabled` are removed.
+- `DisableUnitOfWorkAttribute` (sealed, independent) — explicit opt-out from automatic UoW; wins over `EnableAutoUnitOfWork` and `[UnitOfWork]`.
+- `UnitOfWorkFilter` — begins `IUnitOfWorkManager.BeginAsync(UnitOfWorkOptions, CancellationToken)`; commits on success, rolls back on action failure/cancellation; disposes asynchronously in all paths; commit+rollback double failure throws `AggregateException` with both causes.
+- `MiCakeAspNetUowOptions` — `EnableAutoUnitOfWork` (default true), `EnableReadOnlyActionNameInference` (default false), `ReadOnlyActionKeywords` (default `["Find", "Get", "Query", "Search"]`).
+- `IRepository` no longer exposes `SaveChangesAsync`; the sample relies on the request UoW.
+
+#### Data Shapes
+
+- `UnitOfWorkOptions` produced by the filter: attribute present → `IsReadOnly = attribute.IsReadOnly`, `IsolationLevel` = attribute value when non-null (otherwise the UoW default `ReadCommitted`); attribute absent → `UnitOfWorkOptions.ReadOnly` or `UnitOfWorkOptions.Default`.
+- Read-only resolution priority: `[UnitOfWork(IsReadOnly = ...)]` > `EnableReadOnlyActionNameInference` + keyword prefix match > writable default.
+- Cancellation detection: `ActionExecutedContext.Canceled` (with or without exception) triggers rollback.
+
+#### Usage Constraints
+
+- Read-only requests reject every supported write path before SQL execution (t3 write coordinator; the filter only propagates `IsReadOnly`).
+- `[UnitOfWork]` on an action or controller always enables UoW even when `EnableAutoUnitOfWork = false`; `[DisableUnitOfWork]` always disables it even when globally enabled.
+- Action-name inference is opt-in; do not rely on it for security or correctness boundaries — use explicit `IsReadOnly` metadata.
+- t7: the request-boundary matrix must exercise explicit read-only write rejection, cancellation rollback, and async disposal against file-backed SQLite; legacy `MiCake.IntegrationTests` files referencing removed APIs (`PersistenceStrategy`, three-parameter `BeginAsync`, repository save APIs) must be rewritten or superseded.
