@@ -16,6 +16,8 @@ You are the **Architect** -- a Development Planner.
 ### Decision Rules
 - active_change is set AND plan_path is empty -> Generate a fresh plan.yaml
 - active_change is set AND plan_path is non-empty -> Confirm before regenerating; default to /mvt-update-plan
+- Requested plan id differs from active_change.id -> Block and resolve lifecycle through /mvt-update-plan
+- Requested plan id equals active_change.id -> Allow plan creation or regeneration
 - Plan grows beyond practical manageability -> Stop, propose phasing the change into multiple plans
 - Dependencies form a cycle -> Reject and ask the user to resolve
 - active_change is empty -> Stop and request /mvt-analyze first
@@ -97,6 +99,19 @@ Persisted markdown output MUST follow these rendering rules. Scope: artifact fil
 
 This constraint is NON-NEGOTIABLE and overrides formatting habits inferred from templates or source material.
 
+## Confirmation Prompts
+
+At every confirmation or choice point in this skill, present the named choices as selectable options — never as an open "type y/n" question. Any `choices A / B / ...` notation below marks such a point; the labels are the exact options to offer.
+
+- If the environment exposes an interactive selection capability (any host tool for picking an option), use it.
+- Otherwise, list the choices as a numbered menu and accept the number or the label:
+  ```
+  1) A
+  2) B
+  ```
+
+Presentation is all that changes — the choices and their meaning stay as written at each point.
+
 ## Execution Flow
 
 ### Step 1: Gather Source Material
@@ -113,6 +128,7 @@ If no analysis or design artifacts exist and the user provides no description, p
 
 If `active_change.plan_path is non-empty` AND `.ai-agents/workspace/artifacts/{active_change.id}/plan.yaml` already exists:
 
+- If `preferences.silent.plan_dev` is `true`, do not prompt and do not overwrite. Abort with a notice to use `/mvt-update-plan` or explicitly request regeneration.
 - Read the existing plan.
 - Show a summary (task count, status counts, current_tasks).
 - Ask: "A plan already exists. Choose: (1) regenerate from scratch (existing tasks discarded), (2) cancel and use `/mvt-update-plan` to evolve it, (3) abort."
@@ -245,17 +261,33 @@ If validation fails, revise the plan and re-validate (do NOT write a broken plan
 
 Before writing, write the draft to a temporary path and validate it with `node .ai-agents/scripts/plan-update.cjs --validate <draft-plan-path>`. Only write the final `plan.yaml` when the command exits 0; on failure, surface stderr, revise the draft, and re-run validation.
 
-### Step 6: Write plan.yaml
+### Step 6: Confirm Validated Draft
+
+If `preferences.silent.plan_dev` is `true`, skip this step and continue directly to Step 7.
+
+Otherwise, after validation succeeds and before writing `plan.yaml`, show a concise draft summary:
+
+- Task count and the `current_tasks` map.
+- Each task's id, title, dependencies, and skill hint.
+- One acceptance highlight per task.
+
+Offer choices `Confirm and write` / `Revise` / `Cancel`.
+
+- `Confirm and write`: continue to Step 7.
+- `Revise`: apply the user's requested changes, repeat Step 5 validation, then repeat this confirmation.
+- `Cancel`: abort without writing `plan.yaml` or updating session state.
+
+### Step 7: Write plan.yaml
 
 Write to `.ai-agents/workspace/artifacts/{active_change.id}/plan.yaml`. If the artifacts directory does not exist, create it.
 
 If a previous `plan.yaml` exists and the user chose regeneration in Step 2, overwrite it. Otherwise, this is a fresh write.
 
-### Step 7: Update Session State
+### Step 8: Update Session State
 
 Apply the standard State Update rules (see State Update section below).
 
-### Step 8: Output
+### Step 9: Output
 
 Render an inline summary (no external template). Structure:
 

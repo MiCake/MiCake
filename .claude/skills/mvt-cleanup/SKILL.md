@@ -116,6 +116,12 @@ Presentation is all that changes — the choices and their meaning stay as writt
 
 ## Execution Flow
 
+### Scanner and Checker Boundary
+
+Before inventory, run `workspace-state-check.cjs` and present its findings for confirmation. Run `artifact-scan.cjs --mode change-dirs` and `artifact-scan.cjs --mode files`; use only its JSON entries for live artifact inventory. Do not use a fallback recursive live-artifact scan.
+
+Selected `EMPTY_CHANGE_ID` findings map to `--prune-empty-changes`; selected `PLAN_DONE_INDEX_ACTIVE` findings map to `--repair-change-statuses <id>=done`. `PLAN_PATH_MISSING`, `PLAN_INVALID`, and `EPIC_REFERENCE_UNRESOLVED` require manual review and are never repaired automatically.
+
 ### Step 1: Load Inputs
 - **Fallback**: if `session.yaml` is missing, refuse to clean -- without state we can't tell what is in-progress vs completed; recommend `/mvt-init` and stop.
 
@@ -131,7 +137,7 @@ This check ensures `/mvt-sync-context` has processed a change's knowledge before
 ### Step 3: Inventory Artifacts
 - **What**: produce a per-change-id inventory with size and last-modified data.
 - **How**:
-  1. Walk `.ai-agents/workspace/artifacts/` and group files by their parent change-id directory. **Exclude the `_archived/` subdirectory** from the walk — it contains previously archived changes and is not subject to re-inventory.
+  1. Group only the paths returned by `artifact-scan.cjs --mode change-dirs` and `--mode files` by their live parent change-id directory. Do not enumerate `.ai-agents/workspace/artifacts/` independently.
   2. For each file: characters, estimated tokens (`ceil(characters / 4)`), last-modified (mtime).
   3. For each change-id directory, sum tokens and file count.
   4. Mark each change-id as `active | in-recent-changes | unindexed | legacy-pattern`:
@@ -197,10 +203,10 @@ This check ensures `/mvt-sync-context` has processed a change's knowledge before
 
   3. **Archive legacy-pattern action**: move `knowledge/patterns/` to `.ai-agents/knowledge/_archived/legacy-patterns/`. If that destination exists, preserve existing content and ask for a timestamped suffix. Do not hard-delete this directory.
   4. **Delete action**: remove only the items explicitly marked for deletion in the confirmed plan; never recurse beyond what was listed.
-  5. **Stale history truncation**: call `session-update.cjs --truncate-history <N>` where N is from `config.yaml > preferences.history_limits.history` (default 10).
+  5. **Stale history truncation**: include `--truncate-history <N>` in the one final `session-update.cjs` call, where N is from `config.yaml > preferences.history_limits.history` (default 10).
   6. All file mutations atomic where possible (write-temp + rename, copy-then-delete for moves).
   7. If any single action fails, STOP further actions; report what completed, what failed, and leave a recoverable state (do not partially overwrite a file with truncated content).
-  8. **Index synchronization**: after all archive moves finish, re-glob `artifacts/_archived/` for the actual moved change-id and epic-id directories from this run. The `--remove-change` id set MUST equal the set of change-id directories actually moved into `_archived/`; the `--remove-epic` id set MUST equal the set of epic directories actually moved. If the sets differ from the planned ids, use the actual moved-dir set and report the mismatch.
+  8. **Index synchronization**: use only ids whose moves succeeded. The `--remove-change` id set equals moved change directories; the `--remove-epic` id set equals moved epic directories. If a move fails, stop further moves and submit only still-valid selected repairs, or submit no session update when safety cannot be established.
 
 ### Step 8: Report Result
 - Print the actually-applied actions (may differ from the plan if Step 7 stopped early).
@@ -213,44 +219,40 @@ Based on the actual cleanup actions performed, choose the appropriate session-up
 
 | Actual cleanup action | session-update parameters |
 |----------------------|---------------------------|
-| Closed `active_change` (all plan tasks completed) **+** archived old done changes | `--close-change --remove-change <ids> --truncate-history <N>` |
-| Closed `active_change` only (no old changes archived) | `--close-change --truncate-history <N>` |
 | Archived old changes only (active_change still in progress) | `--remove-change <ids> --truncate-history <N>` |
 | Archived epic + its children (batch archive) | `--remove-epic <epic_id> --remove-change <child1>,<child2> --truncate-history <N>` |
-| `--dry-run` mode (no modifications made) | **Do NOT call** session-update script; only record history |
+| Confirmed repairs only | `--repair-change-statuses <repairs>` and/or `--prune-empty-changes`, plus `--truncate-history <N>` |
+| `--dry-run` mode, cancellation, or no applied action | **Do NOT call** session-update script |
 
 N is read from `config.yaml > preferences.history_limits.history` (default 10). `<ids>` is a comma-separated list from the actual moved-dir set collected in Step 7.8.
 
 ### Step 10: State Update
-Apply the State Update rules defined in the **State Update** section below.
+Apply all selected repairs, successful archive removals, and history truncation in exactly one final `session-update.cjs` invocation. Do not call session-update earlier in cleanup.
 
 **Pre-filled examples** (one per Step 9 row):
 
 ```bash
-# Row 1: closed active_change + archived old done changes
+# Archived old changes only
 node .ai-agents/scripts/session-update.cjs \
   --skill mvt-cleanup \
-  --close-change \
+  --summary "<concise one-line summary>" \
   --remove-change <archived_change_ids> \
   --truncate-history 10
 
-# Row 2: closed active_change only
+# Batch archive (epic + its children)
 node .ai-agents/scripts/session-update.cjs \
   --skill mvt-cleanup \
-  --close-change \
-  --truncate-history 10
-
-# Row 3: archived old changes only
-node .ai-agents/scripts/session-update.cjs \
-  --skill mvt-cleanup \
-  --remove-change <archived_change_ids> \
-  --truncate-history 10
-
-# Row 4: batch archive (epic + its children)
-node .ai-agents/scripts/session-update.cjs \
-  --skill mvt-cleanup \
+  --summary "<concise one-line summary>" \
   --remove-epic <archived_epic_id> \
   --remove-change <archived_child_ids> \
+  --truncate-history 10
+
+# Confirmed repairs (combine with archive flags when both occurred)
+node .ai-agents/scripts/session-update.cjs \
+  --skill mvt-cleanup \
+  --summary "<concise one-line summary>" \
+  --repair-change-statuses <id=done,...> \
+  --prune-empty-changes \
   --truncate-history 10
 ```
 
@@ -261,6 +263,7 @@ Replace `10` with the actual `config.yaml > preferences.history_limits.history` 
 | Case | Handling |
 |------|----------|
 | `active_change.id` directory matches a "stale completed" rule | Skip cleanup of the active change; never archive in-progress work |
+| Active change has a completed plan | Leave it active and direct the user to `/mvt-update-plan` for explicit finalization. |
 | `--dry-run` set | Stop after Step 5; do not request confirmation; do not modify any file |
 | Plan would archive ALL artifacts (workspace becomes empty) | Require an extra confirmation — choices `Continue` / `Cancel`: "This will archive every artifact." |
 | User aborts at Step 6 confirmation | Report "no changes applied" |
@@ -277,8 +280,7 @@ Replace `10` with the actual `config.yaml > preferences.history_limits.history` 
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-cleanup --summary "<concise one-line summary>" --close-change --truncate-history <count> --remove-change <ids> --remove-epic <ids>
-
+node .ai-agents/scripts/session-update.cjs --skill mvt-cleanup --summary "<concise one-line summary>" <action-selected cleanup flags>
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -286,10 +288,9 @@ Write `--summary` as one concise line in the configured `interaction_language`.
 ### Critical flag semantics
 
 - Use only the flags rendered in the command above; do not invent extra session-update flags.
-- `--close-change` snapshots `active_change` into `changes[]` with `status: done`, then clears all active-change fields.
-- `--truncate-history` keeps the most recent N `history[]` entries; use the configured history limit.
-- `--remove-change <ids>` removes entries with matching `id` from `session.changes[]` (comma-separated for multiple ids); does NOT touch `active_change`. Unknown ids are silently skipped; if all ids are unknown, a warning is written to stderr (exit code remains 0).
-- `--remove-epic <ids>` removes entries with matching `id` from `session.epics[]` (comma-separated for multiple ids); does NOT touch `active_epic`. Unknown ids are silently skipped; if all ids are unknown, a warning is written to stderr (exit code remains 0).
+- Only `mvt-cleanup` selects cleanup flags at runtime. Build one command from actions that actually succeeded: optional `--repair-change-statuses`, `--prune-empty-changes`, `--remove-change`, `--remove-epic`, and `--truncate-history`.
+- Cleanup never closes or abandons `active_change`; lifecycle finalization belongs to `mvt-update-plan`.
+- Do not invoke this command for dry-run, cancellation, or when no cleanup/repair action was applied.
 
 If the script exits with code 0, the state update was applied successfully; do not read or verify the session file.
 

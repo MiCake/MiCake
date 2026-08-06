@@ -220,6 +220,10 @@ This step applies only when the workspace has multiple projects (`projects.lengt
 - If anything regresses: revert the most recent sub-step, surface the regression, return to Step 8. Do not declare success.
 
 ### Step 10: Write Refactor Notes
+- **Confirm before writing**: when an `active_change` exists (so an artifact would be written), present the refactor notes content in the conversation first, then confirm — choices `Write` / `Skip`: "Write the refactor notes to {path}?"
+  - If the user chooses Skip, do NOT write any file under `artifacts/`. Keep the refactor notes in the conversation only, and note that no artifact was persisted. Then continue to Step 11.
+  - If the user chooses Write, write the artifact as described below.
+  - When no `active_change` exists, there is no artifact to write — skip the prompt and keep the notes inline (existing shortcut behavior).
 - **Path**: `.ai-agents/workspace/artifacts/{change-id}/refactor-notes.md` if `active_change` exists; otherwise inline summary in conversation only (shortcut mode).
 - **Required content**:
   - `Target` -- file/symbol list, current-behavior paragraph.
@@ -244,6 +248,7 @@ Apply the State Update rules defined in the **State Update** section below.
 | User has uncommitted changes overlapping the target | Show diff, recommend committing/stashing first, ask for explicit confirmation if user wants to proceed anyway |
 | Type/test failures persist after revert | Surface a clear summary; suggest user re-run the original test baseline to detect a pre-existing failure unrelated to the refactor |
 | User aborts at Step 7 | Do not modify any file; report "no changes" |
+| User declines to write the artifact at Step 10 | Do not write any file under `artifacts/`; keep the refactor notes in the conversation only and note that no artifact was persisted |
 | Active change is mid-implementation (not yet `done`) | Warn that refactoring during implementation can confuse review/test phases; require explicit confirmation |
 
 ## State Update

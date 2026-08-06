@@ -7362,9 +7362,18 @@ function loadSoleProject(projectRoot) {
 }
 var VALID_CHILD_STATUSES = ["pending", "active", "done", "abandoned"];
 var TERMINAL_STATUSES = ["done", "abandoned"];
+var VALID_CONTEXT_CATEGORIES = [
+  "goal",
+  "in_scope",
+  "out_of_scope",
+  "business_rule",
+  "constraint",
+  "example",
+  "decision"
+];
 var ERRORS = {
   MISSING_EPIC: () => "Missing required argument: --epic (or --validate <path>)",
-  NO_OPERATION: () => "No operation specified. Use --complete-child, --set-child-status, --switch-active, --add-child, or --validate.",
+  NO_OPERATION: () => "No operation specified. Use --complete-child, --abandon-child, --set-child-status, --switch-active, --add-child, or --validate.",
   EPIC_NOT_FOUND: (p) => `Epic file not found at ${p}.`,
   EPIC_PARSE_FAILED: (detail) => `Failed to parse epic.yaml: ${detail}`,
   CHILD_NOT_FOUND: (id, valid) => `Child "${id}" not found. Valid children: ${valid.length ? valid.join(", ") : "(none)"}.`,
@@ -7375,8 +7384,11 @@ var ERRORS = {
   MISSING_CHILD_STATUS: () => "--set-child-status requires --child-status <status>",
   MULTIPLE_ACTIVE: () => "Cannot activate: another child is already active. Use --switch-active for atomic reorder.",
   UNRESOLVED_DEPS: (id, deps) => `Cannot activate "${id}": unresolved depends_on: ${deps.join(", ")}`,
+  INVALID_SWITCH_TARGET_STATUS: (id, status) => `Cannot activate "${id}": status "${status}" must be pending or active.`,
   ADD_CHILD_MISSING: () => "--add-child requires an id argument",
-  ADD_CHILD_TITLE_MISSING: (id) => `--add-child "${id}" requires --child-title`
+  ADD_CHILD_TITLE_MISSING: (id) => `--add-child "${id}" requires --child-title`,
+  ADD_CHILD_CONTEXT_REFS_REQUIRED: (id) => `--add-child "${id}" requires --child-context-refs for v2 epics`,
+  DEFER_REQUIRES_COMPLETE: () => "--defer-next requires --complete-child <change_id>"
 };
 function parseArgs(argv) {
   const args = {};
@@ -7393,12 +7405,14 @@ function parseArgs(argv) {
       }
       continue;
     }
-    if (arg === "--child-title" || arg === "--child-scope" || arg === "--child-depends-on") {
+    if (arg === "--child-title" || arg === "--child-scope" || arg === "--child-depends-on" || arg === "--child-context-refs") {
       const next = argv[i + 1];
       if (addChildren.length > 0 && next) {
         const current = addChildren[addChildren.length - 1];
         if (arg === "--child-depends-on") {
           current.depends_on = next.split(",").map((s) => s.trim()).filter(Boolean);
+        } else if (arg === "--child-context-refs") {
+          current.context_refs = next.split(",").map((s) => s.trim()).filter(Boolean);
         } else {
           current[arg.slice(8)] = next;
         }
@@ -7432,7 +7446,9 @@ function parseArgs(argv) {
 }
 function validateArgs(args) {
   if (!args.epic && !args.validate) return ERRORS.MISSING_EPIC();
-  const hasOp = args["complete-child"] || args["set-child-status"] || args["switch-active"] || args["add-child"] || args.validate;
+  if (args["defer-next"] && !args["complete-child"])
+    return ERRORS.DEFER_REQUIRES_COMPLETE();
+  const hasOp = args["complete-child"] || args["abandon-child"] || args["set-child-status"] || args["switch-active"] || args["add-child"] || args.validate;
   if (!hasOp) return ERRORS.NO_OPERATION();
   if (args["set-child-status"] && !args["child-status"]) return ERRORS.MISSING_CHILD_STATUS();
   if (args["child-status"] && !VALID_CHILD_STATUSES.includes(args["child-status"]))
@@ -7471,6 +7487,110 @@ function findCycle(children) {
   }
   return null;
 }
+function getVersion(epic) {
+  if (epic.version === void 0 || epic.version === null || epic.version === "") return 1;
+  const n = Number(epic.version);
+  return Number.isNaN(n) ? null : n;
+}
+function segmentsValid(reference) {
+  return reference.split("/").every((segment) => segment !== "" && segment !== "." && segment !== "..");
+}
+function validateContext(epic) {
+  const errors = [];
+  const version = getVersion(epic);
+  if (version === null || version !== 1 && version !== 2) {
+    errors.push(`Unsupported epic version "${String(epic.version)}" (must be 1 or 2)`);
+    return errors;
+  }
+  const hasContext = epic.requirement_context !== void 0 && epic.requirement_context !== null;
+  const children = Array.isArray(epic.children) ? epic.children : [];
+  if (version === 2 && !hasContext) {
+    errors.push("version 2 epic requires requirement_context");
+    return errors;
+  }
+  if (!hasContext) return errors;
+  const ctx = epic.requirement_context;
+  const sources = Array.isArray(ctx.sources) ? ctx.sources : [];
+  const items = Array.isArray(ctx.items) ? ctx.items : [];
+  if (sources.length === 0) errors.push("requirement_context.sources must be a non-empty array");
+  if (items.length === 0) errors.push("requirement_context.items must be a non-empty array");
+  if (ctx.global_refs !== void 0 && ctx.global_refs !== null && !Array.isArray(ctx.global_refs)) {
+    errors.push("requirement_context.global_refs must be an array");
+  }
+  const sourceIds = /* @__PURE__ */ new Set();
+  for (const s of sources) {
+    if (!s || typeof s.id !== "string" || s.id === "") {
+      errors.push("Every source must have a non-empty string id");
+      continue;
+    }
+    if (sourceIds.has(s.id)) errors.push(`Duplicate source id "${s.id}"`);
+    sourceIds.add(s.id);
+    if (s.kind === "file") {
+      if (typeof s.reference !== "string" || s.reference === "") {
+        errors.push(`File source "${s.id}" requires a non-empty reference`);
+      } else if (!(0, import_node_path.isAbsolute)(s.reference)) {
+        const reference = s.reference.split("\\").join("/");
+        if (!segmentsValid(reference)) {
+          errors.push(
+            `File source "${s.id}" reference must not contain "." or ".." segments`
+          );
+        }
+      }
+      if (typeof s.fingerprint !== "string" || !/^sha256:[0-9a-f]{64}$/.test(s.fingerprint)) {
+        errors.push(`File source "${s.id}" requires a sha256:<hex> fingerprint`);
+      }
+    } else if (s.kind === "conversation") {
+      if (s.reference !== "conversation") {
+        errors.push(`Conversation source "${s.id}" must have reference "conversation"`);
+      }
+      if (s.fingerprint !== void 0 && s.fingerprint !== null) {
+        errors.push(`Conversation source "${s.id}" must not have a fingerprint`);
+      }
+    } else {
+      errors.push(
+        `Source "${s.id}" has invalid kind "${s.kind}" (must be file or conversation)`
+      );
+    }
+  }
+  const itemIds = /* @__PURE__ */ new Set();
+  for (const item of items) {
+    if (!item || typeof item.id !== "string" || item.id === "") {
+      errors.push("Every item must have a non-empty string id");
+      continue;
+    }
+    if (itemIds.has(item.id)) errors.push(`Duplicate item id "${item.id}"`);
+    itemIds.add(item.id);
+    if (!VALID_CONTEXT_CATEGORIES.includes(item.category)) {
+      errors.push(`Item "${item.id}" has invalid category "${item.category}"`);
+    }
+    if (typeof item.summary !== "string" || item.summary === "") {
+      errors.push(`Item "${item.id}" requires a non-empty summary`);
+    }
+    const refs = Array.isArray(item.source_ids) ? item.source_ids : [];
+    if (refs.length === 0) {
+      errors.push(`Item "${item.id}" requires at least one source_ids entry`);
+    }
+    for (const r of refs) {
+      if (!sourceIds.has(r)) errors.push(`Item "${item.id}" references unknown source "${r}"`);
+    }
+  }
+  const globalRefs = Array.isArray(ctx.global_refs) ? ctx.global_refs : [];
+  for (const ref of globalRefs) {
+    if (!itemIds.has(ref)) errors.push(`global_refs references unknown item "${ref}"`);
+  }
+  for (const c of children) {
+    const refs = Array.isArray(c.context_refs) ? c.context_refs : [];
+    if (version === 2 && refs.length === 0) {
+      errors.push(`Child "${c.change_id}" requires at least one context_refs entry`);
+    }
+    for (const r of refs) {
+      if (!itemIds.has(r)) {
+        errors.push(`Child "${c.change_id}" context_refs references unknown item "${r}"`);
+      }
+    }
+  }
+  return errors;
+}
 function validateEpic(epic) {
   const errors = [];
   const children = Array.isArray(epic.children) ? epic.children : [];
@@ -7507,7 +7627,15 @@ function validateEpic(epic) {
   if (allTerminal && epic.status === "in_progress") {
     errors.push("All children are done/abandoned but epic status is still in_progress");
   }
+  errors.push(...validateContext(epic));
   return errors;
+}
+function updateTerminalEpicStatus(epic) {
+  const children = epic.children || [];
+  const allTerminal = children.length > 0 && children.every((c) => TERMINAL_STATUSES.includes(c.status));
+  if (!allTerminal) return false;
+  epic.status = children.every((c) => c.status === "abandoned") ? "abandoned" : "done";
+  return true;
 }
 function recomputeCurrentChange(epic) {
   const children = epic.children || [];
@@ -7522,21 +7650,42 @@ function recomputeCurrentChange(epic) {
     epic.current_change = next.change_id;
   } else {
     epic.current_change = "";
-    const allTerminal = children.length > 0 && children.every((c) => TERMINAL_STATUSES.includes(c.status));
-    if (allTerminal) epic.status = "done";
+    updateTerminalEpicStatus(epic);
   }
   return next ? next.change_id : "";
 }
-function completeChild(epic, changeId, now) {
+function completeChild(epic, changeId, now, deferNext) {
   const child = (epic.children || []).find((c) => c.change_id === changeId);
   if (!child) return { error: ERRORS.CHILD_NOT_FOUND(changeId, (epic.children || []).map((c) => c.change_id)) };
   const oldStatus = child.status;
   child.status = "done";
   child.completed_at = now;
-  const nextId = recomputeCurrentChange(epic);
+  let nextId;
+  if (deferNext) {
+    epic.current_change = "";
+    updateTerminalEpicStatus(epic);
+    nextId = "";
+  } else {
+    nextId = recomputeCurrentChange(epic);
+  }
   const doneCount = (epic.children || []).filter((c) => c.status === "done").length;
   return {
     child: { change_id: changeId, old_status: oldStatus, new_status: "done" },
+    current_change: nextId,
+    epic_status: epic.status,
+    progress: { done: doneCount, total: (epic.children || []).length }
+  };
+}
+function abandonChild(epic, changeId, now) {
+  const child = (epic.children || []).find((c) => c.change_id === changeId);
+  if (!child) return { error: ERRORS.CHILD_NOT_FOUND(changeId, (epic.children || []).map((c) => c.change_id)) };
+  const oldStatus = child.status;
+  child.status = "abandoned";
+  child.completed_at = now;
+  const nextId = recomputeCurrentChange(epic);
+  const doneCount = (epic.children || []).filter((c) => c.status === "done").length;
+  return {
+    child: { change_id: changeId, old_status: oldStatus, new_status: "abandoned" },
     current_change: nextId,
     epic_status: epic.status,
     progress: { done: doneCount, total: (epic.children || []).length }
@@ -7568,6 +7717,10 @@ function switchActive(epic, changeId) {
   const children = epic.children || [];
   const target = children.find((c) => c.change_id === changeId);
   if (!target) return { error: ERRORS.CHILD_NOT_FOUND(changeId, children.map((c) => c.change_id)) };
+  if (!["pending", "active"].includes(target.status)) {
+    return { error: ERRORS.INVALID_SWITCH_TARGET_STATUS(changeId, target.status) };
+  }
+  const oldStatus = target.status;
   const resolvedIds = new Set(
     children.filter((c) => TERMINAL_STATUSES.includes(c.status)).map((c) => c.change_id)
   );
@@ -7582,7 +7735,7 @@ function switchActive(epic, changeId) {
   epic.current_change = changeId;
   const doneCount = children.filter((c) => c.status === "done").length;
   return {
-    child: { change_id: changeId, old_status: "pending", new_status: "active" },
+    child: { change_id: changeId, old_status: oldStatus, new_status: "active" },
     current_change: changeId,
     epic_status: epic.status,
     progress: { done: doneCount, total: children.length }
@@ -7594,6 +7747,14 @@ function addChild(epic, childrenToAdd, epicPath) {
   }
   epic.children = epic.children || [];
   const defaultProject = loadSoleProject(findProjectRootFromPath(epicPath)) || ["default"];
+  const version = getVersion(epic);
+  if (version === 2) {
+    for (const child of childrenToAdd) {
+      if (!child.context_refs || child.context_refs.length === 0) {
+        return { error: ERRORS.ADD_CHILD_CONTEXT_REFS_REQUIRED(child.id) };
+      }
+    }
+  }
   for (const child of childrenToAdd) {
     if (!child.id || child.id === true) return { error: ERRORS.ADD_CHILD_MISSING() };
     if (!child.title) return { error: ERRORS.ADD_CHILD_TITLE_MISSING(child.id) };
@@ -7607,7 +7768,8 @@ function addChild(epic, childrenToAdd, epicPath) {
       depends_on: child.depends_on || [],
       project: defaultProject,
       scope: child.scope || "",
-      completed_at: null
+      completed_at: null,
+      ...child.context_refs ? { context_refs: child.context_refs } : {}
     });
   }
   const doneCount = epic.children.filter((c) => c.status === "done").length;
@@ -7653,7 +7815,9 @@ function main() {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   let result;
   if (args["complete-child"]) {
-    result = completeChild(epic, args["complete-child"], now);
+    result = completeChild(epic, args["complete-child"], now, Boolean(args["defer-next"]));
+  } else if (args["abandon-child"]) {
+    result = abandonChild(epic, args["abandon-child"], now);
   } else if (args["set-child-status"]) {
     result = setChildStatus(epic, args["set-child-status"], args["child-status"], now);
   } else if (args["switch-active"]) {
@@ -7683,59 +7847,6 @@ function main() {
     process.stderr.write(ERRORS.EPIC_WRITE_FAILED(e.message) + "\n");
     process.exit(1);
   }
-  let sessionSync = null;
-  if (epic.status === "done") {
-    sessionSync = syncSessionOnEpicClose(epic, epicPath, now);
-  }
-  process.stdout.write(
-    JSON.stringify({ ok: true, ...result, session_sync: sessionSync }) + "\n"
-  );
-}
-function syncSessionOnEpicClose(epic, epicPath, now) {
-  const projectRoot = findProjectRootFromPath(epicPath);
-  if (!projectRoot) {
-    return { ok: false, reason: "no-project-root" };
-  }
-  const sessionPath = (0, import_node_path.join)(projectRoot, ".ai-agents", "workspace", "session.yaml");
-  if (!(0, import_node_fs.existsSync)(sessionPath)) {
-    return { ok: false, reason: "session-missing" };
-  }
-  let session;
-  try {
-    session = (0, import_yaml.parse)((0, import_node_fs.readFileSync)(sessionPath, "utf-8"));
-  } catch (e) {
-    return { ok: false, reason: "parse-failed", detail: e.message };
-  }
-  if (!session || typeof session !== "object") {
-    return { ok: false, reason: "session-not-object" };
-  }
-  const epicId = epic.epic_id;
-  if (session.active_epic?.id !== epicId) {
-    return { ok: true, applied: false, reason: "active_epic-not-matching" };
-  }
-  session.epics = session.epics || [];
-  const epicIdx = session.epics.findIndex((e) => e.id === epicId);
-  if (epicIdx >= 0) {
-    session.epics[epicIdx].status = "done";
-    session.epics[epicIdx].updated_at = now;
-  }
-  session.active_epic = {
-    id: "",
-    title: "",
-    created_at: "",
-    epic_path: ""
-  };
-  const sessionTmp = sessionPath + ".tmp";
-  try {
-    (0, import_node_fs.writeFileSync)(sessionTmp, (0, import_yaml.stringify)(session, { lineWidth: 200 }), "utf-8");
-    (0, import_node_fs.renameSync)(sessionTmp, sessionPath);
-  } catch (e) {
-    try {
-      if ((0, import_node_fs.existsSync)(sessionTmp)) (0, import_node_fs.unlinkSync)(sessionTmp);
-    } catch {
-    }
-    return { ok: false, reason: "write-failed", detail: e.message };
-  }
-  return { ok: true, applied: true, epic_id: epicId };
+  process.stdout.write(JSON.stringify({ ok: true, ...result }) + "\n");
 }
 main();

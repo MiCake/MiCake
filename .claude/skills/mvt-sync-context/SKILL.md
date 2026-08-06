@@ -167,12 +167,11 @@ Before processing any change, determine which project(s) the sync targets. Use t
 ### Step 2: Identify Completed Changes
 - **What**: produce a candidate list of change-ids whose artifacts will be aggregated.
 - **How**:
-  1. Read `.ai-agents/workspace/session.yaml`. Collect `changes[]` entries with `status: done`.
-  2. For each candidate, verify `.ai-agents/workspace/artifacts/{change-id}/` exists AND contains at least one of `analysis.md` or `implementation.md`. Drop entries with only `plan.yaml`, or with only `design.md` (design artifacts are not aggregated -- see Step 3).
-  3. (Fallback) If `changes[]` is empty, scan `.ai-agents/workspace/artifacts/*/` directly; offer those with `analysis.md` or `implementation.md`, marked `unindexed`.
-  4. Exclude already-archived or irrelevant changes:
+   1. Run `node .ai-agents/scripts/artifact-scan.cjs --mode change-dirs`. Its JSON `entries` are the only live artifact directories.
+   2. Collect `changes[]` entries with `status: done` only when their directory is in scanner output and contains `analysis.md` or `implementation.md`. Drop entries with only `plan.yaml` or only `design.md`.
+   3. Use scanner-confirmed directories without an index as `unindexed`; do not run a fallback scan.
+  4. Exclude irrelevant changes:
      - **Indexed changes**: exclude any `changes[]` entry with `status: abandoned`. For `status: done` entries, Step 1.2's directory existence check already filters out those whose artifacts have been moved to `artifacts/_archived/` by `/mvt-cleanup`.
-     - **Fallback scan**: when scanning `artifacts/*/` directly, skip any path under `artifacts/_archived/` (the unified archive directory managed by `/mvt-cleanup`).
   5. Exclude `active_change.id` (work in flight).
 
 - **Present** the list:

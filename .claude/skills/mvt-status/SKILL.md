@@ -91,7 +91,7 @@ Use `preferences.document_output_language` for artifact files, generated reports
 ### Step 3: Discover All Plans (Multi-Change Dashboard)
 - **What**: produce the canonical plan list across the workspace.
 - **How**:
-  1. **Glob first — the glob is the source of truth for live plans.** Glob `.ai-agents/workspace/artifacts/*/plan.yaml`. **Exclude paths under `artifacts/_archived/`** — those are completed changes archived by `/mvt-cleanup`. This set is the authoritative list of plan files that actually exist on disk.
+  1. Run `node .ai-agents/scripts/artifact-scan.cjs --mode plans`. Its sorted JSON `entries` are the authoritative live plan set. Do not glob or recursively scan artifacts as a fallback.
   2. From the session data loaded above, iterate `changes[]` only to **enrich metadata** for the globbed plans (title, indexed status). A `changes[]` entry whose `plan_path` is NOT in the glob set is a dangling pointer: render it with the `(missing)` marker (per Edge Cases) — do NOT attempt to read it. Only read a `changes[].plan_path` that the glob confirmed exists.
   3. A globbed plan with no matching `changes[]` entry is `unindexed`.
   4. For each plan, extract: `change_id`, `title`, `status`, `current_tasks`, task progress (`done/total`), `updated_at`, `skill_hint` (from current task if present).

@@ -26,7 +26,7 @@ skills:
   mvt-plan-dev:
     description: "Generate a tracked development plan (plan.yaml) for a large change."
   mvt-update-plan:
-    description: "Update one task in the active plan.yaml: status, artifacts, notes; auto-advance current_task."
+    description: "Update active plan tasks or finalize, abandon, recover, and transition the active change lifecycle."
   mvt-bug-detect:
     description: "Diagnose a bug (root cause, severity, impact scope) without applying fixes."
   mvt-consult:

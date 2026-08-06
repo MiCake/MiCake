@@ -30,7 +30,7 @@ You are the **Conductor** -- a Workflow Coordinator.
 
 ### Boundaries
 - Do NOT read git state (branch, diff, commits) (out of scope -- this skill is session-state only)
-- Do NOT modify any files (read-only)
+- Do NOT modify files outside deferred epic activation (read-only; only the confirmed deferred-child route may update epic.yaml and session.yaml)
 - Do NOT run analyses or tests (use the recommended next skill)
 
 ## Turn Boundary Contract (Mandatory for interactive pauses)
@@ -86,6 +86,19 @@ Use `preferences.interaction_language` for every chat reply, question, prompt, s
 
 Use `preferences.document_output_language` for artifact files, generated reports, plans, and markdown written to disk. If absent, fall back to `interaction_language`. Template headings may keep their original language; generated content must use the configured language.
 
+## Confirmation Prompts
+
+At every confirmation or choice point in this skill, present the named choices as selectable options — never as an open "type y/n" question. Any `choices A / B / ...` notation below marks such a point; the labels are the exact options to offer.
+
+- If the environment exposes an interactive selection capability (any host tool for picking an option), use it.
+- Otherwise, list the choices as a numbered menu and accept the number or the label:
+  ```
+  1) A
+  2) B
+  ```
+
+Presentation is all that changes — the choices and their meaning stay as written at each point.
+
 ## Execution Flow
 
 ### Step 1: Read Session State
@@ -104,16 +117,28 @@ After extracting session data in Step 1, check for epic state:
 
 | Condition | Action |
 |-----------|--------|
-| `active_change.id` non-empty AND `active_change.epic_id` non-empty | Set `within_epic = true`. Continue to Step 2 (normal plan-based resume). In Step 7, include an Epic Context section. |
-| `active_change.id` empty AND `active_epic.id` non-empty (epic-pending) | Read `epic.yaml` via `active_epic.epic_path`. If unreadable, warn and jump to Step 8 with the "epic-pending but epic.yaml missing" edge case. Otherwise, identify the child referenced by `epic.yaml.current_change` as the resume target. Skip Steps 2-6 and go directly to Step 7 with a simplified report containing: (1) **Epic State** -- epic title, id, status, progress (done/total); (2) **Current Sub-change** -- title, scope, depends_on status of each dependency; (3) **Resume Point** -- "Resuming epic: {title}. Next sub-change: {current_change_title}. Run `/mvt-analyze` to start."; (4) **Recommended Next Step** -- `/mvt-analyze` -- Start the next sub-change in the epic. |
+| `active_change.id` non-empty AND `active_change.epic_id` non-empty | Set `within_epic = true`; resolve the parent epic path from `active_epic` or `session.epics[]`; select `active_change.id`; continue to Step 2 after restoration. |
+| `active_change.id` empty AND `active_epic.id` non-empty (epic-pending) | Read `active_epic.epic_path` and select `epic.yaml.current_change`; if unreadable, use the Step 8 missing-epic branch. After restoration, skip Steps 2-6 and render the simplified Step 7 report. |
 | Neither | Continue to Step 2 (normal flow). |
+
+For either epic path, restore the selected child with exactly:
+
+```bash
+node .ai-agents/scripts/requirement-source.cjs --effective-context <epic_path> --child <change_id>
+```
+
+- Consume only `child`, `context`, `sources`, and `warnings`; never traverse references in the prompt.
+- Display warnings and non-`unchanged` source statuses without replacing the snapshot. Report ordered `context` as the baseline, or `child.scope` when empty.
+- On non-zero exit, retain the plan resume path and add a bounded stderr warning; never invent context.
+
+For epic-pending, the simplified report contains: **Epic State** (title, id, status, progress); **Current Sub-change** (title, scope, dependency statuses, restored projection); **Resume Point** (next child and `/mvt-analyze`); and **Recommended Next Step** (`/mvt-analyze`).
 
 ### Step 2: Discover Pending Plans
 
 Scan for in-progress plans using two sources:
 
-1. **Index path**: For each entry in `changes[]`, read its `plan_path` if the file exists.
-2. **Fallback scan**: Glob `.ai-agents/workspace/artifacts/*/plan.yaml`, read any files not already covered by (1). **Skip any paths under `artifacts/_archived/`** — those are completed changes archived by `/mvt-cleanup` and should not appear as resume candidates.
+1. Run `node .ai-agents/scripts/artifact-scan.cjs --mode plans`; its JSON `entries` are the only live plan inputs.
+2. Enrich scanner-confirmed paths from `changes[]`; do not read indexed paths absent from scanner output and do not perform a fallback glob.
 
 For each found plan.yaml, read and filter:
 - Include only plans where `plan.status == "in_progress"`.
@@ -186,7 +211,7 @@ And the **Current Task Detail** section:
 Render inline using the seven sections below. No external template is required.
 
 1. **Active Task** -- name, change-id, started_at (from selected plan)
-2. **Epic Context** (if `within_epic` is true) -- epic title, id, progress (done/total children), current position within the epic. Resolve the parent epic path: compare `active_change.epic_id` to `active_epic.id`. If they match, use `active_epic.epic_path`. If they do not match, search `session.epics[]` for an entry with `id == active_change.epic_id` and use its `epic_path`. If neither path exists, render the plan resume and add a bounded warning: "Epic context could not be loaded (epic_id: {active_change.epic_id})." Read `epic.yaml` via the resolved path and render: "This change is part of epic: **{epic_title}** ({done}/{total} sub-changes done). Current: {active_child_title}."
+2. **Epic Context** (if `within_epic`) -- epic title/id/progress, current child intent/scope, and the restored projection. If the parent path is unavailable, keep the plan report and warn: "Epic context could not be loaded (epic_id: {active_change.epic_id})."
 3. **Plan Progress** -- task table + counts + current task detail
 4. **Recent Skill History** -- last 5 entries from history (filtered to selected change if applicable)
 5. **Recent Artifacts** -- the top 5 artifacts collected in Step 4 (path, mtime, size)
@@ -194,6 +219,14 @@ Render inline using the seven sections below. No external template is required.
 7. **Recommended Next Step** -- the mapped next skill from Step 5, with justification
 
 ### Step 8: Edge Cases
+
+- **Deferred epic**: if `active_epic.id` is non-empty, `active_change.id` is empty, and `epic.yaml.current_change` is empty, select the first dependency-ready pending child in array order. Confirm `Activate child` / `Cancel`; on activation call `epic-update.cjs --switch-active <id>`, then register it exactly once with:
+
+	```bash
+	node .ai-agents/scripts/session-update.cjs --skill mvt-resume --summary "<concise one-line activation summary>" --new-change "<child.title>" --change-id <child.change_id> --epic-id <active_epic.id>
+	```
+
+	If the session call fails after activation, report divergence and stop without replaying epic-update. Do not run another State Update after this command.
 
 - **No session**: report "No session found. Run `/mvt-init` to start a project."
 - **No active plans**: report "No active plans found. Start a new change with `/mvt-analyze` or run `/mvt-status` to check project state."
@@ -206,7 +239,7 @@ Render inline using the seven sections below. No external template is required.
 
 ## State Update
 
-This skill is read-only and does NOT modify `.ai-agents/workspace/session.yaml`.
+Normal plan resume and report generation are read-only and do not update session history. The confirmed deferred-child activation route performs its one `session-update.cjs` registration inside Step 8; do not run any additional State Update afterward.
 
 ## Suggested Next Steps
 

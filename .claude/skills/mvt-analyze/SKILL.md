@@ -19,6 +19,7 @@ You are the **Analyst** -- a Requirements Analysis Expert.
 - Multiple interpretations -> List all, prompt for selection
 - Conflicts detected -> Highlight explicitly, ask for resolution
 - Vague requirements -> Request specific examples
+- Different active change -> Resolve finalize, abandon, or cancel before creating an artifact
 
 ### Boundaries
 - Do NOT make architecture decisions (use `/mvt-design` instead)
@@ -105,6 +106,12 @@ At every confirmation or choice point in this skill, present the named choices a
 
 Presentation is all that changes — the choices and their meaning stay as written at each point.
 
+## Active Change Conflict Preflight
+
+Run this before generating a change id, loading epic-child scope, or writing `analysis.md`. If `active_change.id` is empty, continue normally. If the request continues the active work, reuse that id. If it is a different request, offer `Continue current change` / `Finalize current change` / `Abandon current change` / `Cancel`.
+
+`Continue current change` reuses the active id. `Finalize current change` and `Abandon current change` write no artifact and direct the user to `/mvt-update-plan`; after that lifecycle transition, the user reruns `/mvt-analyze`. `Cancel` writes no artifact.
+
 ## Epic-Child Mode (Pre-check)
 
 **When**: `active_epic.id` is non-empty AND `active_change.id` is empty.
@@ -113,9 +120,22 @@ In this state the user is starting a new sub-change within an existing epic. Rea
 
 | Scenario | User message | Handling |
 |----------|-------------|----------|
-| A | Empty | Auto-use `current_change` child's scope from `epic.yaml` as the requirement input. Proceed to Step 3. |
-| B | Supplements current child | Merge user message with `current_change` child's scope. Proceed to Step 3. |
+| A | Empty | Select the `current_change` child. |
+| B | Supplements current child | Select the `current_change` child and retain the message as a supplement. |
 | C | Points to different child | Locate target in `children[]`. If `depends_on` has unfinished prerequisites → warn and confirm forced reorder — choices `Confirm` / `Cancel`. If deps satisfied → confirm switch with the same `Confirm` / `Cancel` choices. On confirmed reorder: call the Epic Update Script in `--switch-active` mode with `node .ai-agents/scripts/epic-update.cjs --epic <epic_path> --switch-active <target_id>`. If target not in `children[]` → offer to treat as independent change (exit epic-child mode) or use `--add-child` mode to append it as a new child. Read `.ai-agents/scripts/epic-update.md` only if a required mode or flag is not rendered here. Do NOT hand-edit `epic.yaml`, advance `current_change`, or read `.cjs`/`.js` source. |
+
+After selecting a child, restore its requirement baseline with exactly:
+
+```bash
+node .ai-agents/scripts/requirement-source.cjs --effective-context <epic_path> --child <change_id>
+```
+
+Consume only the returned `child`, `context`, `sources`, and `warnings`; do not traverse requirement references independently.
+
+- Display every warning and any non-`unchanged` source status before analysis. Source drift does not replace the captured baseline.
+- Use ordered `context` as the baseline, or `child.scope` when `context` is empty; `child.scope` remains the delivery boundary.
+- Treat the user's message as a conversation supplement. Append non-conflicting content after the baseline in `analysis.md`; on conflict with a restored goal, boundary, rule, constraint, or decision, pause and ask which governs. Never mutate the epic snapshot.
+- If the projection command exits non-zero, stop epic-child analysis and surface stderr; do not reconstruct context in the prompt.
 
 ## Execution Flow
 
@@ -128,6 +148,7 @@ In this state the user is starting a new sub-change within an existing epic. Rea
 - Identify actors and stakeholders
 - Extract business rules and constraints
 - Note assumptions made
+- Preserve source warnings, restored context item IDs, and conversation supplements in the analysis so downstream phases can distinguish the established baseline from later additions.
 
 ### Step 3: Assess Scale (Epic Detection)
 - **What**: evaluate whether the input is an epic-scale requirement that should be decomposed into multiple sub-changes via `/mvt-decompose`.
@@ -210,7 +231,7 @@ In this state the user is starting a new sub-change within an existing epic. Rea
 - If no ambiguities -> Skip this step
 
 ### Step 7: Update Workspace
-1. Generate change-id: `{YYYYMMDD}-{slug}` format (e.g., `20260425-user-authentication`). Slug constraints: lowercase ASCII, kebab-case, `[a-z0-9-]+`, 1-4 words.
+1. Reuse `active_change.id` when Active Change Conflict Preflight selected `Continue current change`; otherwise generate change-id: `{YYYYMMDD}-{slug}` format (e.g., `20260425-user-authentication`). Slug constraints: lowercase ASCII, kebab-case, `[a-z0-9-]+`, 1-4 words.
 2. Write artifact: `.ai-agents/workspace/artifacts/{change-id}/analysis.md`
 
 ## Artifact Structure

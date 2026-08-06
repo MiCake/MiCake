@@ -80,7 +80,7 @@ This skill measures only files the **user** can reduce or relocate. Framework-fi
 - Semantic context: `.ai-agents/knowledge/project/_generated/project-context.md` (always the flat path, regardless of project count).
 - Shared knowledge: every entry in `registry.yaml > knowledge._all` and `knowledge.{projectName}` (map-aware -- traverse ALL project keys in the knowledge map). For the `core` entry, scan only files marked as user-origin per `core/manifest.yaml` (or whose path begins with `user/`); skip files under `core/_framework/`.
 - Per-skill knowledge: every entry in `registry.yaml > skills.*.knowledge._all` and `skills.*.knowledge.{projectName}` (map-aware -- traverse ALL project keys for each skill), grouped by skill.
-- Artifacts: all files under `.ai-agents/workspace/artifacts/` recursively. **Exclude the `_archived/` subdirectory** — it contains completed changes archived by `/mvt-cleanup` and should not count toward the active workspace token budget.
+- Artifacts: run `node .ai-agents/scripts/artifact-scan.cjs --mode files` and use its JSON `entries` as the entire artifact input. Do not recursively scan artifacts or add a fallback path. Scanner output already excludes `_archived/`.
 
 **Out of scope (do NOT scan):**
 - `.claude/skills/mvt-*/SKILL.md` -- framework-shipped, not user-editable.

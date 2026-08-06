@@ -107,17 +107,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path2) {
-      const ctrl = callVisitor(key, node, visitor, path2);
+    function visit_(key, node, visitor, path) {
+      const ctrl = callVisitor(key, node, visitor, path);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path2, ctrl);
-        return visit_(key, ctrl, visitor, path2);
+        replaceNode(key, path, ctrl);
+        return visit_(key, ctrl, visitor, path);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path2 = Object.freeze(path2.concat(node));
+          path = Object.freeze(path.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path2);
+            const ci = visit_(i, node.items[i], visitor, path);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -128,13 +128,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path2 = Object.freeze(path2.concat(node));
-          const ck = visit_("key", node.key, visitor, path2);
+          path = Object.freeze(path.concat(node));
+          const ck = visit_("key", node.key, visitor, path);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path2);
+          const cv = visit_("value", node.value, visitor, path);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -155,17 +155,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path2) {
-      const ctrl = await callVisitor(key, node, visitor, path2);
+    async function visitAsync_(key, node, visitor, path) {
+      const ctrl = await callVisitor(key, node, visitor, path);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path2, ctrl);
-        return visitAsync_(key, ctrl, visitor, path2);
+        replaceNode(key, path, ctrl);
+        return visitAsync_(key, ctrl, visitor, path);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path2 = Object.freeze(path2.concat(node));
+          path = Object.freeze(path.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path2);
+            const ci = await visitAsync_(i, node.items[i], visitor, path);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -176,13 +176,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path2 = Object.freeze(path2.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path2);
+          path = Object.freeze(path.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path2);
+          const cv = await visitAsync_("value", node.value, visitor, path);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -209,23 +209,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path2) {
+    function callVisitor(key, node, visitor, path) {
       if (typeof visitor === "function")
-        return visitor(key, node, path2);
+        return visitor(key, node, path);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path2);
+        return visitor.Map?.(key, node, path);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path2);
+        return visitor.Seq?.(key, node, path);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path2);
+        return visitor.Pair?.(key, node, path);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path2);
+        return visitor.Scalar?.(key, node, path);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path2);
+        return visitor.Alias?.(key, node, path);
       return void 0;
     }
-    function replaceNode(key, path2, node) {
-      const parent = path2[path2.length - 1];
+    function replaceNode(key, path, node) {
+      const parent = path[path.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -833,10 +833,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path2, value) {
+    function collectionFromPath(schema, path, value) {
       let v = value;
-      for (let i = path2.length - 1; i >= 0; --i) {
-        const k = path2[i];
+      for (let i = path.length - 1; i >= 0; --i) {
+        const k = path[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -855,7 +855,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path2) => path2 == null || typeof path2 === "object" && !!path2[Symbol.iterator]().next().done;
+    var isEmptyPath = (path) => path == null || typeof path === "object" && !!path[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -885,11 +885,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path2, value) {
-        if (isEmptyPath(path2))
+      addIn(path, value) {
+        if (isEmptyPath(path))
           this.add(value);
         else {
-          const [key, ...rest] = path2;
+          const [key, ...rest] = path;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -903,8 +903,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path2) {
-        const [key, ...rest] = path2;
+      deleteIn(path) {
+        const [key, ...rest] = path;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -918,8 +918,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path2, keepScalar) {
-        const [key, ...rest] = path2;
+      getIn(path, keepScalar) {
+        const [key, ...rest] = path;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -937,8 +937,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path2) {
-        const [key, ...rest] = path2;
+      hasIn(path) {
+        const [key, ...rest] = path;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -948,8 +948,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path2, value) {
-        const [key, ...rest] = path2;
+      setIn(path, value) {
+        const [key, ...rest] = path;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -3461,9 +3461,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path2, value) {
+      addIn(path, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path2, value);
+          this.contents.addIn(path, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -3538,14 +3538,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path2) {
-        if (Collection.isEmptyPath(path2)) {
+      deleteIn(path) {
+        if (Collection.isEmptyPath(path)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path2) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -3560,10 +3560,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path2, keepScalar) {
-        if (Collection.isEmptyPath(path2))
+      getIn(path, keepScalar) {
+        if (Collection.isEmptyPath(path))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path2, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -3574,10 +3574,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path2) {
-        if (Collection.isEmptyPath(path2))
+      hasIn(path) {
+        if (Collection.isEmptyPath(path))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path2) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3594,13 +3594,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path2, value) {
-        if (Collection.isEmptyPath(path2)) {
+      setIn(path, value) {
+        if (Collection.isEmptyPath(path)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path2), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path2, value);
+          this.contents.setIn(path, value);
         }
       }
       /**
@@ -3986,10 +3986,10 @@ var require_resolve_block_map = __commonJS({
       let offset = bm.offset;
       let commentEnd = null;
       for (const collItem of bm.items) {
-        const { start, key, sep, value } = collItem;
+        const { start, key, sep: sep2, value } = collItem;
         const keyProps = resolveProps.resolveProps(start, {
           indicator: "explicit-key-ind",
-          next: key ?? sep?.[0],
+          next: key ?? sep2?.[0],
           offset,
           onError,
           parentIndent: bm.indent,
@@ -4003,7 +4003,7 @@ var require_resolve_block_map = __commonJS({
             else if ("indent" in key && key.indent !== bm.indent)
               onError(offset, "BAD_INDENT", startColMsg);
           }
-          if (!keyProps.anchor && !keyProps.tag && !sep) {
+          if (!keyProps.anchor && !keyProps.tag && !sep2) {
             commentEnd = keyProps.end;
             if (keyProps.comment) {
               if (map.comment)
@@ -4027,7 +4027,7 @@ var require_resolve_block_map = __commonJS({
         ctx.atKey = false;
         if (utilMapIncludes.mapIncludes(ctx, map.items, keyNode))
           onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-        const valueProps = resolveProps.resolveProps(sep ?? [], {
+        const valueProps = resolveProps.resolveProps(sep2 ?? [], {
           indicator: "map-value-ind",
           next: value,
           offset: keyNode.range[2],
@@ -4043,7 +4043,7 @@ var require_resolve_block_map = __commonJS({
             if (ctx.options.strict && keyProps.start < valueProps.found.offset - 1024)
               onError(keyNode.range, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit block mapping key");
           }
-          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : composeEmptyNode(ctx, offset, sep, null, valueProps, onError);
+          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : composeEmptyNode(ctx, offset, sep2, null, valueProps, onError);
           if (ctx.schema.compat)
             utilFlowIndentCheck.flowIndentCheck(bm.indent, value, onError);
           offset = valueNode.range[2];
@@ -4134,7 +4134,7 @@ var require_resolve_end = __commonJS({
       let comment = "";
       if (end) {
         let hasSpace = false;
-        let sep = "";
+        let sep2 = "";
         for (const token of end) {
           const { source, type } = token;
           switch (type) {
@@ -4148,13 +4148,13 @@ var require_resolve_end = __commonJS({
               if (!comment)
                 comment = cb;
               else
-                comment += sep + cb;
-              sep = "";
+                comment += sep2 + cb;
+              sep2 = "";
               break;
             }
             case "newline":
               if (comment)
-                sep += source;
+                sep2 += source;
               hasSpace = true;
               break;
             default:
@@ -4197,18 +4197,18 @@ var require_resolve_flow_collection = __commonJS({
       let offset = fc.offset + fc.start.source.length;
       for (let i = 0; i < fc.items.length; ++i) {
         const collItem = fc.items[i];
-        const { start, key, sep, value } = collItem;
+        const { start, key, sep: sep2, value } = collItem;
         const props = resolveProps.resolveProps(start, {
           flow: fcName,
           indicator: "explicit-key-ind",
-          next: key ?? sep?.[0],
+          next: key ?? sep2?.[0],
           offset,
           onError,
           parentIndent: fc.indent,
           startOnNewline: false
         });
         if (!props.found) {
-          if (!props.anchor && !props.tag && !sep && !value) {
+          if (!props.anchor && !props.tag && !sep2 && !value) {
             if (i === 0 && props.comma)
               onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
             else if (i < fc.items.length - 1)
@@ -4262,8 +4262,8 @@ var require_resolve_flow_collection = __commonJS({
             }
           }
         }
-        if (!isMap && !sep && !props.found) {
-          const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep, null, props, onError);
+        if (!isMap && !sep2 && !props.found) {
+          const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep2, null, props, onError);
           coll.items.push(valueNode);
           offset = valueNode.range[2];
           if (isBlock(value))
@@ -4275,7 +4275,7 @@ var require_resolve_flow_collection = __commonJS({
           if (isBlock(key))
             onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
           ctx.atKey = false;
-          const valueProps = resolveProps.resolveProps(sep ?? [], {
+          const valueProps = resolveProps.resolveProps(sep2 ?? [], {
             flow: fcName,
             indicator: "map-value-ind",
             next: value,
@@ -4286,8 +4286,8 @@ var require_resolve_flow_collection = __commonJS({
           });
           if (valueProps.found) {
             if (!isMap && !props.found && ctx.options.strict) {
-              if (sep)
-                for (const st of sep) {
+              if (sep2)
+                for (const st of sep2) {
                   if (st === valueProps.found)
                     break;
                   if (st.type === "newline") {
@@ -4304,7 +4304,7 @@ var require_resolve_flow_collection = __commonJS({
             else
               onError(valueProps.start, "MISSING_CHAR", `Missing , or : between ${fcName} items`);
           }
-          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep, null, valueProps, onError) : null;
+          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep2, null, valueProps, onError) : null;
           if (valueNode) {
             if (isBlock(value))
               onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
@@ -4484,7 +4484,7 @@ var require_resolve_block_scalar = __commonJS({
           chompStart = i + 1;
       }
       let value = "";
-      let sep = "";
+      let sep2 = "";
       let prevMoreIndented = false;
       for (let i = 0; i < contentStart; ++i)
         value += lines[i][0].slice(trimIndent) + "\n";
@@ -4501,24 +4501,24 @@ var require_resolve_block_scalar = __commonJS({
           indent = "";
         }
         if (type === Scalar.Scalar.BLOCK_LITERAL) {
-          value += sep + indent.slice(trimIndent) + content;
-          sep = "\n";
+          value += sep2 + indent.slice(trimIndent) + content;
+          sep2 = "\n";
         } else if (indent.length > trimIndent || content[0] === "	") {
-          if (sep === " ")
-            sep = "\n";
-          else if (!prevMoreIndented && sep === "\n")
-            sep = "\n\n";
-          value += sep + indent.slice(trimIndent) + content;
-          sep = "\n";
+          if (sep2 === " ")
+            sep2 = "\n";
+          else if (!prevMoreIndented && sep2 === "\n")
+            sep2 = "\n\n";
+          value += sep2 + indent.slice(trimIndent) + content;
+          sep2 = "\n";
           prevMoreIndented = true;
         } else if (content === "") {
-          if (sep === "\n")
+          if (sep2 === "\n")
             value += "\n";
           else
-            sep = "\n";
+            sep2 = "\n";
         } else {
-          value += sep + content;
-          sep = " ";
+          value += sep2 + content;
+          sep2 = " ";
           prevMoreIndented = false;
         }
       }
@@ -4700,25 +4700,25 @@ var require_resolve_flow_scalar = __commonJS({
       if (!match)
         return source;
       let res = match[1];
-      let sep = " ";
+      let sep2 = " ";
       let pos = first.lastIndex;
       line.lastIndex = pos;
       while (match = line.exec(source)) {
         if (match[1] === "") {
-          if (sep === "\n")
-            res += sep;
+          if (sep2 === "\n")
+            res += sep2;
           else
-            sep = "\n";
+            sep2 = "\n";
         } else {
-          res += sep + match[1];
-          sep = " ";
+          res += sep2 + match[1];
+          sep2 = " ";
         }
         pos = line.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
       match = last.exec(source);
-      return res + sep + (match?.[1] ?? "");
+      return res + sep2 + (match?.[1] ?? "");
     }
     function doubleQuotedValue(source, onError) {
       let res = "";
@@ -5525,14 +5525,14 @@ var require_cst_stringify = __commonJS({
         }
       }
     }
-    function stringifyItem({ start, key, sep, value }) {
+    function stringifyItem({ start, key, sep: sep2, value }) {
       let res = "";
       for (const st of start)
         res += st.source;
       if (key)
         res += stringifyToken(key);
-      if (sep)
-        for (const st of sep)
+      if (sep2)
+        for (const st of sep2)
           res += st.source;
       if (value)
         res += stringifyToken(value);
@@ -5557,9 +5557,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path2) => {
+    visit.itemAtPath = (cst, path) => {
       let item = cst;
-      for (const [field, index] of path2) {
+      for (const [field, index] of path) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -5568,23 +5568,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path2) => {
-      const parent = visit.itemAtPath(cst, path2.slice(0, -1));
-      const field = path2[path2.length - 1][0];
+    visit.parentCollection = (cst, path) => {
+      const parent = visit.itemAtPath(cst, path.slice(0, -1));
+      const field = path[path.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path2, item, visitor) {
-      let ctrl = visitor(item, path2);
+    function _visit(path, item, visitor) {
+      let ctrl = visitor(item, path);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path2.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5595,10 +5595,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path2);
+            ctrl = ctrl(item, path);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path2) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path) : ctrl;
     }
     exports2.visit = visit;
   }
@@ -6682,18 +6682,18 @@ var require_parser = __commonJS({
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start = getFirstKeyStartProps(prev);
-          let sep;
+          let sep2;
           if (scalar.end) {
-            sep = scalar.end;
-            sep.push(this.sourceToken);
+            sep2 = scalar.end;
+            sep2.push(this.sourceToken);
             delete scalar.end;
           } else
-            sep = [this.sourceToken];
+            sep2 = [this.sourceToken];
           const map = {
             type: "block-map",
             offset: scalar.offset,
             indent: scalar.indent,
-            items: [{ start, key: scalar, sep }]
+            items: [{ start, key: scalar, sep: sep2 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map;
@@ -6846,15 +6846,15 @@ var require_parser = __commonJS({
                 } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
                   const start2 = getFirstKeyStartProps(it.start);
                   const key = it.key;
-                  const sep = it.sep;
-                  sep.push(this.sourceToken);
+                  const sep2 = it.sep;
+                  sep2.push(this.sourceToken);
                   delete it.key;
                   delete it.sep;
                   this.stack.push({
                     type: "block-map",
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start: start2, key, sep }]
+                    items: [{ start: start2, key, sep: sep2 }]
                   });
                 } else if (start.length > 0) {
                   it.sep = it.sep.concat(start, this.sourceToken);
@@ -7048,13 +7048,13 @@ var require_parser = __commonJS({
             const prev = getPrevProps(parent);
             const start = getFirstKeyStartProps(prev);
             fixFlowSeqItems(fc);
-            const sep = fc.end.splice(1, fc.end.length);
-            sep.push(this.sourceToken);
+            const sep2 = fc.end.splice(1, fc.end.length);
+            sep2.push(this.sourceToken);
             const map = {
               type: "block-map",
               offset: fc.offset,
               indent: fc.indent,
-              items: [{ start, key: fc, sep }]
+              items: [{ start, key: fc, sep: sep2 }]
             };
             this.onKeyLine = true;
             this.stack[this.stack.length - 1] = map;
@@ -7332,429 +7332,112 @@ var require_dist = __commonJS({
   }
 });
 
-// sources/scripts/session-update.js
-var import_node_fs = require("node:fs");
-var import_node_path = __toESM(require("node:path"), 1);
+// sources/scripts/workspace-state-check.js
+var import_node_fs2 = require("node:fs");
+var import_node_path2 = require("node:path");
 var import_yaml = __toESM(require_dist(), 1);
-var ERRORS = {
-  MISSING_SKILL: () => "Missing required argument: --skill",
-  MISSING_SUMMARY: () => "Missing required argument: --summary",
-  CHANGE_ID_REQUIRED: () => "--new-change requires --change-id",
-  NO_PROJECT_ROOT: () => "Could not find project root (.ai-agents/ directory not found). Make sure you are inside an MVTT project.",
-  NO_SESSION_YAML: () => "session.yaml not found. Run /mvt-init first to initialize the project.",
-  SESSION_PARSE_FAILED: (detail) => `Failed to parse session.yaml: ${detail}. Check the file for syntax errors.`,
-  SESSION_WRITE_FAILED: (detail) => `Failed to write session.yaml: ${detail}`,
-  CONFIG_LIMIT_INVALID: (key, val, min, max, fallback) => `Warning: config history_limits.${key} value "${val}" is invalid (must be integer ${min}-${max}). Using default ${fallback}.`,
-  EPIC_ID_REQUIRED: () => "--new-epic requires --epic-id",
-  CLOSE_NEW_EPIC_CONFLICT: () => "--close-epic and --new-epic are mutually exclusive",
-  NO_ACTIVE_EPIC: (flag) => `${flag} requires an active epic (active_epic.id is empty)`,
-  EPIC_ID_ORPHAN: () => "--epic-id (for sub-change) requires --new-change",
-  MISSING_REMOVE_VALUE: () => "--remove-change / --remove-epic requires a non-empty value",
-  MISSING_FLAG_VALUE: (flag) => `${flag} requires a non-empty value`,
-  ACTIVE_CHANGE_CONFLICT: () => "--new-change cannot replace a different active change; finalize or abandon it first.",
-  NO_ACTIVE_CHANGE: (flag) => `${flag} requires an active change (active_change.id is empty)`,
-  CHANGE_LIFECYCLE_CONFLICT: () => "Only one of --update-change, --close-change, or --abandon-change may be used.",
-  CHANGE_NEW_LIFECYCLE_CONFLICT: () => "--new-change cannot be combined with --close-change or --abandon-change.",
-  EPIC_LIFECYCLE_CONFLICT: () => "Only one of --close-epic or --abandon-epic may be used.",
-  EPIC_NEW_LIFECYCLE_CONFLICT: () => "--new-epic cannot be combined with --close-epic or --abandon-epic.",
-  INVALID_CHANGE_STATUS: (value) => `Invalid change status "${value}". Must be one of: active, done, abandoned.`,
-  INVALID_EPIC_STATUS: (value) => `Invalid epic status "${value}". Must be one of: active, done, abandoned.`,
-  INVALID_REPAIR: (value) => `Invalid --repair-change-statuses entry "${value}". Use <id>=<active|done|abandoned>.`,
-  REPAIR_CHANGE_NOT_FOUND: (id) => `--repair-change-statuses references unknown change id "${id}".`,
-  REPAIR_REMOVE_CONFLICT: (id) => `Change id "${id}" cannot be both repaired and removed.`,
-  ACTIVE_REMOVE_CONFLICT: (id) => `Active change id "${id}" cannot be removed in the same lifecycle operation.`
-};
-var DEFAULT_LIMITS = {
-  history: 20,
-  changes: 20
-};
-var LIMIT_RANGES = {
-  history: { min: 1, max: 100 },
-  changes: { min: 1, max: 100 }
-};
-var VALID_CHANGE_STATUSES = /* @__PURE__ */ new Set(["active", "done", "abandoned"]);
-var VALID_EPIC_STATUSES = /* @__PURE__ */ new Set(["active", "done", "abandoned"]);
-function findProjectRoot(cwd) {
-  let dir = cwd;
+
+// sources/scripts/lib/workspace-artifacts.js
+var import_node_fs = require("node:fs");
+var import_node_path = require("node:path");
+function findProjectRoot(startPath = process.cwd()) {
+  let current = (0, import_node_path.resolve)(startPath);
   while (true) {
-    if ((0, import_node_fs.existsSync)(import_node_path.default.join(dir, ".ai-agents"))) return dir;
-    const parent = import_node_path.default.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
+    if ((0, import_node_fs.existsSync)((0, import_node_path.join)(current, ".ai-agents"))) return current;
+    const parent = (0, import_node_path.dirname)(current);
+    if (parent === current) return null;
+    current = parent;
   }
 }
-function parseArgs(argv) {
-  const args = {};
-  for (let i = 2; i < argv.length; i++) {
-    if (argv[i].startsWith("--")) {
-      const key = argv[i].slice(2);
-      const next = argv[i + 1];
-      if (next && !next.startsWith("--")) {
-        args[key] = next;
-        i++;
-      } else {
-        args[key] = true;
-      }
-    }
+
+// sources/scripts/workspace-state-check.js
+function readYaml(filePath) {
+  return (0, import_yaml.parse)((0, import_node_fs2.readFileSync)(filePath, "utf-8"));
+}
+function planFinding(change, planPath) {
+  if (!(0, import_node_fs2.existsSync)(planPath)) {
+    return {
+      code: "PLAN_PATH_MISSING",
+      change_id: change.id,
+      plan_path: change.plan_path,
+      recommended_action: "manual_review"
+    };
   }
-  return args;
-}
-function parseIdList(value) {
-  if (value == null) return [];
-  return String(value).split(",").map((s) => s.trim()).filter(Boolean);
-}
-function hasValue(value) {
-  return value !== void 0 && value !== true && String(value).trim() !== "";
-}
-function parseRepairStatuses(value) {
-  if (value == null) return { repairs: [], error: null };
-  if (!hasValue(value)) return { repairs: [], error: ERRORS.MISSING_FLAG_VALUE("--repair-change-statuses") };
-  const repairs = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const item of String(value).split(",").map((entry) => entry.trim()).filter(Boolean)) {
-    const match = /^([^=\s]+)=(active|done|abandoned)$/.exec(item);
-    if (!match || seen.has(match[1])) return { repairs: [], error: ERRORS.INVALID_REPAIR(item) };
-    seen.add(match[1]);
-    repairs.push({ id: match[1], status: match[2] });
-  }
-  return repairs.length ? { repairs, error: null } : { repairs: [], error: ERRORS.MISSING_FLAG_VALUE("--repair-change-statuses") };
-}
-function emptyActiveChange() {
-  return { id: "", title: "", created_at: "", plan_path: "", epic_id: "" };
-}
-function emptyActiveEpic() {
-  return { id: "", title: "", created_at: "", epic_path: "" };
-}
-function upsertChange(session, change, status, now) {
-  session.changes = session.changes || [];
-  const entry = {
-    id: change.id,
-    title: change.title || "",
-    plan_path: change.plan_path || "",
-    status,
-    updated_at: now,
-    epic_id: change.epic_id || ""
-  };
-  const index = session.changes.findIndex((item) => item.id === change.id);
-  if (index >= 0) session.changes[index] = entry;
-  else session.changes.push(entry);
-}
-function upsertEpic(session, epic, status, now) {
-  session.epics = session.epics || [];
-  const entry = {
-    id: epic.id,
-    title: epic.title || "",
-    epic_path: epic.epic_path || "",
-    status,
-    updated_at: now
-  };
-  const index = session.epics.findIndex((item) => item.id === epic.id);
-  if (index >= 0) session.epics[index] = entry;
-  else session.epics.push(entry);
-}
-function sortAndTruncate(entries, limit) {
-  entries.sort((a, b) => a.updated_at.localeCompare(b.updated_at));
-  if (entries.length > limit) entries.splice(0, entries.length - limit);
-}
-function loadHistoryLimits(configPath) {
-  const limits = { ...DEFAULT_LIMITS };
-  if (!(0, import_node_fs.existsSync)(configPath)) return limits;
   try {
-    const raw = (0, import_node_fs.readFileSync)(configPath, "utf-8");
-    const config = (0, import_yaml.parse)(raw);
-    const configured = config?.preferences?.history_limits;
-    if (!configured || typeof configured !== "object") return limits;
-    for (const key of Object.keys(DEFAULT_LIMITS)) {
-      const val = configured[key];
-      if (val == null) continue;
-      const num = Number(val);
-      const range = LIMIT_RANGES[key];
-      if (!Number.isInteger(num) || num < range.min || num > range.max) {
-        console.warn(ERRORS.CONFIG_LIMIT_INVALID(key, val, range.min, range.max, DEFAULT_LIMITS[key]));
-        continue;
-      }
-      limits[key] = num;
+    const plan = readYaml(planPath);
+    if (!plan || typeof plan !== "object" || !Array.isArray(plan.tasks) || typeof plan.status !== "string") {
+      throw new Error("invalid plan shape");
     }
+    return { plan };
   } catch {
+    return {
+      code: "PLAN_INVALID",
+      change_id: change.id,
+      plan_path: change.plan_path,
+      recommended_action: "manual_review"
+    };
   }
-  return limits;
 }
-function validate(args) {
-  if (!args.skill) return ERRORS.MISSING_SKILL();
-  if (args.skill === true) return ERRORS.MISSING_FLAG_VALUE("--skill");
-  if (!args.summary) return ERRORS.MISSING_SUMMARY();
-  if (args.summary === true) return ERRORS.MISSING_FLAG_VALUE("--summary");
-  if (args["new-change"] !== void 0 && !hasValue(args["new-change"])) return ERRORS.MISSING_FLAG_VALUE("--new-change");
-  if (args["new-change"] && !args["change-id"]) return ERRORS.CHANGE_ID_REQUIRED();
-  if (args["change-id"] !== void 0 && !hasValue(args["change-id"])) return ERRORS.MISSING_FLAG_VALUE("--change-id");
-  if (args["new-epic"] && !args["epic-id"]) return ERRORS.EPIC_ID_REQUIRED();
-  if (args["new-epic"] !== void 0 && !hasValue(args["new-epic"])) return ERRORS.MISSING_FLAG_VALUE("--new-epic");
-  if (args["epic-id"] !== void 0 && !hasValue(args["epic-id"])) return ERRORS.MISSING_FLAG_VALUE("--epic-id");
-  if (args["close-epic"] && args["new-epic"]) return ERRORS.CLOSE_NEW_EPIC_CONFLICT();
-  if (args["epic-id"] && !args["new-change"] && !args["new-epic"]) return ERRORS.EPIC_ID_ORPHAN();
-  for (const flag of ["set-plan-path", "set-change-status", "truncate-history", "set-epic-path", "set-epic-status"]) {
-    if (args[flag] !== void 0 && !hasValue(args[flag])) {
-      return ERRORS.MISSING_FLAG_VALUE(`--${flag}`);
-    }
-  }
-  if (args["set-change-status"] && !VALID_CHANGE_STATUSES.has(args["set-change-status"])) {
-    return ERRORS.INVALID_CHANGE_STATUS(args["set-change-status"]);
-  }
-  if (args["set-epic-status"] && !VALID_EPIC_STATUSES.has(args["set-epic-status"])) {
-    return ERRORS.INVALID_EPIC_STATUS(args["set-epic-status"]);
-  }
-  const repair = parseRepairStatuses(args["repair-change-statuses"]);
-  if (repair.error) return repair.error;
-  const changeLifecycleCount = [args["update-change"], args["close-change"], args["abandon-change"]].filter(Boolean).length;
-  if (changeLifecycleCount > 1) return ERRORS.CHANGE_LIFECYCLE_CONFLICT();
-  if (args["new-change"] && (args["close-change"] || args["abandon-change"])) {
-    return ERRORS.CHANGE_NEW_LIFECYCLE_CONFLICT();
-  }
-  if (args["close-epic"] && args["abandon-epic"]) return ERRORS.EPIC_LIFECYCLE_CONFLICT();
-  if (args["new-epic"] && (args["close-epic"] || args["abandon-epic"])) {
-    return ERRORS.EPIC_NEW_LIFECYCLE_CONFLICT();
-  }
-  if (args["remove-change"] !== void 0 && (args["remove-change"] === true || !String(args["remove-change"]).trim())) {
-    return ERRORS.MISSING_REMOVE_VALUE();
-  }
-  if (args["remove-epic"] !== void 0 && (args["remove-epic"] === true || !String(args["remove-epic"]).trim())) {
-    return ERRORS.MISSING_REMOVE_VALUE();
-  }
-  return null;
-}
-function validateAgainstSession(args, session) {
-  const activeChange = session.active_change || {};
-  const activeEpic = session.active_epic || {};
-  const repair = parseRepairStatuses(args["repair-change-statuses"]);
-  const removeChangeIds = new Set(parseIdList(args["remove-change"]));
-  if (args["new-change"] && activeChange.id && activeChange.id !== args["change-id"]) {
-    return ERRORS.ACTIVE_CHANGE_CONFLICT();
-  }
-  if (args["update-change"] && !activeChange.id) return ERRORS.NO_ACTIVE_CHANGE("--update-change");
-  if (args["close-change"] && !activeChange.id) return ERRORS.NO_ACTIVE_CHANGE("--close-change");
-  if (args["abandon-change"] && !activeChange.id) return ERRORS.NO_ACTIVE_CHANGE("--abandon-change");
-  if ((args["update-change"] || args["close-change"] || args["abandon-change"]) && removeChangeIds.has(activeChange.id)) {
-    return ERRORS.ACTIVE_REMOVE_CONFLICT(activeChange.id);
-  }
-  if ((args["close-epic"] || args["abandon-epic"]) && !activeEpic.id) {
-    return ERRORS.NO_ACTIVE_EPIC(args["close-epic"] ? "--close-epic" : "--abandon-epic");
-  }
+function collectFindings(session, projectRoot) {
+  const findings = [];
   const changes = Array.isArray(session.changes) ? session.changes : [];
-  for (const repairEntry of repair.repairs) {
-    if (removeChangeIds.has(repairEntry.id)) return ERRORS.REPAIR_REMOVE_CONFLICT(repairEntry.id);
-    if (!repairEntry.id || !changes.some((entry) => entry.id === repairEntry.id)) {
-      return ERRORS.REPAIR_CHANGE_NOT_FOUND(repairEntry.id);
+  const activeChangeId = session.active_change?.id || "";
+  const knownEpicIds = new Set([
+    ...(Array.isArray(session.epics) ? session.epics : []).map((epic) => epic?.id),
+    session.active_epic?.id
+  ].filter(Boolean));
+  for (const change of changes) {
+    if (!change?.id) {
+      findings.push({ code: "EMPTY_CHANGE_ID", recommended_action: "prune_empty_entry" });
+      continue;
+    }
+    if (change.plan_path) {
+      const planResult = planFinding(change, (0, import_node_path2.join)(projectRoot, change.plan_path));
+      if (planResult.code) {
+        findings.push(planResult);
+      } else if (planResult.plan.status === "done" && change.status === "active" && change.id !== activeChangeId) {
+        findings.push({
+          code: "PLAN_DONE_INDEX_ACTIVE",
+          change_id: change.id,
+          recommended_action: "set_status_done"
+        });
+      }
+    }
+    if (change.epic_id && !knownEpicIds.has(change.epic_id)) {
+      findings.push({
+        code: "EPIC_REFERENCE_UNRESOLVED",
+        change_id: change.id,
+        epic_id: change.epic_id,
+        recommended_action: "manual_review"
+      });
     }
   }
-  return null;
+  return findings.sort(
+    (left, right) => `${left.code}:${left.change_id || ""}:${left.plan_path || left.epic_id || ""}`.localeCompare(
+      `${right.code}:${right.change_id || ""}:${right.plan_path || right.epic_id || ""}`
+    )
+  );
 }
 function main() {
-  const args = parseArgs(process.argv);
-  const validationError = validate(args);
-  if (validationError) {
-    process.stderr.write(validationError + "\n");
-    process.exit(1);
-  }
-  const projectRoot = findProjectRoot(process.cwd());
+  const projectRoot = findProjectRoot();
   if (!projectRoot) {
-    process.stderr.write(ERRORS.NO_PROJECT_ROOT() + "\n");
+    process.stderr.write("Could not find project root containing .ai-agents.\n");
     process.exit(1);
   }
-  const sessionPath = import_node_path.default.join(projectRoot, ".ai-agents/workspace/session.yaml");
-  if (!(0, import_node_fs.existsSync)(sessionPath)) {
-    process.stderr.write(ERRORS.NO_SESSION_YAML() + "\n");
+  const sessionPath = (0, import_node_path2.join)(projectRoot, ".ai-agents", "workspace", "session.yaml");
+  if (!(0, import_node_fs2.existsSync)(sessionPath)) {
+    process.stderr.write(`Session file not found at ${sessionPath}.
+`);
     process.exit(1);
   }
-  const configPath = import_node_path.default.join(projectRoot, ".ai-agents/config.yaml");
-  const limits = loadHistoryLimits(configPath);
   let session;
   try {
-    session = (0, import_yaml.parse)((0, import_node_fs.readFileSync)(sessionPath, "utf-8"));
-  } catch (e) {
-    process.stderr.write(ERRORS.SESSION_PARSE_FAILED(e.message) + "\n");
+    session = readYaml(sessionPath);
+  } catch (error) {
+    process.stderr.write(`Failed to parse session.yaml: ${error.message}
+`);
     process.exit(1);
   }
-  const sessionValidationError = validateAgainstSession(args, session);
-  if (sessionValidationError) {
-    process.stderr.write(sessionValidationError + "\n");
-    process.exit(1);
-  }
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  const historyChangeId = args["no-change"] ? "" : args["change-id"] || session.active_change?.id || "";
-  if (args["new-change"]) {
-    session.active_change = session.active_change || {};
-    const isSameChange = session.active_change.id === args["change-id"];
-    session.active_change.id = args["change-id"];
-    session.active_change.title = args["new-change"];
-    session.active_change.created_at = isSameChange ? session.active_change.created_at || now : now;
-    session.active_change.plan_path = isSameChange ? session.active_change.plan_path || "" : "";
-    session.active_change.epic_id = args["epic-id"] || session.active_change.epic_id || "";
-  }
-  if (args["set-initialized"]) {
-    session.session = session.session || {};
-    if (!session.session.initialized_at) {
-      session.session.initialized_at = now;
-    }
-  }
-  if (args["set-synced"]) {
-    session.session = session.session || {};
-    session.session.last_synced_at = now;
-  }
-  if (args["set-plan-path"]) {
-    session.active_change = session.active_change || {};
-    session.active_change.plan_path = args["set-plan-path"];
-  }
-  if (args["prune-empty-changes"]) {
-    session.changes = (session.changes || []).filter((entry) => entry?.id && String(entry.id).trim());
-  }
-  const repair = parseRepairStatuses(args["repair-change-statuses"]);
-  for (const repairEntry of repair.repairs) {
-    const index = session.changes.findIndex((entry) => entry.id === repairEntry.id);
-    session.changes[index].status = repairEntry.status;
-    session.changes[index].updated_at = now;
-  }
-  if (args["update-change"]) {
-    const ac = session.active_change || {};
-    upsertChange(session, ac, "active", now);
-  }
-  if (args["close-change"]) {
-    const ac = session.active_change || {};
-    upsertChange(session, ac, "done", now);
-    session.active_change = emptyActiveChange();
-  }
-  if (args["abandon-change"]) {
-    const ac = session.active_change || {};
-    upsertChange(session, ac, "abandoned", now);
-    session.active_change = emptyActiveChange();
-  }
-  if (args["set-change-status"]) {
-    session.changes = session.changes || [];
-    const ac = session.active_change || {};
-    if (ac.id) {
-      const existingIdx = session.changes.findIndex(
-        (e) => e.id === ac.id
-      );
-      if (existingIdx >= 0) {
-        session.changes[existingIdx].status = args["set-change-status"];
-        session.changes[existingIdx].updated_at = now;
-      }
-    }
-  }
-  if (args["new-epic"]) {
-    session.active_epic = session.active_epic || {};
-    if (session.active_epic.id) {
-      session.epics = session.epics || [];
-      const existingIdx = session.epics.findIndex(
-        (e) => e.id === session.active_epic.id
-      );
-      const snapshotEntry = {
-        id: session.active_epic.id,
-        title: session.active_epic.title || "",
-        epic_path: session.active_epic.epic_path || "",
-        status: "active",
-        updated_at: now
-      };
-      if (existingIdx >= 0) {
-        session.epics[existingIdx] = snapshotEntry;
-      } else {
-        session.epics.push(snapshotEntry);
-      }
-    }
-    session.active_epic.id = args["epic-id"];
-    session.active_epic.title = args["new-epic"];
-    session.active_epic.created_at = now;
-    session.active_epic.epic_path = "";
-  }
-  if (args["set-epic-path"]) {
-    session.active_epic = session.active_epic || {};
-    if (!session.active_epic.id && !args["new-epic"]) {
-      process.stderr.write(ERRORS.NO_ACTIVE_EPIC("--set-epic-path") + "\n");
-      process.exit(1);
-    }
-    session.active_epic.epic_path = args["set-epic-path"];
-  }
-  if (args["set-epic-status"]) {
-    session.active_epic = session.active_epic || {};
-    if (!session.active_epic.id && !args["new-epic"]) {
-      process.stderr.write(ERRORS.NO_ACTIVE_EPIC("--set-epic-status") + "\n");
-      process.exit(1);
-    }
-    session.epics = session.epics || [];
-    const epicIdx = session.epics.findIndex(
-      (e) => e.id === session.active_epic.id
-    );
-    if (epicIdx >= 0) {
-      session.epics[epicIdx].status = args["set-epic-status"];
-      session.epics[epicIdx].updated_at = now;
-    }
-  }
-  if (args["close-epic"]) {
-    upsertEpic(session, session.active_epic || {}, "done", now);
-    session.active_epic = emptyActiveEpic();
-  }
-  if (args["abandon-epic"]) {
-    upsertEpic(session, session.active_epic || {}, "abandoned", now);
-    session.active_epic = emptyActiveEpic();
-  }
-  if (args["remove-change"] !== void 0) {
-    session.changes = session.changes || [];
-    const rawIds = args["remove-change"];
-    let removed = 0;
-    for (const id of parseIdList(rawIds)) {
-      const before = session.changes.length;
-      session.changes = session.changes.filter((e) => e.id !== id);
-      if (session.changes.length < before) removed++;
-    }
-    if (removed === 0) {
-      process.stderr.write(
-        `Warning: --remove-change requested ids [${rawIds}] not found; no entries removed.
-`
-      );
-    }
-  }
-  if (args["remove-epic"] !== void 0) {
-    session.epics = session.epics || [];
-    const rawIds = args["remove-epic"];
-    let removed = 0;
-    for (const id of parseIdList(rawIds)) {
-      const before = session.epics.length;
-      session.epics = session.epics.filter((e) => e.id !== id);
-      if (session.epics.length < before) removed++;
-    }
-    if (removed === 0) {
-      process.stderr.write(
-        `Warning: --remove-epic requested ids [${rawIds}] not found; no entries removed.
-`
-      );
-    }
-  }
-  session.changes = session.changes || [];
-  session.epics = session.epics || [];
-  sortAndTruncate(session.changes, limits.changes);
-  sortAndTruncate(session.epics, limits.changes);
-  session.history = session.history || [];
-  session.history.push({
-    skill: `/${args.skill}`,
-    completed_at: now,
-    summary: args.summary,
-    change_id: historyChangeId
-  });
-  const historyLimit = args["truncate-history"] ? Number(args["truncate-history"]) : limits.history;
-  if (Number.isInteger(historyLimit) && historyLimit > 0 && session.history.length > historyLimit) {
-    session.history = session.history.slice(-historyLimit);
-  }
-  const tmpPath = sessionPath + ".tmp";
-  try {
-    (0, import_node_fs.writeFileSync)(tmpPath, (0, import_yaml.stringify)(session, { lineWidth: 200 }), "utf-8");
-    (0, import_node_fs.renameSync)(tmpPath, sessionPath);
-  } catch (e) {
-    try {
-      if ((0, import_node_fs.existsSync)(tmpPath)) (0, import_node_fs.unlinkSync)(tmpPath);
-    } catch {
-    }
-    process.stderr.write(ERRORS.SESSION_WRITE_FAILED(e.message) + "\n");
-    process.exit(1);
-  }
-  process.stdout.write('{"ok":true}\n');
+  process.stdout.write(JSON.stringify({ ok: true, findings: collectFindings(session || {}, projectRoot) }) + "\n");
 }
 main();

@@ -125,6 +125,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
   6. For each file, decide: `create | modify | delete`, and write a one-line intent.
 - **Plan-aware behavior**: if `plan.yaml` exists, resolve one active task before planning. Candidate task ids come from deduplicated `current_tasks`; if one remains, use it. If several remain, prefer an explicit user task id, then match current paths against each candidate's `artifacts.files` and project paths; if still ambiguous, ask the user. Treat the resolved task's `artifacts.files` as a starting-scope hint only; `design.md` Change Tracking remains authoritative. Confirm Step 3 before touching files beyond the hint, and never absorb files that belong to another task.
 - **Output of this step**: an in-conversation list shown to user as a preview, with no write yet.
+- **Silent mode**: if `preferences.silent.implement` is `true`, skip the preview confirmation and proceed directly to Step 4, noting the planned files in conversation.
 
 ### Step 3: Confirm Scope (when needed)
 - **Confirm before writing if any are true**:
@@ -134,6 +135,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
   - The plan deviates from `design.md` (e.g., adds files not in `Change Tracking` or skips files listed there).
   - The plan touches files beyond the active task's `artifacts.files` hint (state which files are added and why, in one line each).
 - **Otherwise**: proceed silently.
+- **Silent mode**: if `preferences.silent.implement` is `true`, skip the scope confirmation entirely. Continue writing and surface any triggering conditions (extra files, deviations) as conversation notes.
 - **On deviation from design**: explain the deviation reason in one line; if the deviation is structural (new module, layer change, interface break), STOP and recommend re-running `/mvt-design`.
 
 ### Step 4: Implement Code
@@ -213,6 +215,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
   Use this exact metadata-only command. Do NOT add `--status`, hand-edit `plan.yaml`, choose `current_tasks`, or read `.cjs`/`.js` source.
   Pass ALL downstream dependent task ids as a comma-separated list to `--mark-deliverable-stale` so that `/mvt-resume` and `/mvt-status` can surface the stale warning.
 - **On user decline**: do not write deliverables and do not call `plan-update.cjs` with the deliverables flags. The downstream tasks will not receive stale warnings, which is acceptable if the user considers the contract unchanged.
+- **Silent mode**: if `preferences.silent.implement` is `true`, skip the deliverables prompt and apply the documented default (generate deliverables when downstream dependents exist).
 - **Error handling**: if `plan-update.cjs` rejects (e.g., malformed freshness), surface stderr and leave `implementation.md` as written. The deliverables content is the source of truth; the pointer can be retried via `/mvt-update-plan`.
 
 ### Step 9: Plan-Aware Progress Hint (if applicable)

@@ -1,13 +1,13 @@
 {
-  "mvtt_version": "2.2.4",
+  "mvtt_version": "2.3.0",
   "installed_at": "2026-07-24T09:32:17.400Z",
-  "last_updated_at": "2026-07-24T09:32:17.400Z",
+  "last_updated_at": "2026-08-06T01:50:23.457Z",
   "platforms": [
     "claude"
   ],
   "files": {
     ".claude/skills/mvt-analyze/SKILL.md": {
-      "hash": "sha256:6ef35f1f6bee2230c7ea6ac9a2380f23d61b7f76c32fbd27645d81d2c6a6ea1b",
+      "hash": "sha256:4b5904749ceb9589ea2f3e674ab378786d9d79da849d8190a3f9c98a48f78ccb",
       "category": "generated"
     },
     ".claude/skills/mvt-analyze-code/SKILL.md": {
@@ -19,11 +19,11 @@
       "category": "generated"
     },
     ".claude/skills/mvt-check-context/SKILL.md": {
-      "hash": "sha256:1ca92261a6d74be99fd45a21de4458649e19735571f76217b6e303023caf65f0",
+      "hash": "sha256:a0b5f3384a8cc640f5d60f8d77b5e3254bbf66574844314b864c1724e42a96ab",
       "category": "generated"
     },
     ".claude/skills/mvt-cleanup/SKILL.md": {
-      "hash": "sha256:221aa89980f082a349c54c98fa18d393adf55cb63c8fb11f1ef51ed08155e0f7",
+      "hash": "sha256:6a255b7159b8f12e06e98b3ddaf1d8f3d60f248821c9043e8f647f1d19791a79",
       "category": "generated"
     },
     ".claude/skills/mvt-config/SKILL.md": {
@@ -31,15 +31,15 @@
       "category": "generated"
     },
     ".claude/skills/mvt-consult/SKILL.md": {
-      "hash": "sha256:13c7fae24e4df6b7c8b4e5389d89be55999689090a0841b62c954b31e01b9e12",
+      "hash": "sha256:7d508f1c0eb043ef048cd8a58f3c332667394658a71f14bcce2b0f6dcc4c7f3b",
       "category": "generated"
     },
     ".claude/skills/mvt-create-skill/SKILL.md": {
-      "hash": "sha256:2f2db43319a36097471ec560e52ec7a3d4de76f710de7206c9968e7726b808d7",
+      "hash": "sha256:1aa677793bd9910afb1bda24e655096a415b070f84a3987b93e06a7113bbb0b0",
       "category": "generated"
     },
     ".claude/skills/mvt-decompose/SKILL.md": {
-      "hash": "sha256:4d48ac082a817581ef8eac282893e661952ca12ea7569e1eb2cc678f7599d1c4",
+      "hash": "sha256:a5ccfcbf3976aa5350fd7b07029f7abec33ab701a131c56eccdc5a19bb5a37df",
       "category": "generated"
     },
     ".claude/skills/mvt-design/SKILL.md": {
@@ -55,7 +55,7 @@
       "category": "generated"
     },
     ".claude/skills/mvt-implement/SKILL.md": {
-      "hash": "sha256:63836f3a84728b2e42edcb18bc0a1e51faea9d1687b0725ad184a9848137da76",
+      "hash": "sha256:ed007b359eb855b244301369c5016c1e0cb689086ac0b49f2edd56b3f32de09d",
       "category": "generated"
     },
     ".claude/skills/mvt-init/SKILL.md": {
@@ -67,19 +67,19 @@
       "category": "generated"
     },
     ".claude/skills/mvt-plan-dev/SKILL.md": {
-      "hash": "sha256:dd59e995cc557e89d440e42683d4414a337859d91cdeb0a36d10cb0caa4cb1d0",
+      "hash": "sha256:f6a4abf626c91aee0e075bd960f4422b1ad5eb897c4a3ae0b931e87068b1992e",
       "category": "generated"
     },
     ".claude/skills/mvt-quick-dev/SKILL.md": {
-      "hash": "sha256:84f531955bd3d72a53e7a4ebf049232015681e103f3d9b06f1a312ed3ec5dd4b",
+      "hash": "sha256:87e43faa324df3cd487abcbfc965503727cc11fc0046bd0475afee932d1ebff3",
       "category": "generated"
     },
     ".claude/skills/mvt-refactor/SKILL.md": {
-      "hash": "sha256:eca59173c9b3813206000e795a7d268eb09d2679b6658140ad59fe19711efbde",
+      "hash": "sha256:42e000ee5710a80bca227320af84bf80994dfa202bb7eddd284ff8ec4f02cb0b",
       "category": "generated"
     },
     ".claude/skills/mvt-resume/SKILL.md": {
-      "hash": "sha256:c9941d64822586f9702b1e5ee3bd09ee975590430e5e814423e3e63661ceb95e",
+      "hash": "sha256:4f6e9fe186b36b9eb83a18c0e66cbac6d2f3057daafbeec1b3a3dc14f0262beb",
       "category": "generated"
     },
     ".claude/skills/mvt-review/SKILL.md": {
@@ -87,11 +87,11 @@
       "category": "generated"
     },
     ".claude/skills/mvt-status/SKILL.md": {
-      "hash": "sha256:564c04de089e19734513b834c49eb73aa1c348bd9855c9d9a6deefa0fbf7d8d0",
+      "hash": "sha256:ab86180926fde2245b197aeeaae74ec165c85386e21b0d2bd0b8130f6852834c",
       "category": "generated"
     },
     ".claude/skills/mvt-sync-context/SKILL.md": {
-      "hash": "sha256:faa73397b13a7a2ea02e5072bbd0936b1c5d55258ca16d4bfd8ad5e6d7ca3d1b",
+      "hash": "sha256:83e7f67fdb90ccdef00d1ee7c877e425c3ca8be19ece6131d56756df959f0b30",
       "category": "generated"
     },
     ".claude/skills/mvt-template/SKILL.md": {
@@ -103,7 +103,7 @@
       "category": "generated"
     },
     ".claude/skills/mvt-update-plan/SKILL.md": {
-      "hash": "sha256:f75b19b9e2975d52fa4ea257c5da6bd9a21a2559ff7bd52390cdcdd35a4adeb3",
+      "hash": "sha256:82598afd2a1900ce8d3a0f18bad6a38698b3ae8e63edb88f75475e1c4730dfc0",
       "category": "generated"
     },
     ".ai-agents/skills/_templates/analyze-output.md": {
@@ -111,7 +111,7 @@
       "category": "generated"
     },
     ".ai-agents/skills/_templates/decompose-output.md": {
-      "hash": "sha256:108df1676c8eeed697c06e6af01f8e828f7fc09b8d6108ae93067bc92513e1ef",
+      "hash": "sha256:f9021411d002171de29ca920e61c8b13f1c4556da6f74d25a311ab078791d767",
       "category": "generated"
     },
     ".ai-agents/skills/_templates/design-output.md": {
@@ -139,15 +139,23 @@
       "category": "create_once"
     },
     ".ai-agents/registry.yaml": {
-      "hash": "sha256:5531282ed9981821e21fc2a7b948cb076f13ae25925a01b6f78c0505634a265a",
+      "hash": "sha256:6e56e985c748b91d250ed8f25e7c108952318a5942615c31ed1148fe66115823",
       "category": "create_once"
     },
+    ".ai-agents/scripts/artifact-scan.cjs": {
+      "hash": "sha256:b8b2b90c0881f5f41bc1b6dc1181c5c77962d41b6a2f9ae1bedd4963af86cce9",
+      "category": "generated"
+    },
+    ".ai-agents/scripts/artifact-scan.md": {
+      "hash": "sha256:ef94a6cdb9980756ca0a42a1e71d1ceda6e9546e020f4c508f8e2e5820b6b74b",
+      "category": "generated"
+    },
     ".ai-agents/scripts/epic-update.cjs": {
-      "hash": "sha256:e6d1c68fd51a56812a69a31239745c31110930df5e32554370fda922511d5a84",
+      "hash": "sha256:d5d9668031a77a167dfd6f962af5ad4fe90cffdb7512793fa18eb87d305032dc",
       "category": "generated"
     },
     ".ai-agents/scripts/epic-update.md": {
-      "hash": "sha256:44a6e453ff271f5539ea9c3c8a55a756334dd551c2a684906321d510a3e9b667",
+      "hash": "sha256:5f2b57fbbb49d39eee2c2cf5051bb6d24644aa45eeab43d9985103fe5601deb3",
       "category": "generated"
     },
     ".ai-agents/scripts/plan-update.cjs": {
@@ -158,12 +166,32 @@
       "hash": "sha256:1b6fd1414bf75aabdd67b054def929efeedc5df0637d8e419a5d6b9ca8b845f3",
       "category": "generated"
     },
+    ".ai-agents/scripts/requirement-source.cjs": {
+      "hash": "sha256:52be85409e3fa39b0f4b29579336a4d00b1b328776006e2a399050e6747aa7c7",
+      "category": "generated"
+    },
+    ".ai-agents/scripts/requirement-source.md": {
+      "hash": "sha256:e866d5afdd35373db370b8341dbffa33d16df889304b416b4db4f37391cd92c4",
+      "category": "generated"
+    },
     ".ai-agents/scripts/session-update.cjs": {
-      "hash": "sha256:a0cfe8aa2e01aa85461114d900e7d3c738a7f5f6d00069296a2f3f82dfc0f4d0",
+      "hash": "sha256:b0997d25c0698d5e94af1b75882bff9a13ac7e67a92bd746cb87e0ff185ddc6c",
+      "category": "generated"
+    },
+    ".ai-agents/scripts/session-update.md": {
+      "hash": "sha256:d37015f0ad6a25b5b288f1336276682894a22d1135ff0351ac8cea48c367e1a8",
+      "category": "generated"
+    },
+    ".ai-agents/scripts/workspace-state-check.cjs": {
+      "hash": "sha256:28d22649c3d83f41752c1079bdcfbf81af5545a80f3bcc38e74470d3aa635c88",
+      "category": "generated"
+    },
+    ".ai-agents/scripts/workspace-state-check.md": {
+      "hash": "sha256:c4b9c3652667fd83bc41cb9d6fd0151b01372ea0d077a6c7678428dcb40911f6",
       "category": "generated"
     },
     ".ai-agents/config.yaml": {
-      "hash": "sha256:561f607920ada708dfcfbeb7c091dc6a93a6392112308219eba4b38c0f0a9c7f",
+      "hash": "sha256:329439e4cca3ea4cd2b0b0b4b64077310334c1b3c5a8ba465d6ac9ea0f3aa474",
       "category": "create_once"
     },
     ".ai-agents/workspace/session.yaml": {
@@ -171,7 +199,7 @@
       "category": "create_once"
     },
     ".ai-agents/workspace/project-context.yaml": {
-      "hash": "sha256:ddfb6bf1ed8f3a997be4cfef8eb50c8d0fa0349d5417f7591a2d04fb44d75d43",
+      "hash": "sha256:db1264ee7bf4834c99e3f9eabf6c29835e4c9b7b960db9c824e74885cd3570b1",
       "category": "create_once"
     }
   }

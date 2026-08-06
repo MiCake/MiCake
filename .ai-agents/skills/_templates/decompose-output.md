@@ -26,6 +26,21 @@ skill: 'mvt-decompose'
   prevent scope creep into the child stories.
 -->
 
+## Requirement Sources
+<!--
+  Derived provenance view from epic.yaml requirement_context.sources.
+  Use a Markdown table with: Source ID | Kind | Reference | Fingerprint.
+  Show "Not applicable" for conversation fingerprints. Do not copy source
+  file contents into this narrative artifact.
+-->
+
+## Requirement Baseline
+<!--
+  Summarize the normalized context items that define the epic. Group concise
+  statements by category and retain each context item ID for traceability.
+  Identify globally inherited items explicitly. epic.yaml remains authoritative.
+-->
+
 ## Cross-cutting Concerns
 <!--
   Themes spanning multiple children: auth, logging, error handling, data
@@ -36,9 +51,10 @@ skill: 'mvt-decompose'
 ## Child Stories
 <!--
   Markdown table mirroring epic.yaml children[]. Columns:
-  | # | Child | Scope | Status | Depends On |
+  | # | Child | Scope | Context Coverage | Status | Depends On |
   One row per child story. Status is `active` for the first child and
-  `pending` for the rest. Depends On lists change_ids (empty for roots).
+  `pending` for the rest. Context Coverage lists context_refs in stored order.
+  Depends On lists change_ids (empty for roots).
 -->
 
 ## Dependency Map
