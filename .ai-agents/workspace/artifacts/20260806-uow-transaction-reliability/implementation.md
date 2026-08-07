@@ -727,3 +727,72 @@ now resolves its wrapper through `GetDbContext()` + `GetOrCreateWrapperFor(conte
 - Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
 - Task: `t7-relational-acceptance` — factory contract merge applied; status update deferred to `/mvt-update-plan`.
 - Acceptance status: public factory surface collapsed to `IEFCoreContextFactory<TDbContext>`; `implementation.md` and README migration guide synchronized.
+
+## Task: t8-performance-final-review — Baseline performance and review delivery (implementation part)
+
+## Implementation Summary
+
+Implemented the ADR-010 repeatable benchmark harness and the structured-diagnostics
+verification required by t8. The harness is self-contained (Stopwatch plus
+`GC.GetTotalAllocatedBytes`) and requires no new external dependency. It measures five
+common paths against the existing file-backed SQLite acceptance fixture: no-UoW reads,
+tracked writes with commit (lazy first-write transaction activation), generated-identity
+flush, lifecycle pre/post handlers, and immediate transaction activation across two
+registered context types. Each scenario runs a warmup pass followed by 200 measured
+iterations and reports the elapsed distribution (min/median/p90) and allocated bytes.
+The recorded baseline is stored as `baseline.json` with runtime, provider,
+configuration, warmup/iteration counts, thresholds, and the comparison procedure; the
+threshold comparison (10 percent throughput / 15 percent allocation) is a documented
+review step so CI noise cannot fail the regular suite. A new structured-diagnostics test
+captures MiCake-category log entries and proves that transaction diagnostics correlate
+UoW, resource, and DbContext identity while excluding entity property values, database
+paths, and connection strings.
+
+## Files Touched
+
+| Path | Action | Intent |
+|---|---|---|
+| `src/tests/MiCake.IntegrationTests/Performance/UowPerformanceBaselineTests.cs` | create | Self-contained benchmark harness: 5 scenarios x warmup 5 + 200 measured iterations, elapsed distribution + allocations, `[Trait("Category", "Performance")]`, serialized collection for clean process-level allocation counters |
+| `src/tests/MiCake.IntegrationTests/Performance/UowStructuredDiagnosticsTests.cs` | create | Captures MiCake-category logs (Trace+ minimum level) and asserts correlation fields present and sensitive data (entity marker, database path, connection string) absent |
+| `src/tests/MiCake.IntegrationTests/Performance/baseline.json` | create | Recorded baseline: runtime, provider, configuration, warmup/iterations, per-scenario min/median/p90 ms and allocated bytes, thresholds, comparison procedure |
+
+## Design Compliance
+
+| Check | Result | Reason |
+|---|---|---|
+| Files touched == Change Tracking ± deviation | warn-and-documented | t8 has no per-file Change Tracking entry; the three files sit inside the task's `artifacts.files` hint (`src/tests`) and implement the ADR-010 harness directly (see Deviations) |
+| Module/layer placement | passed | All files in `MiCake.IntegrationTests/Performance`; tests reference framework contracts and the existing acceptance fixture only |
+| Public interfaces match Key Interfaces | passed | No public API changes; benchmark scenarios consume only existing public contracts |
+| Forbidden cross-layer imports absent | passed | No imports beyond the integration-test surface already used by the acceptance matrix |
+| Error handling at boundaries only | passed | No interior catches in the harness; assertions surface measurement failures at the test boundary |
+| No new external dependencies | passed | No manifest change; measurement uses BCL `Stopwatch` / `GC` |
+
+## Deviations from Design
+
+1. **Benchmark harness files are not listed in the design File Structure** — ADR-010
+   requires a "repeatable benchmark harness" and t8 owns it, but the design's Create
+   table predates the t8 file breakdown. Implemented as an xunit-tagged test class inside
+   `MiCake.IntegrationTests` (no new project, no new dependency) instead of a separate
+   console harness, so it reuses the acceptance fixture and the InternalsVisibleTo
+   wiring. Confirmed with the user at scope confirmation.
+2. **Threshold comparison is a documented review step, not a hard test assertion** —
+   CI machines produce noisy elapsed measurements; a failing hard assertion on 10%/15%
+   would be flaky. `baseline.json` records thresholds and the comparison procedure, and
+   the t8 review compares re-run output against the baseline.
+
+## Self-Check Results
+
+- Type-checker: `dotnet build MiCake.All.sln` — succeeded (0 errors; existing NU1903 package warnings only).
+- Tests: MiCake 261/261, EF Core 250/250, Integration 178/178 (6 new: 5 baseline scenarios + 1 diagnostics), ASP.NET 432/432, 0 skipped.
+- Baseline recorded on 2026-08-07 (Debug, net10.0, EF Core 10.0.7 / SQLite file-backed, Pooling=False): ReadNoUoW median 2.14 ms, TrackedWriteCommit 8.87 ms, FlushIdentity 8.64 ms, LifecycleHandlers 8.40 ms, ImmediateActivation 3.40 ms; allocations 16.9-32.0 MB per 200 iterations.
+
+## Open TODOs
+
+- t8 review (`mvt-review`): compare a fresh `--filter Category=Performance` run against `baseline.json` using the documented thresholds; run the final architecture/API review and trace every R1-R50 requirement; verify structured diagnostics correlation on the full path.
+- `mvt-update-plan`: mark `t8-performance-final-review` done when the review completes.
+
+## Change Tracking
+
+- Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
+- Task: `t8-performance-final-review` — implementation part applied; status update deferred to `/mvt-update-plan`.
+- Acceptance status: baseline harness, recorded baseline, and structured-diagnostics verification are in place; the review half of t8 (threshold comparison against baseline, R1-R50 trace, final architecture review) remains for `/mvt-review`.

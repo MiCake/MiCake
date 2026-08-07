@@ -22,33 +22,6 @@ changes:
     epic_id: ""
 history:
   - skill: /mvt-review
-    completed_at: 2026-08-07T02:32:37.391Z
-    summary: 独立复审 F1-F5 修复：发现 2 个 Critical 与 2 个 Warning，结论为 Request changes；用户选择不写 review.md。
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-fix
-    completed_at: 2026-08-07T02:52:47.033Z
-    summary: 修复评审 2 Critical+2 Warning：新增 public 单例 IUnitOfWorkAmbientAccessor 暴露 owning scope provider，save/command 拦截器与协调器改从其解析 scoped 服务（ValidateScopes 下不再抛 root-provider 异常，恢复无 UoW
-      错误语义）；IUnitOfWorkInternal 移除 ServiceProvider 成员、GetOrCreateWrapperFor 迁至新能力接口 IEFCoreAnchoredContextFactory（自定义 factory 回退 GetDbContextWrapper）；RunPreSaveCycleAsync 复用 changed-owner 集合；fixture
-      支持 ValidateScopes 并新增池化回归测试（handler 实例+释放）；14 文件，MiCake 260/260、EF Core 242/242、集成 172/172、ASP.NET 432/432、构建 0 错误；用户选择不写 fix-notes
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-review
-    completed_at: 2026-08-07T02:57:51.886Z
-    summary: 独立复审 t7-fix-2：C1/W1/W2 主路径修复有效，EF Core 242/242、集成 172/172；发现 1 Critical（custom factory fallback 可对错误 DbContext 激活事务并在当前写入命令绑定时崩溃）、1 Warning（public ambient accessor 可被 TryAdd 覆盖并与 runtime
-      concrete accessor 分裂）、1 Suggestion（命令拦截器 XML 文档陈旧），结论 Request changes；用户选择不写 review.md。
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-fix
-    completed_at: 2026-08-07T03:10:39.698Z
-    summary: 修复评审 1 Critical+1 Warning+1 Suggestion：协调器 custom factory fallback 增加 wrapper/DbContext 身份校验并在事务激活前拒绝异 context，幂等注册 wrapper 到当前 UoW（修复 legacy factory 未 Prepare
-      即激活事务的崩溃）；IUnitOfWorkAmbientAccessor 映射 TryAddSingleton 改 AddSingleton 并文档化禁止覆盖（读写共享唯一 ambient 状态源）；命令拦截器 XML 注释修正；新增 3 回归测试，MiCake 261/261、EF Core 244/244、集成 172/172、ASP.NET 432/432、构建 0
-      错误；用户选择不写 fix-notes
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-fix
-    completed_at: 2026-08-07T03:29:06.535Z
-    summary: 合并 context factory 契约（确认零外部用户，破坏性清理）：删除 public 非泛型 IEFCoreContextFactory 与 IEFCoreAnchoredContextFactory 及 GetDbContextWrapper()，公开面收敛为单一 IEFCoreContextFactory<TDbContext>（GetDbContext +
-      GetOrCreateWrapperFor）；非泛型运行时视图改 internal 并由 EFCoreContextFactoryAdapter 反射适配自定义实现；协调器保留身份校验+幂等注册；物理执行器改两步解析；ImmediateTransactionInitializer 用 internal 视图；README 迁移文档补充；11 文件，MiCake 261/261、EF
-      Core 243/243、集成 172/172、ASP.NET 432/432、构建 0 错误；用户选择不写 fix-notes
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-review
     completed_at: 2026-08-07T03:37:43.752Z
     summary: 复核 t7-fix-4 评审结论（1 Critical/2 Warning/1 Suggestion，全部属实；Warning 重复注册归因修正为 t2 起既有行为、本次仅放大影响面）：Critical=适配器路径缺身份校验+幂等注册，Immediate 急切激活对自定义工厂静默失效（ActivatePendingResourcesAsync
       只遍历已注册资源，适配器路径零测试覆盖）；Warning=反射 TargetInvocationException 包装+双份反射实现；Warning=同类型重复注册多内部描述符（既有）；Suggestion=reflection-free 文档/测试名过时；聚焦测试 36/36；用户选择不写 review.md
@@ -76,3 +49,32 @@ history:
     summary: t7-relational-acceptance 完成：SQLite 关系型验收矩阵 + 6 轮缺陷/评审修复（I-1..I-3、F1-F5、t7-fix-2..6 工厂契约合并与锚定收敛），全套件 EF Core 250/250、集成 172/172、MiCake 261/261、ASP.NET 432/432、构建 0 错误；计划推进至
       t8-performance-final-review（7/8），变更保持打开
     change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-implement
+    completed_at: 2026-08-07T04:11:34.908Z
+    summary: 实施 t8 性能基线与诊断验证：新增自包含基准 harness（UowPerformanceBaselineTests，5 场景 x warmup5+200 迭代，Stopwatch+GC 分配，Trait Performance+串行 collection）、结构化诊断测试（UowStructuredDiagnosticsTests，捕获 MiCake
+      类别日志断言关联字段且排除实体值/路径/连接串，修复 LoggerFilterOptions 默认 MinLevel 过滤 Debug 的根因）、基线记录 baseline.json（runtime/provider/warmup/分布/分配/阈值/比较流程）；阈值比较留作复审步骤避免 CI flaky；构建 0 错误，MiCake 261/261、EF Core 250/250、集成
+      178/178（+6）、ASP.NET 432/432；implementation.md 追加 t8 段落
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-07T04:14:35.462Z
+    summary: 复审 t8 实施部分（Approve with comments，0 Critical/1 Warning/3 Suggestion）：复测基线对照 baseline.json，全部场景 median 偏差≤+7.9%（阈值 10%）、分配偏差≤+3.1%（阈值 15%）无回归（FlushIdentity p90 单次 +52%
+      属环境噪声）；W1=性能测试未从常规套件排除（Trait 仅过滤，建议 runsettings/CI 按 Category!=Performance 排除，阈值比较留作显式复审步骤）；S1=比较流程建议以 median 为准；S2=诊断测试断言依赖日志消息文本措辞；S3=CapturingLoggerProvider 无锁（低风险）；R49
+      结构化诊断验证通过（关联字段存在+敏感数据排除），R50 基线确立；全套件集成 178/178；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-07T04:26:17.503Z
+    summary: 修复 t8 复审发现（1 Warning+3 Suggestion）：W1=常规套件排除性能基准，default.ps1 与 dev-build.yml 测试命令加 --filter Category!=Performance（runsettings ExcludedTraits 在 xunit v3 适配器不生效已回退），常规集成套件 173/173、按需基准
+      Category=Performance 5/5；S1=baseline.json 比较流程明确阈值仅约束 median 与分配总量、p90 仅参考并注明按需复测命令；S2=诊断测试 NOTE 注释记录对日志文案的脆弱性（框架无稳定 EventId）；S3=CapturingLogger 加锁；用户选择不写 fix-notes
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-07T04:31:17.815Z
+    summary: 全变更抽样复审（Approve，0 Critical/0 Warning/3 Suggestion）：抽样覆盖 t1-t8 跨模块核心面——AmbientUnitOfWorkAccessor 帧栈自愈与 compare-and-pop、UnitOfWork.CommitCoreAsync
+      rollback-only/先flush后提交/CommitState-RollbackState 分离/partial-commit 结构化异常、UnitOfWorkFilter 异步释放与只读优先级、IRepository Key Interfaces 一致、EFRepositoryHasPaging 全序分页+keyless拒绝+shadow
+      属性、MiCakeEFCoreInterceptor re-entry 状态机；未发现跨任务设计偏离；S1=OnCommitting 内层 catch 缺一行注释、S2=AmbientAccessor getter 内自愈写回、S3=filter partial-commit 后资格守卫回滚可加注释；全套件 261/250/173+5/432 构建 0 错误；用户选择不写
+      review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-quick-dev
+    completed_at: 2026-08-07T06:37:16.507Z
+    summary: 选项 B 实施：EFRepository 新增 AddAndGetIdAsync（AddAsync + ambient UoW FlushAsync 取生成键后返回 TKey；无 UoW 抛清晰异常、不独立提交、durable 归 UoW commit；区别于已移除的 AddAndReturnAsync）；接口/基类不变，纯附加非破坏；构建 0 错误，EF Core 仓储测试
+      26/26 通过
+    change_id: ""

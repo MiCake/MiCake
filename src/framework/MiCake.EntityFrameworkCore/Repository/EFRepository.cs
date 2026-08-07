@@ -38,6 +38,33 @@ namespace MiCake.EntityFrameworkCore.Repository
         }
 
         /// <summary>
+        /// Adds the aggregate and flushes the current unit of work so a database-generated
+        /// identity is populated on the instance, then returns the generated key.
+        /// The flush happens inside the ambient writable unit of work transaction and does
+        /// not commit: the write is durable only when that unit of work commits. The flush
+        /// also persists every other pending change tracked by the current unit of work.
+        /// </summary>
+        /// <param name="aggregateRoot">The aggregate root to add</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>The database-generated identity of the added aggregate</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when no active unit of work is found, or when the unit of work is read-only.
+        /// </exception>
+        public virtual async Task<TKey> AddAndGetIdAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
+        {
+            await AddAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
+
+            var current = Dependencies.UnitOfWorkManager.Current
+                ?? throw new InvalidOperationException(
+                    $"AddAndGetIdAsync on {typeof(TAggregateRoot).Name} requires an active writable unit of work. " +
+                    "Begin one with IUnitOfWorkManager.BeginAsync() before adding.");
+
+            await current.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            return aggregateRoot.Id;
+        }
+
+        /// <summary>
         /// <inheritdoc/>
         /// </summary>
         public virtual async Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
