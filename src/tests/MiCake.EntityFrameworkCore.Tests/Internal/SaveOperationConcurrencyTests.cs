@@ -57,8 +57,14 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             var services = new ServiceCollection();
             services.AddDbContext<LifecycleTestDbContext>((sp, opt) =>
-                opt.UseSqlite($"Data Source={_dbPath};Pooling=False")
-                   .UseMiCakeInterceptors(sp));
+                opt.UseSqlite($"Data Source={_dbPath};Pooling=False"));
+            services.ConfigureDbContext<LifecycleTestDbContext>((sp, builder) =>
+            {
+                builder.UseMiCake();
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>());
+            });
             services.AddLogging();
             services.AddUowCoreServices(typeof(LifecycleTestDbContext));
 
@@ -69,7 +75,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(
                 new MiCakeEFCoreOptions(typeof(LifecycleTestDbContext)) { MaxSaveCycles = maxSaveCycles });
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             registerHandlers?.Invoke(services);
 

@@ -40,7 +40,6 @@ namespace MiCake.IntegrationTests.Uow
                 {
                     options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
-                    options.UseMiCakeInterceptors(sp);
                 });
 
                 // Register custom TimeProvider for testing

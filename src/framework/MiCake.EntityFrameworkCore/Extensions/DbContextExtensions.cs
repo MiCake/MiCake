@@ -1,16 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using MiCake.Core.DependencyInjection;
 using MiCake.DDD.Domain.Helper;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Util.Cache;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -89,85 +83,21 @@ namespace MiCake.EntityFrameworkCore
         }
 
         /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors.
-        /// Uses the globally configured MiCake interceptor factory.
-        /// Call this in AddDbContext configuration or DbContext.OnConfiguring method.
+        /// Enables MiCake runtime features for this DbContext by installing the per-context
+        /// options (save-operation state and max save cycles). Interceptors are installed
+        /// automatically by the MiCake EF Core module via ConfigureDbContext, so no provider
+        /// is required here. Call this in AddDbContext configuration or DbContext.OnConfiguring.
         /// </summary>
         /// <param name="optionsBuilder">The DbContextOptionsBuilder instance</param>
         /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder)
+        public static DbContextOptionsBuilder UseMiCake(this DbContextOptionsBuilder optionsBuilder)
         {
-            // Idempotent guard: when the options are already configured with MiCake
-            // interceptors (for example through the DI-first overload inside
-            // AddDbContext((sp, opt) => ...)), installing a second provider-less fallback
-            // pair would fail every write because it cannot resolve the write pipeline.
             if (optionsBuilder.Options.FindExtension<MiCakeSaveOperationOptionsExtension>() != null)
             {
                 return optionsBuilder;
             }
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(new MiCakeSaveOperationOptionsExtension());
-
-            // Without a scope provider the interceptor cannot resolve the write pipeline or
-            // lifecycle handlers; it is still installed so write attempts fail fast with
-            // guidance instead of silently bypassing the unit of work.
-            optionsBuilder.AddInterceptors(
-                new MiCakeEFCoreInterceptor(NullLogger<MiCakeEFCoreInterceptor>.Instance, null),
-                new MiCakeDbCommandInterceptor(NullLogger<MiCakeDbCommandInterceptor>.Instance, null));
-
-            return optionsBuilder;
-        }
-
-        /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors using a DI-resolved factory.
-        /// This overload is preferred when the DbContext is configured via AddDbContext((sp, options) => ...)
-        /// and you have access to the IServiceProvider.
-        /// </summary>
-        /// <param name="optionsBuilder">The DbContextOptionsBuilder instance.</param>
-        /// <param name="serviceProvider">The service provider from AddDbContext delegate.</param>
-        /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder, IServiceProvider serviceProvider)
-        {
-            if (serviceProvider == null)
-                return optionsBuilder;
-
-            var maxSaveCycles = serviceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>()?.Value?.MaxSaveCycles ?? 16;
-            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(
-                new MiCakeSaveOperationOptionsExtension { MaxSaveCycles = maxSaveCycles });
-
-            var factory = serviceProvider.GetService<IMiCakeInterceptorFactory>();
-            var interceptor = factory?.CreateInterceptor(serviceProvider) ?? MiCakeInterceptorFactoryHelper.CreateInterceptor(serviceProvider);
-            var commandInterceptor = factory?.CreateCommandInterceptor(serviceProvider) ?? MiCakeInterceptorFactoryHelper.CreateCommandInterceptor(serviceProvider);
-            var interceptors = new List<IInterceptor>(2);
-            if (interceptor != null) interceptors.Add(interceptor);
-            if (commandInterceptor != null) interceptors.Add(commandInterceptor);
-            if (interceptors.Count > 0)
-            {
-                optionsBuilder.AddInterceptors([.. interceptors]);
-            }
-
-            return optionsBuilder;
-        }
-
-        /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors with the write pipeline
-        /// resolved from the given provider. Internal API for advanced scenarios.
-        /// </summary>
-        /// <param name="optionsBuilder">The DbContextOptionsBuilder instance</param>
-        /// <param name="serviceProvider">The provider of the scope that owns the DbContext</param>
-        /// <param name="logger">Optional logger instance for the interceptor (uses NullLogger if not provided)</param>
-        /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        internal static DbContextOptionsBuilder UseMiCakeInterceptors(
-            this DbContextOptionsBuilder optionsBuilder,
-            IServiceProvider serviceProvider,
-            ILogger<MiCakeEFCoreInterceptor>? logger = null)
-        {
-            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(new MiCakeSaveOperationOptionsExtension());
-
-            logger ??= NullLogger<MiCakeEFCoreInterceptor>.Instance;
-            optionsBuilder.AddInterceptors(
-                new MiCakeEFCoreInterceptor(logger, serviceProvider),
-                new MiCakeDbCommandInterceptor(NullLogger<MiCakeDbCommandInterceptor>.Instance, serviceProvider));
 
             return optionsBuilder;
         }

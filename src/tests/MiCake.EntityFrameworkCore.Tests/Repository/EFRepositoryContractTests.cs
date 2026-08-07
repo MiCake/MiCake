@@ -45,11 +45,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             services.AddDbContext<RepoContractDbContext>((sp, opt) =>
             {
                 opt.UseSqlite($"Data Source={_dbPath};Pooling=False");
-                if (installInterceptors)
-                {
-                    opt.UseMiCakeInterceptors(sp);
-                }
             });
+            if (installInterceptors)
+            {
+                services.ConfigureDbContext<RepoContractDbContext>((sp, builder) =>
+                {
+                    builder.UseMiCake();
+                    builder.AddInterceptors(
+                        sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                        sp.GetRequiredService<MiCakeDbCommandInterceptor>());
+                });
+            }
             services.AddLogging();
             services.AddUowCoreServices(typeof(RepoContractDbContext));
 
@@ -59,7 +65,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(RepoContractDbContext)));
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             registerHandlers?.Invoke(services);
 

@@ -17,17 +17,17 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// Resolves the provider of the scope that owns the ambient unit of work, or
         /// <c>null</c> when no ambient unit of work is active in this execution context.
         /// </summary>
-        public static IServiceProvider? ResolveCurrentUowServiceProvider(IServiceProvider? serviceProvider)
-            => serviceProvider?.GetService<IUnitOfWorkAmbientAccessor>()?.CurrentServiceProvider;
+        public static IServiceProvider? ResolveCurrentUowServiceProvider(IUnitOfWorkAmbientAccessor ambientAccessor)
+            => ambientAccessor.CurrentServiceProvider;
 
         /// <summary>
         /// Resolves the scoped write coordinator from the provider that owns the ambient
         /// unit of work. Without an ambient unit of work the pipeline is unavailable;
         /// database initialization passes through unguarded.
         /// </summary>
-        public static IEFCoreWriteCoordinator? ResolveCoordinator(IServiceProvider? serviceProvider)
+        public static IEFCoreWriteCoordinator? ResolveCoordinator(IUnitOfWorkAmbientAccessor ambientAccessor)
         {
-            var frameProvider = ResolveCurrentUowServiceProvider(serviceProvider);
+            var frameProvider = ResolveCurrentUowServiceProvider(ambientAccessor);
             if (frameProvider == null)
             {
                 return null;

@@ -26,7 +26,6 @@ namespace MiCake.IntegrationTests.Repository
             {
                 opt.UseInMemoryDatabase(dbName);
                 opt.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
-                opt.UseMiCakeInterceptors(sp);
             });
 
             services.AddLogging();
@@ -34,12 +33,21 @@ namespace MiCake.IntegrationTests.Repository
             // UoW runtime internals registered directly (the IntegrationTests assembly has
             // InternalsVisibleTo access to the framework packages).
             services.AddSingleton<AmbientUnitOfWorkAccessor>();
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => sp.GetRequiredService<AmbientUnitOfWorkAccessor>());
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
 
             // Register EF Core factory and repository dependency wrapper so repository can be constructed from DI
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
             services.AddScoped(typeof(MiCake.EntityFrameworkCore.Repository.EFRepositoryDependencies<TestDbContext>));
             services.AddSingleton<Core.DependencyInjection.IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(TestDbContext)));
+            services.ConfigureDbContext<TestDbContext>((sp, builder) =>
+            {
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCake.EntityFrameworkCore.Internal.MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCake.EntityFrameworkCore.Internal.MiCakeDbCommandInterceptor>());
+            });
+            services.AddSingleton<MiCake.EntityFrameworkCore.Internal.MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCake.EntityFrameworkCore.Internal.MiCakeDbCommandInterceptor>();
 
             // Register repo
             services.AddScoped<TestPagingRepository>();

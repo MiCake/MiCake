@@ -85,9 +85,6 @@ namespace MiCake.IntegrationTests.Fixtures
 
             _apps.Clear();
             _providers.Clear();
-
-            // Clear any static helpers to avoid cross-test interference
-            MiCake.EntityFrameworkCore.Internal.MiCakeInterceptorFactoryHelper.Reset();
         }
     }
 }

@@ -21,14 +21,14 @@ namespace MiCake.EntityFrameworkCore.Internal
     internal sealed class MiCakeDbCommandInterceptor : DbCommandInterceptor
     {
         private readonly ILogger<MiCakeDbCommandInterceptor> _logger;
-        private readonly IServiceProvider? _serviceProvider;
+        private readonly IUnitOfWorkAmbientAccessor _ambientAccessor;
 
         public MiCakeDbCommandInterceptor(
             ILogger<MiCakeDbCommandInterceptor> logger,
-            IServiceProvider? serviceProvider = null)
+            IUnitOfWorkAmbientAccessor ambientAccessor)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _serviceProvider = serviceProvider;
+            _ambientAccessor = ambientAccessor ?? throw new ArgumentNullException(nameof(ambientAccessor));
         }
 
         public override InterceptionResult<int> NonQueryExecuting(
@@ -36,22 +36,15 @@ namespace MiCake.EntityFrameworkCore.Internal
             CommandEventData eventData,
             InterceptionResult<int> result)
         {
-            var operationKind = Classify(eventData.CommandSource);
-            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_serviceProvider);
-            if (coordinator != null)
+            // Permissive: no ambient UoW -> pass through (native EF).
+            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_ambientAccessor);
+            if (coordinator == null || eventData.Context == null)
             {
-                if (eventData.Context != null)
-                {
-                    coordinator.BeforeCommand(eventData.Context, command, operationKind);
-                }
-            }
-            else if (eventData.Context != null && operationKind != EFWriteOperationKind.DatabaseInitialization)
-            {
-                throw MiCakeInterceptorPipeline.CreateUnavailableException(
-                    eventData.Context,
-                    _serviceProvider != null && MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider) == null);
+                return base.NonQueryExecuting(command, eventData, result);
             }
 
+            var operationKind = Classify(eventData.CommandSource);
+            coordinator.BeforeCommand(eventData.Context, command, operationKind);
             return base.NonQueryExecuting(command, eventData, result);
         }
 
@@ -61,27 +54,20 @@ namespace MiCake.EntityFrameworkCore.Internal
             InterceptionResult<int> result,
             CancellationToken cancellationToken = default)
         {
-            var operationKind = Classify(eventData.CommandSource);
-            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_serviceProvider);
-            if (coordinator != null)
+            // Permissive: no ambient UoW -> pass through (native EF).
+            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_ambientAccessor);
+            if (coordinator == null || eventData.Context == null)
             {
-                if (eventData.Context != null)
-                {
-                    await coordinator.BeforeCommandAsync(
-                            eventData.Context,
-                            command,
-                            operationKind,
-                            cancellationToken)
-                        .ConfigureAwait(false);
-                }
-            }
-            else if (eventData.Context != null && operationKind != EFWriteOperationKind.DatabaseInitialization)
-            {
-                throw MiCakeInterceptorPipeline.CreateUnavailableException(
-                    eventData.Context,
-                    _serviceProvider != null && MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider) == null);
+                return await base.NonQueryExecutingAsync(command, eventData, result, cancellationToken).ConfigureAwait(false);
             }
 
+            var operationKind = Classify(eventData.CommandSource);
+            await coordinator.BeforeCommandAsync(
+                    eventData.Context,
+                    command,
+                    operationKind,
+                    cancellationToken)
+                .ConfigureAwait(false);
             return await base.NonQueryExecutingAsync(command, eventData, result, cancellationToken).ConfigureAwait(false);
         }
 

@@ -124,8 +124,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
         }
 
         [Fact]
-        public void CompleteFlow_MiCakeDbContextInheritance_WriteWithoutProvider_ThrowsWithGuidance()
+        public void CompleteFlow_MiCakeDbContextInheritance_ManualConstruction_WritesNatively()
         {
+            // A context constructed manually (not resolved from the application container) has
+            // no DI interceptors attached and writes natively — MiCake only guards contexts it
+            // is enabled on via the container configurator (non-intrusive principle).
             var options = new DbContextOptionsBuilder<MiCakeTestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
@@ -135,14 +138,14 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
             var entity = new TestEntity { Name = "MiCake Inheritance Test" };
             context.TestEntities.Add(entity);
 
-            var exception = Assert.Throws<InvalidOperationException>(() => context.SaveChanges());
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", exception.Message);
+            context.SaveChanges();
+            Assert.Equal(1, context.TestEntities.Count());
         }
 
         [Fact]
         public void CompleteFlow_MultipleDifferentContexts_ShouldWorkIndependently()
         {
-            // Arrange: Create multiple different context types
+            // Arrange: Create multiple different context types, both constructed manually.
             var regularOptions = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase("regular")
                 .Options;
@@ -151,7 +154,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
                 .UseInMemoryDatabase("micake")
                 .Options;
 
-            // Act: The plain context writes normally; the MiCake context without a provider fails fast.
+            // Act: Both contexts write natively (no DI interceptors attached to manually
+            // constructed contexts).
             using var regularContext = new TestDbContext(regularOptions);
             using var miCakeContext = new MiCakeTestDbContext(miCakeOptions);
 
@@ -159,24 +163,25 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
             miCakeContext.TestEntities.Add(new TestEntity { Name = "MiCake Context" });
 
             regularContext.SaveChanges();
-            var miCakeException = Assert.Throws<InvalidOperationException>(() => miCakeContext.SaveChanges());
+            miCakeContext.SaveChanges();
 
-            // Assert: The plain context persisted its data; the MiCake write was rejected with guidance.
+            // Assert: both contexts persisted their data independently.
             Assert.Equal(1, regularContext.TestEntities.Count());
             Assert.Equal("Regular Context", regularContext.TestEntities.First().Name);
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", miCakeException.Message);
+            Assert.Equal(1, miCakeContext.TestEntities.Count());
+            Assert.Equal("MiCake Context", miCakeContext.TestEntities.First().Name);
         }
 
         [Fact]
-        public void CompleteFlow_ParameterlessConstructor_WriteWithoutProvider_ThrowsWithGuidance()
+        public void CompleteFlow_ParameterlessConstructor_ManualConstruction_WritesNatively()
         {
             using var context = new MiCakeTestDbContextWithParameterlessConstructor();
 
             var entity = new TestEntity { Name = "Parameterless Constructor Test" };
             context.TestEntities.Add(entity);
 
-            var exception = Assert.Throws<InvalidOperationException>(() => context.SaveChanges());
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", exception.Message);
+            context.SaveChanges();
+            Assert.Equal(1, context.TestEntities.Count());
         }
 
         /// <summary>

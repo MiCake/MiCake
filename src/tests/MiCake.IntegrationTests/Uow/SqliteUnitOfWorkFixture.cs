@@ -42,17 +42,22 @@ namespace MiCake.IntegrationTests.Uow
             var services = new ServiceCollection();
 
             services.AddDbContext<UowAcceptanceDbContext>((sp, opt) =>
-            {
-                opt.UseSqlite($"Data Source={_primaryDbPath};Pooling=False");
-                opt.UseMiCakeInterceptors(sp);
-            });
+                opt.UseSqlite($"Data Source={_primaryDbPath};Pooling=False"));
+            services.ConfigureDbContext<UowAcceptanceDbContext>((sp, builder) =>
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>()));
 
             if (registerSecondaryContext)
             {
                 services.AddDbContext<UowSecondaryDbContext>((sp, opt) =>
+                    opt.UseSqlite($"Data Source={_secondaryDbPath};Pooling=False"));
+                services.ConfigureDbContext<UowSecondaryDbContext>((sp, builder) =>
                 {
-                    opt.UseSqlite($"Data Source={_secondaryDbPath};Pooling=False");
-                    opt.UseMiCakeInterceptors(sp);
+                    builder.UseMiCake();
+                    builder.AddInterceptors(
+                        sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                        sp.GetRequiredService<MiCakeDbCommandInterceptor>());
                 });
             }
 
@@ -83,9 +88,13 @@ namespace MiCake.IntegrationTests.Uow
             var services = new ServiceCollection();
 
             services.AddDbContextPool<UowAcceptanceDbContext>((sp, opt) =>
+                opt.UseSqlite($"Data Source={_primaryDbPath}"));
+            services.ConfigureDbContext<UowAcceptanceDbContext>((sp, builder) =>
             {
-                opt.UseSqlite($"Data Source={_primaryDbPath}");
-                opt.UseMiCakeInterceptors(sp);
+                builder.UseMiCake();
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>());
             });
 
             AddCoreServices(services, registerSecondaryContext: false);
@@ -112,7 +121,8 @@ namespace MiCake.IntegrationTests.Uow
             services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => sp.GetRequiredService<AmbientUnitOfWorkAccessor>());
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(UowAcceptanceDbContext)));
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             // Repository for the primary aggregate.
             services.AddScoped<EFRepositoryDependencies<UowAcceptanceDbContext>>();

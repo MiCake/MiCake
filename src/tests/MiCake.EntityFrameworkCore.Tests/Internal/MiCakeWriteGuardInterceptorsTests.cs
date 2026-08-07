@@ -3,11 +3,13 @@ using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -38,11 +40,18 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         private ServiceProvider BuildProvider(bool allowDbContextAccessWithoutUoW = false)
         {
             var services = new ServiceCollection();
+            // Interceptors are attached via ConfigureDbContext (design ADR-1); the user's
+            // AddDbContext delegate only configures the provider.
             services.AddDbContext<WriteGuardTestDbContext>((sp, opt) =>
-                opt.UseSqlite($"Data Source={_dbPath};Pooling=False")
-                   .UseMiCakeInterceptors(sp));
+                opt.UseSqlite($"Data Source={_dbPath};Pooling=False"));
             services.AddLogging();
             services.AddUowCoreServices(typeof(WriteGuardTestDbContext));
+            services.ConfigureDbContext<WriteGuardTestDbContext>((sp, builder) =>
+            {
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>());
+            });
 
             var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
             services.AddSingleton(ambientAccessorType!);
@@ -57,7 +66,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
 
             // Save lifecycle is a t4 concern; the write guard only needs a non-null lifetime.
             services.AddSingleton<IEFSaveChangesLifetime>(Mock.Of<IEFSaveChangesLifetime>());
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             var provider = services.BuildServiceProvider();
             provider.GetRequiredService<IDbContextTypeRegistry>().RegisterDbContextType(typeof(WriteGuardTestDbContext));
@@ -65,46 +75,48 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WithoutUoW_WhenAccessAllowed_StillThrows()
+        public async Task SaveChangesAsync_WithoutUoW_WhenAccessAllowed_Succeeds()
         {
-            // The access option only relaxes context resolution; the write guard is orthogonal
-            // and must still reject a write without an active writable unit of work.
+            // Permissive policy (ADR-1a): a direct DbContext write without an ambient writable
+            // UoW passes through unguarded (native EF implicit transaction). The access option
+            // only relaxes context resolution; writes are not guarded outside a UoW.
             using var provider = BuildProvider(allowDbContextAccessWithoutUoW: true);
             await using var scope = provider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
             await context.Database.EnsureCreatedAsync();
             context.Add(new WriteGuardEntity { Name = "no-uow" });
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
-            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+            await context.SaveChangesAsync();
+            Assert.Equal(1, await context.Entities.CountAsync());
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WithoutUoW_ShouldThrow()
+        public async Task SaveChangesAsync_WithoutUoW_Succeeds()
         {
+            // Permissive policy (ADR-1a): no ambient UoW -> write succeeds with native EF semantics.
             using var provider = BuildProvider();
             await using var scope = provider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
             await context.Database.EnsureCreatedAsync();
             context.Add(new WriteGuardEntity { Name = "no-uow" });
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
-            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+            await context.SaveChangesAsync();
+            Assert.Equal(1, await context.Entities.CountAsync());
         }
 
         [Fact]
-        public void SaveChanges_WithoutUoW_ShouldThrow()
+        public async Task SaveChanges_WithoutUoW_Succeeds()
         {
-            // The synchronous SaveChanges interceptor path must enforce the same write guard.
+            // Permissive policy (ADR-1a): synchronous SaveChanges without a UoW also passes
+            // through (native EF semantics).
             using var provider = BuildProvider();
             using var scope = provider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
             context.Database.EnsureCreated();
             context.Add(new WriteGuardEntity { Name = "no-uow" });
 
-            var exception = Assert.Throws<InvalidOperationException>(() => context.SaveChanges());
-            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+            context.SaveChanges();
+            Assert.Equal(1, await context.Entities.CountAsync());
         }
 
         [Fact]
@@ -144,18 +156,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task ExecuteSqlRawAsync_WithoutUoW_ShouldThrow()
+        public async Task ExecuteSqlRawAsync_WithoutUoW_Succeeds()
         {
+            // Permissive policy (ADR-1a): a non-query command without an ambient UoW passes
+            // through unguarded (native EF semantics).
             using var provider = BuildProvider();
             await using var scope = provider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
             await context.Database.EnsureCreatedAsync();
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                context.Database.ExecuteSqlRawAsync("INSERT INTO Entities (Name) VALUES ('raw')"));
-
-            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+            await context.Database.ExecuteSqlRawAsync("INSERT INTO Entities (Name) VALUES ('raw')");
+            Assert.Equal(1, await context.Entities.CountAsync());
         }
 
         [Fact]
@@ -176,23 +187,30 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task ExecuteDeleteAsync_WithoutUoW_ShouldThrow()
+        public async Task ExecuteDeleteAsync_WithoutUoW_Succeeds()
         {
+            // Permissive policy (ADR-1a): a bulk delete without an ambient UoW passes through
+            // unguarded (native EF semantics).
             using var provider = BuildProvider();
             await using var scope = provider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
             await context.Database.EnsureCreatedAsync();
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                context.Entities.ExecuteDeleteAsync());
+            context.AddRange(
+                new WriteGuardEntity { Name = "a" },
+                new WriteGuardEntity { Name = "b" });
+            await context.SaveChangesAsync();
 
-            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+            await context.Entities.ExecuteDeleteAsync();
+            Assert.Equal(0, await context.Entities.CountAsync());
         }
 
         [Fact]
-        public async Task SaveChanges_WithoutProvider_ThrowsWithGuidance()
+        public async Task SaveChanges_WithoutMiCakeEnabled_IsNotGuarded()
         {
+            // A context not resolved from the application container (no DI interceptors
+            // attached) writes natively, matching vanilla EF behavior. MiCake only guards
+            // contexts it is enabled on via the container configurator.
             var options = new DbContextOptionsBuilder<NoProviderWriteGuardDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
@@ -200,10 +218,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             using var context = new NoProviderWriteGuardDbContext(options);
             context.Add(new WriteGuardEntity { Name = "no provider" });
 
-            // The parameterless interceptor path cannot resolve the write pipeline; the
-            // write is rejected with guidance instead of silently bypassing the UoW.
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", exception.Message, StringComparison.OrdinalIgnoreCase);
+            await context.SaveChangesAsync();
+            Assert.Equal(1, await context.Entities.CountAsync());
         }
 
         [Fact]
@@ -239,6 +255,26 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             // Rolling back restores the previously committed rows: the delete was transactional.
             Assert.Equal(2, await context.Entities.CountAsync());
         }
+
+        [Fact]
+        public void Configurator_AttachesInterceptors_ToContainerContext()
+        {
+            // The ConfigureDbContext configurator (design ADR-1) must attach the MiCake
+            // interceptors to the container-resolved DbContext without any user-side call.
+            // Interceptors attached via AddInterceptors live in the options extensions,
+            // not as resolvable DI services, so inspect CoreOptionsExtension.Interceptors.
+            using var provider = BuildProvider();
+            using var scope = provider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+
+            var options = context.GetService<IDbContextOptions>();
+            var interceptors = options?.Extensions
+                .OfType<Microsoft.EntityFrameworkCore.Infrastructure.CoreOptionsExtension>()
+                .SelectMany(e => e.Interceptors ?? Enumerable.Empty<Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor>());
+            Assert.NotNull(interceptors);
+            Assert.Contains(interceptors, i => i is MiCakeEFCoreInterceptor);
+            Assert.Contains(interceptors, i => i is MiCakeDbCommandInterceptor);
+        }
     }
 
     /// <summary>
@@ -254,7 +290,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseMiCakeInterceptors();
+            optionsBuilder.UseMiCake();
         }
 
         public DbSet<WriteGuardEntity> Entities => Set<WriteGuardEntity>();

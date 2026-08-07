@@ -158,8 +158,11 @@ namespace MiCake.IntegrationTests.Uow
         }
 
         [Fact]
-        public async Task WriteWithoutUoW_IsRejected()
+        public async Task WriteWithoutUoW_PassesThrough_NativeEfSemantics()
         {
+            // Permissive policy (ADR-1a): a direct DbContext write without an ambient writable
+            // UoW passes through unguarded (native EF implicit transaction). MiCake only
+            // guards/binds writes inside a UoW.
             using var provider = _fixture.BuildProvider();
             await EnsureCreatedAsync(provider);
 
@@ -168,10 +171,8 @@ namespace MiCake.IntegrationTests.Uow
 
             context.Aggregates.Add(new UowAcceptanceAggregate("no-uow"));
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
-            Assert.Contains("unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
-
-            Assert.Equal(0, await CountAsync(provider));
+            await context.SaveChangesAsync();
+            Assert.Equal(1, await CountAsync(provider));
         }
 
         [Fact]

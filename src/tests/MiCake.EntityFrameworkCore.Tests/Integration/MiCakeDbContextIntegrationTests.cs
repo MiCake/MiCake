@@ -47,8 +47,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
         }
 
         [Fact]
-        public async Task MiCakeDbContext_SaveChangesAsync_WithoutProvider_ThrowsWithGuidance()
+        public async Task MiCakeDbContext_ManualConstruction_SaveChangesAsync_WritesNatively()
         {
+            // A manually constructed MiCakeDbContext (not resolved from the application
+            // container) has no DI interceptors attached and writes natively (non-intrusive).
             var options = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
@@ -56,12 +58,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
             using var context = new TestDbContext(options);
             context.TestEntities.Add(new TestEntity { Name = "Async Test" });
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", exception.Message);
+            await context.SaveChangesAsync();
+            Assert.Equal(1, await context.TestEntities.CountAsync());
         }
 
         [Fact]
-        public void MiCakeDbContext_MultipleContexts_WithoutProvider_WritesThrowIndependently()
+        public void MiCakeDbContext_MultipleContexts_ManualConstruction_WritesIndependently()
         {
             var options1 = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase("db1")
@@ -76,10 +78,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
             context1.TestEntities.Add(new TestEntity { Name = "Context1" });
             context2.TestEntities.Add(new TestEntity { Name = "Context2" });
 
-            var ex1 = Assert.Throws<InvalidOperationException>(() => context1.SaveChanges());
-            var ex2 = Assert.Throws<InvalidOperationException>(() => context2.SaveChanges());
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", ex1.Message);
-            Assert.Contains("UseMiCakeInterceptors(IServiceProvider)", ex2.Message);
+            context1.SaveChanges();
+            context2.SaveChanges();
+            Assert.Equal(1, context1.TestEntities.Count());
+            Assert.Equal(1, context2.TestEntities.Count());
         }
 
         /// <summary>

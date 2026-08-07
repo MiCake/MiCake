@@ -37,9 +37,6 @@ namespace MiCake.IntegrationTests.Uow
                 {
                     options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
-
-                    // Prefer DI-resolved factory to create interceptors; fall back to old static helper
-                    options.UseMiCakeInterceptors(sp);
                 });
 
                 // Use MiCake builder to register EFCore and Audit modules (real implementations)
@@ -165,7 +162,6 @@ namespace MiCake.IntegrationTests.Uow
                 {
                     options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
-                    options.UseMiCakeInterceptors(sp);
                 });
 
                 // Register custom TimeProvider

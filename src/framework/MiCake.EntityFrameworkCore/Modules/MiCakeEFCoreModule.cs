@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using MiCake.Core.DependencyInjection;
 using MiCake.Core.Modularity;
 using MiCake.DDD.Infrastructure.Store;
@@ -39,7 +40,35 @@ namespace MiCake.EntityFrameworkCore.Modules
                                             ?? throw new InvalidOperationException("Invaild Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
             services.TryAddScoped<IEFSaveChangesLifetime, LazyEFSaveChangesLifetime>();
-            services.TryAddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+
+            // Interceptors are singleton services resolved by the options configurator and
+            // attached explicitly via AddInterceptors (EF Core does not auto-discover DI
+            // interceptor services). The same instances are reused across all contexts of
+            // this type to avoid EF's ManyServiceProvidersCreatedWarning.
+            services.TryAddSingleton<MiCakeEFCoreInterceptor>();
+            services.TryAddSingleton<MiCakeDbCommandInterceptor>();
+
+            // ConfigureDbContext registers an IDbContextOptionsConfiguration that composes
+            // with the user's AddDbContext (including pooling): it installs the per-context
+            // options and attaches the interceptors without any user-side call.
+            // ConfigureDbContext<TContext> registers an IDbContextOptionsConfiguration that
+            // composes with the user's AddDbContext (including pooling): it installs the
+            // per-context options and attaches the interceptors without any user-side call.
+            var configuratorType = typeof(MiCakeDbContextOptionsConfigurator<>).MakeGenericType(dbContextType);
+            var configureMethod = typeof(EntityFrameworkServiceCollectionExtensions)
+                .GetMethods()
+                .Single(m => m.Name == nameof(EntityFrameworkServiceCollectionExtensions.ConfigureDbContext)
+                             && m.GetGenericArguments().Length == 1
+                             && m.GetParameters().Length == 3
+                             && m.GetParameters()[1].ParameterType == typeof(Action<IServiceProvider, DbContextOptionsBuilder>))
+                .MakeGenericMethod(dbContextType);
+            configureMethod.Invoke(null, [services, (Action<IServiceProvider, DbContextOptionsBuilder>)((sp, builder) =>
+            {
+                // Invoke Configure through the configurator's own generic interface; casting
+                // to a non-generic or base DbContext generic interface would fail at runtime.
+                var configure = configuratorType.GetMethod(nameof(IDbContextOptionsConfiguration<DbContext>.Configure))!;
+                configure.Invoke(Activator.CreateInstance(configuratorType), [sp, builder]);
+            }), ServiceLifetime.Singleton]);
 
             // Add Uow related services
             services.AddUowCoreServices(dbContextType);

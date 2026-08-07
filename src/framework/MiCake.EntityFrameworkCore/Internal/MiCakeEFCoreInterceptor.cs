@@ -1,4 +1,5 @@
-﻿using MiCake.DDD.Infrastructure;
+﻿using MiCake.Core.DependencyInjection;
+using MiCake.DDD.Infrastructure;
 using MiCake.DDD.Infrastructure.Lifetime;
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Exceptions;
@@ -29,14 +30,14 @@ namespace MiCake.EntityFrameworkCore.Internal
     internal class MiCakeEFCoreInterceptor : ISaveChangesInterceptor
     {
         private readonly ILogger<MiCakeEFCoreInterceptor> _logger;
-        private readonly IServiceProvider? _serviceProvider;
+        private readonly IUnitOfWorkAmbientAccessor _ambientAccessor;
 
         public MiCakeEFCoreInterceptor(
             ILogger<MiCakeEFCoreInterceptor> logger,
-            IServiceProvider? serviceProvider = null)
+            IUnitOfWorkAmbientAccessor ambientAccessor)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _serviceProvider = serviceProvider;
+            _ambientAccessor = ambientAccessor ?? throw new ArgumentNullException(nameof(ambientAccessor));
         }
 
         public void SaveChangesFailed(DbContextErrorEventData eventData)
@@ -191,11 +192,13 @@ namespace MiCake.EntityFrameworkCore.Internal
 
             try
             {
-                if (eventData.Context != null)
+                // Permissive: no ambient UoW -> pass through (native EF).
+                if (eventData.Context == null || MiCakeInterceptorPipeline.ResolveCoordinator(_ambientAccessor) == null)
                 {
-                    RequireCoordinator(eventData.Context).BeforeWrite(eventData.Context, EFWriteOperationKind.SaveChanges);
+                    return result;
                 }
 
+                RequireCoordinator(eventData.Context).BeforeWrite(eventData.Context, EFWriteOperationKind.SaveChanges);
                 return SavingChangesCore(eventData, result);
             }
             catch (Exception ex)
@@ -209,17 +212,15 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            if (eventData.Context == null)
+            // Permissive: no ambient UoW -> pass through (native EF).
+            if (eventData.Context == null || MiCakeInterceptorPipeline.ResolveCoordinator(_ambientAccessor) == null)
             {
                 return result;
             }
 
-            if (eventData.Context != null)
-            {
-                await RequireCoordinator(eventData.Context)
-                    .BeforeWriteAsync(eventData.Context, EFWriteOperationKind.SaveChanges, cancellationToken)
-                    .ConfigureAwait(false);
-            }
+            await RequireCoordinator(eventData.Context)
+                .BeforeWriteAsync(eventData.Context, EFWriteOperationKind.SaveChanges, cancellationToken)
+                .ConfigureAwait(false);
 
             try
             {
@@ -345,16 +346,15 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         private IEFCoreWriteCoordinator RequireCoordinator(DbContext context)
         {
-            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_serviceProvider);
+            // Permissive policy: a write without an ambient writable UoW passes through
+            // unguarded (native EF semantics). Guards/binding apply only inside a UoW.
+            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_ambientAccessor);
             if (coordinator != null)
             {
                 return coordinator;
             }
 
-            // Provider-less fallback interceptors and hosts that registered the module but
-            // have no pipeline for this context get registration guidance; a host with a
-            // provider that simply has no active unit of work reports the missing UoW.
-            var noActiveUow = _serviceProvider != null && MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider) == null;
+            var noActiveUow = MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_ambientAccessor) == null;
             throw MiCakeInterceptorPipeline.CreateUnavailableException(context, noActiveUow);
         }
 
@@ -366,7 +366,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// there is no owning scope, so no handlers are resolved.
         /// </summary>
         private IServiceProvider? ResolveHandlerProvider()
-            => MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider);
+            => MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_ambientAccessor);
 
         private void MarkUnitOfWorkRollbackOnly(IServiceProvider handlerProvider, DbContext context)
         {
@@ -405,8 +405,17 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
         }
 
-        private static int ResolveMaxSaveCycles(DbContext context)
+        private int ResolveMaxSaveCycles(DbContext context)
         {
+            // The global MiCakeEFCoreOptions (configured through EFCoreConfig) is authoritative;
+            // the per-context extension is the fallback for options installed without module options.
+            var frameProvider = _ambientAccessor.CurrentServiceProvider;
+            var global = frameProvider?.GetService<IObjectAccessor<MiCakeEFCoreOptions>>()?.Value?.MaxSaveCycles;
+            if (global.HasValue)
+            {
+                return global.Value;
+            }
+
             var options = context.GetInfrastructure().GetService<IDbContextOptions>();
             var extension = options?.FindExtension<MiCakeSaveOperationOptionsExtension>();
             return extension?.MaxSaveCycles ?? 16;

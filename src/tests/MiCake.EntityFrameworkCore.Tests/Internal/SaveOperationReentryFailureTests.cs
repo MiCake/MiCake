@@ -45,8 +45,14 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             var services = new ServiceCollection();
             services.AddDbContext<UniqueLifecycleTestDbContext>((sp, opt) =>
-                opt.UseSqlite($"Data Source={_dbPath};Pooling=False")
-                   .UseMiCakeInterceptors(sp));
+                opt.UseSqlite($"Data Source={_dbPath};Pooling=False"));
+            services.ConfigureDbContext<UniqueLifecycleTestDbContext>((sp, builder) =>
+            {
+                builder.UseMiCake();
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>());
+            });
             services.AddLogging();
             services.AddUowCoreServices(typeof(UniqueLifecycleTestDbContext));
 
@@ -56,7 +62,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(UniqueLifecycleTestDbContext)));
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             registerHandlers?.Invoke(services);
 
@@ -189,8 +196,14 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var services = new ServiceCollection();
             services.AddDbContextPool<UniqueLifecycleTestDbContext>((sp, opt) =>
                 opt.UseInMemoryDatabase(Guid.NewGuid().ToString())
-                   .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-                   .UseMiCakeInterceptors(sp));
+                   .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning)));
+            services.ConfigureDbContext<UniqueLifecycleTestDbContext>((sp, builder) =>
+            {
+                builder.UseMiCake();
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>());
+            });
             services.AddLogging();
             services.AddUowCoreServices(typeof(UniqueLifecycleTestDbContext));
 
@@ -200,7 +213,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(UniqueLifecycleTestDbContext)));
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             using var provider = services.BuildServiceProvider();
             provider.GetRequiredService<IDbContextTypeRegistry>().RegisterDbContextType(typeof(UniqueLifecycleTestDbContext));

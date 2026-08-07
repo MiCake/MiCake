@@ -84,10 +84,11 @@ namespace MiCake.IntegrationTests.Uow
             var services = new ServiceCollection();
 
             services.AddDbContext<LazyImmediateTestDbContext>((sp, opt) =>
-            {
-                opt.UseSqlite($"Data Source={_dbPath};Pooling=False");
-                opt.UseMiCakeInterceptors(sp);
-            });
+                opt.UseSqlite($"Data Source={_dbPath};Pooling=False"));
+            services.ConfigureDbContext<LazyImmediateTestDbContext>((sp, builder) =>
+                builder.AddInterceptors(
+                    sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
+                    sp.GetRequiredService<MiCakeDbCommandInterceptor>()));
 
             services.AddLogging();
             services.AddUowCoreServices(typeof(LazyImmediateTestDbContext));
@@ -96,7 +97,8 @@ namespace MiCake.IntegrationTests.Uow
             services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => sp.GetRequiredService<AmbientUnitOfWorkAccessor>());
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(LazyImmediateTestDbContext)));
-            services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
+            services.AddSingleton<MiCakeEFCoreInterceptor>();
+            services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             Provider = services.BuildServiceProvider();
             Provider.GetRequiredService<IDbContextTypeRegistry>().RegisterDbContextType(typeof(LazyImmediateTestDbContext));
