@@ -17,8 +17,9 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
     /// <summary>
     /// Repository DbContext access without an explicit unit of work.
     /// Context identity is owned by the frame-stable factory: without an active UoW the
-    /// factory rejects access by default, and explicit BypassUnitOfWorkCheck permits
-    /// read-only fallback access. Repositories hold no per-UoW context cache of their own.
+    /// factory rejects access by default, and explicit AllowDbContextAccessWithoutUoW permits
+    /// read-only fallback access. Writes remain guarded regardless of the option. Repositories
+    /// hold no per-UoW context cache of their own.
     /// </summary>
     public class RepositoryWithoutUoWTests : IDisposable
     {
@@ -61,7 +62,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
         }
 
         [Fact]
-        public void DbContext_WithoutActiveUoW_WithBypassEnabled_ResolvesScopedContext()
+        public void DbContext_WithoutActiveUoW_WhenAccessAllowed_ResolvesScopedContext()
         {
             var repository = CreateRepository(bypass: true);
 
@@ -71,7 +72,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
         }
 
         [Fact]
-        public void DbContext_AccessedMultipleTimes_WithBypass_ResolvesSameScopedContext()
+        public void DbContext_AccessedMultipleTimes_WhenAccessAllowed_ResolvesSameScopedContext()
         {
             var repository = CreateRepository(bypass: true);
 
@@ -83,7 +84,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
         }
 
         [Fact]
-        public void DbSet_WithoutActiveUoW_WithBypass_ReturnsDbSet()
+        public void DbSet_WithoutActiveUoW_WhenAccessAllowed_ReturnsDbSet()
         {
             var repository = CreateRepository(bypass: true);
 
@@ -91,7 +92,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
         }
 
         [Fact]
-        public void Entities_WithoutActiveUoW_WithBypass_ReturnsQueryable()
+        public void Entities_WithoutActiveUoW_WhenAccessAllowed_ReturnsQueryable()
         {
             var repository = CreateRepository(bypass: true);
 
@@ -101,7 +102,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
 
         private TestRepository CreateRepository(bool bypass)
         {
-            var options = new MiCakeEFCoreOptions(typeof(TestDbContext)) { BypassUnitOfWorkCheck = bypass };
+            var options = new MiCakeEFCoreOptions(typeof(TestDbContext)) { AllowDbContextAccessWithoutUoW = bypass };
             var factory = new EFCoreContextFactory<TestDbContext>(
                 _provider,
                 _mockUnitOfWorkManager.Object,

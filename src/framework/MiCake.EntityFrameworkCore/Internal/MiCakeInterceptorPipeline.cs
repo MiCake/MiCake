@@ -1,0 +1,56 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MiCake.DDD.Uow;
+using System;
+
+namespace MiCake.EntityFrameworkCore.Internal
+{
+    /// <summary>
+    /// Shared pipeline resolution for interceptors: resolves the write coordinator from the
+    /// provider of the scope that owns the ambient unit of work and builds the standard
+    /// "unavailable pipeline" diagnostics. Interceptors must never resolve scoped services
+    /// from the provider captured at options-build time (the pool root under AddDbContextPool).
+    /// </summary>
+    internal static class MiCakeInterceptorPipeline
+    {
+        /// <summary>
+        /// Resolves the provider of the scope that owns the ambient unit of work, or
+        /// <c>null</c> when no ambient unit of work is active in this execution context.
+        /// </summary>
+        public static IServiceProvider? ResolveCurrentUowServiceProvider(IServiceProvider? serviceProvider)
+            => serviceProvider?.GetService<IUnitOfWorkAmbientAccessor>()?.CurrentServiceProvider;
+
+        /// <summary>
+        /// Resolves the scoped write coordinator from the provider that owns the ambient
+        /// unit of work. Without an ambient unit of work the pipeline is unavailable;
+        /// database initialization passes through unguarded.
+        /// </summary>
+        public static IEFCoreWriteCoordinator? ResolveCoordinator(IServiceProvider? serviceProvider)
+        {
+            var frameProvider = ResolveCurrentUowServiceProvider(serviceProvider);
+            if (frameProvider == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return (IEFCoreWriteCoordinator?)frameProvider.GetService(typeof(IEFCoreWriteCoordinator));
+            }
+            catch (ObjectDisposedException)
+            {
+                return null;
+            }
+        }
+
+        public static InvalidOperationException CreateUnavailableException(DbContext context, bool noActiveUow)
+            => noActiveUow
+                ? new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} requires an active writable unit of work. " +
+                    "Begin one with IUnitOfWorkManager.BeginAsync() before saving or executing write commands.")
+                : new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
+                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
+                    "inside AddDbContext and register the MiCake EF Core module.");
+    }
+}

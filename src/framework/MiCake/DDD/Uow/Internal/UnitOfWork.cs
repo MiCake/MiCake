@@ -649,26 +649,31 @@ namespace MiCake.DDD.Uow.Internal
         {
             if (_disposed) return;
 
+            List<Exception>? rollbackFailures = null;
+            List<Exception>? cleanupFailures = null;
+
             if (disposing)
             {
                 _logger.LogDebug("Disposing UnitOfWork {UnitOfWorkId} (Completed: {Completed}, Nested: {Nested})",
                     Id, _completed, Parent != null);
 
-                if (!_completed && Parent == null)
-                {
-                    _logger.LogWarning(
-                        "UnitOfWork {UnitOfWorkId} disposed without being completed. " +
-                        "Transactions may not have been committed or rolled back. " +
-                        "Always explicitly call CommitAsync() or RollbackAsync() before disposal.",
-                        Id);
-
-                    MarkAsCompleted();
-                }
-
-                // Only dispose resources if this is root UoW
                 if (Parent == null)
                 {
-                    DisposeResources();
+                    if (!_completed && !_hasPartialCommit && (_transactionsStarted || _resources.Any(r => r.HasActiveTransaction)))
+                    {
+                        // Best-effort rollback of still-active transactions on synchronous disposal,
+                        // matching the asynchronous boundary contract.
+                        _logger.LogWarning(
+                            "UnitOfWork {UnitOfWorkId} disposed without being completed; rolling back active transactions best-effort",
+                            Id);
+                        rollbackFailures = RollbackInternalAsync(CancellationToken.None).GetAwaiter().GetResult();
+                        if (rollbackFailures.Count == 0)
+                        {
+                            MarkAsCompleted();
+                        }
+                    }
+
+                    cleanupFailures = DisposeResourcesSync();
                     _resources.Clear();
                     _commitStates.Clear();
                     _rollbackStates.Clear();
@@ -679,6 +684,15 @@ namespace MiCake.DDD.Uow.Internal
             }
 
             _disposed = true;
+            GC.SuppressFinalize(this);
+
+            if (rollbackFailures is { Count: > 0 } || cleanupFailures is { Count: > 0 })
+            {
+                throw new UnitOfWorkBoundaryException(
+                    "Unit of work disposal failed while rolling back active transactions or disposing resources.",
+                    rollbackExceptions: rollbackFailures,
+                    cleanupExceptions: cleanupFailures);
+            }
         }
 
         public async ValueTask DisposeAsync()
@@ -888,8 +902,13 @@ namespace MiCake.DDD.Uow.Internal
             return _resources.Where(r => covered.Contains(r.Id)).ToList();
         }
 
-        private void DisposeResources()
+        /// <summary>
+        /// Disposes all resources in reverse registration order. Never throws; all failures are
+        /// returned so the boundary can report them (synchronous counterpart of <see cref="DisposeResourcesAsync"/>).
+        /// </summary>
+        private List<Exception> DisposeResourcesSync()
         {
+            var failures = new List<Exception>();
             for (var i = _resources.Count - 1; i >= 0; i--)
             {
                 try
@@ -898,9 +917,12 @@ namespace MiCake.DDD.Uow.Internal
                 }
                 catch (Exception ex)
                 {
+                    failures.Add(ex);
                     _logger.LogError(ex, "Failed to dispose resource {ResourceId} in UnitOfWork {UnitOfWorkId}", _resources[i].Id, Id);
                 }
             }
+
+            return failures;
         }
 
         private async Task<List<Exception>> DisposeResourcesAsync()

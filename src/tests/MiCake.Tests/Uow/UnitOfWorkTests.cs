@@ -525,7 +525,7 @@ namespace MiCake.Tests.Uow
         #region Disposal Tests
 
         [Fact]
-        public void Dispose_ShouldNotThrowAndDisposeResources()
+        public void Dispose_WithoutActiveTransactions_ShouldDisposeResourcesWithoutCompleting()
         {
             var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
             var resource = new TestUowResource();
@@ -534,8 +534,73 @@ namespace MiCake.Tests.Uow
             uow.Dispose();
 
             Assert.True(uow.IsDisposed);
-            Assert.True(uow.IsCompleted);
+            // Without an active transaction there is nothing to roll back; the UoW is not
+            // reported as completed, matching DisposeAsync.
+            Assert.False(uow.IsCompleted);
             Assert.Equal(1, resource.DisposeCount);
+        }
+
+        [Fact]
+        public async Task Dispose_WithPartialCommit_ShouldNotMarkCompleted()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource { CommitException = new InvalidOperationException("Commit failed") };
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+
+            await Assert.ThrowsAsync<PartialUnitOfWorkCommitException>(() => uow.CommitAsync());
+
+            // Partial commit is a terminal state: synchronous disposal must not report the
+            // UoW as completed (matching DisposeAsync).
+            uow.Dispose();
+
+            Assert.True(uow.IsDisposed);
+            Assert.False(uow.IsCompleted);
+            Assert.Equal(1, resource1.DisposeCount);
+            Assert.Equal(1, resource2.DisposeCount);
+        }
+
+        [Fact]
+        public async Task Dispose_WithActiveTransactions_ShouldRollbackBestEffort()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            uow.Dispose();
+
+            Assert.True(uow.IsDisposed);
+            Assert.True(uow.IsCompleted);
+            Assert.Equal(1, resource.RollbackCount);
+            Assert.Equal(1, resource.DisposeCount);
+        }
+
+        [Fact]
+        public async Task Dispose_WithRollbackFailure_ShouldThrowBoundaryException()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { RollbackException = new InvalidOperationException("Rollback failed") };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            var ex = Assert.Throws<UnitOfWorkBoundaryException>(() => uow.Dispose());
+
+            Assert.Contains(ex.RollbackExceptions, e => e.Message == "Rollback failed");
+        }
+
+        [Fact]
+        public async Task Dispose_WithResourceDisposeFailure_ShouldThrowCleanupException()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { DisposeException = new InvalidOperationException("Dispose failed") };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            var ex = Assert.Throws<UnitOfWorkBoundaryException>(() => uow.Dispose());
+
+            Assert.Contains(ex.CleanupExceptions, e => e.Message == "Dispose failed");
         }
 
         [Fact]

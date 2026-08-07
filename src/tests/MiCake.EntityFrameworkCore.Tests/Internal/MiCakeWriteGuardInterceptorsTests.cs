@@ -35,7 +35,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             }
         }
 
-        private ServiceProvider BuildProvider()
+        private ServiceProvider BuildProvider(bool allowDbContextAccessWithoutUoW = false)
         {
             var services = new ServiceCollection();
             services.AddDbContext<WriteGuardTestDbContext>((sp, opt) =>
@@ -49,7 +49,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
-            services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(WriteGuardTestDbContext)));
+            services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(
+                new MiCakeEFCoreOptions(typeof(WriteGuardTestDbContext))
+                {
+                    AllowDbContextAccessWithoutUoW = allowDbContextAccessWithoutUoW
+                });
 
             // Save lifecycle is a t4 concern; the write guard only needs a non-null lifetime.
             services.AddSingleton<IEFSaveChangesLifetime>(Mock.Of<IEFSaveChangesLifetime>());
@@ -58,6 +62,21 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var provider = services.BuildServiceProvider();
             provider.GetRequiredService<IDbContextTypeRegistry>().RegisterDbContextType(typeof(WriteGuardTestDbContext));
             return provider;
+        }
+
+        [Fact]
+        public async Task SaveChangesAsync_WithoutUoW_WhenAccessAllowed_StillThrows()
+        {
+            // The access option only relaxes context resolution; the write guard is orthogonal
+            // and must still reject a write without an active writable unit of work.
+            using var provider = BuildProvider(allowDbContextAccessWithoutUoW: true);
+            await using var scope = provider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            await context.Database.EnsureCreatedAsync();
+            context.Add(new WriteGuardEntity { Name = "no-uow" });
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
+            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

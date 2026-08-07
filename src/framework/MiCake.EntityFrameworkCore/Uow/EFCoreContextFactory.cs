@@ -103,11 +103,11 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         /// <summary>
         /// Gets the DbContext wrapper for the current unit of work.
-        /// If <see cref="MiCakeEFCoreOptions.BypassUnitOfWorkCheck"/> is enabled and no UoW is active,
+        /// If <see cref="MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW"/> is enabled and no UoW is active,
         /// returns a standalone DbContext wrapper without UoW integration.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when no active Unit of Work is found and <see cref="MiCakeEFCoreOptions.BypassUnitOfWorkCheck"/> is <c>false</c>,
+        /// Thrown when no active Unit of Work is found and <see cref="MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW"/> is <c>false</c>,
         /// or when the DbContext is already bound to another live unit of work.
         /// </exception>
         EFCoreContextResourceResolution IEFCoreContextFactory.GetOrCreateWrapperForCurrentUnitOfWork()
@@ -117,21 +117,7 @@ namespace MiCake.EntityFrameworkCore.Uow
             // Check if UoW is required but not present
             if (currentUow == null)
             {
-                if (!_efCoreOptions.BypassUnitOfWorkCheck)
-                {
-                    throw new InvalidOperationException(
-                        $"No active Unit of Work found. Please ensure you're within a Unit of Work scope when accessing {typeof(TDbContext).Name}. " +
-                        "You can create one using: using var uow = unitOfWorkManager.Begin(); " +
-                        $"If you intentionally want to access DbContext without UoW (e.g., for read-only queries in ResourceFilter/Middleware), " +
-                        $"set {nameof(MiCakeEFCoreOptions)}.{nameof(MiCakeEFCoreOptions.BypassUnitOfWorkCheck)} = true.");
-                }
-
-                // Bypass mode: return a standalone DbContext without UoW integration.
-                _logger.LogWarning(
-                    "Accessing DbContext {DbContextType} without active Unit of Work (BypassUnitOfWorkCheck is enabled). " +
-                    "Ensure this is intentional and only used for read-only operations.",
-                    typeof(TDbContext).Name);
-
+                EnsureNoActiveUoWIsAllowed();
                 var bypassContext = ResolveDbContext();
                 return new EFCoreContextResourceResolution(bypassContext, CreateStandaloneWrapper(bypassContext));
             }
@@ -156,21 +142,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             if (currentUow == null)
             {
-                if (!_efCoreOptions.BypassUnitOfWorkCheck)
-                {
-                    throw new InvalidOperationException(
-                        $"No active Unit of Work found. Please ensure you're within a Unit of Work scope when accessing {typeof(TDbContext).Name}. " +
-                        "You can create one using: using var uow = unitOfWorkManager.Begin(); " +
-                        $"If you intentionally want to access DbContext without UoW (e.g., for read-only queries in ResourceFilter/Middleware), " +
-                        $"set {nameof(MiCakeEFCoreOptions)}.{nameof(MiCakeEFCoreOptions.BypassUnitOfWorkCheck)} = true.");
-                }
-
-                // Bypass mode: return a standalone DbContext without UoW integration.
-                _logger.LogWarning(
-                    "Accessing DbContext {DbContextType} without active Unit of Work (BypassUnitOfWorkCheck is enabled). " +
-                    "Ensure this is intentional and only used for read-only operations.",
-                    typeof(TDbContext).Name);
-
+                EnsureNoActiveUoWIsAllowed();
                 return CreateStandaloneWrapper(context);
             }
 
@@ -239,7 +211,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
         /// <summary>
         /// Creates a standalone DbContext wrapper without UoW integration.
-        /// Used when BypassUnitOfWorkCheck is enabled and no UoW is active.
+        /// Used when AllowDbContextAccessWithoutUoW is enabled and no UoW is active.
         /// </summary>
         private EFCoreDbContextWrapper CreateStandaloneWrapper(DbContext dbContext)
         {
@@ -288,6 +260,29 @@ namespace MiCake.EntityFrameworkCore.Uow
                     $"Failed to resolve {typeof(TDbContext).Name} from dependency injection. " +
                     "Ensure the DbContext is properly registered in the DI container.", ex);
             }
+        }
+
+        /// <summary>
+        /// Enforces the no-UoW policy: without an ambient unit of work the default is to fail
+        /// with registration guidance; AllowDbContextAccessWithoutUoW downgrades to a warning and
+        /// allows read-only access. Writes remain guarded regardless of this option.
+        /// </summary>
+        private void EnsureNoActiveUoWIsAllowed()
+        {
+            if (_efCoreOptions.AllowDbContextAccessWithoutUoW)
+            {
+                _logger.LogWarning(
+                    "Accessing DbContext {DbContextType} without active Unit of Work (AllowDbContextAccessWithoutUoW is enabled). " +
+                    "Ensure this is intentional and only used for read-only operations.",
+                    typeof(TDbContext).Name);
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"No active Unit of Work found. Please ensure you're within a Unit of Work scope when accessing {typeof(TDbContext).Name}. " +
+                "You can create one using: using var uow = unitOfWorkManager.Begin(); " +
+                $"If you intentionally want to access DbContext without UoW (e.g., for read-only queries in ResourceFilter/Middleware), " +
+                $"set {nameof(MiCakeEFCoreOptions)}.{nameof(MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW)} = true.");
         }
 
         private static IUnitOfWork ResolveRoot(IUnitOfWork unitOfWork)

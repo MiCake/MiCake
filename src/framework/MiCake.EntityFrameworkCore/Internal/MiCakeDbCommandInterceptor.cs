@@ -37,7 +37,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             InterceptionResult<int> result)
         {
             var operationKind = Classify(eventData.CommandSource);
-            var coordinator = ResolveCoordinator();
+            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_serviceProvider);
             if (coordinator != null)
             {
                 if (eventData.Context != null)
@@ -47,9 +47,9 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
             else if (eventData.Context != null && operationKind != EFWriteOperationKind.DatabaseInitialization)
             {
-                throw CreateUnavailableException(
+                throw MiCakeInterceptorPipeline.CreateUnavailableException(
                     eventData.Context,
-                    _serviceProvider != null && ResolveCurrentUowServiceProvider() == null);
+                    _serviceProvider != null && MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider) == null);
             }
 
             return base.NonQueryExecuting(command, eventData, result);
@@ -62,7 +62,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             CancellationToken cancellationToken = default)
         {
             var operationKind = Classify(eventData.CommandSource);
-            var coordinator = ResolveCoordinator();
+            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_serviceProvider);
             if (coordinator != null)
             {
                 if (eventData.Context != null)
@@ -77,48 +77,13 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
             else if (eventData.Context != null && operationKind != EFWriteOperationKind.DatabaseInitialization)
             {
-                throw CreateUnavailableException(
+                throw MiCakeInterceptorPipeline.CreateUnavailableException(
                     eventData.Context,
-                    _serviceProvider != null && ResolveCurrentUowServiceProvider() == null);
+                    _serviceProvider != null && MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider) == null);
             }
 
             return await base.NonQueryExecutingAsync(command, eventData, result, cancellationToken).ConfigureAwait(false);
         }
-
-        private IEFCoreWriteCoordinator? ResolveCoordinator()
-        {
-            // Scoped services must be resolved from the provider of the scope that owns the
-            // ambient unit of work, never from the provider captured at options-build time
-            // (the pool root under AddDbContextPool). Without an ambient unit of work the
-            // pipeline is unavailable; database initialization passes through unguarded.
-            var frameProvider = ResolveCurrentUowServiceProvider();
-            if (frameProvider == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return (IEFCoreWriteCoordinator?)frameProvider.GetService(typeof(IEFCoreWriteCoordinator));
-            }
-            catch (ObjectDisposedException)
-            {
-                return null;
-            }
-        }
-
-        private IServiceProvider? ResolveCurrentUowServiceProvider()
-            => _serviceProvider?.GetService<IUnitOfWorkAmbientAccessor>()?.CurrentServiceProvider;
-
-        private static InvalidOperationException CreateUnavailableException(DbContext context, bool noActiveUow)
-            => noActiveUow
-                ? new InvalidOperationException(
-                    $"Write operation on {context.GetType().Name} requires an active writable unit of work. " +
-                    "Begin one with IUnitOfWorkManager.BeginAsync() before saving or executing write commands.")
-                : new InvalidOperationException(
-                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
-                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
-                    "inside AddDbContext and register the MiCake EF Core module.");
 
         internal static EFWriteOperationKind Classify(CommandSource commandSource)
             => commandSource switch

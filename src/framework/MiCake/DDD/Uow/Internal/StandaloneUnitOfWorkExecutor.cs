@@ -78,76 +78,14 @@ namespace MiCake.DDD.Uow.Internal
 
             var unitOfWork = await manager.BeginAsync(options, cancellationToken).ConfigureAwait(false);
 
-            TResult result = default!;
-            ExceptionDispatchInfo? primaryEDI = null;
-            var rollbackFailures = new List<Exception>();
-            Exception? cleanupFailure = null;
-
-            try
-            {
-                result = await operation(provider, cancellationToken).ConfigureAwait(false);
-                await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (PartialUnitOfWorkCommitException ex)
-            {
-                // Partial commit is a terminal state: no overall rollback is attempted and no
-                // rolled-back event may be raised; the original exception propagates as-is.
-                primaryEDI = ExceptionDispatchInfo.Capture(ex);
-            }
-            catch (Exception ex)
-            {
-                primaryEDI = ExceptionDispatchInfo.Capture(ex);
-                if (!unitOfWork.IsCompleted)
-                {
-                    try
-                    {
-                        // Cleanup rollback must not be cancelled by the operation's token.
-                        await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-                    }
-                    catch (UnitOfWorkBoundaryException rollbackEx)
-                    {
-                        rollbackFailures.AddRange(rollbackEx.RollbackExceptions);
-                    }
-                    catch (Exception rollbackEx)
-                    {
-                        rollbackFailures.Add(rollbackEx);
-                    }
-                }
-            }
-            finally
-            {
-                try
-                {
-                    await unitOfWork.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    cleanupFailure = ex;
-                    _logger.LogError(ex, "Failed to dispose standalone UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
-                }
-
-                _logger.LogDebug("Standalone unit of work execution finished");
-            }
-
-            if (cleanupFailure != null)
-            {
-                throw new UnitOfWorkBoundaryException(
-                    "The standalone operation completed but cleanup of the unit of work failed.",
-                    primaryEDI?.SourceException,
-                    rollbackFailures.Count > 0 ? rollbackFailures : null,
-                    [cleanupFailure]);
-            }
-
-            if (rollbackFailures.Count > 0)
-            {
-                throw new UnitOfWorkBoundaryException(
-                    "The standalone operation failed and rollback of eligible resources also failed.",
-                    primaryEDI?.SourceException,
-                    rollbackFailures);
-            }
-
-            primaryEDI?.Throw();
-            return result;
+            return await IsolatedUowExecution.ExecuteAsync(
+                    operation,
+                    provider,
+                    unitOfWork,
+                    _logger,
+                    "standalone",
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
     }
 }

@@ -345,7 +345,7 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         private IEFCoreWriteCoordinator RequireCoordinator(DbContext context)
         {
-            var coordinator = ResolveCoordinator();
+            var coordinator = MiCakeInterceptorPipeline.ResolveCoordinator(_serviceProvider);
             if (coordinator != null)
             {
                 return coordinator;
@@ -354,19 +354,9 @@ namespace MiCake.EntityFrameworkCore.Internal
             // Provider-less fallback interceptors and hosts that registered the module but
             // have no pipeline for this context get registration guidance; a host with a
             // provider that simply has no active unit of work reports the missing UoW.
-            var noActiveUow = _serviceProvider != null && ResolveCurrentUowServiceProvider() == null;
-            throw CreateUnavailableException(context, noActiveUow);
+            var noActiveUow = _serviceProvider != null && MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider) == null;
+            throw MiCakeInterceptorPipeline.CreateUnavailableException(context, noActiveUow);
         }
-
-        private static InvalidOperationException CreateUnavailableException(DbContext context, bool noActiveUow)
-            => noActiveUow
-                ? new InvalidOperationException(
-                    $"Write operation on {context.GetType().Name} requires an active writable unit of work. " +
-                    "Begin one with IUnitOfWorkManager.BeginAsync() before saving or executing write commands.")
-                : new InvalidOperationException(
-                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
-                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
-                    "inside AddDbContext and register the MiCake EF Core module.");
 
         /// <summary>
         /// Resolves the provider used for lifecycle handlers: the provider of the scope
@@ -376,32 +366,7 @@ namespace MiCake.EntityFrameworkCore.Internal
         /// there is no owning scope, so no handlers are resolved.
         /// </summary>
         private IServiceProvider? ResolveHandlerProvider()
-            => ResolveCurrentUowServiceProvider();
-
-        private IServiceProvider? ResolveCurrentUowServiceProvider()
-        {
-            // The ambient accessor is a singleton, so it can be resolved from the provider
-            // captured at options-build time even when the host validates scopes.
-            return _serviceProvider?.GetService<IUnitOfWorkAmbientAccessor>()?.CurrentServiceProvider;
-        }
-
-        private IEFCoreWriteCoordinator? ResolveCoordinator()
-        {
-            var frameProvider = ResolveCurrentUowServiceProvider();
-            if (frameProvider == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return (IEFCoreWriteCoordinator?)frameProvider.GetService(typeof(IEFCoreWriteCoordinator));
-            }
-            catch (ObjectDisposedException)
-            {
-                return null;
-            }
-        }
+            => MiCakeInterceptorPipeline.ResolveCurrentUowServiceProvider(_serviceProvider);
 
         private void MarkUnitOfWorkRollbackOnly(IServiceProvider handlerProvider, DbContext context)
         {

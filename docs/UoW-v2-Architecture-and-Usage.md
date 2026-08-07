@@ -254,8 +254,9 @@ services.AddUowCoreServices(typeof(MyDbContext));        // internal extension, 
   non-generic runtime view used internally is not part of the public contract, and custom
   implementations are adapted to it automatically. A custom implementation only needs the
   two public methods above.
-- `MiCakeEFCoreOptions` — `BypassUnitOfWorkCheck` (allows context access without a UoW,
-  read-only guidance; default false) and `MaxSaveCycles` (default 16).
+- `MiCakeEFCoreOptions` — `AllowDbContextAccessWithoutUoW` (allows context access without a
+  UoW, read-only guidance; writes remain guarded regardless; default false) and
+  `MaxSaveCycles` (default 16).
 
 ### 3.4 ASP.NET Core contract (`MiCake.AspNetCore`)
 
@@ -494,8 +495,9 @@ services.AddDbContext<AppDbContext>((sp, opt) =>
 5. **Custom factory implementations**: only `GetDbContext()` and
    `GetOrCreateWrapperFor(DbContext)` are required; the framework adapts the internal
    runtime view. The wrapper must wrap the exact context that performs the work.
-6. **Bypass mode**: `BypassUnitOfWorkCheck = true` returns a standalone wrapper without
-   UoW integration — intended for read-only access in filters/middleware only.
+6. **Context access without UoW**: `AllowDbContextAccessWithoutUoW = true` returns a standalone
+   wrapper without UoW integration — intended for read-only access in filters/middleware only.
+   Writes without an active writable UoW are still rejected by the write guard.
 7. **Performance baseline**: run on demand with
    `dotnet test src/tests/MiCake.IntegrationTests --filter Category=Performance`; the
    regular suite excludes these scenarios.

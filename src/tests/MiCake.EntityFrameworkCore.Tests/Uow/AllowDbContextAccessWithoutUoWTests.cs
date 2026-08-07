@@ -13,10 +13,11 @@ using Xunit;
 namespace MiCake.EntityFrameworkCore.Tests.Uow
 {
     /// <summary>
-    /// Unit tests for BypassUnitOfWorkCheck functionality in EFCoreContextFactory.
-    /// Tests verify that repositories can optionally bypass UoW checks for read-only scenarios.
+    /// Unit tests for AllowDbContextAccessWithoutUoW functionality in EFCoreContextFactory.
+    /// Tests verify that repositories can optionally access DbContext without a UoW for
+    /// read-only scenarios, and that writes remain guarded regardless of the option.
     /// </summary>
-    public class BypassUnitOfWorkCheckTests : IDisposable
+    public class AllowDbContextAccessWithoutUoWTests : IDisposable
     {
         private readonly Mock<IServiceProvider> _mockServiceProvider;
         private readonly Mock<IUnitOfWorkManager> _mockUnitOfWorkManager;
@@ -24,7 +25,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         private readonly Mock<ILogger<EFCoreDbContextWrapper>> _mockWrapperLogger;
         private readonly TestDbContext _dbContext;
 
-        public BypassUnitOfWorkCheckTests()
+        public AllowDbContextAccessWithoutUoWTests()
         {
             _mockServiceProvider = new Mock<IServiceProvider>();
             _mockUnitOfWorkManager = new Mock<IUnitOfWorkManager>();
@@ -43,7 +44,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 .Returns(_mockWrapperLogger.Object);
         }
 
-        #region BypassUnitOfWorkCheck = false (Default Behavior) Tests
+        #region AllowDbContextAccessWithoutUoW = false (Default Behavior) Tests
 
         [Fact]
         public void GetDbContext_WithoutUoW_WhenBypassDisabled_ShouldThrowInvalidOperationException()
@@ -51,7 +52,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = false // Default value
+                AllowDbContextAccessWithoutUoW = false // Default value
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -66,16 +67,16 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Act & Assert
             var exception = Assert.Throws<InvalidOperationException>(() => factory.GetDbContext());
             Assert.Contains("No active Unit of Work", exception.Message);
-            Assert.Contains(nameof(MiCakeEFCoreOptions.BypassUnitOfWorkCheck), exception.Message);
+            Assert.Contains(nameof(MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW), exception.Message);
         }
 
         [Fact]
-        public void GetDbContextWrapper_WithoutUoW_WhenBypassDisabled_ShouldThrowInvalidOperationException()
+        public void GetDbContextWrapper_WithoutUoW_WhenDisallowed_ShouldThrowInvalidOperationException()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = false
+                AllowDbContextAccessWithoutUoW = false
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -93,12 +94,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void GetDbContext_WithUoW_WhenBypassDisabled_ShouldReturnDbContext()
+        public void GetDbContext_WithUoW_WhenDisallowed_ShouldReturnDbContext()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = false
+                AllowDbContextAccessWithoutUoW = false
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -123,15 +124,15 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
 
         #endregion
 
-        #region BypassUnitOfWorkCheck = true Tests
+        #region AllowDbContextAccessWithoutUoW = true Tests
 
         [Fact]
-        public void GetDbContext_WithoutUoW_WhenBypassEnabled_ShouldReturnDbContext()
+        public void GetDbContext_WithoutUoW_WhenAllowed_ShouldReturnDbContext()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = true
+                AllowDbContextAccessWithoutUoW = true
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -152,12 +153,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void GetOrCreateWrapperFor_WithoutUoW_WhenBypassEnabled_ShouldReturnWrapper()
+        public void GetOrCreateWrapperFor_WithoutUoW_WhenAllowed_ShouldReturnWrapper()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = true
+                AllowDbContextAccessWithoutUoW = true
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -178,12 +179,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void GetDbContext_WithoutUoW_WhenBypassEnabled_ShouldLogWarning()
+        public void GetDbContext_WithoutUoW_WhenAllowed_ShouldLogWarning()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = true
+                AllowDbContextAccessWithoutUoW = true
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -203,19 +204,19 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("BypassUnitOfWorkCheck")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("AllowDbContextAccessWithoutUoW")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
         }
 
         [Fact]
-        public void GetDbContext_WithUoW_WhenBypassEnabled_ShouldStillRegisterWithUoW()
+        public void GetDbContext_WithUoW_WhenAllowed_ShouldStillRegisterWithUoW()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = true
+                AllowDbContextAccessWithoutUoW = true
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -243,26 +244,26 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         #region Default Value Tests
 
         [Fact]
-        public void BypassUnitOfWorkCheck_DefaultValue_ShouldBeFalse()
+        public void AllowDbContextAccessWithoutUoW_DefaultValue_ShouldBeFalse()
         {
             // Arrange & Act
             var options = new MiCakeEFCoreOptions(typeof(TestDbContext));
 
             // Assert
-            Assert.False(options.BypassUnitOfWorkCheck);
+            Assert.False(options.AllowDbContextAccessWithoutUoW);
         }
 
         [Fact]
-        public void BypassUnitOfWorkCheck_CanBeSetToTrue()
+        public void AllowDbContextAccessWithoutUoW_CanBeSetToTrue()
         {
             // Arrange
             var options = new MiCakeEFCoreOptions(typeof(TestDbContext));
 
             // Act
-            options.BypassUnitOfWorkCheck = true;
+            options.AllowDbContextAccessWithoutUoW = true;
 
             // Assert
-            Assert.True(options.BypassUnitOfWorkCheck);
+            Assert.True(options.AllowDbContextAccessWithoutUoW);
         }
 
         #endregion
@@ -270,7 +271,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         #region Integration Tests with Real DI
 
         [Fact]
-        public async Task Integration_WithBypassEnabled_ShouldWorkWithoutUoW()
+        public async Task Integration_WithAccessAllowed_ShouldWorkWithoutUoW()
         {
             // Arrange
             var services = new ServiceCollection();
@@ -285,10 +286,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
-            // Enable bypass
+            // Allow context access without a UoW
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = true
+                AllowDbContextAccessWithoutUoW = true
             };
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(efCoreOptions);
 
@@ -308,11 +309,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public async Task Integration_WithBypassEnabled_ShouldStillWorkWithUoW()
+        public async Task Integration_WithAccessAllowed_ShouldStillWorkWithUoW()
         {
             // Arrange - file-backed SQLite because the UoW now requires explicit transactions,
             // which the InMemory provider does not support.
-            var dbPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"micake-bypass-{Guid.NewGuid():N}.db");
+            var dbPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"micake-access-{Guid.NewGuid():N}.db");
             ServiceProvider? provider = null;
             try
             {
@@ -327,10 +328,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
                 services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
-                // Enable bypass
+                // Allow context access without a UoW
                 var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
                 {
-                    BypassUnitOfWorkCheck = true
+                    AllowDbContextAccessWithoutUoW = true
                 };
                 services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(efCoreOptions);
 
@@ -365,7 +366,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void Integration_WithBypassDisabled_ShouldThrowWithoutUoW()
+        public void Integration_WithAccessDenied_ShouldThrowWithoutUoW()
         {
             // Arrange
             var services = new ServiceCollection();
@@ -380,10 +381,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
-            // Bypass disabled (default)
+            // Access denied (default)
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = false
+                AllowDbContextAccessWithoutUoW = false
             };
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(efCoreOptions);
 
@@ -405,7 +406,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
             {
-                BypassUnitOfWorkCheck = false
+                AllowDbContextAccessWithoutUoW = false
             };
             var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(efCoreOptions);
 
@@ -425,7 +426,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             Assert.Contains("TestDbContext", exception.Message);
             Assert.Contains("unitOfWorkManager.Begin()", exception.Message);
             Assert.Contains(nameof(MiCakeEFCoreOptions), exception.Message);
-            Assert.Contains(nameof(MiCakeEFCoreOptions.BypassUnitOfWorkCheck), exception.Message);
+            Assert.Contains(nameof(MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW), exception.Message);
         }
 
         #endregion

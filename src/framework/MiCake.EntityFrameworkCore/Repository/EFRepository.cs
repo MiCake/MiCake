@@ -52,13 +52,14 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </exception>
         public virtual async Task<TKey> AddAndGetIdAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
-            await AddAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
-
+            // Require the ambient writable UoW before touching the tracker so a missing UoW
+            // cannot silently leave the aggregate added to a bypass context's ChangeTracker.
             var current = Dependencies.UnitOfWorkManager.Current
                 ?? throw new InvalidOperationException(
                     $"AddAndGetIdAsync on {typeof(TAggregateRoot).Name} requires an active writable unit of work. " +
                     "Begin one with IUnitOfWorkManager.BeginAsync() before adding.");
 
+            await AddAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
             await current.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             return aggregateRoot.Id;

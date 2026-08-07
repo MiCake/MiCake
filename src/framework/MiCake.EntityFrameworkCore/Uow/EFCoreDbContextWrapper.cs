@@ -311,10 +311,6 @@ namespace MiCake.EntityFrameworkCore.Uow
             {
                 _currentTransaction?.Dispose();
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to dispose transaction for resource {ResourceId}", Id);
-            }
             finally
             {
                 _currentTransaction = null;

@@ -152,82 +152,27 @@ namespace MiCake.DDD.Uow.Internal
             _logger.LogDebug("Started isolated requiresNew UnitOfWork {UnitOfWorkId} under outer {OuterId}",
                 innerUow.Id, outerFrame.UnitOfWork.Id);
 
-            TResult result = default!;
-            ExceptionDispatchInfo? primaryEDI = null;
-            var rollbackFailures = new List<Exception>();
-            Exception? cleanupFailure = null;
-
             try
             {
                 // The inner UoW goes through the same initialization pipeline as BeginAsync
                 // (lifecycle hooks and immediate activation) using the isolated scope's provider.
                 await InitializeUnitOfWorkAsync(innerUow, innerProvider, options, cancellationToken).ConfigureAwait(false);
 
-                result = await operation(innerProvider, cancellationToken).ConfigureAwait(false);
-                await innerUow.CommitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (PartialUnitOfWorkCommitException ex)
-            {
-                // Partial commit is a terminal state: no overall rollback is attempted and no
-                // rolled-back event may be raised; the original exception propagates as-is.
-                primaryEDI = ExceptionDispatchInfo.Capture(ex);
-            }
-            catch (Exception ex)
-            {
-                primaryEDI = ExceptionDispatchInfo.Capture(ex);
-                if (!innerUow.IsCompleted)
-                {
-                    try
-                    {
-                        // Cleanup rollback must not be cancelled by the operation's token.
-                        await innerUow.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-                    }
-                    catch (UnitOfWorkBoundaryException rollbackEx)
-                    {
-                        rollbackFailures.AddRange(rollbackEx.RollbackExceptions);
-                    }
-                    catch (Exception rollbackEx)
-                    {
-                        rollbackFailures.Add(rollbackEx);
-                    }
-                }
+                return await IsolatedUowExecution.ExecuteAsync(
+                        operation,
+                        innerProvider,
+                        innerUow,
+                        _logger,
+                        "requiresNew",
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
             finally
             {
                 // Token-based compare-and-pop restores the outer frame on every exit path.
                 _ambientAccessor.Pop(token);
-                try
-                {
-                    await innerUow.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    cleanupFailure = ex;
-                    _logger.LogError(ex, "Failed to dispose requiresNew UnitOfWork {UnitOfWorkId}", innerUow.Id);
-                }
-
                 _logger.LogDebug("Restored ambient frame after requiresNew UnitOfWork {UnitOfWorkId}", innerUow.Id);
             }
-
-            if (cleanupFailure != null)
-            {
-                throw new UnitOfWorkBoundaryException(
-                    "The requiresNew operation completed but cleanup of the inner unit of work failed.",
-                    primaryEDI?.SourceException,
-                    rollbackFailures.Count > 0 ? rollbackFailures : null,
-                    [cleanupFailure]);
-            }
-
-            if (rollbackFailures.Count > 0)
-            {
-                throw new UnitOfWorkBoundaryException(
-                    "The requiresNew operation failed and rollback of eligible resources also failed.",
-                    primaryEDI?.SourceException,
-                    rollbackFailures);
-            }
-
-            primaryEDI?.Throw();
-            return result;
         }
 
         private async Task<IUnitOfWork> InitializeUnitOfWorkAsync(

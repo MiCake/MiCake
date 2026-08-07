@@ -150,6 +150,8 @@ namespace MiCake.Tests.Uow
             Record("Dispose");
             DisposeCount++;
             HasActiveTransaction = false;
+            if (DisposeException != null)
+                throw DisposeException;
         }
 
         public ValueTask DisposeAsync()
