@@ -240,6 +240,69 @@ namespace MiCake.Tests.Uow
             Assert.Same(outer, manager.Current);
         }
 
+        [Fact]
+        public async Task CommitAsync_Cancelled_ShouldPropagateCancellationAndNotComplete()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { ThrowIfCanceled = true };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            // The primary cancellation propagates unchanged (compensation rollback is not
+            // cancelled by the operation's token), and the resource was never committed.
+            await Assert.ThrowsAsync<OperationCanceledException>(() => uow.CommitAsync(cts.Token));
+
+            Assert.Equal(0, resource.CommitCount);
+
+            // The cancelled commit must not report the UoW as completed: the caller can
+            // observe that the boundary did not finish.
+            Assert.False(uow.IsCompleted);
+        }
+
+        [Fact]
+        public async Task FlushAsync_Cancelled_ShouldSurfaceCancellationAndMarkRollbackOnly()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { ThrowIfCanceled = true };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            // The resource records the flush attempt before honoring the token, so the
+            // flush was attempted and cancelled; the UoW must surface the cancellation and
+            // never report the flush as completed.
+            await Assert.ThrowsAsync<OperationCanceledException>(() => uow.FlushAsync(cts.Token));
+
+            Assert.Equal(1, resource.FlushCount);
+
+            // Cancellation during flush marks the UoW rollback-only so the boundary cannot
+            // commit partial state: a later commit is rejected.
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+        }
+
+        [Fact]
+        public async Task RollbackAsync_Cancelled_ShouldSurfaceCancellationAndStayNotCompleted()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { ThrowIfCanceled = true };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            // An explicit rollback that is cancelled surfaces the cancellation; the UoW stays
+            // not-completed so the caller can observe the uncertain outcome.
+            var ex = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => uow.RollbackAsync(cts.Token));
+            Assert.Contains(ex.RollbackExceptions, e => e is OperationCanceledException);
+            Assert.False(uow.IsCompleted);
+        }
+
         #endregion
 
         #region W3: Partially created savepoints must stay usable

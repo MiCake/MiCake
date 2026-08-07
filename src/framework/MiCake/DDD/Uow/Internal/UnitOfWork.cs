@@ -305,7 +305,7 @@ namespace MiCake.DDD.Uow.Internal
             if (_shouldRollback)
             {
                 _logger.LogWarning("UnitOfWork {UnitOfWorkId} is marked rollback-only; rolling back", Id);
-                var rollbackOnlyFailures = await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                var rollbackOnlyFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
                 if (rollbackOnlyFailures.Count > 0)
                 {
                     throw UnitOfWorkBoundaryException.ForRollbackFailureOnly(rollbackOnlyFailures);
@@ -320,7 +320,8 @@ namespace MiCake.DDD.Uow.Internal
             }
             catch (Exception ex)
             {
-                var rollbackFailures = await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                // Compensation rollback must not be cancelled by the operation's token.
+                var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
                 if (rollbackFailures.Count > 0)
                 {
                     throw UnitOfWorkBoundaryException.ForRollbackFailure(ex, rollbackFailures);
@@ -340,7 +341,8 @@ namespace MiCake.DDD.Uow.Internal
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to flush resource {ResourceId} during commit of UnitOfWork {UnitOfWorkId}", resource.Id, Id);
-                    var rollbackFailures = await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                    // Compensation rollback must not be cancelled by the operation's token.
+                    var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
                     if (rollbackFailures.Count > 0)
                     {
                         throw UnitOfWorkBoundaryException.ForRollbackFailure(ex, rollbackFailures);
@@ -372,7 +374,8 @@ namespace MiCake.DDD.Uow.Internal
 
             if (commitFailures.Count > 0)
             {
-                var rollbackFailures = await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                // Compensation rollback must not be cancelled by the operation's token.
+                var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
                 var finalOutcomes = BuildOutcomes();
 
                 if (!finalOutcomes.Any(o => o.CommitState == UnitOfWorkResourceCommitState.Committed))

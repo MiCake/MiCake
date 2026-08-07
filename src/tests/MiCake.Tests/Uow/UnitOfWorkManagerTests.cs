@@ -155,6 +155,30 @@ namespace MiCake.Tests.Uow
 
         #endregion
 
+        #region Parallel Ambient Flow Isolation Tests
+
+        [Fact]
+        public async Task ParallelFlows_BeginSameManager_ShouldNotLeakAmbientFrames()
+        {
+            // Two concurrent asynchronous flows share one manager instance; each flow must
+            // see only its own ambient UoW (AsyncLocal execution-context isolation), and
+            // completing one flow must not disturb the other's ambient frame.
+            var uows = await Task.WhenAll(
+                RunFlowAsync(),
+                RunFlowAsync());
+
+            Assert.NotSame(uows[0], uows[1]);
+
+            async Task<IUnitOfWork> RunFlowAsync()
+            {
+                using var uow = await _manager.BeginAsync();
+                Assert.Same(uow, _manager.Current);
+                return uow;
+            }
+        }
+
+        #endregion
+
         #region Lifecycle Hook Tests
 
         [Fact]

@@ -94,6 +94,20 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
+        public void SaveChanges_WithoutUoW_ShouldThrow()
+        {
+            // The synchronous SaveChanges interceptor path must enforce the same write guard.
+            using var provider = BuildProvider();
+            using var scope = provider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            context.Database.EnsureCreated();
+            context.Add(new WriteGuardEntity { Name = "no-uow" });
+
+            var exception = Assert.Throws<InvalidOperationException>(() => context.SaveChanges());
+            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public async Task SaveChangesAsync_WithinUoW_RollbackDiscardsWrites()
         {
             using var provider = BuildProvider();
