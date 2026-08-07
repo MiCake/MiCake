@@ -1,4 +1,5 @@
 using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -162,10 +163,10 @@ namespace MiCake.EntityFrameworkCore.Internal
                     $"Write operation {operationKind} on {context.GetType().Name} is rejected: the active unit of work {current.Id} is read-only.");
             }
 
-            return ResolveWrapper(context);
+            return ResolveWrapper(context, current);
         }
 
-        private EFCoreDbContextWrapper ResolveWrapper(DbContext context)
+        private EFCoreDbContextWrapper ResolveWrapper(DbContext context, IUnitOfWork current)
         {
             var contextType = context.GetType();
             if (!_contextTypeRegistry.GetRegisteredTypes().Contains(contextType))
@@ -176,8 +177,21 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
 
             var factoryType = typeof(IEFCoreContextFactory<>).MakeGenericType(contextType);
-            var factory = (IEFCoreContextFactory)_serviceProvider.GetRequiredService(factoryType);
-            return factory.GetDbContextWrapper();
+            var factory = _serviceProvider.GetRequiredService(factoryType);
+
+            // Fast path: the framework factory implements the internal runtime view.
+            // Custom implementations are adapted through the same adapter the DI
+            // registration uses, so reflection and exception handling stay in one place.
+            var internalView = factory as IEFCoreContextFactory
+                ?? new EFCoreContextFactoryAdapter(factory, factoryType);
+
+            var wrapper = internalView.GetOrCreateWrapperFor(context);
+
+            // The resource must wrap the DbContext that performs the write and must be
+            // registered with the unit of work so it can activate its transaction and
+            // participate in commit/rollback. Shared with the immediate initializer so
+            // custom factories cannot silently produce unregistered or wrong-context resources.
+            return EFCoreContextResourceAnchor.AnchorResource(current, context, wrapper, contextType.Name);
         }
 
         private static void BindTransaction(DbContext context, DbCommand command)

@@ -518,3 +518,212 @@ Consumed by t7 (relational acceptance) and downstream users.
 - `[UnitOfWork]` on an action or controller always enables UoW even when `EnableAutoUnitOfWork = false`; `[DisableUnitOfWork]` always disables it even when globally enabled.
 - Action-name inference is opt-in; do not rely on it for security or correctness boundaries — use explicit `IsReadOnly` metadata.
 - t7: the request-boundary matrix must exercise explicit read-only write rejection, cancellation rollback, and async disposal against file-backed SQLite; legacy `MiCake.IntegrationTests` files referencing removed APIs (`PersistenceStrategy`, three-parameter `BeginAsync`, repository save APIs) must be rewritten or superseded.
+
+## Task: t7-fix — Relational acceptance defect fixes (t7 review follow-up)
+
+## Implementation Summary
+
+Fixed the three t7 acceptance defects (I-1/I-2/I-3 from `test-design.md`) plus the
+follow-up review findings. Owned-entity changes now update the owner's audit
+timestamp: `SaveOperationEntityHelper` matches owners by tracked entity instance
+reference and shares one per-type entry lookup per save pass. Pooled DbContext writes
+no longer deadlock: the UoW exposes `TryGetResource`, and
+`IEFCoreContextFactory.GetOrCreateWrapperFor(DbContext)` anchors the resource wrapper
+to the exact writing context, so a second pooled instance is never registered as a
+second resource. The provider-less interceptor fallback is idempotent, so
+`MiCakeDbContext.OnConfiguring` no longer installs a conflicting pair. A follow-up
+review additionally fixed lifecycle-handler scope resolution for pooled contexts
+(handlers resolve from the owning UoW scope provider), added a fail-fast cache-hit
+instance-identity check, made `GetOrCreateWrapperFor` a default-interface-member
+contract, and reduced owned-state resolution to one shared owner lookup per save pass.
+
+## Files Touched
+
+| Path | Action | Intent |
+|---|---|---|
+| `src/framework/MiCake/DDD/Uow/Internal/IUnitOfWorkInternal.cs` | modify | Add `ServiceProvider` (owning scope provider) for lifecycle-handler resolution |
+| `src/framework/MiCake/DDD/Uow/Internal/UnitOfWork.cs` | modify | Retain the owning `ServiceProvider`; optional constructor parameter |
+| `src/framework/MiCake/DDD/Uow/Internal/UnitOfWorkManager.cs` | modify | Pass the owning provider on root/nested/requiresNew creation |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/SaveOperationEntityHelper.cs` | modify | Owner matching by entity reference; one `BuildChangedOwnedOwners` lookup per save pass; `ReferenceEqualityComparer` |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeEFCoreInterceptor.cs` | modify | Resolve lifecycle handlers from the ambient UoW's owning provider; reuse the changed-owner set |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/LazyEFSaveChangesLifetime.cs` | modify | Reuse the changed-owner set |
+| `src/framework/MiCake.EntityFrameworkCore/Uow/EFCoreContextFactory.cs` | modify | `GetOrCreateWrapperFor(DbContext)` cache-hit instance check; default-interface-member contract |
+| `src/tests/MiCake.IntegrationTests/Uow/SqliteUnitOfWorkFixture.cs` | modify | `BuildPooledProvider` accepts a configure delegate |
+| `src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkWritePathTests.cs` | modify | Pooled lifecycle-handler scope isolation regression test |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Uow/EFCoreContextFactoryTests.cs` | modify | Cache-hit instance identity + DIM behavior tests |
+
+## Deviations from test-design.md recommendations
+
+- I-2 recommended resolving the coordinator's factory from `context.GetInfrastructure()`;
+  the implemented fix instead anchors the wrapper to the exact writing context and
+  reuses it through `TryGetResource`, which removes the duplicate-resource root cause
+  without depending on EF internal providers. The pool-root provider remains the source
+  of the lifecycle-handler scope defect, which this task fixes via the owning UoW's
+  `ServiceProvider`.
+
+## Self-Check Results
+
+- Type-checker: `dotnet build MiCake.All.sln` — succeeded (0 errors; existing NU1903 package warnings only).
+- Tests: MiCake 260/260, EF Core 242/242 (2 new), Integration 171/171 (1 new), ASP.NET 432/432, 0 skipped.
+
+## Change Tracking
+
+- Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
+- Task: `t7-relational-acceptance` — defect fixes applied; status update deferred to `/mvt-update-plan`.
+- Acceptance status: all three t7 defects (I-1/I-2/I-3) fixed with regression tests; review findings F1-F5 resolved; `test-design.md` defect states synchronized.
+
+## Task: t7-fix-2 — Independent review follow-up: pooled scope resolution and public contracts
+
+## Implementation Summary
+
+Independent review of the F1-F5 fix found 2 Critical and 2 Warning findings; all four
+are fixed here. (1) The interceptors no longer resolve scoped services
+(`IUnitOfWorkManager` / `IEFCoreWriteCoordinator` / lifecycle handlers) from the
+provider captured at options-build time — the pool root under `AddDbContextPool` —
+which fails under `ValidateScopes` (the ASP.NET Development default) and leaks shared
+state otherwise. A new public singleton `IUnitOfWorkAmbientAccessor` exposes the
+provider of the scope that owns the ambient unit of work, and both interceptors resolve
+from it; without an ambient UoW the save/command guards report the missing unit of work
+("requires an active writable unit of work") while provider-less fallback interceptors
+keep the registration guidance message. (2) Public contracts are restored: the
+`ServiceProvider` member was removed from `IUnitOfWorkInternal` (it stays on the
+concrete `UnitOfWork`), and `GetOrCreateWrapperFor(DbContext)` was removed from
+`IEFCoreContextFactory` and moved to a new optional capability interface
+`IEFCoreAnchoredContextFactory`; `EFCoreWriteCoordinator` pattern-matches the capability
+and falls back to `GetDbContextWrapper()` for custom factories, so custom
+implementations compile and run unchanged. (3) The changed-owner set built by
+`BuildChangedOwnedOwners` is now reused in the pre-save handler cycle
+(`RunPreSaveCycleAsync` takes the set), so the O(1) membership lookup applies on the
+hot path; the unused single/two-argument resolver overloads were removed. (4) The
+integration fixture builds pooled providers with optional `ValidateScopes`, and a new
+pooled regression test runs the full write path under scope validation, proving handler
+instances come from — and are disposed with — their owning request scope.
+
+## Files Touched
+
+| Path | Action | Intent |
+|---|---|---|
+| `src/framework/MiCake/DDD/Uow/IUnitOfWorkAmbientAccessor.cs` | create | Public singleton accessor exposing the current UoW frame's owning provider |
+| `src/framework/MiCake/DDD/Uow/Internal/AmbientUnitOfWorkAccessor.cs` | modify | Implement `IUnitOfWorkAmbientAccessor` |
+| `src/framework/MiCake/Modules/MiCakeEssentialModule.cs` | modify | Register the public ambient accessor singleton mapping |
+| `src/framework/MiCake/DDD/Uow/Internal/IUnitOfWorkInternal.cs` | modify | Remove `ServiceProvider` member; restore the interface shape |
+| `src/framework/MiCake/DDD/Uow/Internal/UnitOfWork.cs` | modify | Keep the concrete-class `ServiceProvider`; document it as non-contract |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeEFCoreInterceptor.cs` | modify | Resolve coordinator/handler provider via the ambient accessor; reuse the changed-owner set in pre-save cycles; remove unused resolver overloads |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeDbCommandInterceptor.cs` | modify | Resolve the coordinator from the owning scope provider; UoW-missing vs registration-guidance errors |
+| `src/framework/MiCake.EntityFrameworkCore/Uow/EFCoreContextFactory.cs` | modify | Remove the default-interface-member contract; add `IEFCoreAnchoredContextFactory` |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/EFCoreWriteCoordinator.cs` | modify | Capability-check `IEFCoreAnchoredContextFactory`, fall back to `GetDbContextWrapper()` |
+| `src/tests/MiCake.IntegrationTests/Uow/SqliteUnitOfWorkFixture.cs` | modify | Register the ambient accessor; `BuildPooledProvider(configure, validateScopes)` |
+| `src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkWritePathTests.cs` | modify | New `ValidateScopes` pooled regression test; handler records disposals thread-safely |
+| `src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkLazyImmediateModeIntegrationTests.cs` | modify | Register the ambient accessor in the SQLite mode host |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Uow/EFCoreContextFactoryTests.cs` | modify | DIM contract test replaced by capability-implementation test |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Internal/*` (7 files) | modify | Register `IUnitOfWorkAmbientAccessor` in interceptor test hosts |
+
+## Deviations from the review recommendations
+
+- The review suggested resolving scoped services from the current UoW frame's owning
+  provider; implemented via a new public singleton interface instead of re-exposing the
+  provider on `IUnitOfWorkInternal`, because the EF Core assembly cannot see MiCake's
+  internal frame types and additive members on the public interface would keep breaking
+  external implementations.
+- The review suggested removing the `IEFCoreContextFactory` default member; implemented
+  by moving anchoring to `IEFCoreAnchoredContextFactory` (new public interface, no
+  breaking change) and a coordinator capability fallback, preserving custom-factory
+  behavior exactly.
+
+## Self-Check Results
+
+- Type-checker: `dotnet build MiCake.All.sln` — succeeded (0 errors; existing NU1903 package warnings only).
+- Tests: MiCake 260/260, EF Core 242/242, Integration 172/172 (1 new regression test), ASP.NET 432/432, 0 skipped.
+
+## Change Tracking
+
+- Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
+- Task: `t7-relational-acceptance` — review follow-up fixes applied; status update deferred to `/mvt-update-plan`.
+- Acceptance status: 2 Critical + 2 Warning review findings resolved with regression coverage under `ValidateScopes`; `test-design.md` and `implementation.md` synchronized.
+
+## Task: t7-fix-3 — Independent review follow-up: custom factory fallback identity and ambient accessor authority
+
+## Implementation Summary
+
+Independent review of t7-fix-2 found 1 Critical, 1 Warning, and 1 Suggestion; all three
+are fixed here. (1) The write coordinator's fallback path for custom
+`IEFCoreContextFactory` implementations without the `IEFCoreAnchoredContextFactory`
+capability now validates that the returned wrapper is bound to the exact DbContext that
+performs the write, rejecting a mismatched wrapper with guidance before any transaction
+is activated; it also idempotently registers the wrapper with the current unit of work so
+the resource is prepared and participates in commit/rollback (the legacy fallback
+previously produced a wrapper that failed "must be prepared before use"). (2) The public
+`IUnitOfWorkAmbientAccessor` mapping is registered with `AddSingleton` instead of
+`TryAddSingleton` so the framework mapping wins over a host-registered replacement,
+keeping interceptors and the unit of work manager on the same authoritative ambient
+state; the interface documents that hosts must not register a replacement. (3) The
+command interceptor's class-level XML documentation now matches the implementation
+(coordinator resolved from the ambient owning scope provider; unavailable pipeline
+rejects non-initialization writes).
+
+## Files Touched
+
+| Path | Action | Intent |
+|---|---|---|
+| `src/framework/MiCake.EntityFrameworkCore/Internal/EFCoreWriteCoordinator.cs` | modify | Fallback wrapper identity check + idempotent UoW registration |
+| `src/framework/MiCake/Modules/MiCakeEssentialModule.cs` | modify | `IUnitOfWorkAmbientAccessor` mapping: TryAddSingleton -> AddSingleton |
+| `src/framework/MiCake/DDD/Uow/IUnitOfWorkAmbientAccessor.cs` | modify | Document framework-provided singleton; no host replacement |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeDbCommandInterceptor.cs` | modify | Correct class-level XML documentation |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Internal/EFCoreWriteCoordinatorTests.cs` | modify | Legacy custom factory: same-context full commit path + different-context rejection tests |
+| `src/tests/MiCake.Tests/Uow/UnitOfWorkAmbientAccessorRegistrationTests.cs` | create | Module mapping wins over host-registered replacement |
+
+## Self-Check Results
+
+- Type-checker: `dotnet build MiCake.All.sln` — succeeded (0 errors; existing NU1903 package warnings only).
+- Tests: MiCake 261/261 (1 new), EF Core 244/244 (2 new), Integration 172/172, ASP.NET 432/432, 0 skipped.
+
+## Change Tracking
+
+- Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
+- Task: `t7-relational-acceptance` — review follow-up fixes applied; status update deferred to `/mvt-update-plan`.
+- Acceptance status: 1 Critical + 1 Warning + 1 Suggestion review findings resolved with regression tests; `implementation.md` synchronized.
+
+## Task: t7-fix-4 — Merge context factory contracts (breaking cleanup)
+
+## Implementation Summary
+
+Confirmed that no external consumers use the EF Core context factory extension point, so
+the two-interface split was collapsed back into a single public contract with breaking
+changes. The public non-generic `IEFCoreContextFactory` and `IEFCoreAnchoredContextFactory`
+interfaces are removed, along with the parameterless `GetDbContextWrapper()` method. The
+public surface is now only `IEFCoreContextFactory<TDbContext>` with `GetDbContext()` and
+`GetOrCreateWrapperFor(DbContext)`. The non-generic runtime view needed by framework
+components that resolve factories by a runtime DbContext type (`EFCoreWriteCoordinator`,
+`ImmediateTransactionInitializer`) became an internal interface; custom factory
+implementations are adapted to it through `EFCoreContextFactoryAdapter` (invoking the
+public interface methods via metadata) so the framework never requires implementations to
+know the internal view. The write coordinator keeps its defensive wrapper-identity check
+and idempotent resource registration for custom implementations. `EFCorePhysicalOperationExecutor`
+now resolves its wrapper through `GetDbContext()` + `GetOrCreateWrapperFor(context)`.
+
+## Files Touched
+
+| Path | Action | Intent |
+|---|---|---|
+| `src/framework/MiCake.EntityFrameworkCore/Uow/EFCoreContextFactory.cs` | modify | Remove public `IEFCoreContextFactory` / `IEFCoreAnchoredContextFactory` / `GetDbContextWrapper()`; add internal `IEFCoreContextFactory` runtime view + `EFCoreContextFactoryAdapter` |
+| `src/framework/MiCake.EntityFrameworkCore/Uow/AddCoreUowServicesExtension.cs` | modify | Non-generic registration adapts custom factories to the internal runtime view |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/EFCoreWriteCoordinator.cs` | modify | Resolve wrapper via internal view with reflection fallback for custom factories; keep identity check + idempotent registration |
+| `src/framework/MiCake.EntityFrameworkCore/Uow/ImmediateTransactionInitializer.cs` | modify | Use `GetOrCreateWrapperForCurrentUnitOfWork()` from the internal view |
+| `src/framework/MiCake.EntityFrameworkCore/Repository/EFCorePhysicalOperationExecutor.cs` | modify | `GetDbContext()` + `GetOrCreateWrapperFor(context)` instead of the removed method |
+| `src/framework/MiCake.EntityFrameworkCore/README.md` | modify | Migration Guide entry for the merged factory contract |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Uow/EFCoreContextFactoryTests.cs` | modify | Migrate `GetDbContextWrapper` tests to `GetOrCreateWrapperFor`; remove capability-interface test |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Uow/BypassUnitOfWorkCheckTests.cs` | modify | Migrate wrapper calls to `GetOrCreateWrapperFor` / `GetDbContext` |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Uow/ImmediateTransactionInitializerTests.cs` | modify | Replace Moq internal-interface mocks with a hand-written fake |
+| `src/tests/MiCake.EntityFrameworkCore.Tests/Internal/EFCoreWriteCoordinatorTests.cs` | modify | Custom factory implements the merged public interface |
+| `src/tests/MiCake.IntegrationTests/Repository/CommonFilterPagingQueryIntegrationTests.cs` | modify | Migrate wrapper call |
+
+## Self-Check Results
+
+- Type-checker: `dotnet build MiCake.All.sln` — succeeded (0 errors; existing NU1903 package warnings only).
+- Tests: MiCake 261/261, EF Core 243/243 (net -1: capability test removed), Integration 172/172, ASP.NET 432/432, 0 skipped.
+
+## Change Tracking
+
+- Plan: `.ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml`
+- Task: `t7-relational-acceptance` — factory contract merge applied; status update deferred to `/mvt-update-plan`.
+- Acceptance status: public factory surface collapsed to `IEFCoreContextFactory<TDbContext>`; `implementation.md` and README migration guide synchronized.

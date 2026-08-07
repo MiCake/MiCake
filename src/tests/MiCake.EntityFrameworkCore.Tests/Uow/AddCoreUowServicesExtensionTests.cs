@@ -180,7 +180,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void AddUowCoreServices_CalledMultipleTimes_ShouldRegisterServicesOnce()
+        public void AddUowCoreServices_CalledMultipleTimes_ShouldRegisterContextFactoryOnce()
         {
             // Arrange
             var services = new ServiceCollection();
@@ -188,14 +188,19 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
             services.AddLogging();
 
-            // Act
+            // Act - repeated registration for the same DbContext type is idempotent
             services.AddUowCoreServices(typeof(TestExtensionDbContext));
             services.AddUowCoreServices(typeof(TestExtensionDbContext));
 
-            // Assert - Should have multiple registrations (by design, not checking for duplicates)
+            // Assert - the default factory is not appended a second time
             var factoryDescriptors = services.FindAll(
                 s => s.ServiceType == typeof(IEFCoreContextFactory<TestExtensionDbContext>));
-            Assert.Equal(2, factoryDescriptors.Count); // Each call adds registration
+            Assert.Single(factoryDescriptors);
+
+            // The internal runtime view is registered once per DbContext type as well
+            var viewDescriptors = services.FindAll(
+                s => s.ServiceType == typeof(IEFCoreContextFactory));
+            Assert.Single(viewDescriptors);
         }
 
         [Fact]
@@ -220,6 +225,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 s => s.ServiceType == typeof(IEFCoreContextFactory<AnotherExtensionDbContext>));
             Assert.NotNull(factory1Descriptor);
             Assert.NotNull(factory2Descriptor);
+
+            // Distinct DbContext types each contribute one internal runtime view for enumeration
+            var viewDescriptors = services.FindAll(s => s.ServiceType == typeof(IEFCoreContextFactory));
+            Assert.Equal(2, viewDescriptors.Count);
         }
 
         #endregion

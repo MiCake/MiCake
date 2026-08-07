@@ -93,6 +93,7 @@ namespace MiCake.IntegrationTests.Uow
             services.AddUowCoreServices(typeof(LazyImmediateTestDbContext));
 
             services.AddSingleton<AmbientUnitOfWorkAccessor>();
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => sp.GetRequiredService<AmbientUnitOfWorkAccessor>());
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(LazyImmediateTestDbContext)));
             services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();

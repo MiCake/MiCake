@@ -88,7 +88,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetDbContextWrapper());
+            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetDbContext());
             Assert.Contains("No active Unit of Work", exception.Message);
         }
 
@@ -152,7 +152,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void GetDbContextWrapper_WithoutUoW_WhenBypassEnabled_ShouldReturnWrapper()
+        public void GetOrCreateWrapperFor_WithoutUoW_WhenBypassEnabled_ShouldReturnWrapper()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContext))
@@ -170,7 +170,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            var result = factory.GetDbContextWrapper();
+            var result = factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert
             Assert.NotNull(result);
@@ -231,7 +231,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            var wrapper = factory.GetDbContextWrapper();
+            var wrapper = factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert - Even with bypass enabled, when UoW is present, it should register
             Assert.NotNull(wrapper);
@@ -281,6 +281,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
             services.AddSingleton(ambientAccessorType!);
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
@@ -322,6 +323,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
                 var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
                 services.AddSingleton(ambientAccessorType!);
+                services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
                 services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
                 services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 
@@ -343,7 +345,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 // Act - Use DbContext within UoW (normal pattern)
                 using (var uow = await uowManager.BeginAsync())
                 {
-                    var wrapper = factory.GetDbContextWrapper();
+                    var wrapper = factory.GetOrCreateWrapperFor(dbContext);
                     dbContext.Set<SampleEntity>().Add(new SampleEntity { Name = "Test" });
                     await uow.CommitAsync();
                 }
@@ -374,6 +376,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
             services.AddSingleton(ambientAccessorType!);
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestDbContext>), typeof(EFCoreContextFactory<TestDbContext>));
 

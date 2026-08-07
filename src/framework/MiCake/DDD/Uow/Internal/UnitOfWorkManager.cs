@@ -69,7 +69,8 @@ namespace MiCake.DDD.Uow.Internal
                     nestedOptions,
                     parent: currentFrame.UnitOfWork,
                     _ambientAccessor,
-                    token);
+                    token,
+                    currentFrame.ServiceProvider);
 
                 _ambientAccessor.Push(new UnitOfWorkFrame(token, nestedUow, currentFrame.ServiceProvider, currentFrame));
                 _logger.LogDebug("Created nested UnitOfWork {UnitOfWorkId} under parent {ParentId}",
@@ -83,7 +84,8 @@ namespace MiCake.DDD.Uow.Internal
                 options,
                 parent: null,
                 _ambientAccessor,
-                rootToken);
+                rootToken,
+                _serviceProvider);
 
             _ambientAccessor.Push(new UnitOfWorkFrame(rootToken, unitOfWork, _serviceProvider, currentFrame));
             _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId}", unitOfWork.Id);
@@ -143,7 +145,8 @@ namespace MiCake.DDD.Uow.Internal
                 options,
                 parent: null,
                 _ambientAccessor,
-                token);
+                token,
+                innerProvider);
 
             _ambientAccessor.Push(new UnitOfWorkFrame(token, innerUow, innerProvider, outerFrame));
             _logger.LogDebug("Started isolated requiresNew UnitOfWork {UnitOfWorkId} under outer {OuterId}",

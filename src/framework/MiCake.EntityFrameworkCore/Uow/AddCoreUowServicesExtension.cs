@@ -3,7 +3,9 @@ using MiCake.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace MiCake.EntityFrameworkCore.Uow
 {
@@ -12,6 +14,10 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// </summary>
     internal static class AddCoreUowServicesExtension
     {
+        // Tracks which DbContext types already contributed an internal runtime factory view
+        // for the current service collection, so repeated AddUowCoreServices calls for the
+        // same type do not append a second view while distinct types each keep their own.
+        private static readonly ConditionalWeakTable<IServiceCollection, HashSet<Type>> _registeredFactoryViews = new();
         /// <summary>
         /// Registers core Unit of Work services for the specified DbContext type.
         /// This includes the context factory (generic and non-generic), repository dependencies wrapper,
@@ -29,13 +35,29 @@ namespace MiCake.EntityFrameworkCore.Uow
             // singleton/transient registrations produce inconsistent tracking and are rejected.
             ValidateDbContextRegistration(services, dbContextType);
 
-            // Register DbContext factory
+            // Register DbContext factory. Idempotent per DbContext type: repeated calls do not
+            // append a second default implementation, and a factory the host registered for this
+            // type before the module is kept instead of being silently overridden.
             var interfaceType = typeof(IEFCoreContextFactory<>).MakeGenericType(dbContextType);
             var implementationType = typeof(EFCoreContextFactory<>).MakeGenericType(dbContextType);
-            services.AddScoped(interfaceType, implementationType);
+            if (services.LastOrDefault(d => d.ServiceType == interfaceType) == null)
+            {
+                services.AddScoped(interfaceType, implementationType);
+            }
 
             // Non-generic registration enables typed immediate initialization without reflection.
-            services.AddScoped(typeof(IEFCoreContextFactory), sp => (IEFCoreContextFactory)sp.GetRequiredService(interfaceType));
+            // One internal runtime view per DbContext type; repeated calls for the same type do
+            // not append a second view, while distinct types each contribute their view so the
+            // immediate initializer can enumerate every registered context exactly once.
+            if (_registeredFactoryViews.GetOrCreateValue(services).Add(dbContextType))
+            {
+                services.AddScoped(typeof(IEFCoreContextFactory), sp =>
+                {
+                    var factory = sp.GetRequiredService(interfaceType);
+                    return factory as IEFCoreContextFactory
+                        ?? new EFCoreContextFactoryAdapter(factory, interfaceType);
+                });
+            }
 
             // Register repository dependencies wrapper for the DbContext
             // This enables the dependency wrapper pattern for repositories

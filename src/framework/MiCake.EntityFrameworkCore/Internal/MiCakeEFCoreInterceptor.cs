@@ -150,11 +150,13 @@ namespace MiCake.EntityFrameworkCore.Internal
 
                     // Follow-up cycle: rescan changes, run pre-save handlers, then save again in the same transaction.
                     var entries = GetChangedEntities(context);
+                    var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(context);
+                    var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(context, entriesByType);
                     frame.Snapshots = entries
-                        .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e)))
+                        .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
                         .ToArray();
 
-                    await RunPreSaveCycleAsync(entries, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
+                    await RunPreSaveCycleAsync(entries, entriesByType, changedOwnedOwners, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
 
                     accessor.MarkRootCycleSave();
                     await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -255,8 +257,10 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
 
             var entries = GetChangedEntities(context);
+            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(context);
+            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(context, entriesByType);
             var snapshots = entries
-                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e)))
+                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
                 .ToArray();
 
             if (snapshots.Length == 0)
@@ -264,12 +268,18 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return result;
             }
 
-            if (!accessor.TryBeginRoot(_serviceProvider!, snapshots))
+            var handlerProvider = ResolveHandlerProvider();
+            if (handlerProvider == null)
             {
                 return result;
             }
 
-            RunPreSaveCycleAsync(entries, _serviceProvider!, CancellationToken.None)
+            if (!accessor.TryBeginRoot(handlerProvider, snapshots))
+            {
+                return result;
+            }
+
+            RunPreSaveCycleAsync(entries, entriesByType, changedOwnedOwners, handlerProvider, CancellationToken.None)
                 .ConfigureAwait(false)
                 .GetAwaiter()
                 .GetResult();
@@ -303,8 +313,10 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
 
             var entries = GetChangedEntities(context);
+            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(context);
+            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(context, entriesByType);
             var snapshots = entries
-                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e)))
+                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
                 .ToArray();
 
             if (snapshots.Length == 0)
@@ -312,7 +324,13 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return result;
             }
 
-            if (!accessor.TryBeginRoot(_serviceProvider!, snapshots))
+            var handlerProvider = ResolveHandlerProvider();
+            if (handlerProvider == null)
+            {
+                return result;
+            }
+
+            if (!accessor.TryBeginRoot(handlerProvider, snapshots))
             {
                 return result;
             }
@@ -321,29 +339,63 @@ namespace MiCake.EntityFrameworkCore.Internal
                 "Started root save operation for {ContextType} with {Count} changed entities",
                 context.GetType().Name, snapshots.Length);
 
-            await RunPreSaveCycleAsync(entries, _serviceProvider!, cancellationToken).ConfigureAwait(false);
+            await RunPreSaveCycleAsync(entries, entriesByType, changedOwnedOwners, handlerProvider, cancellationToken).ConfigureAwait(false);
             return result;
         }
 
         private IEFCoreWriteCoordinator RequireCoordinator(DbContext context)
         {
             var coordinator = ResolveCoordinator();
-            if (coordinator == null)
+            if (coordinator != null)
             {
-                throw new InvalidOperationException(
-                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
-                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
-                    "inside AddDbContext (options => options.UseMiCakeInterceptors(sp)) and register the MiCake EF Core module.");
+                return coordinator;
             }
 
-            return coordinator;
+            // Provider-less fallback interceptors and hosts that registered the module but
+            // have no pipeline for this context get registration guidance; a host with a
+            // provider that simply has no active unit of work reports the missing UoW.
+            var noActiveUow = _serviceProvider != null && ResolveCurrentUowServiceProvider() == null;
+            throw CreateUnavailableException(context, noActiveUow);
+        }
+
+        private static InvalidOperationException CreateUnavailableException(DbContext context, bool noActiveUow)
+            => noActiveUow
+                ? new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} requires an active writable unit of work. " +
+                    "Begin one with IUnitOfWorkManager.BeginAsync() before saving or executing write commands.")
+                : new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
+                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
+                    "inside AddDbContext and register the MiCake EF Core module.");
+
+        /// <summary>
+        /// Resolves the provider used for lifecycle handlers: the provider of the scope
+        /// that owns the ambient unit of work. Under AddDbContextPool the provider captured
+        /// at options-build time is the pool root rather than the request scope, so the
+        /// owning unit of work's provider is authoritative. Without an ambient unit of work
+        /// there is no owning scope, so no handlers are resolved.
+        /// </summary>
+        private IServiceProvider? ResolveHandlerProvider()
+            => ResolveCurrentUowServiceProvider();
+
+        private IServiceProvider? ResolveCurrentUowServiceProvider()
+        {
+            // The ambient accessor is a singleton, so it can be resolved from the provider
+            // captured at options-build time even when the host validates scopes.
+            return _serviceProvider?.GetService<IUnitOfWorkAmbientAccessor>()?.CurrentServiceProvider;
         }
 
         private IEFCoreWriteCoordinator? ResolveCoordinator()
         {
+            var frameProvider = ResolveCurrentUowServiceProvider();
+            if (frameProvider == null)
+            {
+                return null;
+            }
+
             try
             {
-                return (IEFCoreWriteCoordinator?)_serviceProvider?.GetService(typeof(IEFCoreWriteCoordinator));
+                return (IEFCoreWriteCoordinator?)frameProvider.GetService(typeof(IEFCoreWriteCoordinator));
             }
             catch (ObjectDisposedException)
             {
@@ -401,11 +453,16 @@ namespace MiCake.EntityFrameworkCore.Internal
         private static List<EntityEntry> GetChangedEntities(DbContext dbContext)
             => SaveOperationEntityHelper.GetChangedEntities(dbContext);
 
-        private static RepositoryEntityStates ResolvePreSaveState(EntityEntry entry)
-            => SaveOperationEntityHelper.ResolvePreSaveState(entry);
+        private static RepositoryEntityStates ResolvePreSaveState(
+            EntityEntry entry,
+            IReadOnlyDictionary<Type, List<EntityEntry>> entriesByType,
+            IReadOnlySet<object> changedOwnedOwners)
+            => SaveOperationEntityHelper.ResolvePreSaveState(entry, entriesByType, changedOwnedOwners);
 
         private static async Task RunPreSaveCycleAsync(
             IReadOnlyList<EntityEntry> entries,
+            IReadOnlyDictionary<Type, List<EntityEntry>> entriesByType,
+            IReadOnlySet<object> changedOwnedOwners,
             IServiceProvider provider,
             CancellationToken cancellationToken)
         {
@@ -427,7 +484,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 foreach (var entry in entries)
                 {
                     var originalEFState = entry.State;
-                    var state = ResolvePreSaveState(entry);
+                    var state = ResolvePreSaveState(entry, entriesByType, changedOwnedOwners);
 
                     state = await handler.PreSaveChangesAsync(state, entry.Entity, cancellationToken).ConfigureAwait(false);
 

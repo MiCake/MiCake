@@ -107,7 +107,7 @@ provider (see `SqliteUnitOfWorkFixture.BuildPooledProvider`).
 | T26-S30 | S24 | integration | SQLite host | lazy commit / rollback / nested / savepoint | expected per-mode outcomes | t7 A1-A4 |
 | T31-S35 | S25 | integration | SQLite host | immediate commit / rollback / nested / savepoint | expected per-mode outcomes | t7 A1-A4 |
 | T36 | S26 | integration | audit modules + UoW | wrapped audit writes | timestamps set | ADR-002 |
-| T37 | S27 | integration | owned entities + UoW | owned replacement + SaveChangesAsync | owner UpdatedAt set (FAILS: see issue I-1) | audit + t4 |
+| T37 | S27 | integration | owned entities + UoW | owned replacement + SaveChangesAsync | owner UpdatedAt set (FIXED: see issue I-1) | audit + t4 |
 
 ## Test Code
 
@@ -123,9 +123,11 @@ provider (see `SqliteUnitOfWorkFixture.BuildPooledProvider`).
 | `CommonFilterPagingQueryIntegrationTests.cs` | Full pipeline wiring (`AmbientUnitOfWorkAccessor`, `UnitOfWorkManager`, `UseMiCakeInterceptors(sp)`), seeding inside a UoW |
 
 Fixture notes: `UowAcceptanceDbContext` and the other MiCake-derived test contexts
-override `OnConfiguring` WITHOUT calling the base implementation while the fallback
-write-guard interceptor defect (issue I-2) is unfixed; the provider-bound interceptors
-are wired explicitly through `UseMiCakeInterceptors(sp)`.
+call the base `OnConfiguring` again; the provider-less fallback interceptor pair is
+skipped when the provider-bound interceptors are already wired through
+`UseMiCakeInterceptors(sp)` (idempotent guard added by the I-3 fix). The
+provider-bound interceptors are wired explicitly through `UseMiCakeInterceptors(sp)`
+inside `AddDbContext`/`AddDbContextPool`.
 
 ## Granularity Decisions
 
@@ -147,19 +149,20 @@ resource to force failure paths that no live provider can trigger deterministica
 - **Observed**: `UpdatedAt` stays null. Diagnostic evidence: owner EF state =
   `Unchanged`, owned entries = `[Added, Deleted]`, and
   `SaveOperationEntityHelper.ResolvePreSaveState(ownerEntry)` returns `Unchanged`.
-- **Root cause**: `SaveOperationEntityHelper.HasOwnedEntityChanges` compares the
-  found owner with `ReferenceEquals(FindOwnerEntry(...), entry)`. `EntityEntry` is a
-  **struct** in EF Core; `ReferenceEquals` boxes the arguments, so the comparison is
-  always `false`. An unchanged owner whose owned entity changed is therefore never
-  resolved as `Modified`, the audit handler never receives `Modified`, and `UpdatedAt`
-  is never set.
-- **Impact**: all OwnsOne/OwnsMany audit-timestamp updates are silently broken
+- **Root cause**: `SaveOperationEntityHelper.HasOwnedEntityChanges` matched the owner
+  by comparing `EntityEntry` values obtained from separate
+  `ChangeTracker.Entries()` enumerations; on EF Core 10 those wrapper values are not
+  reliably comparable across enumerations, so the match failed and the owner stayed
+  `Unchanged`.
+- **Impact**: all OwnsOne/OwnsMany audit-timestamp updates were silently broken
   (3 failing tests: `SaveChanges_WhenOwnedEntityChanged_ShouldUpdateOwnerUpdatedAt`,
   `SaveChanges_WhenOneOfMultipleOwnedEntitiesChanged_ShouldUpdateOwnerUpdatedAt`,
   `SaveChanges_WithDateTimeOffset_WhenOwnedEntityChanged_ShouldUpdateOwnerUpdatedAt`).
-- **Recommendation**: run `/mvt-fix`; replace the `ReferenceEquals` comparison with an
-  equality comparison that respects the struct semantics of `EntityEntry`
-  (`EntityEntry` implements `IEquatable<EntityEntry>`).
+- **Status: FIXED** — `SaveOperationEntityHelper` matches the owner by the tracked
+  entity instance reference (`ReferenceEquals(owner.Entity, entry.Entity)`) and shares
+  one per-type entry lookup per save pass. The changed-owner set is built once
+  (`BuildChangedOwnedOwners`, reference equality) and reused for O(1) state resolution.
+  All 3 tests pass; see the t7-fix record in `implementation.md`.
 
 ### I-2 (Critical): Pooled DbContext writes deadlock with `database is locked`
 
@@ -169,21 +172,20 @@ resource to force failure paths that no live provider can trigger deterministica
   fails with `SQLite Error 5: 'database is locked'`.
 - **Root cause**: under `AddDbContextPool`, the `sp` captured by
   `UseMiCakeInterceptors(sp)` in the `AddDbContextPool((sp, opt) => ...)` delegate is
-  EF's internal pool provider, not the request scope. The save-operation interceptor
-  therefore hands the wrong provider to `EFCoreWriteCoordinator`, whose
-  `ResolveWrapper` resolves a SECOND pooled context instance from that provider and
-  registers it as a second UoW resource. Two EF resources then each activate a
-  SQLite write transaction (BEGIN IMMEDIATE) against one file, and the second BEGIN
-  deadlocks. Evidence: with a scope-resolved context holding a transaction, a
-  root-provider-resolved second instance fails at its first `BeginTransactionAsync`;
-  the identical experiment succeeds when the interceptor's provider matches the scope
-  provider (non-pooled `AddDbContext`).
-- **Impact**: every pooled DbContext write path deadlocks; `SaveOperationStateAccessor`
-  pool-reset and frame-isolation guarantees cannot be exercised until fixed.
-- **Recommendation**: run `/mvt-fix`; resolve the coordinator's `IEFCoreContextFactory`
-  from the DbContext's own service provider (e.g. `context.GetInfrastructure()
-  .GetService(...)` or `context.GetService<...>()`) instead of the interceptor's
-  captured provider.
+  the pool root provider, not the request scope. The write coordinator resolved a
+  SECOND pooled context instance from that provider and registered it as a second UoW
+  resource; two EF resources each activated a SQLite write transaction (BEGIN IMMEDIATE)
+  against one file, and the second BEGIN deadlocked.
+- **Impact**: every pooled DbContext write path deadlocked; `SaveOperationStateAccessor`
+  pool-reset and frame-isolation guarantees could not be exercised until fixed.
+- **Status: FIXED** — the write coordinator anchors the wrapper to the exact
+  `DbContext` instance that performs the write
+  (`IEFCoreContextFactory.GetOrCreateWrapperFor(DbContext)`); the UoW exposes
+  `TryGetResource` so an already-registered wrapper for the same context instance is
+  reused instead of registering a second resource. A follow-up review finding added a
+  fail-fast cache-hit check so a wrapper cached under one root is never returned for a
+  different context instance. Pooled commit/rollback and pooled direct-DI first-write
+  regression tests pass.
 
 ### I-3 (Warning): `MiCakeDbContext.OnConfiguring` installs a conflicting fallback interceptor
 
@@ -196,15 +198,22 @@ resource to force failure paths that no live provider can trigger deterministica
   `UseMiCakeInterceptors()` (provider-less), which installs a second
   `MiCakeEFCoreInterceptor`/`MiCakeDbCommandInterceptor` pair that cannot resolve the
   coordinator. This conflicts with the DI-first wiring recommended by the
-  implementation. The MiCake-derived test contexts work around it by overriding
-  `OnConfiguring` without the base call; the sample `BaseAppDbContext` inherits the
-  defect and every sample write would fail.
-- **Recommendation**: run `/mvt-fix`; install the fallback interceptors only when the
-  options are not already configured with provider-bound interceptors (e.g.
-  `if (!optionsBuilder.IsConfigured)`-style guard, or skip when a
-  `MiCakeSaveOperationOptionsExtension` with a provider is already present).
+  implementation.
+- **Impact**: every write through a MiCake-derived context wired with the DI overload
+  failed until the contexts skipped the base `OnConfiguring` call; the sample
+  `BaseAppDbContext` inherited the defect.
+- **Status: FIXED** — the provider-less `UseMiCakeInterceptors()` overload is now
+  idempotent: when `MiCakeSaveOperationOptionsExtension` is already present (DI-first
+  wiring), the fallback pair is not installed. Test contexts restored
+  `base.OnConfiguring(optionsBuilder)`.
 
 No other implementation issues were found. All remaining t7 scenarios pass.
+
+## Post-fix Verification
+
+All three issues are fixed and covered by regression tests. Suite results after the
+fix pass (see the t7-fix record in `implementation.md`): MiCake 260/260,
+EF Core 242/242, Integration 171/171, ASP.NET 432/432, solution build 0 errors.
 
 ## Suggested Run Commands
 

@@ -1,10 +1,15 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow.Internal
 {
     /// <summary>
-    /// Internal contract used by framework components to register resources with and activate a unit of work.
+    /// Framework contract used by framework components to register resources with and
+    /// activate a unit of work. Public so framework packages can consume it across
+    /// assemblies; external implementations are not supported, and the owning scope
+    /// provider is exposed through the public <see cref="IUnitOfWorkAmbientAccessor"/>
+    /// instead of additive interface members.
     /// </summary>
     public interface IUnitOfWorkInternal
     {
@@ -15,6 +20,16 @@ namespace MiCake.DDD.Uow.Internal
         /// </summary>
         /// <param name="resource">The resource to register</param>
         void RegisterResource(IUnitOfWorkResource resource);
+
+        /// <summary>
+        /// Tries to find a resource already registered with this unit of work that matches
+        /// the predicate. Nested units of work delegate to the root. Used by framework
+        /// components to reuse an existing resource instead of registering a duplicate.
+        /// </summary>
+        /// <param name="predicate">The match predicate</param>
+        /// <param name="resource">The matched resource, or <c>null</c> when none matches</param>
+        /// <returns><c>true</c> when a matching resource is found</returns>
+        bool TryGetResource(Func<IUnitOfWorkResource, bool> predicate, out IUnitOfWorkResource? resource);
 
         /// <summary>
         /// Ensures every registered resource has an active transaction.

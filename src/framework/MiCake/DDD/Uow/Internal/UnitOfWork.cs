@@ -29,6 +29,7 @@ namespace MiCake.DDD.Uow.Internal
         private readonly UnitOfWorkOptions _options;
         private readonly AmbientUnitOfWorkAccessor? _ambientAccessor;
         private readonly UnitOfWorkFrameToken? _frameToken;
+        private readonly IServiceProvider? _serviceProvider;
         private readonly Lock _lock = new();
 
         private bool _disposed;
@@ -57,6 +58,13 @@ namespace MiCake.DDD.Uow.Internal
         public IUnitOfWork? Parent { get; }
         public bool IsNested => Parent != null;
 
+        /// <summary>
+        /// The provider of the scope that owns this unit of work. Concrete-class member only,
+        /// not part of <see cref="IUnitOfWorkInternal"/>; runtime lookup of the owning scope
+        /// provider goes through the public <see cref="IUnitOfWorkAmbientAccessor"/>.
+        /// </summary>
+        public IServiceProvider? ServiceProvider => _serviceProvider;
+
         #endregion
 
         #region Events
@@ -73,7 +81,8 @@ namespace MiCake.DDD.Uow.Internal
             UnitOfWorkOptions? options = null,
             IUnitOfWork? parent = null,
             AmbientUnitOfWorkAccessor? ambientAccessor = null,
-            UnitOfWorkFrameToken? frameToken = null)
+            UnitOfWorkFrameToken? frameToken = null,
+            IServiceProvider? serviceProvider = null)
         {
             Id = Guid.NewGuid();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -81,6 +90,7 @@ namespace MiCake.DDD.Uow.Internal
             Parent = parent;
             _ambientAccessor = ambientAccessor;
             _frameToken = frameToken;
+            _serviceProvider = serviceProvider;
 
             _logger.LogDebug(
                 "Created UnitOfWork {UnitOfWorkId} (Nested: {Nested}, IsolationLevel: {IsolationLevel}, InitMode: {InitMode}, ReadOnly: {ReadOnly})",
@@ -127,6 +137,32 @@ namespace MiCake.DDD.Uow.Internal
                 _logger.LogDebug("Resource {ResourceId} ({ResourceType}) registered with UnitOfWork {UnitOfWorkId}",
                     resource.Id, resource.ResourceType, Id);
             }
+        }
+
+        public bool TryGetResource(Func<IUnitOfWorkResource, bool> predicate, out IUnitOfWorkResource? resource)
+        {
+            ArgumentNullException.ThrowIfNull(predicate);
+
+            // Nested UoWs delegate resource ownership to the root.
+            if (Parent is IUnitOfWorkInternal parentInternal)
+            {
+                return parentInternal.TryGetResource(predicate, out resource);
+            }
+
+            lock (_lock)
+            {
+                foreach (var candidate in _resources)
+                {
+                    if (predicate(candidate))
+                    {
+                        resource = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            resource = null;
+            return false;
         }
 
         /// <summary>

@@ -40,9 +40,15 @@ namespace MiCake.DDD.Uow.Internal
     /// A singleton AsyncLocal keeps frames flowing through async execution while remaining isolated per execution context.
     /// Frames are immutable; pushing creates a new head and popping restores the previous head via token-based compare-and-pop.
     /// </summary>
-    internal sealed class AmbientUnitOfWorkAccessor
+    internal sealed class AmbientUnitOfWorkAccessor : IUnitOfWorkAmbientAccessor
     {
         private readonly AsyncLocal<UnitOfWorkFrame?> _current = new();
+
+        /// <summary>
+        /// The provider of the scope that owns the current ambient unit of work, or
+        /// <c>null</c> when no live unit of work is active in this execution context.
+        /// </summary>
+        IServiceProvider? IUnitOfWorkAmbientAccessor.CurrentServiceProvider => Current?.ServiceProvider;
 
         /// <summary>
         /// The current live ambient frame, or null when no unit of work is active in this execution context.

@@ -72,8 +72,13 @@ namespace MiCake.IntegrationTests.Uow
         /// rented instances (and their connections) alive across scopes, and with
         /// <c>Pooling=False</c> each leased instance would accumulate a separate physical
         /// connection whose BEGIN IMMEDIATE contends for the file lock.
+        /// When <paramref name="validateScopes"/> is set, the provider mirrors the ASP.NET
+        /// Development host, where resolving scoped services from the pool root (captured
+        /// at options-build time) must fail fast instead of silently leaking state.
         /// </summary>
-        public ServiceProvider BuildPooledProvider()
+        public ServiceProvider BuildPooledProvider(
+            Action<IServiceCollection>? configure = null,
+            bool validateScopes = false)
         {
             var services = new ServiceCollection();
 
@@ -84,8 +89,10 @@ namespace MiCake.IntegrationTests.Uow
             });
 
             AddCoreServices(services, registerSecondaryContext: false);
+            configure?.Invoke(services);
 
-            var provider = services.BuildServiceProvider();
+            var provider = services.BuildServiceProvider(
+                new ServiceProviderOptions { ValidateScopes = validateScopes });
             RegisterDbContextTypes(provider, registerSecondaryContext: false);
             return provider;
         }
@@ -102,6 +109,7 @@ namespace MiCake.IntegrationTests.Uow
             // The IntegrationTests assembly has InternalsVisibleTo access to the framework
             // packages, so the runtime internals are registered directly without reflection.
             services.AddSingleton<AmbientUnitOfWorkAccessor>();
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => sp.GetRequiredService<AmbientUnitOfWorkAccessor>());
             services.AddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(UowAcceptanceDbContext)));
             services.AddSingleton<IMiCakeInterceptorFactory, MiCakeInterceptorFactory>();
@@ -195,12 +203,9 @@ namespace MiCake.IntegrationTests.Uow
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // WORKAROUND for defect found during t7 acceptance testing (see test-design.md):
-            // MiCakeDbContext.OnConfiguring unconditionally installs a provider-less fallback
-            // write-guard interceptor that conflicts with the provider-bound interceptor wired
-            // through AddDbContext, so every write fails with "write pipeline is not registered".
-            // The base call is skipped until the defect is fixed; the fixture wires the
-            // provider-bound interceptors explicitly via UseMiCakeInterceptors(sp).
+            // The base call is safe: the provider-less fallback interceptors are skipped
+            // when the provider-bound interceptors are already wired through AddDbContext.
+            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -238,7 +243,9 @@ namespace MiCake.IntegrationTests.Uow
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // WORKAROUND: see UowAcceptanceDbContext.OnConfiguring (fallback interceptor defect).
+            // The base call is safe: the provider-less fallback interceptors are skipped
+            // when the provider-bound interceptors are already wired through AddDbContext.
+            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

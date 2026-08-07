@@ -64,6 +64,9 @@ namespace MiCake.EntityFrameworkCore.Uow
     /// Implementation of immediate transaction initializer that creates DbContext wrappers
     /// for all registered factories when UoW is configured with immediate initialization.
     /// Uses the typed non-generic factory contract - no reflective best-effort probing.
+    /// Custom factory implementations are adapted to the runtime view by
+    /// <see cref="EFCoreContextFactoryAdapter"/> and are validated and registered exactly
+    /// like the framework factory.
     /// </summary>
     public class ImmediateTransactionInitializer : IImmediateTransactionInitializer
     {
@@ -100,15 +103,35 @@ namespace MiCake.EntityFrameworkCore.Uow
                 factoryList.Count,
                 unitOfWork.Id);
 
+            var initializedContextTypes = new HashSet<string>(StringComparer.Ordinal);
             foreach (var factory in factoryList)
             {
-                // Resolving the wrapper registers the resource with the UoW; transaction activation
-                // is performed by the UoW pipeline immediately after the lifecycle hooks complete.
-                var wrapper = factory.GetDbContextWrapper();
+                var resolution = factory.GetOrCreateWrapperForCurrentUnitOfWork();
+
+                // Repeated AddUowCoreServices calls register one internal factory view per
+                // call; initialize each DbContext type exactly once per unit of work.
+                if (!initializedContextTypes.Add(resolution.Wrapper.ResourceType))
+                {
+                    _logger.LogDebug(
+                        "Skipping already-initialized DbContext type {DbContextType} in UoW {UowId}",
+                        resolution.Wrapper.ResourceType,
+                        unitOfWork.Id);
+                    continue;
+                }
+
+                // Validate that the wrapper is anchored to the resolved context and register
+                // it with the unit of work; transaction activation is performed by the UoW
+                // pipeline immediately after the lifecycle hooks complete.
+                EFCoreContextResourceAnchor.AnchorResource(
+                    unitOfWork,
+                    resolution.Context,
+                    resolution.Wrapper,
+                    resolution.Context.GetType().Name);
+
                 _logger.LogDebug(
                     "Initialized resource {ResourceId} ({DbContextType}) in UoW {UowId}",
-                    wrapper.Id,
-                    wrapper.ResourceType,
+                    resolution.Wrapper.Id,
+                    resolution.Wrapper.ResourceType,
                     unitOfWork.Id);
             }
 

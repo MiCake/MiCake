@@ -5,6 +5,7 @@ using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +26,7 @@ namespace MiCake.IntegrationTests.Uow
         {
             ThrowingPreSaveHandler.Reset();
             PostSaveAddsOnceHandler.Reset();
+            ScopedHandlerIdentityPreSaveHandler.Reset();
         }
 
         public void Dispose()
@@ -415,6 +417,145 @@ namespace MiCake.IntegrationTests.Uow
             }
         }
 
+        [Fact]
+        public async Task DirectDiContext_FirstWrite_RegistersCoordinatorWrapper_Commits()
+        {
+            // The write coordinator anchors the wrapper to the exact DbContext instance that
+            // performs the write, even when the context was resolved directly from DI instead
+            // of the frame-stable factory. The UoW must end up with a single EF resource so
+            // commit activates exactly one transaction.
+            using var provider = _fixture.BuildProvider();
+            await EnsureCreatedAsync(provider);
+
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var uow = await manager.BeginAsync();
+
+                var context = scope.ServiceProvider.GetRequiredService<UowAcceptanceDbContext>();
+                context.Aggregates.Add(new UowAcceptanceAggregate("direct-di"));
+                await context.SaveChangesAsync();
+
+                await uow.CommitAsync();
+            }
+
+            Assert.Equal(1, await CountAsync(provider));
+        }
+
+        [Fact]
+        public async Task PooledContext_DirectDiFirstWrite_CommitsWithoutDeadlock()
+        {
+            // Regression for the pooled-provider deadlock: when the write coordinator is the
+            // first component to see the context (resolved directly from DI), it must wrap the
+            // exact context instance instead of resolving a second pooled instance from the
+            // wrong provider. Two wrappers would activate two BEGIN IMMEDIATE transactions on
+            // one SQLite file and deadlock.
+            using var provider = _fixture.BuildPooledProvider();
+            await EnsureCreatedAsync(provider);
+
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var uow = await manager.BeginAsync();
+
+                var context = scope.ServiceProvider.GetRequiredService<UowAcceptanceDbContext>();
+                context.Aggregates.Add(new UowAcceptanceAggregate("pooled-direct-di"));
+                await context.SaveChangesAsync();
+
+                await uow.CommitAsync();
+            }
+
+            Assert.Equal(1, await CountAsync(provider));
+        }
+
+        [Fact]
+        public async Task PooledContext_LifecycleHandlers_ResolveFromOwningRequestScope()
+        {
+            // Regression: AddDbContextPool executes the options delegate once, so the
+            // interceptor's captured provider is the pool root, not the request scope.
+            // Lifecycle handlers must be resolved from the provider of the scope that owns
+            // the ambient unit of work; otherwise scoped handler instances leak across
+            // requests and share state.
+            ScopedHandlerIdentityPreSaveHandler.Reset();
+            using var provider = _fixture.BuildPooledProvider(configure: s =>
+                s.AddScoped<IRepositoryPreSaveChanges, ScopedHandlerIdentityPreSaveHandler>());
+            await EnsureCreatedAsync(provider);
+
+            await using (var firstScope = provider.CreateAsyncScope())
+            {
+                var manager = firstScope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var uow = await manager.BeginAsync();
+                var context = SqliteUnitOfWorkFixture.GetPrimaryContext(firstScope.ServiceProvider);
+                context.Aggregates.Add(new UowAcceptanceAggregate("handler-scope-1"));
+                await context.SaveChangesAsync();
+                await uow.CommitAsync();
+            }
+
+            await using (var secondScope = provider.CreateAsyncScope())
+            {
+                var manager = secondScope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var uow = await manager.BeginAsync();
+                var context = SqliteUnitOfWorkFixture.GetPrimaryContext(secondScope.ServiceProvider);
+                context.Aggregates.Add(new UowAcceptanceAggregate("handler-scope-2"));
+                await context.SaveChangesAsync();
+                await uow.CommitAsync();
+            }
+
+            // Each request scope resolved its own scoped handler instance; resolving from
+            // the pool root would have created one implicit-root-scope instance.
+            Assert.Equal(2, ScopedHandlerIdentityPreSaveHandler.Created.Count);
+            Assert.NotSame(ScopedHandlerIdentityPreSaveHandler.Created[0], ScopedHandlerIdentityPreSaveHandler.Created[1]);
+        }
+
+        [Fact]
+        public async Task PooledContext_WithScopeValidation_FirstWriteAndLifecycleHandlers_Succeed()
+        {
+            // Regression for root-equivalent provider resolution: AddDbContextPool captures
+            // the pool-root provider in the interceptor. Resolving scoped services
+            // (IUnitOfWorkManager / IEFCoreWriteCoordinator / lifecycle handlers) from it
+            // fails when the host validates scopes (ValidateScopes = true, the ASP.NET
+            // Development default) and leaks shared state otherwise. With the fix, the
+            // interceptors resolve from the provider of the scope that owns the ambient
+            // unit of work, so the whole write path works under scope validation, and each
+            // request scope gets its own handler instance that is disposed with its scope.
+            ScopedHandlerIdentityPreSaveHandler.Reset();
+
+            using var provider = _fixture.BuildPooledProvider(
+                configure: s =>
+                    s.AddScoped<IRepositoryPreSaveChanges, ScopedHandlerIdentityPreSaveHandler>(),
+                validateScopes: true);
+            await EnsureCreatedAsync(provider);
+
+            await using (var firstScope = provider.CreateAsyncScope())
+            {
+                var manager = firstScope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var uow = await manager.BeginAsync();
+                var context = SqliteUnitOfWorkFixture.GetPrimaryContext(firstScope.ServiceProvider);
+                context.Aggregates.Add(new UowAcceptanceAggregate("validate-scopes-1"));
+                await context.SaveChangesAsync();
+                await uow.CommitAsync();
+            }
+
+            await using (var secondScope = provider.CreateAsyncScope())
+            {
+                var manager = secondScope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var uow = await manager.BeginAsync();
+                var context = SqliteUnitOfWorkFixture.GetPrimaryContext(secondScope.ServiceProvider);
+                context.Aggregates.Add(new UowAcceptanceAggregate("validate-scopes-2"));
+                await context.SaveChangesAsync();
+                await uow.CommitAsync();
+            }
+
+            Assert.Equal(2, ScopedHandlerIdentityPreSaveHandler.Created.Count);
+            Assert.NotSame(ScopedHandlerIdentityPreSaveHandler.Created[0], ScopedHandlerIdentityPreSaveHandler.Created[1]);
+
+            // Scoped handlers are owned by their request scope: after both scopes were
+            // disposed, every created handler must have been disposed as well.
+            Assert.Equal(2, ScopedHandlerIdentityPreSaveHandler.Disposed.Count);
+            Assert.All(ScopedHandlerIdentityPreSaveHandler.Created, h =>
+                Assert.Contains(h, ScopedHandlerIdentityPreSaveHandler.Disposed));
+        }
+
         #region Test Handlers
 
         public class ThrowingPreSaveHandler : IRepositoryPreSaveChanges
@@ -465,6 +606,50 @@ namespace MiCake.IntegrationTests.Uow
                 await context.SaveChangesAsync(cancellationToken);
 
                 return entityState;
+            }
+        }
+
+        /// <summary>
+        /// Scoped pre-save handler that records the instance resolved for each save and
+        /// the disposals performed by the owning scope. Used to prove that lifecycle
+        /// handlers come from the request scope that owns the ambient unit of work rather
+        /// than a shared root-scope instance, and that they are disposed with that scope.
+        /// </summary>
+        public class ScopedHandlerIdentityPreSaveHandler : IRepositoryPreSaveChanges, IDisposable
+        {
+            private static readonly object Gate = new();
+
+            public static readonly List<ScopedHandlerIdentityPreSaveHandler> Created = [];
+            public static readonly List<ScopedHandlerIdentityPreSaveHandler> Disposed = [];
+
+            public static void Reset()
+            {
+                lock (Gate)
+                {
+                    Created.Clear();
+                    Disposed.Clear();
+                }
+            }
+
+            public int Order { get; set; }
+
+            public ValueTask<RepositoryEntityStates> PreSaveChangesAsync(
+                RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
+            {
+                lock (Gate)
+                {
+                    Created.Add(this);
+                }
+
+                return ValueTask.FromResult(entityState);
+            }
+
+            public void Dispose()
+            {
+                lock (Gate)
+                {
+                    Disposed.Add(this);
+                }
             }
         }
 

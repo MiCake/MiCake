@@ -97,6 +97,7 @@ await context.Database.ExecuteSqlRawAsync("DELETE FROM \"Books\" WHERE ...");
 | `IRepository.AddAndReturnAsync(...)` | `AddAsync(...)` plus `IUnitOfWork.FlushAsync()` where a generated key is required |
 | `IDbContextWrapper` | `IUnitOfWorkResource` (provider integration contract) |
 | `PersistenceStrategy` / `Timeout` | Removed; every writable unit of work uses explicit transactions |
+| `IEFCoreContextFactory` / `IEFCoreAnchoredContextFactory` / `GetDbContextWrapper()` | Merged into `IEFCoreContextFactory<TDbContext>` with `GetDbContext()` and `GetOrCreateWrapperFor(DbContext)`; the non-generic interface and the parameterless wrapper method were removed |
 
 ## Documentation
 

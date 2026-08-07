@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Data.Common;
 using System.IO;
@@ -36,7 +37,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             }
         }
 
-        private ServiceProvider BuildProvider(bool registerInRegistry = true)
+        private ServiceProvider BuildProvider(bool registerInRegistry = true, Action<IServiceCollection>? configure = null)
         {
             var services = new ServiceCollection();
             services.AddDbContext<WriteGuardTestDbContext>(opt =>
@@ -46,9 +47,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
 
             var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
             services.AddSingleton(ambientAccessorType!);
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(WriteGuardTestDbContext)));
+
+            configure?.Invoke(services);
 
             var provider = services.BuildServiceProvider();
             if (registerInRegistry)
@@ -240,6 +244,167 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
                 coordinator.BeforeWriteAsync(context, EFWriteOperationKind.SaveChanges).AsTask());
 
             Assert.Contains("not registered", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task BeforeWriteAsync_LegacyCustomFactory_ReturningSameContext_WrapsAndActivatesTransaction()
+        {
+            // A legacy custom factory without the anchoring capability resolves its own
+            // wrapper; when it wraps the same DbContext that performs the write, the
+            // coordinator must register it with the unit of work and activate the
+            // transaction on that context so the write commits with the UoW.
+            using var provider = BuildProvider(configure: s =>
+                s.AddScoped(typeof(IEFCoreContextFactory<WriteGuardTestDbContext>),
+                    sp => new LegacyWriteGuardContextFactory(sp, returnDifferentContext: false)));
+            await using var scope = provider.CreateAsyncScope();
+            var coordinator = scope.ServiceProvider.GetRequiredService<IEFCoreWriteCoordinator>();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            var uowManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await context.Database.EnsureCreatedAsync();
+
+            await using var uow = await uowManager.BeginAsync();
+
+            // Act - the write is guarded through the legacy factory's wrapper
+            await coordinator.BeforeWriteAsync(context, EFWriteOperationKind.SaveChanges);
+            context.Add(new WriteGuardEntity { Name = "legacy-factory" });
+            await uow.CommitAsync();
+
+            // Assert - the transaction was activated on the writing context and the
+            // write committed with the unit of work
+            await using var verifyScope = provider.CreateAsyncScope();
+            var verifyContext = verifyScope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            Assert.Equal(1, await verifyContext.Entities.CountAsync());
+        }
+
+        [Fact]
+        public async Task BeforeWriteAsync_LegacyCustomFactory_ReturningDifferentContext_RejectedBeforeTransactionActivation()
+        {
+            // A legacy custom factory whose wrapper is bound to a different DbContext
+            // instance would activate the transaction on the wrong context and leave the
+            // current write unbound; it must be rejected before any transaction starts.
+            using var provider = BuildProvider(configure: s =>
+                s.AddScoped(typeof(IEFCoreContextFactory<WriteGuardTestDbContext>),
+                    sp => new LegacyWriteGuardContextFactory(sp, returnDifferentContext: true)));
+            await using var scope = provider.CreateAsyncScope();
+            var coordinator = scope.ServiceProvider.GetRequiredService<IEFCoreWriteCoordinator>();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            var uowManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+
+            await using var uow = await uowManager.BeginAsync();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                coordinator.BeforeWriteAsync(context, EFWriteOperationKind.SaveChanges).AsTask());
+
+            Assert.Contains("different DbContext instance", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Null(context.Database.CurrentTransaction);
+        }
+
+        [Fact]
+        public async Task BeforeWriteAsync_CustomFactory_TwoWritesSameContext_ReusesSingleResource()
+        {
+            // A custom factory that does not cache its wrapper resolves a new wrapper per
+            // call; the coordinator must reuse the already-registered resource for the same
+            // context so the second write does not register a second resource (which would
+            // activate a second transaction on one store and fail).
+            using var provider = BuildProvider(configure: s =>
+                s.AddScoped(typeof(IEFCoreContextFactory<WriteGuardTestDbContext>),
+                    sp => new LegacyWriteGuardContextFactory(sp, returnDifferentContext: false)));
+            await using var scope = provider.CreateAsyncScope();
+            var coordinator = scope.ServiceProvider.GetRequiredService<IEFCoreWriteCoordinator>();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            var uowManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await context.Database.EnsureCreatedAsync();
+
+            await using var uow = await uowManager.BeginAsync();
+
+            // Act - two guarded writes on the same context through the non-caching factory
+            await coordinator.BeforeWriteAsync(context, EFWriteOperationKind.SaveChanges);
+            await coordinator.BeforeWriteAsync(context, EFWriteOperationKind.SaveChanges);
+            context.Add(new WriteGuardEntity { Name = "twice" });
+            await uow.CommitAsync();
+
+            // Assert - the second write reused the registered resource and the commit succeeded
+            await using var verifyScope = provider.CreateAsyncScope();
+            var verifyContext = verifyScope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            Assert.Equal(1, await verifyContext.Entities.CountAsync());
+        }
+
+        [Fact]
+        public async Task ImmediateUoW_WithCustomFactory_ActivatesTransactionOnResolvedContext()
+        {
+            // A custom factory adapted through the internal runtime view must be validated
+            // and registered by the immediate initializer so its transaction is activated
+            // eagerly instead of being silently skipped.
+            using var provider = BuildProvider(configure: s =>
+                s.AddScoped(typeof(IEFCoreContextFactory<WriteGuardTestDbContext>),
+                    sp => new LegacyWriteGuardContextFactory(sp, returnDifferentContext: false)));
+            await using var scope = provider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            var uowManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await context.Database.EnsureCreatedAsync();
+
+            // Act - Immediate mode initializes every registered factory at UoW creation
+            await using var uow = await uowManager.BeginAsync(UnitOfWorkOptions.Immediate);
+
+            // Assert - the custom factory's resource was registered and activated
+            Assert.True(uow.HasActiveTransactions);
+            Assert.NotNull(context.Database.CurrentTransaction);
+        }
+
+        [Fact]
+        public async Task ImmediateUoW_WithCustomFactoryReturningDifferentContext_RejectedBeforeActivation()
+        {
+            // A custom factory whose wrapper is bound to a different DbContext instance
+            // must be rejected during immediate initialization, before any transaction
+            // is activated on either context.
+            using var provider = BuildProvider(configure: s =>
+                s.AddScoped(typeof(IEFCoreContextFactory<WriteGuardTestDbContext>),
+                    sp => new LegacyWriteGuardContextFactory(sp, returnDifferentContext: true)));
+            await using var scope = provider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            var uowManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await context.Database.EnsureCreatedAsync();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                uowManager.BeginAsync(UnitOfWorkOptions.Immediate));
+            Assert.Contains("different DbContext instance", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Null(context.Database.CurrentTransaction);
+        }
+    }
+
+    /// <summary>
+    /// Custom factory implementation that resolves its wrapper from its own captured
+    /// provider, optionally returning a wrapper for a different context instance
+    /// (simulating a factory that resolves from the wrong scope/provider). It does not
+    /// register the returned wrapper with the unit of work itself.
+    /// </summary>
+    internal sealed class LegacyWriteGuardContextFactory : IEFCoreContextFactory<WriteGuardTestDbContext>
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly bool _returnDifferentContext;
+
+        public LegacyWriteGuardContextFactory(IServiceProvider serviceProvider, bool returnDifferentContext)
+        {
+            _serviceProvider = serviceProvider;
+            _returnDifferentContext = returnDifferentContext;
+        }
+
+        public WriteGuardTestDbContext GetDbContext()
+            => _serviceProvider.GetRequiredService<WriteGuardTestDbContext>();
+
+        public EFCoreDbContextWrapper GetOrCreateWrapperFor(DbContext context)
+        {
+            if (_returnDifferentContext)
+            {
+                var options = _serviceProvider.GetRequiredService<DbContextOptions<WriteGuardTestDbContext>>();
+                var other = new WriteGuardTestDbContext(options);
+                return new EFCoreDbContextWrapper(other, NullLogger<EFCoreDbContextWrapper>.Instance);
+            }
+
+            var ctx = _serviceProvider.GetRequiredService<WriteGuardTestDbContext>();
+            return new EFCoreDbContextWrapper(ctx, NullLogger<EFCoreDbContextWrapper>.Instance);
         }
     }
 

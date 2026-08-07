@@ -59,7 +59,8 @@ namespace MiCake.EntityFrameworkCore.Repository
             // operation is rollback-safe even when this context has no command interceptor
             // installed. When the interceptor is present it binds the resulting command to
             // the same transaction.
-            var wrapper = _contextFactory.GetDbContextWrapper();
+            var context = _contextFactory.GetDbContext();
+            var wrapper = _contextFactory.GetOrCreateWrapperFor(context);
             await wrapper.EnsureTransactionAsync(cancellationToken).ConfigureAwait(false);
 
             return await wrapper.DbContext.Set<TEntity>()

@@ -71,6 +71,14 @@ namespace MiCake.Modules
             // Unit of Work - Register with options support
             // Host-local ambient accessor keeps immutable AsyncLocal frames per execution context.
             context.Services.TryAddSingleton<AmbientUnitOfWorkAccessor>();
+            // Public singleton accessor lets host-level components (e.g. the EF Core interceptors)
+            // locate the provider of the scope owning the ambient unit of work without resolving
+            // scoped services from a root-equivalent provider. Registered with AddSingleton so the
+            // framework mapping wins over a host-registered replacement; overriding it would
+            // desynchronize the ambient state observed by interceptors from the state written by
+            // the unit of work manager.
+            context.Services.AddSingleton<IUnitOfWorkAmbientAccessor>(
+                sp => sp.GetRequiredService<AmbientUnitOfWorkAccessor>());
             context.Services.TryAddScoped<IUnitOfWorkManager, UnitOfWorkManager>();
             context.Services.TryAddScoped<IStandaloneUnitOfWorkExecutor, StandaloneUnitOfWorkExecutor>();
 

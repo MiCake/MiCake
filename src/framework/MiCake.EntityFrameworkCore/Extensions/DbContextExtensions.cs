@@ -97,6 +97,15 @@ namespace MiCake.EntityFrameworkCore
         /// <returns>The same DbContextOptionsBuilder for chaining</returns>
         public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder)
         {
+            // Idempotent guard: when the options are already configured with MiCake
+            // interceptors (for example through the DI-first overload inside
+            // AddDbContext((sp, opt) => ...)), installing a second provider-less fallback
+            // pair would fail every write because it cannot resolve the write pipeline.
+            if (optionsBuilder.Options.FindExtension<MiCakeSaveOperationOptionsExtension>() != null)
+            {
+                return optionsBuilder;
+            }
+
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(new MiCakeSaveOperationOptionsExtension());
 
             // Without a scope provider the interceptor cannot resolve the write pipeline or

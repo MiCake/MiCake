@@ -2,10 +2,10 @@ version: 1
 change_id: 20260806-uow-transaction-reliability
 title: UoW Transaction Reliability
 created_at: 2026-08-06T12:03:44+08:00
-updated_at: 2026-08-06T14:25:32.084Z
+updated_at: 2026-08-07T03:54:13.549Z
 status: in_progress
 current_tasks:
-  default: t7-relational-acceptance
+  default: t8-performance-final-review
 tasks:
   - id: t1-uow-runtime-contracts
     title: Rebuild provider-neutral UoW runtime
@@ -209,8 +209,8 @@ tasks:
       freshness: current
   - id: t7-relational-acceptance
     title: Prove relational transaction guarantees
-    status: in_progress
-    completed_at: null
+    status: done
+    completed_at: 2026-08-07T03:54:13.549Z
     depends_on:
       - t2-ef-resource-identity
       - t3-write-transaction-guards
@@ -241,7 +241,7 @@ tasks:
       freshness: stale
   - id: t8-performance-final-review
     title: Baseline performance and review delivery
-    status: pending
+    status: in_progress
     completed_at: null
     depends_on:
       - t7-relational-acceptance

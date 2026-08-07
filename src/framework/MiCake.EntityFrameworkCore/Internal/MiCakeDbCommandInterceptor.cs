@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MiCake.DDD.Uow;
 using System;
 using System.Data.Common;
 using System.Threading;
@@ -11,8 +14,9 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// Stateless command interceptor that guards and binds every supported non-query write
     /// command (ExecuteUpdate, ExecuteDelete, ExecuteSqlRaw, and unknown non-query commands
     /// treated conservatively as writes) to the active unit of work transaction.
-    /// The coordinator is resolved from the command's DbContext provider; when no MiCake
-    /// write pipeline is registered, commands pass through unmodified.
+    /// The coordinator is resolved from the provider of the scope that owns the ambient
+    /// unit of work; when the write pipeline is unavailable, non-database-initialization
+    /// commands are rejected with guidance instead of passing through unmodified.
     /// </summary>
     internal sealed class MiCakeDbCommandInterceptor : DbCommandInterceptor
     {
@@ -43,10 +47,9 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
             else if (eventData.Context != null && operationKind != EFWriteOperationKind.DatabaseInitialization)
             {
-                throw new InvalidOperationException(
-                    $"Non-query write command on {eventData.Context.GetType().Name} cannot be guarded because the " +
-                    "MiCake write pipeline is not registered for this DbContext. Configure the DbContext with " +
-                    "UseMiCakeInterceptors(IServiceProvider) inside AddDbContext and register the MiCake EF Core module.");
+                throw CreateUnavailableException(
+                    eventData.Context,
+                    _serviceProvider != null && ResolveCurrentUowServiceProvider() == null);
             }
 
             return base.NonQueryExecuting(command, eventData, result);
@@ -74,10 +77,9 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
             else if (eventData.Context != null && operationKind != EFWriteOperationKind.DatabaseInitialization)
             {
-                throw new InvalidOperationException(
-                    $"Non-query write command on {eventData.Context.GetType().Name} cannot be guarded because the " +
-                    "MiCake write pipeline is not registered for this DbContext. Configure the DbContext with " +
-                    "UseMiCakeInterceptors(IServiceProvider) inside AddDbContext and register the MiCake EF Core module.");
+                throw CreateUnavailableException(
+                    eventData.Context,
+                    _serviceProvider != null && ResolveCurrentUowServiceProvider() == null);
             }
 
             return await base.NonQueryExecutingAsync(command, eventData, result, cancellationToken).ConfigureAwait(false);
@@ -85,15 +87,38 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         private IEFCoreWriteCoordinator? ResolveCoordinator()
         {
+            // Scoped services must be resolved from the provider of the scope that owns the
+            // ambient unit of work, never from the provider captured at options-build time
+            // (the pool root under AddDbContextPool). Without an ambient unit of work the
+            // pipeline is unavailable; database initialization passes through unguarded.
+            var frameProvider = ResolveCurrentUowServiceProvider();
+            if (frameProvider == null)
+            {
+                return null;
+            }
+
             try
             {
-                return (IEFCoreWriteCoordinator?)_serviceProvider?.GetService(typeof(IEFCoreWriteCoordinator));
+                return (IEFCoreWriteCoordinator?)frameProvider.GetService(typeof(IEFCoreWriteCoordinator));
             }
             catch (ObjectDisposedException)
             {
                 return null;
             }
         }
+
+        private IServiceProvider? ResolveCurrentUowServiceProvider()
+            => _serviceProvider?.GetService<IUnitOfWorkAmbientAccessor>()?.CurrentServiceProvider;
+
+        private static InvalidOperationException CreateUnavailableException(DbContext context, bool noActiveUow)
+            => noActiveUow
+                ? new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} requires an active writable unit of work. " +
+                    "Begin one with IUnitOfWorkManager.BeginAsync() before saving or executing write commands.")
+                : new InvalidOperationException(
+                    $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
+                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
+                    "inside AddDbContext and register the MiCake EF Core module.");
 
         internal static EFWriteOperationKind Classify(CommandSource commandSource)
             => commandSource switch

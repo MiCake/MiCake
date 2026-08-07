@@ -72,7 +72,7 @@ namespace MiCake.IntegrationTests.Repository
 
             // Ensure EF factory registers wrapper with UoW
             var factory = scope.ServiceProvider.GetRequiredService<IEFCoreContextFactory<TestDbContext>>();
-            var wrapper = factory.GetDbContextWrapper();
+            factory.GetOrCreateWrapperFor(factory.GetDbContext());
 
             // Act: use repository from DI
             var repo = scope.ServiceProvider.GetRequiredService<TestPagingRepository>();

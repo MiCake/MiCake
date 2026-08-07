@@ -228,10 +228,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
 
         #endregion
 
-        #region GetDbContextWrapper Tests
+        #region GetOrCreateWrapperFor Tests
 
         [Fact]
-        public void GetDbContextWrapper_WithActiveUoW_ShouldReturnWrapper()
+        public void GetOrCreateWrapperFor_WithActiveUoW_ShouldReturnWrapper()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -249,7 +249,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            var result = factory.GetDbContextWrapper();
+            var result = factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert
             Assert.NotNull(result);
@@ -257,7 +257,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void GetDbContextWrapper_WithActiveUoW_ShouldRegisterWithUoW()
+        public void GetOrCreateWrapperFor_WithActiveUoW_ShouldRegisterWithUoW()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -275,14 +275,14 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            factory.GetDbContextWrapper();
+            factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert
             mockInternalUow.Verify(u => u.RegisterResource(It.IsAny<EFCoreDbContextWrapper>()), Times.Once);
         }
 
         [Fact]
-        public void GetDbContextWrapper_WithUoWNotImplementingInternal_ShouldThrowInvalidOperationException()
+        public void GetOrCreateWrapperFor_WithUoWNotImplementingInternal_ShouldThrowInvalidOperationException()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -301,12 +301,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
 
             // Act & Assert - a live UoW that cannot own resources fails fast instead of
             // returning an unregistered wrapper
-            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetDbContextWrapper());
+            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetOrCreateWrapperFor(_dbContext));
             Assert.Contains("IUnitOfWorkInternal", exception.Message);
         }
 
         [Fact]
-        public void GetDbContextWrapper_WithoutUoW_WhenBypassEnabled_ShouldLogWarning()
+        public void GetOrCreateWrapperFor_WithoutUoW_WhenBypassEnabled_ShouldLogWarning()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext))
@@ -324,7 +324,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            factory.GetDbContextWrapper();
+            factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert
             _mockLogger.Verify(
@@ -342,7 +342,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         #region Frame-Stable Identity and Ownership Tests
 
         [Fact]
-        public void GetDbContextWrapper_SameRootTwice_ShouldReturnSameWrapper()
+        public void GetOrCreateWrapperFor_SameRootTwice_ShouldReturnSameWrapper()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -358,15 +358,15 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            var first = factory.GetDbContextWrapper();
-            var second = factory.GetDbContextWrapper();
+            var first = factory.GetOrCreateWrapperFor(_dbContext);
+            var second = factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert - the same ambient frame and DbContext type resolve the same instance
             Assert.Same(first, second);
         }
 
         [Fact]
-        public void GetDbContextWrapper_NestedUow_ShouldShareRootWrapper()
+        public void GetOrCreateWrapperFor_NestedUow_ShouldShareRootWrapper()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -385,15 +385,15 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 optionsAccessor);
 
             // Act
-            var rootWrapper = factory.GetDbContextWrapper();
-            var nestedWrapper = factory.GetDbContextWrapper();
+            var rootWrapper = factory.GetOrCreateWrapperFor(_dbContext);
+            var nestedWrapper = factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert - shared nested UoWs share the root identity and therefore the wrapper
             Assert.Same(rootWrapper, nestedWrapper);
         }
 
         [Fact]
-        public void GetDbContextWrapper_DifferentLiveRoot_ShouldRejectReuse()
+        public void GetOrCreateWrapperFor_DifferentLiveRoot_ShouldRejectReuse()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -411,16 +411,16 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 _mockLogger.Object,
                 optionsAccessor);
 
-            factory.GetDbContextWrapper();
+            factory.GetOrCreateWrapperFor(_dbContext);
 
             // Act & Assert - a context bound to live root1 cannot be reused by live root2
-            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetDbContextWrapper());
+            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetOrCreateWrapperFor(_dbContext));
             Assert.Contains("already bound", exception.Message, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("ExecuteRequiresNewAsync", exception.Message);
         }
 
         [Fact]
-        public void GetDbContextWrapper_CompletedRoot_ShouldCreateNewWrapper()
+        public void GetOrCreateWrapperFor_CompletedRoot_ShouldCreateNewWrapper()
         {
             // Arrange
             var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
@@ -440,10 +440,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 _mockLogger.Object,
                 optionsAccessor);
 
-            factory.GetDbContextWrapper();
+            factory.GetOrCreateWrapperFor(_dbContext);
 
             // Act - completed root's wrapper is stale; a new live root gets a fresh wrapper
-            var freshWrapper = factory.GetDbContextWrapper();
+            var freshWrapper = factory.GetOrCreateWrapperFor(_dbContext);
 
             // Assert
             Assert.NotNull(freshWrapper);
@@ -469,6 +469,38 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             mock.Setup(u => u.IsDisposed).Returns(false);
             mock.As<IUnitOfWorkInternal>();
             return mock;
+        }
+
+        [Fact]
+        public void GetOrCreateWrapperFor_WhenRootAlreadyBoundToDifferentContext_ShouldReject()
+        {
+            // Arrange
+            var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestFactoryDbContext));
+            var optionsAccessor = CreateOptionsAccessor(efCoreOptions);
+
+            var rootUow = CreateMockRootUow(Guid.NewGuid());
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(rootUow.Object);
+
+            var factory = new EFCoreContextFactory<TestFactoryDbContext>(
+                _mockServiceProvider.Object,
+                _mockUnitOfWorkManager.Object,
+                _mockLogger.Object,
+                optionsAccessor);
+
+            var otherOptions = new DbContextOptionsBuilder<TestFactoryDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var otherContext = new TestFactoryDbContext(otherOptions);
+
+            // Act - the first write anchors the wrapper to the resolved context instance
+            var first = factory.GetOrCreateWrapperFor(_dbContext);
+
+            // Assert - a different context instance for the same root is rejected instead
+            // of silently returning the cached wrapper bound to another instance
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => factory.GetOrCreateWrapperFor(otherContext));
+            Assert.Contains("different context instance", exception.Message);
+            Assert.Same(_dbContext, first.DbContext);
         }
 
         #endregion
@@ -543,6 +575,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
             services.AddSingleton(ambientAccessorType!);
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddScoped(typeof(IEFCoreContextFactory<TestFactoryDbContext>), typeof(EFCoreContextFactory<TestFactoryDbContext>));
 

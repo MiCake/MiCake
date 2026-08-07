@@ -55,6 +55,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
 
             var ambientAccessorType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.AmbientUnitOfWorkAccessor");
             services.AddSingleton(ambientAccessorType!);
+            services.AddSingleton<IUnitOfWorkAmbientAccessor>(sp => (IUnitOfWorkAmbientAccessor)sp.GetRequiredService(ambientAccessorType!));
             var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
             services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
             services.AddSingleton<IObjectAccessor<MiCakeEFCoreOptions>>(new MiCakeEFCoreOptions(typeof(RepoContractDbContext)));

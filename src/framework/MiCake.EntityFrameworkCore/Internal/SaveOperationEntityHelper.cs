@@ -35,15 +35,15 @@ namespace MiCake.EntityFrameworkCore.Internal
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             var changedEntries = new List<EntityEntry>(capacity: 16);
-            var ownerEntriesNeedingAudit = new HashSet<EntityEntry>();
+            var ownerEntitiesNeedingAudit = new HashSet<object>(ReferenceEqualityComparer.Instance);
 
             foreach (var entry in allEntries.Where(IsEntityChanged))
             {
                 changedEntries.Add(entry);
-                CollectOwnerEntityIfNeeded(entry, ownerEntriesNeedingAudit, entriesByType);
+                CollectOwnerEntityIfNeeded(entry, ownerEntitiesNeedingAudit, entriesByType);
             }
 
-            changedEntries.AddRange(ownerEntriesNeedingAudit);
+            changedEntries.AddRange(ownerEntitiesNeedingAudit.Select(entity => dbContext.Entry(entity)));
             return changedEntries;
         }
 
@@ -66,8 +66,22 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         public static RepositoryEntityStates ResolvePreSaveState(EntityEntry entry)
         {
+            var entriesByType = BuildEntriesByType(entry.Context);
+            return ResolvePreSaveState(entry, entriesByType, BuildChangedOwnedOwners(entry.Context, entriesByType));
+        }
+
+        public static RepositoryEntityStates ResolvePreSaveState(
+            EntityEntry entry,
+            IReadOnlyDictionary<Type, List<EntityEntry>> entriesByType)
+            => ResolvePreSaveState(entry, entriesByType, BuildChangedOwnedOwners(entry.Context, entriesByType));
+
+        public static RepositoryEntityStates ResolvePreSaveState(
+            EntityEntry entry,
+            IReadOnlyDictionary<Type, List<EntityEntry>> entriesByType,
+            IReadOnlySet<object> changedOwnedOwners)
+        {
             var state = entry.State.ToRepositoryState();
-            if (entry.State == EntityState.Unchanged && HasOwnedEntityChanges(entry))
+            if (entry.State == EntityState.Unchanged && changedOwnedOwners.Contains(entry.Entity))
             {
                 return RepositoryEntityStates.Modified;
             }
@@ -75,9 +89,51 @@ namespace MiCake.EntityFrameworkCore.Internal
             return state;
         }
 
+        /// <summary>
+        /// Builds the set of owner entity instances (reference equality) that have at least
+        /// one changed owned entry. Callers resolving many entries in one save pass build
+        /// the set once and reuse it, avoiding a full change-tracker scan per entry.
+        /// Reference equality prevents entities overriding <c>Equals</c> from collapsing
+        /// distinct owner instances.
+        /// </summary>
+        public static IReadOnlySet<object> BuildChangedOwnedOwners(
+            DbContext dbContext,
+            IReadOnlyDictionary<Type, List<EntityEntry>> entriesByType)
+        {
+            ArgumentNullException.ThrowIfNull(dbContext);
+
+            var owners = new HashSet<object>(ReferenceEqualityComparer.Instance);
+            foreach (var candidate in dbContext.ChangeTracker.Entries())
+            {
+                if (candidate.Metadata.IsOwned() && IsEntityChanged(candidate))
+                {
+                    var owner = FindOwnerEntry(candidate, entriesByType);
+                    if (owner != null)
+                    {
+                        owners.Add(owner.Entity);
+                    }
+                }
+            }
+
+            return owners;
+        }
+
+        /// <summary>
+        /// Builds the per-type entry lookup used by the pre-save state resolver.
+        /// Callers resolving many entries in one save pass build the lookup once and reuse it.
+        /// </summary>
+        public static IReadOnlyDictionary<Type, List<EntityEntry>> BuildEntriesByType(DbContext dbContext)
+        {
+            ArgumentNullException.ThrowIfNull(dbContext);
+
+            return dbContext.ChangeTracker.Entries()
+                .GroupBy(e => e.Metadata.ClrType)
+                .ToDictionary(g => g.Key, g => g.ToList());
+        }
+
         private static void CollectOwnerEntityIfNeeded(
             EntityEntry entry,
-            HashSet<EntityEntry> ownerEntriesNeedingAudit,
+            HashSet<object> ownerEntitiesNeedingAudit,
             IReadOnlyDictionary<Type, List<EntityEntry>> entriesByType)
         {
             if (!entry.Metadata.IsOwned())
@@ -88,32 +144,10 @@ namespace MiCake.EntityFrameworkCore.Internal
             var ownerEntry = FindOwnerEntry(entry, entriesByType);
             if (ownerEntry != null &&
                 ownerEntry.State == EntityState.Unchanged &&
-                !ownerEntriesNeedingAudit.Contains(ownerEntry))
+                ownerEntitiesNeedingAudit.Add(ownerEntry.Entity))
             {
-                ownerEntriesNeedingAudit.Add(ownerEntry);
+                // De-duplicated by entity instance; added back as a tracker entry by the caller.
             }
-        }
-
-        private static bool HasOwnedEntityChanges(EntityEntry entry)
-        {
-            // An owned change surfaces as an owned entry in the change tracker whose owner
-            // entry is this entry; only unchanged entries reach this path, so the scan is
-            // bounded to owned candidates of the same owner type.
-            var entriesByType = entry.Context.ChangeTracker.Entries()
-                .GroupBy(e => e.Metadata.ClrType)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            foreach (var candidate in entry.Context.ChangeTracker.Entries())
-            {
-                if (candidate.Metadata.IsOwned() &&
-                    IsEntityChanged(candidate) &&
-                    ReferenceEquals(FindOwnerEntry(candidate, entriesByType), entry))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static EntityEntry? FindOwnerEntry(

@@ -45,8 +45,10 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return;
             }
 
+            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(entries[0].Context);
+            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(entries[0].Context, entriesByType);
             var snapshots = entries
-                .Select(e => new EntityStateSnapshot(e, SaveOperationEntityHelper.ResolvePreSaveState(e)))
+                .Select(e => new EntityStateSnapshot(e, SaveOperationEntityHelper.ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
                 .ToArray();
 
             foreach (var handler in handlers)
@@ -77,6 +79,8 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return;
             }
 
+            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(entries[0].Context);
+            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(entries[0].Context, entriesByType);
             var stateChanges = new List<(EntityEntry Entry, EntityState NewState)>(capacity: Math.Max(1, entries.Count / 10));
 
             foreach (var handler in handlers)
@@ -86,7 +90,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 foreach (var entry in entries)
                 {
                     var originalEFState = entry.State;
-                    var state = SaveOperationEntityHelper.ResolvePreSaveState(entry);
+                    var state = SaveOperationEntityHelper.ResolvePreSaveState(entry, entriesByType, changedOwnedOwners);
 
                     state = await handler.PreSaveChangesAsync(state, entry.Entity, cancellationToken).ConfigureAwait(false);
 
