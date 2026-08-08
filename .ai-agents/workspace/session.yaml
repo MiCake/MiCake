@@ -21,11 +21,6 @@ changes:
     updated_at: 2026-08-07T03:54:23.441Z
     epic_id: ""
 history:
-  - skill: /mvt-test
-    completed_at: 2026-08-07T07:57:21.263Z
-    summary: 补齐 5 个 edge-case 测试：取消令牌路径（CommitAsync 取消→BoundaryException 组合、FlushAsync 取消→OCE+rollback-only、RollbackAsync 取消→BoundaryException 且不完成）、并行 ambient 流隔离（Task.WhenAll 两流互不串扰）、同步 SaveChanges
-      写守卫拒绝；过程中发现实现问题：UnitOfWork 内部 cleanup rollback 复用调用者已取消 token（与 requiresNew/standalone 的 CancellationToken.None 决策不一致），已记录待 /mvt-fix；MiCake 269/269、EF Core 252/252
-    change_id: 20260806-uow-transaction-reliability
   - skill: /mvt-fix
     completed_at: 2026-08-07T08:00:14.466Z
     summary: 修复 /mvt-test 发现的取消语义不一致：CommitCoreAsync 的 4 处补偿回滚（rollback-only 分支、OnCommitting catch、flush catch、commit-failure 段）改用 CancellationToken.None，与 IsolatedUowExecution/requiresNew/standalone 的
@@ -73,4 +68,10 @@ history:
     completed_at: 2026-08-07T15:01:08.771Z
     summary: framework 全量深度 review（47 文件逐行）：Approve with comments，0 Critical/5 Warning/10 Suggestion；W1=partial commit 后重复 CommitAsync 污染 outcome、W2=read-only UoW 下仓储写静默丢弃、W3=UoW 内部集合并发锁策略不一致、W4=post-save
       handler 失败不标 rollback-only、W5=nested BeginAsync 跳过 hooks/immediate 激活；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-refactor
+    completed_at: 2026-08-08T03:28:36.520Z
+    summary: P0 性能重构完成（行为保持）：SaveOperationEntityHelper 新增 SaveScanResult+ScanChangedEntities 单遍扫描（1 遍主遍历+owned 子集），替换 MiCakeEFCoreInterceptor 3 组调用序列与循环内 HasChangedEntries（保留 frame==null
+      守卫与四分支映射）、LazyEFSaveChangesLifetime 2 处 Build* 调用；删除 5 个无调用者成员（GetChangedEntities/BuildEntriesByType/BuildChangedOwnedOwners/ResolvePreSaveState 单参两参重载/CollectOwnerEntityIfNeeded）；全套件 1660 测试 0
+      回归（EF Core 237/集成 178/MiCake 271/ASP.NET 434/Core 540）；用户选择不写 refactor-notes.md；P1-1 owner 索引与 P2 项留待后续评估
     change_id: 20260806-uow-transaction-reliability

@@ -131,8 +131,9 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
 
             await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
 
-            // Commit flushes the failed state and rolls back; nothing becomes durable.
-            await Assert.ThrowsAsync<DbUpdateException>(() => uow.CommitAsync());
+            // The failed save may have written rows into the open transaction, so the unit
+            // of work is rollback-only: commit is rejected and nothing becomes durable.
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
             await uow.RollbackAsync();
             Assert.Equal(0, await context.Entities.CountAsync());
 

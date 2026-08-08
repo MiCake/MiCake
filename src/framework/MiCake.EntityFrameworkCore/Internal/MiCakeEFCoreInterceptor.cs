@@ -45,8 +45,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             var accessor = ResolveAccessor(eventData.Context);
             if (accessor != null && accessor.IsOperationActive)
             {
-                _logger.LogDebug("Ending save operation for {ContextType} after a save failure", eventData.Context?.GetType().Name);
-                accessor.EndOperation();
+                EndSaveOperationAfterFailure(eventData.Context!, accessor, "a save failure");
             }
         }
 
@@ -54,6 +53,40 @@ namespace MiCake.EntityFrameworkCore.Internal
         {
             SaveChangesFailed(eventData);
             return Task.CompletedTask;
+        }
+
+        public void SaveChangesCanceled(DbContextEventData eventData)
+        {
+            var accessor = ResolveAccessor(eventData.Context);
+            if (accessor != null && accessor.IsOperationActive)
+            {
+                EndSaveOperationAfterFailure(eventData.Context!, accessor, "cancellation");
+            }
+        }
+
+        public Task SaveChangesCanceledAsync(DbContextEventData eventData, CancellationToken cancellationToken = default)
+        {
+            SaveChangesCanceled(eventData);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Ends the active root save operation after a database-level failure or cancellation
+        /// and marks the owning unit of work rollback-only. A failure or cancellation may leave
+        /// partial rows written into the open transaction; a later commit would make that
+        /// partial write silently durable, so the unit of work must not be committable.
+        /// </summary>
+        private void EndSaveOperationAfterFailure(DbContext context, SaveOperationStateAccessor accessor, string reason)
+        {
+            _logger.LogDebug("Ending save operation for {ContextType} after {Reason}", context.GetType().Name, reason);
+
+            var handlerProvider = accessor.Current?.HandlerProvider;
+            accessor.EndOperation();
+
+            if (handlerProvider != null)
+            {
+                MarkUnitOfWorkRollbackOnly(handlerProvider, context);
+            }
         }
 
         public int SavedChanges(SaveChangesCompletedEventData eventData, int result)
@@ -120,15 +153,10 @@ namespace MiCake.EntityFrameworkCore.Internal
                     frame.CycleCount++;
 
                     var (reentryRequested, reentryHadChanges) = accessor.ConsumeReentryRequest();
-                    var hasPendingChanges = HasChangedEntries(context);
-                    if (!reentryRequested && !hasPendingChanges)
+                    var scan = SaveOperationEntityHelper.ScanChangedEntities(context);
+                    if (scan.ChangedEntries.Count == 0)
                     {
-                        break;
-                    }
-
-                    if (reentryRequested && !hasPendingChanges)
-                    {
-                        if (!reentryHadChanges)
+                        if (reentryRequested && !reentryHadChanges)
                         {
                             throw new SaveChangesReentryException(
                                 $"Save operation on {context.GetType().Name} received a re-entry request without new pending changes; " +
@@ -136,8 +164,8 @@ namespace MiCake.EntityFrameworkCore.Internal
                                 "call SaveChanges without modifying the tracker.");
                         }
 
-                        // The re-entry's pending changes were absorbed by the current save,
-                        // so the operation is quiescent.
+                        // No pending changes, or the re-entry's pending changes were absorbed
+                        // by the current save, so the operation is quiescent.
                         break;
                     }
 
@@ -149,15 +177,13 @@ namespace MiCake.EntityFrameworkCore.Internal
                             "check lifecycle handlers for unbounded change generation.");
                     }
 
-                    // Follow-up cycle: rescan changes, run pre-save handlers, then save again in the same transaction.
-                    var entries = GetChangedEntities(context);
-                    var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(context);
-                    var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(context, entriesByType);
-                    frame.Snapshots = entries
-                        .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
+                    // Follow-up cycle: run pre-save handlers on the scanned changes, then save
+                    // again in the same transaction.
+                    frame.Snapshots = scan.ChangedEntries
+                        .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, scan.EntriesByType, scan.ChangedOwnedOwners)))
                         .ToArray();
 
-                    await RunPreSaveCycleAsync(entries, entriesByType, changedOwnedOwners, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
+                    await RunPreSaveCycleAsync(scan.ChangedEntries, scan.EntriesByType, scan.ChangedOwnedOwners, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
 
                     accessor.MarkRootCycleSave();
                     await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -273,11 +299,9 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return InterceptionResult<int>.SuppressWithResult(0);
             }
 
-            var entries = GetChangedEntities(context);
-            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(context);
-            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(context, entriesByType);
-            var snapshots = entries
-                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
+            var scan = SaveOperationEntityHelper.ScanChangedEntities(context);
+            var snapshots = scan.ChangedEntries
+                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, scan.EntriesByType, scan.ChangedOwnedOwners)))
                 .ToArray();
 
             if (snapshots.Length == 0)
@@ -296,7 +320,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return result;
             }
 
-            RunPreSaveCycleAsync(entries, entriesByType, changedOwnedOwners, handlerProvider, CancellationToken.None)
+            RunPreSaveCycleAsync(scan.ChangedEntries, scan.EntriesByType, scan.ChangedOwnedOwners, handlerProvider, CancellationToken.None)
                 .ConfigureAwait(false)
                 .GetAwaiter()
                 .GetResult();
@@ -329,11 +353,9 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return InterceptionResult<int>.SuppressWithResult(0);
             }
 
-            var entries = GetChangedEntities(context);
-            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(context);
-            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(context, entriesByType);
-            var snapshots = entries
-                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
+            var scan = SaveOperationEntityHelper.ScanChangedEntities(context);
+            var snapshots = scan.ChangedEntries
+                .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, scan.EntriesByType, scan.ChangedOwnedOwners)))
                 .ToArray();
 
             if (snapshots.Length == 0)
@@ -356,7 +378,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 "Started root save operation for {ContextType} with {Count} changed entities",
                 context.GetType().Name, snapshots.Length);
 
-            await RunPreSaveCycleAsync(entries, entriesByType, changedOwnedOwners, handlerProvider, cancellationToken).ConfigureAwait(false);
+            await RunPreSaveCycleAsync(scan.ChangedEntries, scan.EntriesByType, scan.ChangedOwnedOwners, handlerProvider, cancellationToken).ConfigureAwait(false);
             return result;
         }
 
@@ -439,9 +461,6 @@ namespace MiCake.EntityFrameworkCore.Internal
 
         private static bool HasChangedEntries(DbContext context)
             => SaveOperationEntityHelper.HasChangedEntries(context);
-
-        private static List<EntityEntry> GetChangedEntities(DbContext dbContext)
-            => SaveOperationEntityHelper.GetChangedEntities(dbContext);
 
         private static RepositoryEntityStates ResolvePreSaveState(
             EntityEntry entry,

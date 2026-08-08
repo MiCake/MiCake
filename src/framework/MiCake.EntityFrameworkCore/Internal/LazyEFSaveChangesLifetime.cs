@@ -45,10 +45,9 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return;
             }
 
-            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(entries[0].Context);
-            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(entries[0].Context, entriesByType);
+            var scan = SaveOperationEntityHelper.ScanChangedEntities(entries[0].Context);
             var snapshots = entries
-                .Select(e => new EntityStateSnapshot(e, SaveOperationEntityHelper.ResolvePreSaveState(e, entriesByType, changedOwnedOwners)))
+                .Select(e => new EntityStateSnapshot(e, SaveOperationEntityHelper.ResolvePreSaveState(e, scan.EntriesByType, scan.ChangedOwnedOwners)))
                 .ToArray();
 
             foreach (var handler in handlers)
@@ -79,8 +78,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return;
             }
 
-            var entriesByType = SaveOperationEntityHelper.BuildEntriesByType(entries[0].Context);
-            var changedOwnedOwners = SaveOperationEntityHelper.BuildChangedOwnedOwners(entries[0].Context, entriesByType);
+            var scan = SaveOperationEntityHelper.ScanChangedEntities(entries[0].Context);
             var stateChanges = new List<(EntityEntry Entry, EntityState NewState)>(capacity: Math.Max(1, entries.Count / 10));
 
             foreach (var handler in handlers)
@@ -90,7 +88,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 foreach (var entry in entries)
                 {
                     var originalEFState = entry.State;
-                    var state = SaveOperationEntityHelper.ResolvePreSaveState(entry, entriesByType, changedOwnedOwners);
+                    var state = SaveOperationEntityHelper.ResolvePreSaveState(entry, scan.EntriesByType, scan.ChangedOwnedOwners);
 
                     state = await handler.PreSaveChangesAsync(state, entry.Entity, cancellationToken).ConfigureAwait(false);
 
@@ -108,8 +106,5 @@ namespace MiCake.EntityFrameworkCore.Internal
                 entry.State = newState;
             }
         }
-
-        private static bool IsEntityChanged(EntityEntry entry)
-            => SaveOperationEntityHelper.IsEntityChanged(entry);
     }
 }

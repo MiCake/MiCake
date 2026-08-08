@@ -324,6 +324,80 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             }
         }
 
+        [Fact]
+        public async Task AddAndGetIdAsync_ReturnsGeneratedKey_AndRollsBackWithUoW()
+        {
+            using var provider = BuildProvider();
+            await using (var setupScope = provider.CreateAsyncScope())
+            {
+                await setupScope.ServiceProvider.GetRequiredService<RepoContractDbContext>().Database.EnsureCreatedAsync();
+            }
+
+            // Rollback path: the flush populates the generated key, but the write is not
+            // durable until the unit of work commits.
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RepoContractDbContext>();
+                var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                var repository = GetRepository(scope.ServiceProvider);
+
+                await using (var uow = await manager.BeginAsync())
+                {
+                    var id = await repository.AddAndGetIdAsync(new RepoContractEntity { Name = "gen" });
+                    Assert.True(id > 0, "AddAndGetIdAsync must return the database-generated key.");
+                    await uow.RollbackAsync();
+                }
+
+                Assert.Equal(0, await context.Entities.CountAsync());
+            }
+
+            // Commit path: the write becomes durable after commit.
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RepoContractDbContext>();
+                var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                var repository = GetRepository(scope.ServiceProvider);
+
+                await using (var uow = await manager.BeginAsync())
+                {
+                    var id = await repository.AddAndGetIdAsync(new RepoContractEntity { Name = "gen2" });
+                    Assert.True(id > 0);
+                    await uow.CommitAsync();
+                }
+
+                Assert.Equal(1, await context.Entities.CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task AddAndGetIdAsync_WithoutUoW_Throws()
+        {
+            using var provider = BuildProvider();
+            await using var scope = provider.CreateAsyncScope();
+            var repository = GetRepository(scope.ServiceProvider);
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                repository.AddAndGetIdAsync(new RepoContractEntity { Name = "x" }));
+
+            Assert.Contains("active writable unit of work", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task AddAndGetIdAsync_ReadOnlyUoW_Throws()
+        {
+            using var provider = BuildProvider();
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            var repository = GetRepository(scope.ServiceProvider);
+
+            await using var uow = await manager.BeginAsync(UnitOfWorkOptions.ReadOnly);
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                repository.AddAndGetIdAsync(new RepoContractEntity { Name = "x" }));
+
+            Assert.Contains("read-only", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
         #region Test Handlers
 
         /// <summary>

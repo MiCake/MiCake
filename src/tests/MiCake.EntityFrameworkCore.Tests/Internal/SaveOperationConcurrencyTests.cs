@@ -7,6 +7,7 @@ using MiCake.DDD.Uow.Exceptions;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -53,7 +54,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
 
         private ServiceProvider BuildProvider(
             int maxSaveCycles = 16,
-            Action<IServiceCollection>? registerHandlers = null)
+            Action<IServiceCollection>? registerHandlers = null,
+            params Type[] extraInterceptorTypes)
         {
             var services = new ServiceCollection();
             services.AddDbContext<LifecycleTestDbContext>((sp, opt) =>
@@ -64,6 +66,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
                 builder.AddInterceptors(
                     sp.GetRequiredService<MiCakeEFCoreInterceptor>(),
                     sp.GetRequiredService<MiCakeDbCommandInterceptor>());
+                foreach (var type in extraInterceptorTypes)
+                {
+                    builder.AddInterceptors((IInterceptor)sp.GetRequiredService(type));
+                }
             });
             services.AddLogging();
             services.AddUowCoreServices(typeof(LifecycleTestDbContext));
@@ -79,6 +85,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             services.AddSingleton<MiCakeDbCommandInterceptor>();
 
             registerHandlers?.Invoke(services);
+
+            foreach (var type in extraInterceptorTypes)
+            {
+                services.AddSingleton(type);
+            }
 
             var provider = services.BuildServiceProvider();
             provider.GetRequiredService<IDbContextTypeRegistry>().RegisterDbContextType(typeof(LifecycleTestDbContext));
@@ -253,6 +264,47 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
+        public async Task Cancellation_DuringSqlPhase_EndsOperation_MarksRollbackOnly_AndContextIsReusable()
+        {
+            using var cts = new CancellationTokenSource();
+            using var provider = BuildProvider(
+                registerHandlers: s => s.AddSingleton(cts),
+                extraInterceptorTypes: typeof(CancelAfterSavingChangesInterceptor));
+            await using var scope = provider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<LifecycleTestDbContext>();
+            var uowManager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await context.Database.EnsureCreatedAsync();
+
+            // The MiCake interceptor completes SavingChanges (root frame established), then
+            // the test interceptor cancels the token: EF routes the resulting OCE to
+            // SaveChangesCanceled, which must end the operation and mark the UoW rollback-only.
+            await using (var uow = await uowManager.BeginAsync())
+            {
+                context.Add(new LifecycleTestEntity { Name = "canceled" });
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => context.SaveChangesAsync(cts.Token));
+
+                // Partial rows may already be inside the open transaction: commit must be rejected.
+                await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+                await uow.RollbackAsync();
+            }
+
+            Assert.Equal(0, await context.Entities.CountAsync());
+
+            // The frame was cleared by SaveChangesCanceled: the same context must save again
+            // normally instead of being silently suppressed into a no-op.
+            context.ChangeTracker.Clear();
+            await using (var uow2 = await uowManager.BeginAsync())
+            {
+                context.Add(new LifecycleTestEntity { Name = "after-cancel" });
+                var saved = await context.SaveChangesAsync();
+                Assert.Equal(1, saved);
+                await uow2.CommitAsync();
+            }
+
+            Assert.Equal(1, await context.Entities.CountAsync());
+        }
+
+        [Fact]
         public async Task MaxSaveCycles_WhenHandlerGeneratesChangesForever_ShouldThrow()
         {
             using var provider = BuildProvider(
@@ -401,6 +453,34 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
                 }
 
                 return new ValueTask<RepositoryEntityStates>(entityState);
+            }
+        }
+
+        /// <summary>
+        /// Cancels the operation token after the MiCake interceptor has completed
+        /// SavingChanges, so the cancellation surfaces from the database phase and EF routes
+        /// it to SaveChangesCanceled instead of an interceptor-internal catch.
+        /// </summary>
+        public class CancelAfterSavingChangesInterceptor : ISaveChangesInterceptor
+        {
+            private readonly CancellationTokenSource _cts;
+
+            public CancelAfterSavingChangesInterceptor(CancellationTokenSource cts)
+            {
+                _cts = cts;
+            }
+
+            public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+            {
+                _cts.Cancel();
+                return result;
+            }
+
+            public ValueTask<InterceptionResult<int>> SavingChangesAsync(
+                DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+            {
+                _cts.Cancel();
+                return new(result);
             }
         }
 

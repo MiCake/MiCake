@@ -31,6 +31,23 @@ namespace MiCake.DDD.Domain
         Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Adds a new aggregateRoot and flushes the current unit of work so a
+        /// database-generated identity is populated on the instance, then returns the
+        /// generated key.
+        /// </summary>
+        /// <remarks>
+        /// The flush happens inside the ambient writable unit of work transaction and does
+        /// not commit: the write is durable only when that unit of work commits. The flush
+        /// also persists every other pending change tracked by the current unit of work.
+        /// Requires an active writable unit of work; otherwise an
+        /// <see cref="System.InvalidOperationException"/> is thrown.
+        /// </remarks>
+        /// <param name="aggregateRoot">The aggregate root to add</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>The database-generated identity of the added aggregate</returns>
+        Task<TKey> AddAndGetIdAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Update aggregateRoot.
         /// </summary>
         /// <remarks>
