@@ -69,6 +69,7 @@ jobs:
         id: preview_version
         env:
           GH_TOKEN: ${{ github.token }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           # Resolve branch name per trigger event:
           # - pull_request: GITHUB_REF is refs/pull/<n>/merge (unusable); GITHUB_BASE_REF holds the target branch name
@@ -98,7 +99,8 @@ jobs:
           # Resets every day, mirroring the .NET SDK official build scheme (yyyymmdd.r).
           # Note: failed/cancelled runs count too, so the revision may skip numbers; that is fine.
           TODAY=$(date -u +%Y-%m-%dT00:00:00Z)
-          WORKFLOW_FILE=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          WORKFLOW_FILE=$(basename "${WORKFLOW_REF%%@*}")
+          WORKFLOW_FILE="${WORKFLOW_FILE:-preview-release.yml}" # fallback if the context is unexpectedly empty
           RUNS_TODAY=$(gh api \
             "/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/runs" \
             -f "created=>=${TODAY}" \
