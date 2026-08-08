@@ -148,12 +148,9 @@ IQueryable<TAggregateRoot> query = asc
                     $"Paging on keyless entity type {typeof(TAggregateRoot).Name} is not supported. " +
                     "A primary key is required to establish the deterministic total order applied before Skip/Take.");
 
-            foreach (var property in primaryKey.Properties)
+            foreach (var property in primaryKey.Properties.Where(p => !alreadyOrderedNames.Contains(p.Name)))
             {
-                if (!alreadyOrderedNames.Contains(property.Name))
-                {
-                    query = AppendKeyOrdering(query, property);
-                }
+                query = AppendKeyOrdering(query, property);
             }
 
             return query;

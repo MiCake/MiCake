@@ -33,7 +33,6 @@ namespace MiCake.EntityFrameworkCore.Uow
         private bool _transactionCompleted;
         private Guid _preparedUowId;
         private IsolationLevel? _preparedIsolationLevel;
-        private bool _preparedIsReadOnly;
 
         /// <summary>
         /// Collision-safe identity of this resource instance. Generated once per wrapper and never
@@ -106,12 +105,12 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             _preparedUowId = context.UnitOfWorkId;
             _preparedIsolationLevel = context.IsolationLevel;
-            _preparedIsReadOnly = context.IsReadOnly;
             _isPrepared = true;
 
+            var preparedIsReadOnly = context.IsReadOnly;
             _logger.LogDebug(
                 "Prepared resource {ResourceId} for UoW {UnitOfWorkId} (IsolationLevel: {IsolationLevel}, ReadOnly: {ReadOnly})",
-                Id, _preparedUowId, _preparedIsolationLevel, _preparedIsReadOnly);
+                Id, _preparedUowId, _preparedIsolationLevel, preparedIsReadOnly);
         }
 
         /// <summary>

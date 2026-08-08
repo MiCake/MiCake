@@ -136,58 +136,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             try
             {
                 var maxSaveCycles = ResolveMaxSaveCycles(context);
-
-                while (true)
-                {
-                    var frame = accessor.Current;
-                    if (frame == null)
-                    {
-                        // A nested root-cycle SaveChanges completed and ended the operation;
-                        // its SavedChanges already ran post-save handling and re-entry checks.
-                        break;
-                    }
-
-                    // Post-save handlers receive the pre-save repository states from the snapshot.
-                    await RunPostSaveAsync(frame.Snapshots, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
-
-                    frame.CycleCount++;
-
-                    var (reentryRequested, reentryHadChanges) = accessor.ConsumeReentryRequest();
-                    var scan = SaveOperationEntityHelper.ScanChangedEntities(context);
-                    if (scan.ChangedEntries.Count == 0)
-                    {
-                        if (reentryRequested && !reentryHadChanges)
-                        {
-                            throw new SaveChangesReentryException(
-                                $"Save operation on {context.GetType().Name} received a re-entry request without new pending changes; " +
-                                "no progress is possible. The unit of work is left rollback-only; check lifecycle handlers that " +
-                                "call SaveChanges without modifying the tracker.");
-                        }
-
-                        // No pending changes, or the re-entry's pending changes were absorbed
-                        // by the current save, so the operation is quiescent.
-                        break;
-                    }
-
-                    if (frame.CycleCount >= maxSaveCycles)
-                    {
-                        throw new SaveChangesReentryException(
-                            $"Save operation on {context.GetType().Name} exceeded the configured maximum of {maxSaveCycles} " +
-                            "save cycles while handling re-entry requests. The unit of work is left rollback-only; " +
-                            "check lifecycle handlers for unbounded change generation.");
-                    }
-
-                    // Follow-up cycle: run pre-save handlers on the scanned changes, then save
-                    // again in the same transaction.
-                    frame.Snapshots = scan.ChangedEntries
-                        .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, scan.EntriesByType, scan.ChangedOwnedOwners)))
-                        .ToArray();
-
-                    await RunPreSaveCycleAsync(scan.ChangedEntries, scan.EntriesByType, scan.ChangedOwnedOwners, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
-
-                    accessor.MarkRootCycleSave();
-                    await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                }
+                await RunSaveCyclesAsync(context, accessor, maxSaveCycles, cancellationToken).ConfigureAwait(false);
 
                 accessor.EndOperation();
             }
@@ -210,6 +159,70 @@ namespace MiCake.EntityFrameworkCore.Internal
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Runs the bounded follow-up save cycles of the root save operation: post-save
+        /// handlers, a change re-scan, re-entry progress validation, and follow-up
+        /// pre-save cycles until the tracker is quiescent or the cycle budget is exhausted.
+        /// </summary>
+        private async Task RunSaveCyclesAsync(
+            DbContext context,
+            SaveOperationStateAccessor accessor,
+            int maxSaveCycles,
+            CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                var frame = accessor.Current;
+                if (frame == null)
+                {
+                    // A nested root-cycle SaveChanges completed and ended the operation;
+                    // its SavedChanges already ran post-save handling and re-entry checks.
+                    break;
+                }
+
+                // Post-save handlers receive the pre-save repository states from the snapshot.
+                await RunPostSaveAsync(frame.Snapshots, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
+
+                frame.CycleCount++;
+
+                var (reentryRequested, reentryHadChanges) = accessor.ConsumeReentryRequest();
+                var scan = SaveOperationEntityHelper.ScanChangedEntities(context);
+                if (scan.ChangedEntries.Count == 0)
+                {
+                    if (reentryRequested && !reentryHadChanges)
+                    {
+                        throw new SaveChangesReentryException(
+                            $"Save operation on {context.GetType().Name} received a re-entry request without new pending changes; " +
+                            "no progress is possible. The unit of work is left rollback-only; check lifecycle handlers that " +
+                            "call SaveChanges without modifying the tracker.");
+                    }
+
+                    // No pending changes, or the re-entry's pending changes were absorbed
+                    // by the current save, so the operation is quiescent.
+                    break;
+                }
+
+                if (frame.CycleCount >= maxSaveCycles)
+                {
+                    throw new SaveChangesReentryException(
+                        $"Save operation on {context.GetType().Name} exceeded the configured maximum of {maxSaveCycles} " +
+                        "save cycles while handling re-entry requests. The unit of work is left rollback-only; " +
+                        "check lifecycle handlers for unbounded change generation.");
+                }
+
+                // Follow-up cycle: run pre-save handlers on the scanned changes, then save
+                // again in the same transaction.
+                frame.Snapshots = scan.ChangedEntries
+                    .Select(e => new EntityStateSnapshot(e, ResolvePreSaveState(e, scan.EntriesByType, scan.ChangedOwnedOwners)))
+                    .ToArray();
+
+                await RunPreSaveCycleAsync(scan.ChangedEntries, scan.EntriesByType, scan.ChangedOwnedOwners, frame.HandlerProvider, cancellationToken).ConfigureAwait(false);
+
+                accessor.MarkRootCycleSave();
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -416,7 +429,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                     internalUow.MarkRollbackOnly();
                     _logger.LogDebug(
                         "Marked unit of work {UowId} rollback-only after a save re-entry failure on {ContextType}",
-                        uow!.Id, context.GetType().Name);
+                        uow.Id, context.GetType().Name);
                 }
             }
             catch (Exception markEx)

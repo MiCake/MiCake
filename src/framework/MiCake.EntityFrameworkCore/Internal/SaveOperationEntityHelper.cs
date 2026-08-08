@@ -68,14 +68,29 @@ namespace MiCake.EntityFrameworkCore.Internal
                 return SaveScanResult.Empty;
             }
 
+            // First pass: group entries by type and collect changed entries
+            // (including changed owned entries for owner resolution).
+            var (entriesByType, changedEntries, changedOwnedEntries) = CollectChangedEntries(changeTracker);
+
+            // Second pass: over changed owned entries only (a small subset), resolve each
+            // owner once and feed both the audit-owner set and the changed-owner set.
+            var (ownerEntitiesNeedingAudit, changedOwnedOwners) = ResolveChangedOwnedOwners(changedOwnedEntries, entriesByType);
+
+            changedEntries.AddRange(ownerEntitiesNeedingAudit.Select(entity => dbContext.Entry(entity)));
+            return new SaveScanResult(changedEntries, entriesByType, changedOwnedOwners);
+        }
+
+        /// <summary>
+        /// First pass: groups all tracker entries by CLR type and collects the changed
+        /// entries (including changed owned entries for owner resolution).
+        /// </summary>
+        private static (Dictionary<Type, List<EntityEntry>> EntriesByType, List<EntityEntry> ChangedEntries, List<EntityEntry> ChangedOwnedEntries) CollectChangedEntries(
+            ChangeTracker changeTracker)
+        {
             var entriesByType = new Dictionary<Type, List<EntityEntry>>();
             var changedEntries = new List<EntityEntry>(capacity: 16);
             var changedOwnedEntries = new List<EntityEntry>(capacity: 16);
-            var ownerEntitiesNeedingAudit = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            var changedOwnedOwners = new HashSet<object>(ReferenceEqualityComparer.Instance);
 
-            // First pass: group entries by type and collect changed entries
-            // (including changed owned entries for owner resolution).
             foreach (var entry in changeTracker.Entries())
             {
                 if (entriesByType.TryGetValue(entry.Metadata.ClrType, out var typeEntries))
@@ -97,8 +112,20 @@ namespace MiCake.EntityFrameworkCore.Internal
                 }
             }
 
-            // Second pass: over changed owned entries only (a small subset), resolve each
-            // owner once and feed both the audit-owner set and the changed-owner set.
+            return (entriesByType, changedEntries, changedOwnedEntries);
+        }
+
+        /// <summary>
+        /// Second pass: resolves the owner of each changed owned entry once and feeds both
+        /// the audit-owner set and the changed-owner set.
+        /// </summary>
+        private static (HashSet<object> OwnerEntitiesNeedingAudit, HashSet<object> ChangedOwnedOwners) ResolveChangedOwnedOwners(
+            List<EntityEntry> changedOwnedEntries,
+            Dictionary<Type, List<EntityEntry>> entriesByType)
+        {
+            var ownerEntitiesNeedingAudit = new HashSet<object>(ReferenceEqualityComparer.Instance);
+            var changedOwnedOwners = new HashSet<object>(ReferenceEqualityComparer.Instance);
+
             for (int i = 0; i < changedOwnedEntries.Count; i++)
             {
                 var ownedEntry = changedOwnedEntries[i];
@@ -116,8 +143,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                 changedOwnedOwners.Add(ownerEntry.Entity);
             }
 
-            changedEntries.AddRange(ownerEntitiesNeedingAudit.Select(entity => dbContext.Entry(entity)));
-            return new SaveScanResult(changedEntries, entriesByType, changedOwnedOwners);
+            return (ownerEntitiesNeedingAudit, changedOwnedOwners);
         }
 
         public static bool HasChangedEntries(DbContext context)

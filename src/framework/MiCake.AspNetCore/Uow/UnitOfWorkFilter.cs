@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -127,6 +128,7 @@ namespace MiCake.AspNetCore.Uow
         {
             IUnitOfWork? unitOfWork = null;
             Exception? exceptionDuringBody = null;
+            ExceptionDispatchInfo? disposeFailureEDI = null;
             try
             {
                 unitOfWork = await _unitOfWorkManager.BeginAsync(options, cancellationToken).ConfigureAwait(false);
@@ -147,111 +149,160 @@ namespace MiCake.AspNetCore.Uow
                 // and interrupting an in-flight commit could leave resources in a partial-commit state.
                 if (ActionSucceeded(result))
                 {
-                    // Action succeeded - commit unless read-only
-                    if (!isReadOnly)
-                    {
-                        await unitOfWork.CommitAsync().ConfigureAwait(false);
-
-                        _logger.LogDebug(
-                            "Committed Unit of Work {UowId} for action {ActionName}",
-                            unitOfWork.Id,
-                            controllerActionDes.ActionName);
-                    }
-                    else
-                    {
-                        // Mark as completed for read-only (no actual commit needed)
-                        await unitOfWork.MarkAsCompletedAsync().ConfigureAwait(false);
-
-                        _logger.LogDebug(
-                            "Marked read-only Unit of Work {UowId} as completed for action {ActionName}",
-                            unitOfWork.Id,
-                            controllerActionDes.ActionName);
-                    }
+                    await HandleSuccessAsync(unitOfWork, controllerActionDes, isReadOnly).ConfigureAwait(false);
                 }
                 else
                 {
-                    // Action failed or was canceled - rollback
-                    await unitOfWork.RollbackAsync().ConfigureAwait(false);
-
-                    if (result.Exception != null && !result.ExceptionHandled)
-                    {
-                        _logger.LogWarning(
-                            result.Exception,
-                            "Rolled back Unit of Work {UowId} for action {ActionName} due to exception",
-                            unitOfWork.Id,
-                            controllerActionDes.ActionName);
-                    }
-                    else
-                    {
-                        _logger.LogDebug(
-                            "Rolled back Unit of Work {UowId} for canceled action {ActionName}",
-                            unitOfWork.Id,
-                            controllerActionDes.ActionName);
-                    }
+                    await HandleFailureAsync(unitOfWork, result, controllerActionDes).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
                 exceptionDuringBody = ex;
 
-                // Exception during UoW management - attempt rollback
-                if (unitOfWork != null && !unitOfWork.IsCompleted)
-                {
-                    try
-                    {
-                        await unitOfWork.RollbackAsync().ConfigureAwait(false);
-                        _logger.LogWarning(
-                            ex,
-                            "Rolled back Unit of Work {UowId} due to exception during filter execution",
-                            unitOfWork.Id);
-                    }
-                    catch (Exception rollbackEx)
-                    {
-                        _logger.LogError(
-                            rollbackEx,
-                            "Failed to rollback Unit of Work {UowId}",
-                            unitOfWork.Id);
-
-                        throw new AggregateException(
-                            "Unit of Work operation failed and rollback also failed",
-                            ex, rollbackEx);
-                    }
-                }
-
+                // Best-effort rollback; rethrow to preserve the original stack.
+                await HandleBodyExceptionAsync(unitOfWork, ex).ConfigureAwait(false);
                 throw;
             }
             finally
             {
-                // Dispose the Unit of Work asynchronously. A dispose failure must not replace the
-                // primary exception (C# finally semantics would otherwise let the dispose exception
-                // overwrite the action/rollback failure), so when the body already failed we only
-                // log the dispose failure. When the body succeeded, the dispose failure is surfaced
-                // so a resource/rollback cleanup problem is not silently swallowed.
-                if (unitOfWork != null)
+                // Dispose without throwing from finally; failures are captured for rethrow.
+                disposeFailureEDI = await DisposeUnitOfWorkAsync(unitOfWork, exceptionDuringBody).ConfigureAwait(false);
+            }
+
+            // Surface a dispose failure captured after a successful body (never from finally).
+            disposeFailureEDI?.Throw();
+        }
+
+        /// <summary>
+        /// Best-effort rollback after a UoW management exception. A rollback failure is
+        /// composed with the original exception into an <see cref="AggregateException"/>.
+        /// </summary>
+        private async Task HandleBodyExceptionAsync(IUnitOfWork? unitOfWork, Exception ex)
+        {
+            if (unitOfWork == null || unitOfWork.IsCompleted)
+            {
+                return;
+            }
+
+            try
+            {
+                // Explicit opt-out: compensation rollback must complete even when
+                // the request is cancelled, so no transaction is left dangling.
+                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+                _logger.LogWarning(
+                    ex,
+                    "Rolled back Unit of Work {UowId} due to exception during filter execution",
+                    unitOfWork.Id);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogError(
+                    rollbackEx,
+                    "Failed to rollback Unit of Work {UowId}",
+                    unitOfWork.Id);
+
+                throw new AggregateException(
+                    "Unit of Work operation failed and rollback also failed",
+                    ex, rollbackEx);
+            }
+        }
+
+        /// <summary>
+        /// Disposes the unit of work asynchronously. After a body failure a dispose failure is
+        /// only logged; otherwise it is returned as an <see cref="ExceptionDispatchInfo"/> for
+        /// the caller to rethrow after the finally block.
+        /// </summary>
+        private async Task<ExceptionDispatchInfo?> DisposeUnitOfWorkAsync(IUnitOfWork? unitOfWork, Exception? exceptionDuringBody)
+        {
+            if (unitOfWork == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                await unitOfWork.DisposeAsync().ConfigureAwait(false);
+                return null;
+            }
+            catch (Exception disposeEx)
+            {
+                if (exceptionDuringBody != null)
                 {
-                    try
-                    {
-                        await unitOfWork.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception disposeEx)
-                    {
-                        if (exceptionDuringBody != null)
-                        {
-                            _logger.LogError(
-                                disposeEx,
-                                "Unit of Work {UowId} dispose failed after an earlier failure; preserving the original exception",
-                                unitOfWork.Id);
-                        }
-                        else
-                        {
-                            _logger.LogError(
-                                disposeEx,
-                                "Unit of Work {UowId} dispose failed after a successful operation",
-                                unitOfWork.Id);
-                            throw;
-                        }
-                    }
+                    _logger.LogError(
+                        disposeEx,
+                        "Unit of Work {UowId} dispose failed after an earlier failure; preserving the original exception",
+                        unitOfWork.Id);
+                    return null;
                 }
+
+                _logger.LogError(
+                    disposeEx,
+                    "Unit of Work {UowId} dispose failed after a successful operation",
+                    unitOfWork.Id);
+                return ExceptionDispatchInfo.Capture(disposeEx);
+            }
+        }
+
+        /// <summary>
+        /// Completes a successful action: commits a writable unit of work, or marks a
+        /// read-only unit of work as completed without a physical commit.
+        /// </summary>
+        private async Task HandleSuccessAsync(
+            IUnitOfWork unitOfWork,
+            ControllerActionDescriptor controllerActionDes,
+            bool isReadOnly)
+        {
+            if (!isReadOnly)
+            {
+                // Explicit opt-out: commit must complete even when the request is cancelled,
+                // otherwise resources could be left in a partial-commit state.
+                await unitOfWork.CommitAsync(CancellationToken.None).ConfigureAwait(false);
+
+                _logger.LogDebug(
+                    "Committed Unit of Work {UowId} for action {ActionName}",
+                    unitOfWork.Id,
+                    controllerActionDes.ActionName);
+            }
+            else
+            {
+                // Mark as completed for read-only (no actual commit needed). Explicit
+                // opt-out: completion must not be interrupted by request cancellation.
+                await unitOfWork.MarkAsCompletedAsync(CancellationToken.None).ConfigureAwait(false);
+
+                _logger.LogDebug(
+                    "Marked read-only Unit of Work {UowId} as completed for action {ActionName}",
+                    unitOfWork.Id,
+                    controllerActionDes.ActionName);
+            }
+        }
+
+        /// <summary>
+        /// Rolls back the unit of work after a failed or canceled action and logs the reason.
+        /// </summary>
+        private async Task HandleFailureAsync(
+            IUnitOfWork unitOfWork,
+            ActionExecutedContext result,
+            ControllerActionDescriptor controllerActionDes)
+        {
+            // Explicit opt-out: rollback must complete even when the request is cancelled,
+            // otherwise resources could be left in a partial-commit state.
+            await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+
+            if (result.Exception != null && !result.ExceptionHandled)
+            {
+                _logger.LogWarning(
+                    result.Exception,
+                    "Rolled back Unit of Work {UowId} for action {ActionName} due to exception",
+                    unitOfWork.Id,
+                    controllerActionDes.ActionName);
+            }
+            else
+            {
+                _logger.LogDebug(
+                    "Rolled back Unit of Work {UowId} for canceled action {ActionName}",
+                    unitOfWork.Id,
+                    controllerActionDes.ActionName);
             }
         }
 
@@ -322,18 +373,7 @@ namespace MiCake.AspNetCore.Uow
                 return true;
             }
 
-            if (controllerActionDes.EndpointMetadata != null)
-            {
-                foreach (var metadata in controllerActionDes.EndpointMetadata)
-                {
-                    if (metadata is DisableUnitOfWorkAttribute)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return controllerActionDes.EndpointMetadata?.OfType<DisableUnitOfWorkAttribute>().Any() ?? false;
         }
 
         /// <summary>

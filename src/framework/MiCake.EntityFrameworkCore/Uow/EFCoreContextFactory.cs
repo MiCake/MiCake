@@ -319,12 +319,12 @@ namespace MiCake.EntityFrameworkCore.Uow
         }
 
         public EFCoreDbContextWrapper GetOrCreateWrapperFor(DbContext context)
-            => (EFCoreDbContextWrapper)Invoke(_getOrCreateWrapperFor, _factory, [context])!;
+            => (EFCoreDbContextWrapper)Invoke(_getOrCreateWrapperFor, _factory, [context]);
 
         public EFCoreContextResourceResolution GetOrCreateWrapperForCurrentUnitOfWork()
         {
-            var context = (DbContext)Invoke(_getDbContext, _factory, null)!;
-            var wrapper = (EFCoreDbContextWrapper)Invoke(_getOrCreateWrapperFor, _factory, [context])!;
+            var context = (DbContext)Invoke(_getDbContext, _factory, null);
+            var wrapper = (EFCoreDbContextWrapper)Invoke(_getOrCreateWrapperFor, _factory, [context]);
             return new EFCoreContextResourceResolution(context, wrapper);
         }
 

@@ -155,18 +155,9 @@ namespace MiCake.DDD.Uow.Internal
 
             lock (_lock)
             {
-                foreach (var candidate in _resources)
-                {
-                    if (predicate(candidate))
-                    {
-                        resource = candidate;
-                        return true;
-                    }
-                }
+                resource = _resources.FirstOrDefault(predicate);
+                return resource != null;
             }
-
-            resource = null;
-            return false;
         }
 
         /// <summary>
@@ -215,10 +206,10 @@ namespace MiCake.DDD.Uow.Internal
                     _logger.LogDebug("Activated resource {ResourceId} ({ResourceType}) in UnitOfWork {UnitOfWorkId}",
                         resource.Id, resource.ResourceType, Id);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    _logger.LogError(ex, "Failed to activate resource {ResourceId} in UnitOfWork {UnitOfWorkId}; marking rollback-only",
-                        resource.Id, Id);
+                    // Compensation: the resource failed to activate, so the unit of work must
+                    // not commit. The failure is logged once at the boundary that observes it.
                     _shouldRollback = true;
                     throw;
                 }
@@ -262,10 +253,10 @@ namespace MiCake.DDD.Uow.Internal
                     _logger.LogDebug("Flushed resource {ResourceId} ({ResourceType}) in UnitOfWork {UnitOfWorkId}",
                         resource.Id, resource.ResourceType, Id);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    _logger.LogError(ex, "Failed to flush resource {ResourceId} in UnitOfWork {UnitOfWorkId}; marking rollback-only",
-                        resource.Id, Id);
+                    // Compensation: the resource failed to flush, so the unit of work must
+                    // not commit. The failure is logged once at the boundary that observes it.
                     _shouldRollback = true;
                     throw;
                 }
@@ -314,25 +305,65 @@ namespace MiCake.DDD.Uow.Internal
 
         private async Task CommitCoreAsync(CancellationToken cancellationToken)
         {
-            if (_shouldRollback)
-            {
-                _logger.LogWarning("UnitOfWork {UnitOfWorkId} is marked rollback-only; rolling back", Id);
-                var rollbackOnlyFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
-                if (rollbackOnlyFailures.Count > 0)
-                {
-                    throw UnitOfWorkBoundaryException.ForRollbackFailureOnly(rollbackOnlyFailures);
-                }
-                throw new InvalidOperationException("Cannot commit: the unit of work is marked rollback-only.");
-            }
+            await EnsureCommitableAsync().ConfigureAwait(false);
 
             // OnCommitting is raised once before the first physical commit; a handler failure aborts the commit.
+            await RaiseOnCommittingWithCompensationAsync().ConfigureAwait(false);
+
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
+            // Flush every resource before committing; a flush failure rolls back eligible resources.
+            await FlushAllResourcesAsync(cancellationToken).ConfigureAwait(false);
+
+            // Commit resources in deterministic registration order with structured outcome tracking.
+            // CommitState and RollbackState are tracked separately so a commit-failed resource is
+            // never conflated with a resource that was never committed.
+            var commitFailures = await CommitAllResourcesAsync(cancellationToken).ConfigureAwait(false);
+            if (commitFailures.Count > 0)
+            {
+                await ThrowCommitFailureAsync(commitFailures).ConfigureAwait(false);
+            }
+
+            MarkAsCompleted();
+            _transactionsStarted = false;
+            _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
+
+            // Raise OnCommitted event
+            RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
+        }
+
+        /// <summary>
+        /// Rejects the commit when the unit of work is marked rollback-only: eligible
+        /// resources are rolled back first and the outcome is surfaced as a boundary failure.
+        /// </summary>
+        private async Task EnsureCommitableAsync()
+        {
+            if (!_shouldRollback)
+            {
+                return;
+            }
+
+            _logger.LogWarning("UnitOfWork {UnitOfWorkId} is marked rollback-only; rolling back", Id);
+            var rollbackOnlyFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+            if (rollbackOnlyFailures.Count > 0)
+            {
+                throw UnitOfWorkBoundaryException.ForRollbackFailureOnly(rollbackOnlyFailures);
+            }
+            throw new InvalidOperationException("Cannot commit: the unit of work is marked rollback-only.");
+        }
+
+        /// <summary>
+        /// Raises the OnCommitting event; a handler failure aborts the commit and triggers
+        /// a compensation rollback (which must not be cancelled by the operation's token).
+        /// </summary>
+        private async Task RaiseOnCommittingWithCompensationAsync()
+        {
             try
             {
                 RaiseEvent(OnCommitting, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitting), throwOnFailure: true);
             }
             catch (Exception ex)
             {
-                // Compensation rollback must not be cancelled by the operation's token.
                 var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
                 if (rollbackFailures.Count > 0)
                 {
@@ -340,10 +371,14 @@ namespace MiCake.DDD.Uow.Internal
                 }
                 throw;
             }
+        }
 
-            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
-
-            // Flush every resource before committing; a flush failure rolls back eligible resources.
+        /// <summary>
+        /// Flushes every registered resource; the first flush failure rolls back eligible
+        /// resources (with a token that must not be cancelled by the operation's token).
+        /// </summary>
+        private async Task FlushAllResourcesAsync(CancellationToken cancellationToken)
+        {
             foreach (var resource in _resources)
             {
                 try
@@ -352,8 +387,8 @@ namespace MiCake.DDD.Uow.Internal
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to flush resource {ResourceId} during commit of UnitOfWork {UnitOfWorkId}", resource.Id, Id);
                     // Compensation rollback must not be cancelled by the operation's token.
+                    // The flush failure is logged once at the boundary that observes it.
                     var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
                     if (rollbackFailures.Count > 0)
                     {
@@ -362,10 +397,14 @@ namespace MiCake.DDD.Uow.Internal
                     throw;
                 }
             }
+        }
 
-            // Commit resources in deterministic registration order with structured outcome tracking.
-            // CommitState and RollbackState are tracked separately so a commit-failed resource is
-            // never conflated with a resource that was never committed.
+        /// <summary>
+        /// Commits every registered resource in registration order, recording per-resource
+        /// commit state and collecting failures. Stops at the first failure.
+        /// </summary>
+        private async Task<IReadOnlyList<Exception>> CommitAllResourcesAsync(CancellationToken cancellationToken)
+        {
             var commitFailures = new List<Exception>();
 
             foreach (var resource in _resources)
@@ -384,39 +423,39 @@ namespace MiCake.DDD.Uow.Internal
                 }
             }
 
-            if (commitFailures.Count > 0)
+            return commitFailures;
+        }
+
+        /// <summary>
+        /// Composes a commit failure into the appropriate boundary exception and always
+        /// throws: a plain failure when nothing committed, or a terminal partial-commit state
+        /// when some resources are already durable. Compensation rollback uses a token that
+        /// must not be cancelled by the operation's token.
+        /// </summary>
+        private async Task ThrowCommitFailureAsync(IReadOnlyList<Exception> commitFailures)
+        {
+            var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+            var finalOutcomes = BuildOutcomes();
+
+            if (!finalOutcomes.Any(o => o.CommitState == UnitOfWorkResourceCommitState.Committed))
             {
-                // Compensation rollback must not be cancelled by the operation's token.
-                var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
-                var finalOutcomes = BuildOutcomes();
-
-                if (!finalOutcomes.Any(o => o.CommitState == UnitOfWorkResourceCommitState.Committed))
+                // No resource committed: this is a plain commit failure, not a partial commit.
+                if (rollbackFailures.Count > 0)
                 {
-                    // No resource committed: this is a plain commit failure, not a partial commit.
-                    if (rollbackFailures.Count > 0)
-                    {
-                        throw UnitOfWorkBoundaryException.ForRollbackFailure(commitFailures[0], rollbackFailures);
-                    }
-
-                    ExceptionDispatchInfo.Capture(commitFailures[0]).Throw();
+                    throw UnitOfWorkBoundaryException.ForRollbackFailure(commitFailures[0], rollbackFailures);
                 }
 
-                // Partial commit: the UoW is not rolled back as a whole and cannot be later
-                // reported as such; it becomes a terminal state until the boundary disposes it.
-                _hasPartialCommit = true;
-                throw new PartialUnitOfWorkCommitException(
-                    "Unit of work commit partially failed; inspect the outcome for per-resource state. The unit of work is not rolled back as a whole.",
-                    new UnitOfWorkCommitOutcome(Id, finalOutcomes),
-                    commitFailures,
-                    rollbackFailures);
+                ExceptionDispatchInfo.Capture(commitFailures[0]).Throw();
             }
 
-            MarkAsCompleted();
-            _transactionsStarted = false;
-            _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
-
-            // Raise OnCommitted event
-            RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
+            // Partial commit: the UoW is not rolled back as a whole and cannot be later
+            // reported as such; it becomes a terminal state until the boundary disposes it.
+            _hasPartialCommit = true;
+            throw new PartialUnitOfWorkCommitException(
+                "Unit of work commit partially failed; inspect the outcome for per-resource state. The unit of work is not rolled back as a whole.",
+                new UnitOfWorkCommitOutcome(Id, finalOutcomes),
+                commitFailures,
+                rollbackFailures);
         }
 
         /// <summary>
@@ -659,7 +698,6 @@ namespace MiCake.DDD.Uow.Internal
         public void Dispose()
         {
             Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -701,7 +739,6 @@ namespace MiCake.DDD.Uow.Internal
             }
 
             _disposed = true;
-            GC.SuppressFinalize(this);
 
             if (rollbackFailures is { Count: > 0 } || cleanupFailures is { Count: > 0 })
             {
@@ -743,7 +780,6 @@ namespace MiCake.DDD.Uow.Internal
 
             PopFrame();
             _disposed = true;
-            GC.SuppressFinalize(this);
 
             if (rollbackFailures is { Count: > 0 } || cleanupFailures is { Count: > 0 })
             {

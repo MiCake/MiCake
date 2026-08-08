@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Logging;
 using MiCake.DDD.Uow;
 using System;
 using System.Data.Common;
@@ -18,14 +17,10 @@ namespace MiCake.EntityFrameworkCore.Internal
     /// </summary>
     internal sealed class MiCakeDbCommandInterceptor : DbCommandInterceptor
     {
-        private readonly ILogger<MiCakeDbCommandInterceptor> _logger;
         private readonly IUnitOfWorkAmbientAccessor _ambientAccessor;
 
-        public MiCakeDbCommandInterceptor(
-            ILogger<MiCakeDbCommandInterceptor> logger,
-            IUnitOfWorkAmbientAccessor ambientAccessor)
+        public MiCakeDbCommandInterceptor(IUnitOfWorkAmbientAccessor ambientAccessor)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _ambientAccessor = ambientAccessor ?? throw new ArgumentNullException(nameof(ambientAccessor));
         }
 
