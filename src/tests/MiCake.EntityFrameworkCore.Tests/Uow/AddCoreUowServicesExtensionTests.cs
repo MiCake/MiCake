@@ -168,6 +168,9 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Arrange
             var services = new ServiceCollection();
+            services.AddDbContext<TestExtensionDbContext>(opt =>
+                opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+            services.AddLogging();
 
             // Act
             var result = services.AddUowCoreServices(typeof(TestExtensionDbContext));
@@ -177,7 +180,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public void AddUowCoreServices_CalledMultipleTimes_ShouldRegisterServicesOnce()
+        public void AddUowCoreServices_CalledMultipleTimes_ShouldRegisterContextFactoryOnce()
         {
             // Arrange
             var services = new ServiceCollection();
@@ -185,14 +188,19 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
             services.AddLogging();
 
-            // Act
+            // Act - repeated registration for the same DbContext type is idempotent
             services.AddUowCoreServices(typeof(TestExtensionDbContext));
             services.AddUowCoreServices(typeof(TestExtensionDbContext));
 
-            // Assert - Should have multiple registrations (by design, not checking for duplicates)
+            // Assert - the default factory is not appended a second time
             var factoryDescriptors = services.FindAll(
                 s => s.ServiceType == typeof(IEFCoreContextFactory<TestExtensionDbContext>));
-            Assert.Equal(2, factoryDescriptors.Count); // Each call adds registration
+            Assert.Single(factoryDescriptors);
+
+            // The internal runtime view is registered once per DbContext type as well
+            var viewDescriptors = services.FindAll(
+                s => s.ServiceType == typeof(IEFCoreContextFactory));
+            Assert.Single(viewDescriptors);
         }
 
         [Fact]
@@ -217,6 +225,127 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 s => s.ServiceType == typeof(IEFCoreContextFactory<AnotherExtensionDbContext>));
             Assert.NotNull(factory1Descriptor);
             Assert.NotNull(factory2Descriptor);
+
+            // Distinct DbContext types each contribute one internal runtime view for enumeration
+            var viewDescriptors = services.FindAll(s => s.ServiceType == typeof(IEFCoreContextFactory));
+            Assert.Equal(2, viewDescriptors.Count);
+        }
+
+        #endregion
+
+        #region DbContext Lifetime Validation Tests
+
+        [Fact]
+        public void AddUowCoreServices_WhenDbContextNotRegistered_ShouldThrowWithDiagnostic()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddLogging();
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                services.AddUowCoreServices(typeof(TestExtensionDbContext)));
+
+            Assert.Contains(nameof(TestExtensionDbContext), exception.Message);
+            Assert.Contains("not registered", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("AddDbContext", exception.Message);
+        }
+
+        [Fact]
+        public void AddUowCoreServices_WhenDbContextIsTransient_ShouldThrowWithDiagnostic()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddTransient<TestExtensionDbContext>(_ => new TestExtensionDbContext(
+                new DbContextOptionsBuilder<TestExtensionDbContext>()
+                    .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                    .Options));
+            services.AddLogging();
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                services.AddUowCoreServices(typeof(TestExtensionDbContext)));
+
+            Assert.Contains(nameof(TestExtensionDbContext), exception.Message);
+            Assert.Contains("Transient", exception.Message);
+            Assert.Contains("AddDbContext", exception.Message);
+        }
+
+        [Fact]
+        public void AddUowCoreServices_WhenDbContextIsSingleton_ShouldThrowWithDiagnostic()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddSingleton<TestExtensionDbContext>(_ => new TestExtensionDbContext(
+                new DbContextOptionsBuilder<TestExtensionDbContext>()
+                    .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                    .Options));
+            services.AddLogging();
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                services.AddUowCoreServices(typeof(TestExtensionDbContext)));
+
+            Assert.Contains(nameof(TestExtensionDbContext), exception.Message);
+            Assert.Contains("Singleton", exception.Message);
+        }
+
+        [Fact]
+        public void AddUowCoreServices_WhenDbContextIsPooled_ShouldPassValidation()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddDbContextPool<TestExtensionDbContext>(opt =>
+                opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+            services.AddLogging();
+
+            // Act - pooled registrations surface as scoped descriptors and must pass
+            var exception = Record.Exception(() =>
+                services.AddUowCoreServices(typeof(TestExtensionDbContext)));
+
+            // Assert
+            Assert.Null(exception);
+        }
+
+        [Fact]
+        public void AddUowCoreServices_WhenDbContextRegisteredScopedThenSingleton_ShouldThrow()
+        {
+            // Arrange - the container resolves the LAST registration; a singleton override
+            // after a scoped registration must not pass validation.
+            var services = new ServiceCollection();
+            services.AddDbContext<TestExtensionDbContext>(opt =>
+                opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+            services.AddSingleton<TestExtensionDbContext>(_ => new TestExtensionDbContext(
+                new DbContextOptionsBuilder<TestExtensionDbContext>()
+                    .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                    .Options));
+            services.AddLogging();
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                services.AddUowCoreServices(typeof(TestExtensionDbContext)));
+
+            Assert.Contains(nameof(TestExtensionDbContext), exception.Message);
+            Assert.Contains("Singleton", exception.Message);
+        }
+
+        [Fact]
+        public void AddUowCoreServices_WithMultipleScopedRegistrations_ShouldPass()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddDbContext<TestExtensionDbContext>(opt =>
+                opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+            services.AddDbContext<TestExtensionDbContext>(opt =>
+                opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+            services.AddLogging();
+
+            // Act - the effective (last) registration is still scoped
+            var exception = Record.Exception(() =>
+                services.AddUowCoreServices(typeof(TestExtensionDbContext)));
+
+            // Assert
+            Assert.Null(exception);
         }
 
         #endregion

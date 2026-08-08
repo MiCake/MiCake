@@ -51,7 +51,7 @@ namespace MiCake.EntityFrameworkCore
         {
             base.OnConfiguring(optionsBuilder);
             
-            optionsBuilder.UseMiCakeInterceptors();
+            optionsBuilder.UseMiCake();
         }
     }
 }

@@ -82,18 +82,21 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
         }
 
         [Fact]
-        public void DbContext_OutsideUowScope_ShouldThrowInvalidOperationException()
+        public void DbContext_WhenFactoryThrows_ShouldPropagateException()
         {
-            // Arrange
+            // Arrange: the frame-stable factory owns context identity and raises the
+            // no-UoW diagnostic; the repository must not swallow or re-wrap it.
             _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
+            _mockContextFactory.Setup(f => f.GetDbContext())
+                .Throws(new InvalidOperationException("No active Unit of Work found."));
 
             // Act & Assert
             var exception = Assert.Throws<InvalidOperationException>(() => _repository.DbContext);
-            Assert.Contains("Failed to create a DbContext for", exception.Message);
+            Assert.Contains("No active Unit of Work", exception.Message);
         }
 
         [Fact]
-        public void DbContext_MultipleAccessesWithinSameUow_ShouldReuseCachedContext()
+        public void DbContext_MultipleAccesses_ShouldResolveFromFrameStableFactoryPerAccess()
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
@@ -107,13 +110,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             var context2 = _repository.DbContext;
             var context3 = _repository.DbContext;
 
-            // Assert
+            // Assert: same instance because the factory is frame-stable, and the factory
+            // is consulted on every access (no repository-local cache).
             Assert.Same(_dbContext, context1);
             Assert.Same(_dbContext, context2);
             Assert.Same(_dbContext, context3);
-
-            // Factory should only be called once due to caching
-            _mockContextFactory.Verify(f => f.GetDbContext(), Times.Once);
+            _mockContextFactory.Verify(f => f.GetDbContext(), Times.Exactly(3));
         }
 
         #endregion
@@ -218,73 +220,10 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
 
         #endregion
 
-        #region UoW Caching Tests
+        #region Context Delegation Tests
 
         [Fact]
-        public void UowCaching_DifferentUowIds_ShouldCreateSeparateCacheContexts()
-        {
-            // Arrange
-            var uow1 = new Mock<IUnitOfWork>();
-            uow1.Setup(u => u.Id).Returns(Guid.NewGuid());
-
-            var uow2 = new Mock<IUnitOfWork>();
-            uow2.Setup(u => u.Id).Returns(Guid.NewGuid());
-
-            var dbContext1 = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-                .UseInMemoryDatabase("db1").Options);
-            var dbContext2 = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>()
-                .UseInMemoryDatabase("db2").Options);
-
-            _mockContextFactory.SetupSequence(f => f.GetDbContext())
-                .Returns(dbContext1)
-                .Returns(dbContext2);
-
-            // Act: Access with first UoW
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(uow1.Object);
-            var context1 = _repository.DbContext;
-
-            // Act: Switch to second UoW
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(uow2.Object);
-            var context2 = _repository.DbContext;
-
-            // Assert: Different contexts for different UoWs
-            Assert.Same(dbContext1, context1);
-            Assert.Same(dbContext2, context2);
-            Assert.NotSame(context1, context2);
-
-            // Cleanup
-            dbContext1.Dispose();
-            dbContext2.Dispose();
-        }
-
-        [Fact]
-        public void UowCaching_SameUowId_ShouldReuseCacheContext()
-        {
-            // Arrange
-            var uowId = Guid.NewGuid();
-            var mockUow = new Mock<IUnitOfWork>();
-            mockUow.Setup(u => u.Id).Returns(uowId);
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
-
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act: Multiple accesses with same UoW
-            var context1 = _repository.DbContext;
-            var context2 = _repository.DbContext;
-            var dbSet1 = _repository.DbSet;
-            var dbSet2 = _repository.DbSet;
-
-            // Assert: Same instances returned
-            Assert.Same(_dbContext, context1);
-            Assert.Same(_dbContext, context2);
-            Assert.Same(dbSet1, dbSet2);
-
-            // Factory should only be called once
-            _mockContextFactory.Verify(f => f.GetDbContext(), Times.Once);
-        }
-
-        [Fact]
-        public async Task DbContext_ConcurrentAccess_ShouldShareCacheWithinSameUow()
+        public async Task DbContext_ConcurrentAccess_ResolvesFromFactoryPerCall()
         {
             // Arrange
             var mockUow = new Mock<IUnitOfWork>();
@@ -292,9 +231,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             mockUow.Setup(u => u.Id).Returns(uowId);
             _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
 
-            // Configure factory to return same instance
             var dbContext = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
-
             var callCount = 0;
             _mockContextFactory.Setup(f => f.GetDbContext()).Returns(() =>
             {
@@ -303,85 +240,18 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
                 return dbContext;
             });
 
-            // Act: Concurrently access DbContext property from multiple tasks within SAME UoW context
-            // All tasks access the same _mockUnitOfWorkManager which returns the same mockUow
+            // Act: Concurrently access the DbContext property from multiple tasks.
             var tasks = Enumerable.Range(0, 8).Select(_ => Task.Run(() => _repository.DbContext)).ToArray();
             var results = await Task.WhenAll(tasks);
 
-            // Assert: All results should be the same instance (shared cache within UoW)
+            // Assert: every access delegates to the frame-stable factory; identity stability
+            // is the factory's contract, not a repository-local cache.
             foreach (var r in results)
                 Assert.Same(dbContext, r);
 
-            // With concurrent access and locking, factory might be called 1-8 times
-            // depending on thread scheduling. The important thing is that all tasks get the same instance.
-            Assert.True(callCount >= 1 && callCount <= 8, $"Factory called {callCount} times, expected 1-8");
+            Assert.Equal(8, callCount);
 
             dbContext.Dispose();
-        }
-
-        [Fact]
-        public void Cache_IsScopedToRepositoryInstance()
-        {
-            // Arrange: two separate repository instances with same dependencies
-            var uowId = Guid.NewGuid();
-            var mockUow = new Mock<IUnitOfWork>();
-            mockUow.Setup(u => u.Id).Returns(uowId);
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
-
-            var dbContext1 = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseInMemoryDatabase("db_repo1").Options);
-            var dbContext2 = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseInMemoryDatabase("db_repo2").Options);
-
-            // Ensure factory returns a different context per call
-            _mockContextFactory.SetupSequence(f => f.GetDbContext())
-                .Returns(dbContext1)
-                .Returns(dbContext2);
-
-            var dependencies = new EFRepositoryDependencies<TestDbContext>(_mockContextFactory.Object, _mockUnitOfWorkManager.Object, _mockDependenciesLogger.Object, new ObjectAccessor<MiCakeEFCoreOptions>(new MiCakeEFCoreOptions(typeof(TestDbContext))));
-            var repo1 = new TestRepository(dependencies);
-            var repo2 = new TestRepository(dependencies);
-
-            // Act
-            var ctx1 = repo1.DbContext;
-            var ctx2 = repo2.DbContext;
-
-            // Assert
-            Assert.Same(dbContext1, ctx1);
-            Assert.Same(dbContext2, ctx2);
-            Assert.NotSame(ctx1, ctx2);
-
-            dbContext1.Dispose();
-            dbContext2.Dispose();
-        }
-
-        [Fact]
-        public void Repository_Dispose_ShouldUnsubscribeAndAllowNewContextCreation()
-        {
-            // Arrange
-            var uowId = Guid.NewGuid();
-            var mockUow = new Mock<IUnitOfWork>();
-            mockUow.Setup(u => u.Id).Returns(uowId);
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns(mockUow.Object);
-
-            var dbContext1 = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseInMemoryDatabase("db-dispose-1").Options);
-            var dbContext2 = new TestDbContext(new DbContextOptionsBuilder<TestDbContext>().UseInMemoryDatabase("db-dispose-2").Options);
-
-            _mockContextFactory.SetupSequence(f => f.GetDbContext())
-                .Returns(dbContext1)
-                .Returns(dbContext2);
-
-            // Act: access and cache one context
-            var ctx1 = _repository.DbContext;
-            Assert.Same(dbContext1, ctx1);
-
-            // New repository instance should cause creating a new context for same UOW
-            var dependencies = new EFRepositoryDependencies<TestDbContext>(_mockContextFactory.Object, _mockUnitOfWorkManager.Object, _mockDependenciesLogger.Object, new ObjectAccessor<MiCakeEFCoreOptions>(new MiCakeEFCoreOptions(typeof(TestDbContext))));
-            var repo2 = new TestRepository(dependencies);
-            var ctx2 = repo2.DbContext;
-
-            Assert.Same(dbContext2, ctx2);
-
-            dbContext1.Dispose();
-            dbContext2.Dispose();
         }
 
         #endregion

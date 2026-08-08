@@ -7,9 +7,10 @@ namespace MiCake.DDD.Uow
 {
     /// <summary>
     /// Unit of Work interface for managing database transactions.
-    /// When created, the UoW is immediately active. Transactions are automatically started if configured.
+    /// The unit of work is the sole persistence owner; every writable unit of work uses explicit transactions.
+    /// When created, the UoW is immediately active.
     /// </summary>
-    public interface IUnitOfWork : IDisposable
+    public interface IUnitOfWork : IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// Unique identifier for this unit of work
@@ -25,6 +26,11 @@ namespace MiCake.DDD.Uow
         /// Indicates if this unit of work has been completed (committed or marked as completed)
         /// </summary>
         bool IsCompleted { get; }
+
+        /// <summary>
+        /// Indicates if this is a read-only unit of work. Read-only units of work reject resource flush and write activation.
+        /// </summary>
+        bool IsReadOnly { get; }
 
         /// <summary>
         /// Indicates if transactions are currently active
@@ -47,6 +53,14 @@ namespace MiCake.DDD.Uow
         bool IsNested => Parent != null;
 
         /// <summary>
+        /// Flushes every registered resource in registration order and returns the sum of affected rows.
+        /// Does not commit, complete the UoW, or raise commit events.
+        /// Rejected on read-only units of work. If any flush fails, the unit of work becomes rollback-only
+        /// and no later resource is flushed.
+        /// </summary>
+        Task<int> FlushAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Commits all changes to the database.
         /// For nested UoW, this only marks as completed; actual commit happens at root level.
         /// </summary>
@@ -54,7 +68,7 @@ namespace MiCake.DDD.Uow
 
         /// <summary>
         /// Rolls back all changes.
-        /// For nested UoW, this marks parent UoW to rollback.
+        /// For nested UoW, this marks the root UoW as rollback-only.
         /// </summary>
         Task RollbackAsync(CancellationToken cancellationToken = default);
 
@@ -69,6 +83,7 @@ namespace MiCake.DDD.Uow
         /// <summary>
         /// Creates a savepoint within the current transaction.
         /// Allows partial rollback to this point without rolling back the entire transaction.
+        /// Every currently registered resource must have an active transaction before the savepoint is created.
         /// </summary>
         /// <param name="name">Name of the savepoint</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -78,6 +93,7 @@ namespace MiCake.DDD.Uow
         /// <summary>
         /// Rolls back to a specific savepoint, discarding changes made after that point.
         /// The savepoint remains valid and can be rolled back to again.
+        /// Resources registered after the savepoint was created are rejected before any state changes.
         /// </summary>
         /// <param name="name">Name of the savepoint</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -96,71 +112,27 @@ namespace MiCake.DDD.Uow
         #region Transaction Event Hooks
 
         /// <summary>
-        /// Event raised before committing the transaction.
-        /// Useful for validation or preparing data before commit.
+        /// Event raised once before the first physical resource commit.
+        /// A handler failure aborts the commit and triggers rollback of all eligible resources.
         /// </summary>
-        /// <remarks>
-        /// <para><b> Important Guidelines for Event Handlers:</b></para>
-        /// <list type="bullet">
-        ///   <item>Event handlers should be lightweight and fast</item>
-        ///   <item>Event handlers should NOT perform critical business logic</item>
-        ///   <item>Event handlers MUST handle their own exceptions</item>
-        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
-        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
-        ///   <item>Do NOT use for: data validation, critical state changes</item>
-        /// </list>
-        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnCommitting;
 
         /// <summary>
-        /// Event raised after successfully committing the transaction.
-        /// Useful for cache clearing, notifications, or other post-commit actions.
+        /// Event raised only after a complete successful commit.
+        /// Not raised for partial commits or rollback failures. Shared nested completion raises no physical commit events.
         /// </summary>
-        /// <remarks>
-        /// <para><b> Important Guidelines for Event Handlers:</b></para>
-        /// <list type="bullet">
-        ///   <item>Event handlers should be lightweight and fast</item>
-        ///   <item>Event handlers should NOT perform critical business logic</item>
-        ///   <item>Event handlers MUST handle their own exceptions</item>
-        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
-        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
-        ///   <item>Do NOT use for: data validation, critical state changes</item>
-        /// </list>
-        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnCommitted;
 
         /// <summary>
-        /// Event raised before rolling back the transaction.
-        /// Useful for logging or preparing for rollback.
+        /// Event raised once before rollback attempts of eligible resources.
+        /// Handler failures are collected and surfaced with the rollback outcome.
         /// </summary>
-        /// <remarks>
-        /// <para><b> Important Guidelines for Event Handlers:</b></para>
-        /// <list type="bullet">
-        ///   <item>Event handlers should be lightweight and fast</item>
-        ///   <item>Event handlers should NOT perform critical business logic</item>
-        ///   <item>Event handlers MUST handle their own exceptions</item>
-        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
-        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
-        ///   <item>Do NOT use for: data validation, critical state changes</item>
-        /// </list>
-        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnRollingBack;
 
         /// <summary>
-        /// Event raised after successfully rolling back the transaction.
-        /// Useful for cleanup or error handling.
+        /// Event raised only after a complete successful rollback.
+        /// Not raised for rollback failures or partial commits. Shared nested completion raises no physical rollback events.
         /// </summary>
-        /// <remarks>
-        /// <para><b> Important Guidelines for Event Handlers:</b></para>
-        /// <list type="bullet">
-        ///   <item>Event handlers should be lightweight and fast</item>
-        ///   <item>Event handlers should NOT perform critical business logic</item>
-        ///   <item>Event handlers MUST handle their own exceptions</item>
-        ///   <item>Exceptions in event handlers are logged but do not break UoW flow</item>
-        ///   <item>Use for: cache cleanup, notifications, logging, metrics</item>
-        ///   <item>Do NOT use for: data validation, critical state changes</item>
-        /// </list>
-        /// </remarks>
         event EventHandler<UnitOfWorkEventArgs>? OnRolledBack;
 
         #endregion

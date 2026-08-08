@@ -10,7 +10,7 @@ using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Store
 {
-    [Collection("ConventionEngineTests")]
+[Collection("MiCakeStaticFactory")]
     public class ConventionIntegrationTests : IDisposable
     {
         public ConventionIntegrationTests()
@@ -158,14 +158,21 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
         }
     }
     
-    // Test DbContext for integration testing
-    public class IntegrationTestDbContext : MiCakeDbContext
+    // Test DbContext for integration testing. Plain DbContext with MiCake conventions:
+    // these tests exercise conventions, not the guarded write pipeline.
+    public class IntegrationTestDbContext : DbContext
     {
         public IntegrationTestDbContext(DbContextOptions options) : base(options) { }
-        
+
         public DbSet<IntegrationSoftDeletableEntity> SoftDeletableEntities { get; set; }
         public DbSet<IntegrationAuditableEntity> AuditableEntities { get; set; }
         public DbSet<IntegrationRegularEntity> RegularEntities { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.UseMiCakeConventions();
+        }
     }
     
     // Test entities with unique names for integration tests

@@ -119,6 +119,10 @@ namespace BaseMiCakeApplication.Controllers
         /// </summary>
         /// <param name="bookDto">The update data</param>
         /// <returns>Success status</returns>
+        /// <remarks>
+        /// The request-level Unit of Work commits the tracked changes after the action succeeds;
+        /// repositories never save or commit independently.
+        /// </remarks>
         [HttpPut]
         public async Task<IActionResult> ChangeAuthor([FromBody] ChangeBookAuthorDto bookDto)
         {
@@ -128,7 +132,6 @@ namespace BaseMiCakeApplication.Controllers
                 ?? throw new BusinessException("Book not found");
 
             bookInfo.ChangeAuthor(bookDto.AuthorFirstName, bookDto.AuthorLastName);
-            await _bookRepositoryPaging.SaveChangesAsync();
 
             return Ok(true);
         }

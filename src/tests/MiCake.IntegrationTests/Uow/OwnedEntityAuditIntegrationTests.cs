@@ -1,5 +1,6 @@
 using MiCake.EntityFrameworkCore;
 using MiCake.Audit;
+using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,8 +9,8 @@ using MiCake.Core.Modularity;
 using System;
 using MiCake.IntegrationTests.Fixtures;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 using MiCake.DDD.Domain;
 
 namespace MiCake.IntegrationTests.Uow
@@ -22,7 +23,6 @@ namespace MiCake.IntegrationTests.Uow
     public class OwnedEntityAuditIntegrationTests : IDisposable
     {
         private readonly ServiceProvider _serviceProvider;
-        private readonly TestDbContext _dbContext;
         private readonly MiCakeAppFixture _fixture;
         private readonly DateTimeOffset _fixedTimeOffset = new(2025, 1, 21, 10, 30, 0, TimeSpan.Zero);
         private readonly DateTime _fixedTime = new(2025, 1, 21, 10, 30, 0, DateTimeKind.Utc);
@@ -39,7 +39,6 @@ namespace MiCake.IntegrationTests.Uow
                 {
                     options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
-                    options.UseMiCakeInterceptors(sp);
                 });
 
                 // Register custom TimeProvider for testing
@@ -50,117 +49,148 @@ namespace MiCake.IntegrationTests.Uow
                 builder.UseAudit();
                 builder.Build();
             });
-
-            _dbContext = _serviceProvider.GetRequiredService<TestDbContext>();
         }
+
+        /// <summary>
+        /// Runs the test body inside a scope with an active writable unit of work.
+        /// The MiCake write guard rejects every framework-mediated write without an ambient
+        /// writable UoW, so audit behavior is asserted within the contracted boundary.
+        /// </summary>
+        private static async Task RunInUowAsync(IServiceProvider provider, Func<TestDbContext, Task> action)
+        {
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await using var uow = await manager.BeginAsync();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            await action(dbContext);
+            await uow.CommitAsync();
+        }
+
+        private Task RunInUowAsync(Func<TestDbContext, Task> action)
+            => RunInUowAsync(_serviceProvider, action);
 
         #region OwnsOne Tests
 
         [Fact]
         public async Task SaveChanges_WhenOwnedEntityChanged_ShouldUpdateOwnerUpdatedAt()
         {
-            // Arrange - Create a book with author
-            var book = new BookEntity("Test Book", "John", "Doe");
-            _dbContext.Books.Add(book);
-            await _dbContext.SaveChangesAsync();
-            
-            var originalCreatedAt = book.CreatedAt;
-            Assert.Equal(_fixedTime, originalCreatedAt);
-            Assert.Null(book.UpdatedAt); // Not modified yet
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange - Create a book with author
+                var book = new BookEntity("Test Book", "John", "Doe");
+                dbContext.Books.Add(book);
+                await dbContext.SaveChangesAsync();
 
-            _dbContext.ChangeTracker.Clear();
+                var originalCreatedAt = book.CreatedAt;
+                Assert.Equal(_fixedTime, originalCreatedAt);
+                Assert.Null(book.UpdatedAt); // Not modified yet
 
-            // Act - Change the author (owned entity)
-            var existingBook = await _dbContext.Books.FirstAsync(b => b.Id == book.Id);
-            existingBook.ChangeAuthor("Jane", "Smith");
-            await _dbContext.SaveChangesAsync();
+                dbContext.ChangeTracker.Clear();
 
-            // Assert - UpdatedAt should be set even though Book itself wasn't directly modified
-            Assert.NotNull(existingBook.UpdatedAt);
-            Assert.Equal(_fixedTime, existingBook.UpdatedAt.Value);
-            Assert.Equal(originalCreatedAt, existingBook.CreatedAt); // CreatedAt unchanged
+                // Act - Change the author (owned entity)
+                var existingBook = await dbContext.Books.FirstAsync(b => b.Id == book.Id);
+                existingBook.ChangeAuthor("Jane", "Smith");
+                await dbContext.SaveChangesAsync();
+
+                // Assert - UpdatedAt should be set even though Book itself wasn't directly modified
+                Assert.NotNull(existingBook.UpdatedAt);
+                Assert.Equal(_fixedTime, existingBook.UpdatedAt.Value);
+                Assert.Equal(originalCreatedAt, existingBook.CreatedAt); // CreatedAt unchanged
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WhenOnlyOwnerPropertyChanged_ShouldUpdateUpdatedAt()
         {
-            // Arrange
-            var book = new BookEntity("Test Book", "John", "Doe");
-            _dbContext.Books.Add(book);
-            await _dbContext.SaveChangesAsync();
-            
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var book = new BookEntity("Test Book", "John", "Doe");
+                dbContext.Books.Add(book);
+                await dbContext.SaveChangesAsync();
 
-            // Act - Change only the owner's property (not owned entity)
-            var existingBook = await _dbContext.Books.FirstAsync(b => b.Id == book.Id);
-            existingBook.UpdateTitle("New Title");
-            await _dbContext.SaveChangesAsync();
+                dbContext.ChangeTracker.Clear();
 
-            // Assert
-            Assert.NotNull(existingBook.UpdatedAt);
-            Assert.Equal(_fixedTime, existingBook.UpdatedAt.Value);
+                // Act - Change only the owner's property (not owned entity)
+                var existingBook = await dbContext.Books.FirstAsync(b => b.Id == book.Id);
+                existingBook.UpdateTitle("New Title");
+                await dbContext.SaveChangesAsync();
+
+                // Assert
+                Assert.NotNull(existingBook.UpdatedAt);
+                Assert.Equal(_fixedTime, existingBook.UpdatedAt.Value);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WhenBothOwnerAndOwnedChanged_ShouldUpdateUpdatedAt()
         {
-            // Arrange
-            var book = new BookEntity("Test Book", "John", "Doe");
-            _dbContext.Books.Add(book);
-            await _dbContext.SaveChangesAsync();
-            
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var book = new BookEntity("Test Book", "John", "Doe");
+                dbContext.Books.Add(book);
+                await dbContext.SaveChangesAsync();
 
-            // Act - Change both owner and owned entity
-            var existingBook = await _dbContext.Books.FirstAsync(b => b.Id == book.Id);
-            existingBook.UpdateTitle("New Title");
-            existingBook.ChangeAuthor("Jane", "Smith");
-            await _dbContext.SaveChangesAsync();
+                dbContext.ChangeTracker.Clear();
 
-            // Assert
-            Assert.NotNull(existingBook.UpdatedAt);
-            Assert.Equal(_fixedTime, existingBook.UpdatedAt.Value);
+                // Act - Change both owner and owned entity
+                var existingBook = await dbContext.Books.FirstAsync(b => b.Id == book.Id);
+                existingBook.UpdateTitle("New Title");
+                existingBook.ChangeAuthor("Jane", "Smith");
+                await dbContext.SaveChangesAsync();
+
+                // Assert
+                Assert.NotNull(existingBook.UpdatedAt);
+                Assert.Equal(_fixedTime, existingBook.UpdatedAt.Value);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WhenOwnedEntityNotChanged_ShouldNotUpdateUpdatedAt()
         {
-            // Arrange
-            var book = new BookEntity("Test Book", "John", "Doe");
-            _dbContext.Books.Add(book);
-            await _dbContext.SaveChangesAsync();
-            
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var book = new BookEntity("Test Book", "John", "Doe");
+                dbContext.Books.Add(book);
+                await dbContext.SaveChangesAsync();
 
-            // Act - Just load the entity without changes
-            var existingBook = await _dbContext.Books.FirstAsync(b => b.Id == book.Id);
-            // Don't make any changes
-            await _dbContext.SaveChangesAsync();
+                dbContext.ChangeTracker.Clear();
 
-            // Assert - UpdatedAt should remain null (no modifications)
-            Assert.Null(existingBook.UpdatedAt);
+                // Act - Just load the entity without changes
+                var existingBook = await dbContext.Books.FirstAsync(b => b.Id == book.Id);
+                // Don't make any changes
+                await dbContext.SaveChangesAsync();
+
+                // Assert - UpdatedAt should remain null (no modifications)
+                Assert.Null(existingBook.UpdatedAt);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WithDateTimeOffset_WhenOwnedEntityChanged_ShouldUpdateOwnerUpdatedAt()
         {
-            // Arrange
-            var article = new ArticleEntity("Test Article", "Category A");
-            _dbContext.Articles.Add(article);
-            await _dbContext.SaveChangesAsync();
-            
-            var originalCreatedAt = article.CreatedAt;
-            
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var article = new ArticleEntity("Test Article", "Category A");
+                dbContext.Articles.Add(article);
+                await dbContext.SaveChangesAsync();
 
-            // Act - Change the metadata (owned entity)
-            var existingArticle = await _dbContext.Articles.FirstAsync(a => a.Id == article.Id);
-            existingArticle.UpdateMetadata("Category B", 5);
-            await _dbContext.SaveChangesAsync();
+                var originalCreatedAt = article.CreatedAt;
 
-            // Assert
-            Assert.NotNull(existingArticle.UpdatedAt);
-            Assert.Equal(_fixedTimeOffset, existingArticle.UpdatedAt.Value);
+                dbContext.ChangeTracker.Clear();
+
+                // Act - Change the metadata (owned entity)
+                var existingArticle = await dbContext.Articles.FirstAsync(a => a.Id == article.Id);
+                existingArticle.UpdateMetadata("Category B", 5);
+                await dbContext.SaveChangesAsync();
+
+                // Assert
+                Assert.NotNull(existingArticle.UpdatedAt);
+                Assert.Equal(_fixedTimeOffset, existingArticle.UpdatedAt.Value);
+            });
         }
 
         #endregion
@@ -170,21 +200,24 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task SaveChanges_WhenOneOfMultipleOwnedEntitiesChanged_ShouldUpdateOwnerUpdatedAt()
         {
-            // Arrange
-            var product = new ProductEntity("Test Product", "USD", 99.99m);
-            _dbContext.Products.Add(product);
-            await _dbContext.SaveChangesAsync();
-            
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var product = new ProductEntity("Test Product", "USD", 99.99m);
+                dbContext.Products.Add(product);
+                await dbContext.SaveChangesAsync();
 
-            // Act - Change only the price (one of two owned entities)
-            var existingProduct = await _dbContext.Products.FirstAsync(p => p.Id == product.Id);
-            existingProduct.UpdatePrice("EUR", 89.99m);
-            await _dbContext.SaveChangesAsync();
+                dbContext.ChangeTracker.Clear();
 
-            // Assert
-            Assert.NotNull(existingProduct.UpdatedAt);
-            Assert.Equal(_fixedTime, existingProduct.UpdatedAt.Value);
+                // Act - Change only the price (one of two owned entities)
+                var existingProduct = await dbContext.Products.FirstAsync(p => p.Id == product.Id);
+                existingProduct.UpdatePrice("EUR", 89.99m);
+                await dbContext.SaveChangesAsync();
+
+                // Assert
+                Assert.NotNull(existingProduct.UpdatedAt);
+                Assert.Equal(_fixedTime, existingProduct.UpdatedAt.Value);
+            });
         }
 
         #endregion
@@ -194,36 +227,42 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task SaveChanges_CreateEntity_ShouldSetCreatedAtNotUpdatedAt()
         {
-            // Arrange
-            var book = new BookEntity("New Book", "Author", "Name");
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var book = new BookEntity("New Book", "Author", "Name");
 
-            // Act
-            _dbContext.Books.Add(book);
-            await _dbContext.SaveChangesAsync();
+                // Act
+                dbContext.Books.Add(book);
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.Equal(_fixedTime, book.CreatedAt);
-            Assert.Null(book.UpdatedAt); // New entity should not have UpdatedAt
+                // Assert
+                Assert.Equal(_fixedTime, book.CreatedAt);
+                Assert.Null(book.UpdatedAt); // New entity should not have UpdatedAt
+            });
         }
 
         [Fact]
         public async Task SaveChanges_DeleteEntity_ShouldNotAffectTimestamps()
         {
-            // Arrange
-            var book = new BookEntity("To Delete", "Author", "Name");
-            _dbContext.Books.Add(book);
-            await _dbContext.SaveChangesAsync();
-            
-            var originalCreatedAt = book.CreatedAt;
-            _dbContext.ChangeTracker.Clear();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var book = new BookEntity("To Delete", "Author", "Name");
+                dbContext.Books.Add(book);
+                await dbContext.SaveChangesAsync();
 
-            // Act
-            var existingBook = await _dbContext.Books.FirstAsync(b => b.Id == book.Id);
-            _dbContext.Books.Remove(existingBook);
-            await _dbContext.SaveChangesAsync();
+                var originalCreatedAt = book.CreatedAt;
+                dbContext.ChangeTracker.Clear();
 
-            // Assert - CreatedAt should remain unchanged
-            Assert.Equal(originalCreatedAt, existingBook.CreatedAt);
+                // Act
+                var existingBook = await dbContext.Books.FirstAsync(b => b.Id == book.Id);
+                dbContext.Books.Remove(existingBook);
+                await dbContext.SaveChangesAsync();
+
+                // Assert - CreatedAt should remain unchanged
+                Assert.Equal(originalCreatedAt, existingBook.CreatedAt);
+            });
         }
 
         #endregion

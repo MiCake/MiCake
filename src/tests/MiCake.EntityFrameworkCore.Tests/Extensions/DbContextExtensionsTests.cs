@@ -3,14 +3,13 @@ using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Infrastructure.Store;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Extensions
 {
-    [Collection("ConventionEngineTests")]
+    [Collection("MiCakeStaticFactory")]
     public class DbContextExtensionsTests : IDisposable
     {
         public DbContextExtensionsTests()
@@ -31,47 +30,37 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
         [Fact]
         public void CustomDbContext_UsingExtensionMethods_ShouldWorkCorrectly()
         {
-            // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<CustomUserDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-                
-            // Act & Assert
-            using var context = new CustomUserDbContext(options, serviceProvider);
+
+            using var context = new CustomUserDbContext(options);
             context.Database.EnsureCreated();
-            
-            // The context should be created without errors
+
             Assert.NotNull(context);
             Assert.NotNull(context.TestEntities);
         }
-        
+
         [Fact]
         public void CustomDbContext_WithSoftDeletion_ShouldApplyQueryFilter()
         {
-            // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            
             var options = new DbContextOptionsBuilder<CustomUserDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-                
-            using var context = new CustomUserDbContext(options, serviceProvider);
+
+            using var context = new CustomUserDbContext(options);
             context.Database.EnsureCreated();
-            
+
             // Add test data
             var activeEntity = new TestSoftDeletableEntity { Name = "Active", IsDeleted = false };
             var deletedEntity = new TestSoftDeletableEntity { Name = "Deleted", IsDeleted = true };
-            
+
             context.TestEntities.AddRange(activeEntity, deletedEntity);
             context.SaveChanges();
-            
+
             // Act
             var entities = context.TestEntities.ToList();
-            
+
             // Assert
             Assert.Single(entities);
             Assert.Equal("Active", entities.First().Name);
@@ -92,34 +81,24 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
         }
     }
     
-    // Example of user's custom DbContext that doesn't inherit from MiCakeDbContext
+    // Example of user's custom DbContext that doesn't inherit from MiCakeDbContext.
+    // This context only exercises the conventions extension; the MiCake write pipeline
+    // requires the provider-based interceptor overload and is covered elsewhere.
     public class CustomUserDbContext : DbContext
     {
-        private readonly IServiceProvider _serviceProvider;
-        
-        public CustomUserDbContext(DbContextOptions<CustomUserDbContext> options, IServiceProvider serviceProvider) 
+        public CustomUserDbContext(DbContextOptions<CustomUserDbContext> options)
             : base(options)
         {
-            _serviceProvider = serviceProvider;
         }
-        
+
         public DbSet<TestSoftDeletableEntity> TestEntities { get; set; }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            
+
             // Use MiCake extension method instead of inheriting
             modelBuilder.UseMiCakeConventions();
-        }
-        
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-            
-            // Use MiCake extension method instead of inheriting
-            var lifetime = _serviceProvider.GetService<IEFSaveChangesLifetime>();
-            optionsBuilder.UseMiCakeInterceptors(lifetime);
         }
     }
     

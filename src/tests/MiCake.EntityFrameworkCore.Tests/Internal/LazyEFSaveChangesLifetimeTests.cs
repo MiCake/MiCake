@@ -1,6 +1,7 @@
 using MiCake.DDD.Infrastructure;
 using MiCake.DDD.Infrastructure.Lifetime;
 using MiCake.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -18,7 +19,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
     public class LazyEFSaveChangesLifetimeTests
     {
         [Fact]
-        public void Constructor_WithValidServiceScopeFactory_ShouldSucceed()
+        public void Constructor_WithValidServiceProvider_ShouldSucceed()
         {
             // Arrange
             var services = new ServiceCollection();
@@ -26,18 +27,18 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
 
             // Act
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
 
             // Assert
             Assert.NotNull(lifetime);
         }
 
         [Fact]
-        public void Constructor_WithNullServiceScopeFactory_ShouldThrowArgumentNullException()
+        public void Constructor_WithNullServiceProvider_ShouldThrowArgumentNullException()
         {
             // Act & Assert
-            var exception = Assert.Throws<ArgumentNullException>(() => new LazyEFSaveChangesLifetime(null));
-            Assert.Equal("serviceScopeFactory", exception.ParamName);
+            var exception = Assert.Throws<ArgumentNullException>(() => new LazyEFSaveChangesLifetime(null!));
+            Assert.Equal("serviceProvider", exception.ParamName);
         }
 
         [Fact]
@@ -47,7 +48,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var services = new ServiceCollection();
             var serviceProvider = services.BuildServiceProvider();
             var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
             var emptyEntries = new List<EntityEntry>();
 
             // Act & Assert - Should complete without exception
@@ -61,7 +62,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var services = new ServiceCollection();
             var serviceProvider = services.BuildServiceProvider();
             var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
             var emptyEntries = new List<EntityEntry>();
 
             // Act & Assert - Should complete without exception
@@ -75,7 +76,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var services = new ServiceCollection();
             var serviceProvider = services.BuildServiceProvider();
             var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
             
             // Use empty collection since we can't easily mock EntityEntry
             var entries = new List<EntityEntry>();
@@ -91,7 +92,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             var services = new ServiceCollection();
             var serviceProvider = services.BuildServiceProvider();
             var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
             
             // Use empty collection since we can't easily mock EntityEntry
             var entries = new List<EntityEntry>();
@@ -101,139 +102,117 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task AfterSaveChangesAsync_WithHandlers_ShouldCreateScopeAndResolveServices()
+        public async Task BeforeAndAfterSaveChanges_WithTrackedEntity_InvokeHandlersWithPreSaveState()
         {
             // Arrange
             var services = new ServiceCollection();
-            
-            var handler = new TestPostSaveChangesHandler(1);
-            services.AddSingleton<IRepositoryPostSaveChanges>(handler);
-            
+            var preHandler = new RecordingPreSaveChangesHandler();
+            var postHandler = new RecordingPostSaveChangesHandler();
+            services.AddSingleton<IRepositoryPreSaveChanges>(preHandler);
+            services.AddSingleton<IRepositoryPostSaveChanges>(postHandler);
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
-            var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
-            
-            // Use empty collection to test the scoping logic without complex mocking
-            var entries = new List<EntityEntry>();
+
+            var options = new DbContextOptionsBuilder<LifetimeTestDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            using var context = new LifetimeTestDbContext(options);
+            var entry = context.Add(new LifetimeTestEntity { Name = "tracked" });
+
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
 
             // Act
-            await lifetime.AfterSaveChangesAsync(entries, CancellationToken.None);
+            await lifetime.BeforeSaveChangesAsync(new[] { entry }, CancellationToken.None);
+            await lifetime.AfterSaveChangesAsync(new[] { entry }, CancellationToken.None);
 
-            // Assert - Should complete without exception, proving scope creation works
-            Assert.True(true); // Test passes if no exception is thrown
+            // Assert
+            Assert.Equal(1, preHandler.CallCount);
+            Assert.Equal(1, postHandler.CallCount);
         }
 
         [Fact]
-        public async Task BeforeSaveChangesAsync_WithHandlers_ShouldCreateScopeAndResolveServices()
+        public async Task BeforeSaveChanges_HandlerStateOverride_IsAppliedToEntry()
         {
             // Arrange
             var services = new ServiceCollection();
-            
-            var handler = new TestPreSaveChangesHandler(1);
-            services.AddSingleton<IRepositoryPreSaveChanges>(handler);
-            
+            services.AddSingleton<IRepositoryPreSaveChanges, ModifiedStatePreSaveChangesHandler>();
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
-            var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
-            
-            // Use empty collection to test the scoping logic without complex mocking
-            var entries = new List<EntityEntry>();
+
+            var options = new DbContextOptionsBuilder<LifetimeTestDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            using var context = new LifetimeTestDbContext(options);
+            var entry = context.Add(new LifetimeTestEntity { Name = "override" });
+
+            var lifetime = new LazyEFSaveChangesLifetime(serviceProvider);
 
             // Act
-            await lifetime.BeforeSaveChangesAsync(entries, CancellationToken.None);
+            await lifetime.BeforeSaveChangesAsync(new[] { entry }, CancellationToken.None);
 
-            // Assert - Should complete without exception, proving scope creation works
-            Assert.True(true); // Test passes if no exception is thrown
-        }
-
-        [Fact]
-        public async Task ExecuteWithScope_WhenExceptionOccurs_ShouldHandleGracefully()
-        {
-            // Arrange - Create a service collection that will cause resolution to fail
-            var services = new ServiceCollection();
-            // Add a handler that will be resolved but might cause issues
-            var handler = new FaultyPostSaveChangesHandler();
-            services.AddSingleton<IRepositoryPostSaveChanges>(handler);
-            
-            var serviceProvider = services.BuildServiceProvider();
-            var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
-            
-            var entries = new List<EntityEntry>();
-
-            // Act & Assert - Should not throw exception, should handle gracefully
-            await lifetime.AfterSaveChangesAsync(entries, CancellationToken.None);
-            await lifetime.BeforeSaveChangesAsync(entries, CancellationToken.None);
-        }
-
-        [Fact]
-        public async Task ServiceScopeManagement_ShouldCreateAndDisposeScopes()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            var serviceScopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            var lifetime = new LazyEFSaveChangesLifetime(serviceScopeFactory);
-            
-            var entries = new List<EntityEntry>();
-
-            // Act - Multiple calls should each create and dispose their own scopes
-            await lifetime.AfterSaveChangesAsync(entries, CancellationToken.None);
-            await lifetime.BeforeSaveChangesAsync(entries, CancellationToken.None);
-            await lifetime.AfterSaveChangesAsync(entries, CancellationToken.None);
-
-            // Assert - Should complete without exception, proving proper scope management
-            Assert.True(true); // Test passes if no exception is thrown
-        }
-    }
-
-    /// <summary>
-    /// Test implementation of IRepositoryPostSaveChanges for verification
-    /// </summary>
-    internal class TestPostSaveChangesHandler : IRepositoryPostSaveChanges
-    {
-        public int Order { get; set; }
-
-        public TestPostSaveChangesHandler(int order)
-        {
-            Order = order;
-        }
-
-        public ValueTask<RepositoryEntityStates> PostSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
-        {
-            return ValueTask.FromResult(entityState);
+            // Assert - the handler-returned repository state was applied to the live entry.
+            Assert.Equal(EntityState.Modified, entry.State);
         }
     }
 
     /// <summary>
     /// Test implementation of IRepositoryPreSaveChanges for verification
     /// </summary>
-    internal class TestPreSaveChangesHandler : IRepositoryPreSaveChanges
+    internal class RecordingPreSaveChangesHandler : IRepositoryPreSaveChanges
     {
+        public int CallCount { get; private set; }
         public int Order { get; set; }
 
-        public TestPreSaveChangesHandler(int order)
+        public ValueTask<RepositoryEntityStates> PreSaveChangesAsync(
+            RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
-            Order = order;
-        }
-
-        public ValueTask<RepositoryEntityStates> PreSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
-        {
+            CallCount++;
             return ValueTask.FromResult(entityState);
         }
     }
 
     /// <summary>
-    /// Test handler that might cause exceptions during processing
+    /// Test implementation of IRepositoryPostSaveChanges for verification
     /// </summary>
-    internal class FaultyPostSaveChangesHandler : IRepositoryPostSaveChanges
+    internal class RecordingPostSaveChangesHandler : IRepositoryPostSaveChanges
     {
-        public int Order { get; set; } = 1;
+        public int CallCount { get; private set; }
+        public int Order { get; set; }
 
-        public ValueTask<RepositoryEntityStates> PostSaveChangesAsync(RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
+        public ValueTask<RepositoryEntityStates> PostSaveChangesAsync(
+            RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
         {
-            // This could potentially cause issues, but the LazyEFSaveChangesLifetime should handle it
+            CallCount++;
             return ValueTask.FromResult(entityState);
         }
+    }
+
+    /// <summary>
+    /// Pre-save handler that always requests the Modified repository state.
+    /// </summary>
+    internal class ModifiedStatePreSaveChangesHandler : IRepositoryPreSaveChanges
+    {
+        public int Order { get; set; }
+
+        public ValueTask<RepositoryEntityStates> PreSaveChangesAsync(
+            RepositoryEntityStates entityState, object entity, CancellationToken cancellationToken = default)
+        {
+            return ValueTask.FromResult(RepositoryEntityStates.Modified);
+        }
+    }
+
+    internal class LifetimeTestDbContext : DbContext
+    {
+        public LifetimeTestDbContext(DbContextOptions<LifetimeTestDbContext> options) : base(options)
+        {
+        }
+
+        public DbSet<LifetimeTestEntity> Entities => Set<LifetimeTestEntity>();
+    }
+
+    internal class LifetimeTestEntity
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }

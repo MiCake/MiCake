@@ -1,28 +1,26 @@
 using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Exceptions;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.Logging;
-using Moq;
 using System;
-using System.Threading;
+using System.Data;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace MiCake.Tests.Uow
 {
     /// <summary>
-    /// Unit tests for UnitOfWork core functionality
-    /// Tests cover two-phase registration, commit/rollback, savepoints, events, and lifecycle
+    /// Unit tests for UnitOfWork core functionality.
+    /// Covers registration, flush, commit, partial commit, rollback, savepoints, events, and disposal.
     /// </summary>
     public class UnitOfWorkTests
     {
         private readonly ILogger<UnitOfWork> _logger;
-        private readonly UnitOfWorkOptions _defaultOptions;
 
         public UnitOfWorkTests()
         {
             var loggerFactory = LoggerFactory.Create(builder => { });
             _logger = loggerFactory.CreateLogger<UnitOfWork>();
-            _defaultOptions = new UnitOfWorkOptions();
         }
 
         #region Constructor Tests
@@ -30,157 +28,346 @@ namespace MiCake.Tests.Uow
         [Fact]
         public void Constructor_WithValidParameters_ShouldCreateUnitOfWork()
         {
-            // Act
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
 
-            // Assert
             Assert.NotNull(uow);
             Assert.NotEqual(Guid.Empty, uow.Id);
             Assert.False(uow.IsCompleted);
+            Assert.False(uow.IsReadOnly);
             Assert.Null(uow.Parent);
         }
 
         [Fact]
         public void Constructor_WithParent_ShouldSetParentReference()
         {
-            // Arrange
-            var parent = new UnitOfWork(_logger, _defaultOptions, null);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
 
-            // Act
-            var child = new UnitOfWork(_logger, _defaultOptions, parent);
-
-            // Assert
             Assert.Same(parent, child.Parent);
+            Assert.True(child.IsNested);
         }
 
         #endregion
 
-        #region Two-Phase Registration Tests
+        #region Resource Registration Tests
 
         [Fact]
-        public void RegisterResource_ShouldCallPrepareForTransaction()
+        public void RegisterResource_ShouldPrepareWithUnitOfWorkContext()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
+            var options = new UnitOfWorkOptions { IsolationLevel = IsolationLevel.Serializable };
+            var uow = new UnitOfWork(_logger, options, null);
+            var resource = new TestUowResource();
 
-            // Act
-            uow.RegisterResource(mockResource.Object);
+            uow.RegisterResource(resource);
 
-            // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(_defaultOptions), Times.Once);
+            Assert.Equal(1, resource.PrepareCount);
+            Assert.NotNull(resource.PrepareContext);
+            Assert.Equal(uow.Id, resource.PrepareContext.UnitOfWorkId);
+            Assert.Equal(IsolationLevel.Serializable, resource.PrepareContext.IsolationLevel);
+            Assert.False(resource.PrepareContext.IsReadOnly);
+            Assert.Equal(0, resource.EnsureTransactionCount);
+        }
+
+        [Fact]
+        public void RegisterResource_WithReadOnlyUow_ShouldPassReadOnlyFlag()
+        {
+            var uow = new UnitOfWork(_logger, UnitOfWorkOptions.ReadOnly, null);
+            var resource = new TestUowResource();
+
+            uow.RegisterResource(resource);
+
+            Assert.True(resource.PrepareContext!.IsReadOnly);
+        }
+
+        [Fact]
+        public void RegisterResource_SameResourceTwice_ShouldOnlyPrepareOnce()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+
+            uow.RegisterResource(resource);
+            uow.RegisterResource(resource);
+
+            Assert.Equal(1, resource.PrepareCount);
         }
 
         [Fact]
         public void RegisterResource_WithNestedUow_ShouldRegisterToParent()
         {
-            // Arrange
-            var parent = new UnitOfWork(_logger, _defaultOptions, null);
-            var child = new UnitOfWork(_logger, _defaultOptions, parent);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
 
-            // Act
-            child.RegisterResource(mockResource.Object);
+            child.RegisterResource(resource);
 
-            // Assert
-            // Resource should be registered to parent
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
+            Assert.Equal(1, resource.PrepareCount);
+            Assert.Equal(parent.Id, resource.PrepareContext!.UnitOfWorkId);
         }
 
         [Fact]
-        public void RegisterResource_SameResourceTwice_ShouldOnlyRegisterOnce()
+        public void RegisterResource_PrepareFails_ShouldThrowAndNotRegister()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { PrepareException = new InvalidOperationException("Prepare failed") };
 
-            // Act
-            uow.RegisterResource(mockResource.Object);
-            uow.RegisterResource(mockResource.Object);
-
-            // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
+            Assert.Throws<InvalidOperationException>(() => uow.RegisterResource(resource));
         }
 
         #endregion
 
-        #region CommitAsync Tests - Lazy Mode
+        #region FlushAsync Tests
 
         [Fact]
-        public async Task CommitAsync_InLazyMode_ShouldActivateResourcesBeforeCommit()
+        public async Task FlushAsync_ShouldActivateAndFlushResourcesInRegistrationOrder()
         {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                InitializationMode = TransactionInitializationMode.Lazy
-            };
-            var uow = new UnitOfWork(_logger, options, null);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.IsInitialized).Returns(false);
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))
-                .Callback(() => mockResource.Setup(r => r.IsInitialized).Returns(true))
-                .Returns(Task.CompletedTask);
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true); // Ensure commit is called
-            mockResource.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
 
-            uow.RegisterResource(mockResource.Object);
+            var affected = await uow.FlushAsync();
 
-            // Act
-            await uow.CommitAsync();
-
-            // Assert
-            mockResource.Verify(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
-            mockResource.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal(2, affected);
+            Assert.Equal(1, resource1.EnsureTransactionCount);
+            Assert.Equal(1, resource1.FlushCount);
+            Assert.Equal(1, resource2.EnsureTransactionCount);
+            Assert.Equal(1, resource2.FlushCount);
+            Assert.False(uow.IsCompleted);
+            Assert.True(uow.HasActiveTransactions);
         }
 
         [Fact]
-        public async Task CommitAsync_WithNoResources_ShouldCompleteSuccessfully()
+        public async Task FlushAsync_ShouldNotCommitOrRaiseEvents()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            var committingRaised = false;
+            var committedRaised = false;
+            uow.OnCommitting += (s, e) => committingRaised = true;
+            uow.OnCommitted += (s, e) => committedRaised = true;
 
-            // Act
-            await uow.CommitAsync();
+            await uow.FlushAsync();
 
-            // Assert
-            Assert.True(uow.IsCompleted);
+            Assert.False(committingRaised);
+            Assert.False(committedRaised);
+            Assert.Equal(0, resource.CommitCount);
         }
 
         [Fact]
-        public async Task CommitAsync_InReadOnlyMode_ShouldNotActivateTransactions()
+        public async Task FlushAsync_InReadOnlyMode_ShouldReject()
         {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                IsReadOnly = true
-            };
-            var uow = new UnitOfWork(_logger, options, null);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            var uow = new UnitOfWork(_logger, UnitOfWorkOptions.ReadOnly, null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
 
-            uow.RegisterResource(mockResource.Object);
-
-            // Act
-            await uow.CommitAsync();
-
-            // Assert
-            mockResource.Verify(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.FlushAsync());
+            Assert.Equal(0, resource.FlushCount);
         }
 
         [Fact]
-        public async Task CommitAsync_AlreadyCompleted_ShouldThrowInvalidOperationException()
+        public async Task FlushAsync_WithResourceFailure_ShouldMarkRollbackOnlyAndStop()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            await uow.CommitAsync();
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource { FlushException = new InvalidOperationException("Flush failed") };
+            var resource3 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+            uow.RegisterResource(resource3);
 
-            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.FlushAsync());
+
+            Assert.Equal(1, resource1.FlushCount);
+            Assert.Equal(1, resource2.FlushCount);
+            Assert.Equal(0, resource3.FlushCount);
             await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+        }
+
+        [Fact]
+        public async Task FlushAsync_WithoutResources_ShouldReturnZero()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+
+            var affected = await uow.FlushAsync();
+
+            Assert.Equal(0, affected);
+        }
+
+        #endregion
+
+        #region CommitAsync Tests
+
+        [Fact]
+        public async Task CommitAsync_ShouldActivateFlushThenCommitInOrder()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+
+            await uow.CommitAsync();
+
+            Assert.True(uow.IsCompleted);
+            Assert.Equal(1, resource.EnsureTransactionCount);
+            Assert.Equal(1, resource.FlushCount);
+            Assert.Equal(1, resource.CommitCount);
+        }
+
+        [Fact]
+        public async Task CommitAsync_WithoutResources_ShouldCompleteWithoutEvents()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var committingRaised = false;
+            var committedRaised = false;
+            uow.OnCommitting += (s, e) => committingRaised = true;
+            uow.OnCommitted += (s, e) => committedRaised = true;
+
+            await uow.CommitAsync();
+
+            Assert.True(uow.IsCompleted);
+            Assert.False(committingRaised);
+            Assert.False(committedRaised);
+        }
+
+        [Fact]
+        public async Task CommitAsync_InReadOnlyMode_ShouldCompleteWithoutActivation()
+        {
+            var uow = new UnitOfWork(_logger, UnitOfWorkOptions.ReadOnly, null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+
+            await uow.CommitAsync();
+
+            Assert.True(uow.IsCompleted);
+            Assert.Equal(0, resource.EnsureTransactionCount);
+            Assert.Equal(0, resource.CommitCount);
+        }
+
+        [Fact]
+        public async Task CommitAsync_AlreadyCompleted_ShouldThrow()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            await uow.CommitAsync();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+        }
+
+        [Fact]
+        public async Task CommitAsync_ShouldRaiseOnCommittingAndOnCommitted()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            var committingRaised = false;
+            var committedRaised = false;
+            uow.OnCommitting += (s, e) => { committingRaised = true; Assert.Equal(uow.Id, e.UnitOfWorkId); };
+            uow.OnCommitted += (s, e) => { committedRaised = true; Assert.Equal(uow.Id, e.UnitOfWorkId); };
+
+            await uow.CommitAsync();
+
+            Assert.True(committingRaised);
+            Assert.True(committedRaised);
+        }
+
+        [Fact]
+        public async Task CommitAsync_OnCommittingHandlerFailure_ShouldAbortCommitAndRollback()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            uow.OnCommitting += (s, e) => throw new InvalidOperationException("Handler failed");
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+
+            Assert.Equal(0, resource.CommitCount);
+            Assert.Equal(1, resource.RollbackCount);
+            Assert.False(uow.IsCompleted);
+        }
+
+        [Fact]
+        public async Task CommitAsync_MarkedRollbackOnly_ShouldRollbackAndThrow()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            ((UnitOfWork)uow).MarkRollbackOnly();
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+
+            Assert.Contains("rollback", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(1, resource.RollbackCount);
+            Assert.Equal(0, resource.CommitCount);
+        }
+
+        [Fact]
+        public async Task CommitAsync_PartialFailure_ShouldExposeFinalOutcomeAndRollbackEligibleResources()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource { CommitException = new InvalidOperationException("Commit failed") };
+            var resource3 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+            uow.RegisterResource(resource3);
+
+            var ex = await Assert.ThrowsAsync<PartialUnitOfWorkCommitException>(() => uow.CommitAsync());
+
+            Assert.Equal(1, resource1.CommitCount);
+            Assert.Equal(1, resource2.CommitCount);
+            Assert.Equal(0, resource3.CommitCount);
+            Assert.Equal(1, resource2.RollbackCount);
+            Assert.Equal(1, resource3.RollbackCount);
+            Assert.Equal(0, resource1.RollbackCount);
+
+            var outcome = ex.Outcome;
+            Assert.Equal(uow.Id, outcome.UnitOfWorkId);
+            Assert.Equal(3, outcome.Resources.Count);
+            Assert.Equal(UnitOfWorkResourceCommitState.Committed, outcome.Resources[0].CommitState);
+            Assert.Null(outcome.Resources[0].RollbackState);
+            Assert.Equal(UnitOfWorkResourceCommitState.Failed, outcome.Resources[1].CommitState);
+            Assert.Equal(UnitOfWorkResourceCommitState.RolledBack, outcome.Resources[1].RollbackState);
+            Assert.Equal(UnitOfWorkResourceCommitState.Pending, outcome.Resources[2].CommitState);
+            Assert.Equal(UnitOfWorkResourceCommitState.RolledBack, outcome.Resources[2].RollbackState);
+            Assert.Single(ex.CommitFailures);
+            Assert.Empty(ex.RollbackFailures);
+            Assert.False(uow.IsCompleted);
+        }
+
+        [Fact]
+        public async Task CommitAsync_CommitAndRollbackFailure_ShouldExposeBoth()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource
+            {
+                CommitException = new InvalidOperationException("Commit failed"),
+                RollbackException = new InvalidOperationException("Rollback failed")
+            };
+            uow.RegisterResource(resource);
+
+            // Zero resources committed: this is a plain commit failure combined with a rollback
+            // failure, not a partial commit.
+            var ex = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => uow.CommitAsync());
+
+            Assert.IsType<InvalidOperationException>(ex.PrimaryException);
+            Assert.Single(ex.RollbackExceptions);
+        }
+
+        [Fact]
+        public async Task CommitAsync_FlushFailure_ShouldRollbackEligibleResources()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource { FlushException = new InvalidOperationException("Flush failed") };
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+
+            Assert.Equal("Flush failed", ex.Message);
+            Assert.Equal(1, resource1.RollbackCount);
+            Assert.Equal(1, resource2.RollbackCount);
+            Assert.Equal(0, resource1.CommitCount);
         }
 
         #endregion
@@ -188,41 +375,58 @@ namespace MiCake.Tests.Uow
         #region RollbackAsync Tests
 
         [Fact]
-        public async Task RollbackAsync_WithResources_ShouldRollbackAllResources()
+        public async Task RollbackAsync_ShouldRollbackAllResourcesAndRaiseEvents()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource1 = CreateMockResource();
-            var mockResource2 = CreateMockResource();
-
-            // Ensure rollback is called by setting HasActiveTransaction to true
-            mockResource1.Setup(r => r.HasActiveTransaction).Returns(true);
-            mockResource2.Setup(r => r.HasActiveTransaction).Returns(true);
-
-            uow.RegisterResource(mockResource1.Object);
-            uow.RegisterResource(mockResource2.Object);
-
-            // Activate transactions first (this sets _transactionsStarted = true)
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
             await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
 
-            // Act
+            var rollingBackRaised = false;
+            var rolledBackRaised = false;
+            uow.OnRollingBack += (s, e) => rollingBackRaised = true;
+            uow.OnRolledBack += (s, e) => { rolledBackRaised = true; Assert.Equal(uow.Id, e.UnitOfWorkId); };
+
             await uow.RollbackAsync();
 
-            // Assert
-            mockResource1.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-            mockResource2.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
             Assert.True(uow.IsCompleted);
+            Assert.Equal(1, resource1.RollbackCount);
+            Assert.Equal(1, resource2.RollbackCount);
+            Assert.True(rollingBackRaised);
+            Assert.True(rolledBackRaised);
         }
 
         [Fact]
-        public async Task RollbackAsync_AlreadyCompleted_ShouldThrowInvalidOperationException()
+        public async Task RollbackAsync_WithResourceFailure_ShouldThrowBoundaryExceptionAndNotRaiseOnRolledBack()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            await uow.CommitAsync();
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource { RollbackException = new InvalidOperationException("Rollback failed") };
+            var resource2 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
 
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.RollbackAsync());
+            var rolledBackRaised = false;
+            uow.OnRolledBack += (s, e) => rolledBackRaised = true;
+
+            var ex = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => uow.RollbackAsync());
+
+            Assert.Single(ex.RollbackExceptions);
+            Assert.Equal(1, resource2.RollbackCount);
+            Assert.False(rolledBackRaised);
+            Assert.False(uow.IsCompleted);
+        }
+
+        [Fact]
+        public async Task RollbackAsync_WithoutResources_ShouldComplete()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+
+            await uow.RollbackAsync();
+
+            Assert.True(uow.IsCompleted);
         }
 
         #endregion
@@ -230,159 +434,189 @@ namespace MiCake.Tests.Uow
         #region Savepoint Tests
 
         [Fact]
-        public async Task CreateSavepointAsync_InLazyMode_ShouldActivateTransactionsFirst()
+        public async Task CreateSavepointAsync_ShouldActivateResourcesFirst()
         {
-            // Arrange
-            var options = new UnitOfWorkOptions
-            {
-                InitializationMode = TransactionInitializationMode.Lazy
-            };
-            var uow = new UnitOfWork(_logger, options, null);
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.IsInitialized).Returns(false);
-            mockResource.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()))
-                .Callback(() => mockResource.Setup(r => r.IsInitialized).Returns(true))
-                .Returns(Task.CompletedTask);
-            mockResource.Setup(r => r.CreateSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns<string, CancellationToken>((name, ct) => Task.FromResult(name ?? "test_savepoint"));
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
 
-            uow.RegisterResource(mockResource.Object);
+            var name = await uow.CreateSavepointAsync("test_sp");
 
-            // Act
-            var savepointName = await uow.CreateSavepointAsync("test_savepoint");
-
-            // Assert
-            Assert.NotNull(savepointName);
-            mockResource.Verify(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
-            mockResource.Verify(r => r.CreateSavepointAsync("test_savepoint", It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal("test_sp", name);
+            Assert.Equal(1, resource.EnsureTransactionCount);
+            Assert.Contains("test_sp", resource.Savepoints);
         }
 
         [Fact]
         public async Task CreateSavepointAsync_WithNullName_ShouldGenerateName()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource = CreateMockResource();
-            uow.RegisterResource(mockResource.Object);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
 
-            // Act
-            var savepointName = await uow.CreateSavepointAsync(null);
+            var name = await uow.CreateSavepointAsync(null!);
 
-            // Assert
-            Assert.NotNull(savepointName);
-            mockResource.Verify(r => r.CreateSavepointAsync(It.IsNotNull<string>(), It.IsAny<CancellationToken>()), Times.Once);
+            Assert.NotNull(name);
+            Assert.Single(resource.Savepoints);
         }
 
         [Fact]
-        public async Task RollbackToSavepointAsync_ShouldRollbackAllResources()
+        public async Task CreateSavepointAsync_WithoutSavepointSupport_ShouldThrowBeforeChangingState()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mockResource.Setup(r => r.IsInitialized).Returns(true);
-            mockResource.Setup(r => r.RollbackToSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { SupportsSavepoints = false };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
 
-            uow.RegisterResource(mockResource.Object);
-            var savepointName = await uow.CreateSavepointAsync("test_sp");
+            await Assert.ThrowsAsync<NotSupportedException>(() => uow.CreateSavepointAsync("test_sp"));
 
-            // Act
+            Assert.Empty(resource.Savepoints);
+        }
+
+        [Fact]
+        public async Task RollbackToSavepointAsync_WithLateRegisteredResource_ShouldFailBeforeChangingState()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            await uow.CreateSavepointAsync("test_sp");
+
+            var resource2 = new TestUowResource();
+            uow.RegisterResource(resource2);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.RollbackToSavepointAsync("test_sp"));
+
+            Assert.Empty(resource1.RolledBackTo);
+            Assert.Empty(resource2.RolledBackTo);
+        }
+
+        [Fact]
+        public async Task RollbackToSavepointAsync_ShouldRollbackAllCoveredResources()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource();
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+            await uow.CreateSavepointAsync("test_sp");
+
             await uow.RollbackToSavepointAsync("test_sp");
 
-            // Assert
-            mockResource.Verify(r => r.RollbackToSavepointAsync("test_sp", It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Contains("test_sp", resource1.RolledBackTo);
+            Assert.Contains("test_sp", resource2.RolledBackTo);
         }
 
         [Fact]
-        public async Task ReleaseSavepointAsync_ShouldReleaseFromAllResources()
+        public async Task ReleaseSavepointAsync_ShouldRemoveCoverage()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource = new Mock<IUnitOfWorkResource>();
-            mockResource.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mockResource.Setup(r => r.IsInitialized).Returns(true);
-            mockResource.Setup(r => r.ReleaseSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            await uow.CreateSavepointAsync("test_sp");
 
-            uow.RegisterResource(mockResource.Object);
-            var savepointName = await uow.CreateSavepointAsync("test_sp");
-
-            // Act
             await uow.ReleaseSavepointAsync("test_sp");
 
-            // Assert
-            mockResource.Verify(r => r.ReleaseSavepointAsync("test_sp", It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Contains("test_sp", resource.Released);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.RollbackToSavepointAsync("test_sp"));
         }
 
         #endregion
-
-        #region Event Tests
-
-        [Fact]
-        public async Task CommitAsync_ShouldRaiseOnCommittingAndOnCommittedEvents()
-        {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var committingRaised = false;
-            var committedRaised = false;
-
-            uow.OnCommitting += (sender, args) =>
-            {
-                committingRaised = true;
-                Assert.Equal(uow.Id, args.UnitOfWorkId);
-            };
-
-            uow.OnCommitted += (sender, args) =>
-            {
-                committedRaised = true;
-                Assert.Equal(uow.Id, args.UnitOfWorkId);
-            };
-
-            // Act
-            await uow.CommitAsync();
-
-            // Assert
-            Assert.True(committingRaised);
-            Assert.True(committedRaised);
-        }
-
-        [Fact]
-        public async Task RollbackAsync_ShouldRaiseOnRolledBackEvent()
-        {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var rolledBackRaised = false;
-
-            uow.OnRolledBack += (sender, args) =>
-            {
-                rolledBackRaised = true;
-                Assert.Equal(uow.Id, args.UnitOfWorkId);
-            };
-
-            // Act
-            await uow.RollbackAsync();
-
-            // Assert
-            Assert.True(rolledBackRaised);
-        }
-
-        #endregion
-
-        #region Dispose Tests
 
         #region Disposal Tests
 
         [Fact]
-        public void Dispose_AfterCommit_ShouldNotThrowException()
+        public void Dispose_WithoutActiveTransactions_ShouldDisposeResourcesWithoutCompleting()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
 
-            // Act & Assert - should not throw
             uow.Dispose();
+
+            Assert.True(uow.IsDisposed);
+            // Without an active transaction there is nothing to roll back; the UoW is not
+            // reported as completed, matching DisposeAsync.
+            Assert.False(uow.IsCompleted);
+            Assert.Equal(1, resource.DisposeCount);
         }
-        #endregion
+
+        [Fact]
+        public async Task Dispose_WithPartialCommit_ShouldNotMarkCompleted()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource { CommitException = new InvalidOperationException("Commit failed") };
+            uow.RegisterResource(resource1);
+            uow.RegisterResource(resource2);
+
+            await Assert.ThrowsAsync<PartialUnitOfWorkCommitException>(() => uow.CommitAsync());
+
+            // Partial commit is a terminal state: synchronous disposal must not report the
+            // UoW as completed (matching DisposeAsync).
+            uow.Dispose();
+
+            Assert.True(uow.IsDisposed);
+            Assert.False(uow.IsCompleted);
+            Assert.Equal(1, resource1.DisposeCount);
+            Assert.Equal(1, resource2.DisposeCount);
+        }
+
+        [Fact]
+        public async Task Dispose_WithActiveTransactions_ShouldRollbackBestEffort()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            uow.Dispose();
+
+            Assert.True(uow.IsDisposed);
+            Assert.True(uow.IsCompleted);
+            Assert.Equal(1, resource.RollbackCount);
+            Assert.Equal(1, resource.DisposeCount);
+        }
+
+        [Fact]
+        public async Task Dispose_WithRollbackFailure_ShouldThrowBoundaryException()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { RollbackException = new InvalidOperationException("Rollback failed") };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            var ex = Assert.Throws<UnitOfWorkBoundaryException>(() => uow.Dispose());
+
+            Assert.Contains(ex.RollbackExceptions, e => e.Message == "Rollback failed");
+        }
+
+        [Fact]
+        public async Task Dispose_WithResourceDisposeFailure_ShouldThrowCleanupException()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource { DisposeException = new InvalidOperationException("Dispose failed") };
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            var ex = Assert.Throws<UnitOfWorkBoundaryException>(() => uow.Dispose());
+
+            Assert.Contains(ex.CleanupExceptions, e => e.Message == "Dispose failed");
+        }
+
+        [Fact]
+        public async Task DisposeAsync_WithActiveTransactions_ShouldRollbackBestEffort()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var resource = new TestUowResource();
+            uow.RegisterResource(resource);
+            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
+
+            await uow.DisposeAsync();
+
+            Assert.True(uow.IsDisposed);
+            Assert.Equal(1, resource.RollbackCount);
+            Assert.Equal(1, resource.DisposeCount);
+        }
 
         #endregion
 
@@ -391,100 +625,13 @@ namespace MiCake.Tests.Uow
         [Fact]
         public async Task MarkAsCompleted_ShouldSetIsCompletedToTrue()
         {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
 
-            // Act
             await uow.MarkAsCompletedAsync();
 
-            // Assert
             Assert.True(uow.IsCompleted);
-        }
-
-        #endregion
-
-        #region Edge Cases
-
-        [Fact]
-        public async Task CommitAsync_WithResourceThrowingException_ShouldPropagateException()
-        {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true); // Ensure commit is called
-            mockResource.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("Test exception"));
-
-            uow.RegisterResource(mockResource.Object);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
-        }
-
-        [Fact]
-        public async Task RollbackAsync_WithResourceThrowingException_ShouldContinueRollingBackOthers()
-        {
-            // Arrange
-            var uow = new UnitOfWork(_logger, _defaultOptions, null);
-            var mockResource1 = new Mock<IUnitOfWorkResource>();
-            var mockResource2 = new Mock<IUnitOfWorkResource>();
-            
-            // Set up unique resource identifiers
-            mockResource1.Setup(r => r.ResourceIdentifier).Returns("resource1");
-            mockResource2.Setup(r => r.ResourceIdentifier).Returns("resource2");
-            
-            mockResource1.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mockResource2.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            
-            // Ensure rollback is called by setting HasActiveTransaction to true
-            mockResource1.Setup(r => r.HasActiveTransaction).Returns(true);
-            mockResource2.Setup(r => r.HasActiveTransaction).Returns(true);
-            
-            mockResource1.Setup(r => r.RollbackAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("Rollback failed"));
-            mockResource2.Setup(r => r.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-
-            uow.RegisterResource(mockResource1.Object);
-            uow.RegisterResource(mockResource2.Object);
-
-            // Activate transactions first (this sets _transactionsStarted = true)
-            await ((IUnitOfWorkInternal)uow).ActivatePendingResourcesAsync();
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.RollbackAsync());
-            
-            // Both should have been attempted
-            mockResource1.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-            mockResource2.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        #endregion
-
-        #region Helper Methods
-
-        private static Mock<IUnitOfWorkResource> CreateMockResource()
-        {
-            var mock = new Mock<IUnitOfWorkResource>();
-            // Generate a unique identifier for this mock resource
-            var uniqueId = Guid.NewGuid().ToString();
-            
-            // Set up default behaviors
-            mock.Setup(r => r.ResourceIdentifier).Returns(uniqueId);
-            mock.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mock.Setup(r => r.IsInitialized).Returns(true);
-            mock.Setup(r => r.HasActiveTransaction).Returns(false);
-            mock.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.CreateSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns<string, CancellationToken>((name, ct) => Task.FromResult(name ?? "sp_default"));
-            mock.Setup(r => r.RollbackToSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.ReleaseSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            return mock;
         }
 
         #endregion
     }
 }
-

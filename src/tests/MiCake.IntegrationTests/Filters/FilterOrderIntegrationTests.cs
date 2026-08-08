@@ -412,17 +412,30 @@ namespace MiCake.IntegrationTests.Filters
     {
         public IUnitOfWork? Current => null;
 
-        public Task<IUnitOfWork> BeginAsync(bool requiresNew = false, CancellationToken cancellationToken = default)
+        public Task<IUnitOfWork> BeginAsync(UnitOfWorkOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IUnitOfWork>(new TestMockUnitOfWork());
         }
 
-        public Task<IUnitOfWork> BeginAsync(UnitOfWorkOptions options, bool requiresNew = false, CancellationToken cancellationToken = default)
+        public Task ExecuteRequiresNewAsync(
+            Func<IServiceProvider, CancellationToken, Task> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<IUnitOfWork>(new TestMockUnitOfWork());
+            return Task.CompletedTask;
+        }
+
+        public Task<TResult> ExecuteRequiresNewAsync<TResult>(
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<TResult>(default!);
         }
 
         public void Dispose() { }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     /// <summary>
@@ -433,6 +446,7 @@ namespace MiCake.IntegrationTests.Filters
         public Guid Id { get; } = Guid.NewGuid();
         public bool IsDisposed => false;
         public bool IsCompleted => false;
+        public bool IsReadOnly => false;
         public bool HasActiveTransactions => false;
         public IsolationLevel? IsolationLevel => null;
         public IUnitOfWork? Parent => null;
@@ -444,6 +458,7 @@ namespace MiCake.IntegrationTests.Filters
         public event EventHandler<UnitOfWorkEventArgs>? OnRolledBack;
 #pragma warning restore CS0067
 
+        public Task<int> FlushAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
         public Task CommitAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task RollbackAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -451,6 +466,8 @@ namespace MiCake.IntegrationTests.Filters
         public Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public void Dispose() { }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     /// <summary>

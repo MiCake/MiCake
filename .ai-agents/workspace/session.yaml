@@ -1,0 +1,79 @@
+session:
+  initialized_at: 2026-08-06T03:34:39.998Z
+  last_synced_at: ""
+active_epic:
+  id: ""
+  title: ""
+  created_at: ""
+  epic_path: ""
+epics: []
+active_change:
+  id: 20260806-uow-transaction-reliability
+  title: UoW Transaction Reliability
+  created_at: 2026-08-06T03:19:32.429Z
+  plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
+  epic_id: ""
+changes:
+  - id: 20260806-uow-transaction-reliability
+    title: UoW Transaction Reliability
+    plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
+    status: active
+    updated_at: 2026-08-07T03:54:23.441Z
+    epic_id: ""
+history:
+  - skill: /mvt-review
+    completed_at: 2026-08-07T15:01:08.771Z
+    summary: framework 全量深度 review（47 文件逐行）：Approve with comments，0 Critical/5 Warning/10 Suggestion；W1=partial commit 后重复 CommitAsync 污染 outcome、W2=read-only UoW 下仓储写静默丢弃、W3=UoW 内部集合并发锁策略不一致、W4=post-save
+      handler 失败不标 rollback-only、W5=nested BeginAsync 跳过 hooks/immediate 激活；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-refactor
+    completed_at: 2026-08-08T03:28:36.520Z
+    summary: P0 性能重构完成（行为保持）：SaveOperationEntityHelper 新增 SaveScanResult+ScanChangedEntities 单遍扫描（1 遍主遍历+owned 子集），替换 MiCakeEFCoreInterceptor 3 组调用序列与循环内 HasChangedEntries（保留 frame==null
+      守卫与四分支映射）、LazyEFSaveChangesLifetime 2 处 Build* 调用；删除 5 个无调用者成员（GetChangedEntities/BuildEntriesByType/BuildChangedOwnedOwners/ResolvePreSaveState 单参两参重载/CollectOwnerEntityIfNeeded）；全套件 1660 测试 0
+      回归（EF Core 237/集成 178/MiCake 271/ASP.NET 434/Core 540）；用户选择不写 refactor-notes.md；P1-1 owner 索引与 P2 项留待后续评估
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-08T05:49:48.841Z
+    summary: "修复 PR #45 SonarCloud 问题：7 个 Reliability Bug 中 6 个代码修复（S1163 UnitOfWorkFilter finally throw 改 EDI 移出、S4487 删未用 _logger、S2139×3 删重复日志保留补偿、S3971×3 删 GC.SuppressFinalize），S2583 验证为分析器误报标记 FP；顺手修
+      S3267×3/S1450/S8970×4；15 个 issue 标记 False Positive（S8970×13 本地 nullable 上下文下移除会产生 CS8600/CS8603、S2326 设计保留）；全套件 1124 测试通过（MiCake 271/EFCore 241/ASP.NET 434/集成 178），编译 0 警告；S3776×5 复杂度重构留待后续"
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-refactor
+    completed_at: 2026-08-08T05:58:25.960Z
+    summary: S3776 复杂度重构完成（行为保持）：5 个方法 Extract Method 拆分——UnitOfWorkFilter.ExecuteWithinUnitOfWorkAsync(23→9) 拆 HandleSuccess/HandleFailure；UnitOfWork.CommitCoreAsync(21→1) 拆
+      EnsureCommitable/RaiseOnCommitting/FlushAll/CommitAll/HandleCommitFailures（CancellationToken.None 补偿语义保留）；EFCoreInterceptor.SavedChangesAsync(18→5) 拆
+      RunSaveCyclesAsync；SaveOperationEntityHelper.ScanChangedEntities(16→4) 拆 CollectChangedEntries/ResolveChangedOwnedOwners；DomainEventDispatchLifetime.PreSaveChangesAsync(16→5) 拆
+      DispatchEventAsync+DispatchOutcome 枚举（StopOnError 日志移至调用侧保持同文案）；编译 0 错误 0 新警告，全量 1124/1124 通过（MiCake 271/EFCore 241/ASP.NET 434/集成 178）；用户选择不写 refactor-notes.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-08T06:01:39.965Z
+    summary: S3776 重构审查（5 文件，行为保持型）：Approve，0 Critical/0 Warning/6 Suggestion——拆分前后逐段比对逻辑等价（CancellationToken.None 补偿、EndOperation+MarkRollbackOnly、StopOnError
+      日志时机、首败即停全部保留）；Suggestion：HandleCommitFailuresAsync 改名 ThrowCommitFailureAsync、CollectChangedEntries 三元素元组可读性、DispatchOutcome 未穷尽处理、ThrowOnError 下死列表写入、既有重复守卫、CommitAllResourcesAsync 返回
+      IReadOnlyList；安全/性能无关注；测试基线 1124/1124 覆盖充分；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-08T06:09:42.519Z
+    summary: 应用 review Suggestion 安全子集 S1/S4/S6（行为保持）：UnitOfWork.cs 改名 HandleCommitFailuresAsync→ThrowCommitFailureAsync（调用点同步）+ CommitAllResourcesAsync 返回 IReadOnlyList、ThrowCommitFailureAsync 参数改
+      IReadOnlyList；DomainEventDispatchLifetime.cs 将 failedEvents.Add 移至策略判断后（ThrowOnError 不再死写入，行为不变）；编译 0 错误 0 新警告，全量 1124/1124 通过（MiCake 271/EFCore 241/ASP.NET 434/集成 178）；S2/S3/S5
+      可选可读性优化未采纳；用户选择不写 fix-notes.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-08T06:11:37.330Z
+    summary: 复审 Suggestion S1/S4/S6 应用（2 文件，增量变更）：Approve，0 Critical/0 Warning/2 Suggestion——S1 改名 ThrowCommitFailureAsync 调用点同步无遗漏、S6 IReadOnlyList 类型链一致且 commitFailures[0] 在非空守卫下安全、S4 failedEvents.Add
+      移至 ThrowOnError 后且 StopOnError/ContinueOnError 仍正确记录（UnmarkDispatched/LogError 顺序未变）；2 条 Suggestion 均为可选可读性（调用点结构保持、注释可精简）；安全/性能无关注；全量 1124/1124 通过佐证行为等价；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-08T06:14:27.403Z
+    summary: 修复 SonarQube S8949：UnitOfWorkFilter.cs 4 处 UoW 生命周期调用（HandleFailureAsync/catch 补偿回滚的 RollbackAsync×2、HandleSuccessAsync 的 CommitAsync/MarkAsCompletedAsync）显式传 CancellationToken.None 并加
+      opt-out 注释，保持'commit/rollback 不随请求取消'设计语义（None 与默认值等价，行为零变化）；编译 0 错误，ASP.NET 434/434 + 集成 178/178 通过；fix-notes 未落盘
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-refactor
+    completed_at: 2026-08-08T06:18:21.338Z
+    summary: S3776 ExecuteWithinUnitOfWorkAsync 复杂度重构（16→约5，行为保持）：提取 HandleBodyExceptionAsync（catch 补偿回滚，CancellationToken.None + AggregateException 组合，调用方保留 throw; 保持原栈）与 DisposeUnitOfWorkAsync（finally
+      dispose 返回 ExceptionDispatchInfo?，主体失败仅日志/成功返回 EDI，finally 后 ?.Throw() 保持 S1163 语义）；主方法退化为 try/action/catch/finally 骨架；编译 0 错误 0 新警告，ASP.NET 434/434 + 集成 178/178 通过；用户选择不写 refactor-notes.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-08T06:22:32.631Z
+    summary: 复审 ExecuteWithinUnitOfWorkAsync 复杂度重构+注释精简（UnitOfWorkFilter.cs）：Approve，0 Critical/0 Warning/3 Suggestion——catch 逻辑德摩根等价验证通过（null||IsCompleted return 与原 !=null&&!IsCompleted
+      精确对应）、RollbackAsync(None)/AggregateException/throw; 栈保留逐字确认、finally EDI 返回+finally 后 Throw 语义与 S1163 修复一致、无异常吞没；注释精简质量高（关键契约保留、S8949 opt-out 注释未误删）；3 条 Suggestion 均为可选（exceptionDuringBody
+      内联、空引用注释、catch 注释与 helper 名重叠）；安全/性能无关注；ASP.NET 434 + 集成 178 覆盖充分；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability

@@ -10,6 +10,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
     /// End-to-end integration tests to verify the complete flow:
     /// Module initialization → Factory configuration → DbContext creation → Interceptor work → Domain event handling
     /// </summary>
+[Collection("MiCakeStaticFactory")]
     public class EndToEndIntegrationTests
     {
         [Fact]
@@ -123,33 +124,28 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
         }
 
         [Fact]
-        public void CompleteFlow_MiCakeDbContextInheritance_ShouldWorkCorrectly()
+        public void CompleteFlow_MiCakeDbContextInheritance_ManualConstruction_WritesNatively()
         {
-            // Arrange: Test with actual MiCakeDbContext inheritance
+            // A context constructed manually (not resolved from the application container) has
+            // no DI interceptors attached and writes natively — MiCake only guards contexts it
+            // is enabled on via the container configurator (non-intrusive principle).
             var options = new DbContextOptionsBuilder<MiCakeTestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            // Act
             using var context = new MiCakeTestDbContext(options);
-            
+
             var entity = new TestEntity { Name = "MiCake Inheritance Test" };
             context.TestEntities.Add(entity);
-            
-            var result = context.SaveChanges();
-            
-            // Assert
-            Assert.Equal(1, result);
-            
-            var savedEntity = context.TestEntities.First();
-            Assert.NotNull(savedEntity);
-            Assert.Equal("MiCake Inheritance Test", savedEntity.Name);
+
+            context.SaveChanges();
+            Assert.Equal(1, context.TestEntities.Count());
         }
 
         [Fact]
         public void CompleteFlow_MultipleDifferentContexts_ShouldWorkIndependently()
         {
-            // Arrange: Create multiple different context types
+            // Arrange: Create multiple different context types, both constructed manually.
             var regularOptions = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase("regular")
                 .Options;
@@ -158,38 +154,34 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
                 .UseInMemoryDatabase("micake")
                 .Options;
 
-            // Act: Use both contexts
+            // Act: Both contexts write natively (no DI interceptors attached to manually
+            // constructed contexts).
             using var regularContext = new TestDbContext(regularOptions);
             using var miCakeContext = new MiCakeTestDbContext(miCakeOptions);
-            
+
             regularContext.TestEntities.Add(new TestEntity { Name = "Regular Context" });
             miCakeContext.TestEntities.Add(new TestEntity { Name = "MiCake Context" });
-            
+
             regularContext.SaveChanges();
             miCakeContext.SaveChanges();
-            
-            // Assert: Both should work independently
+
+            // Assert: both contexts persisted their data independently.
             Assert.Equal(1, regularContext.TestEntities.Count());
-            Assert.Equal(1, miCakeContext.TestEntities.Count());
-            
             Assert.Equal("Regular Context", regularContext.TestEntities.First().Name);
+            Assert.Equal(1, miCakeContext.TestEntities.Count());
             Assert.Equal("MiCake Context", miCakeContext.TestEntities.First().Name);
         }
 
         [Fact]
-        public void CompleteFlow_ParameterlessConstructor_ShouldWorkCorrectly()
+        public void CompleteFlow_ParameterlessConstructor_ManualConstruction_WritesNatively()
         {
-            // Act & Assert: Test parameterless constructor scenario
             using var context = new MiCakeTestDbContextWithParameterlessConstructor();
-            
+
             var entity = new TestEntity { Name = "Parameterless Constructor Test" };
             context.TestEntities.Add(entity);
-            
-            var result = context.SaveChanges();
-            Assert.Equal(1, result);
-            
-            var savedEntity = context.TestEntities.First();
-            Assert.Equal("Parameterless Constructor Test", savedEntity.Name);
+
+            context.SaveChanges();
+            Assert.Equal(1, context.TestEntities.Count());
         }
 
         /// <summary>

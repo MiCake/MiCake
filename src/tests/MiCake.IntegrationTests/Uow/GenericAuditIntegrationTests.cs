@@ -1,6 +1,7 @@
 using MiCake.EntityFrameworkCore;
 using MiCake.Audit;
 using MiCake.Audit.SoftDeletion;
+using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,6 @@ namespace MiCake.IntegrationTests.Uow
     public class GenericAuditIntegrationTests : IDisposable
     {
         private readonly ServiceProvider _serviceProvider;
-        private readonly TestDbContext _dbContext;
         private readonly IMiCakeApplication _miCakeApp;
         private readonly MiCakeAppFixture _fixture;
 
@@ -36,7 +36,6 @@ namespace MiCake.IntegrationTests.Uow
                 {
                     options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
-                    options.UseMiCakeInterceptors(sp);
                 });
 
                 // Register custom TimeProvider for testing
@@ -49,7 +48,24 @@ namespace MiCake.IntegrationTests.Uow
             });
 
             _miCakeApp = _serviceProvider.GetRequiredService<IMiCakeApplication>();
-            _dbContext = _serviceProvider.GetRequiredService<TestDbContext>();
+        }
+
+        /// <summary>
+        /// Runs the test body inside a scope with an active writable unit of work.
+        /// The MiCake write guard rejects every framework-mediated write without an ambient
+        /// writable UoW, so audit behavior is asserted within the contracted boundary.
+        /// </summary>
+        private Task RunInUowAsync(Func<TestDbContext, Task> action)
+            => RunInUowAsync(_serviceProvider, action);
+
+        private static async Task RunInUowAsync(IServiceProvider provider, Func<TestDbContext, Task> action)
+        {
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            await using var uow = await manager.BeginAsync();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            await action(dbContext);
+            await uow.CommitAsync();
         }
 
         #region DateTimeOffset Creation Time Tests
@@ -57,36 +73,42 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task SaveChanges_WithDateTimeOffset_ShouldSetCreationTime()
         {
-            // Arrange
-            var entity = new AuditEntityWithCreationTimeDateTimeOffset { Name = "Test Entity" };
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new AuditEntityWithCreationTimeDateTimeOffset { Name = "Test Entity" };
 
-            // Act
-            _dbContext.AuditDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
+                // Act
+                dbContext.AuditDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.NotEqual(default(DateTimeOffset), entity.CreatedAt);
-            // Should use the fixed time from our custom TimeProvider (2025-01-21 10:30:00 UTC)
-            Assert.Equal(new DateTimeOffset(2025, 1, 21, 10, 30, 0, TimeSpan.Zero), entity.CreatedAt);
+                // Assert
+                Assert.NotEqual(default(DateTimeOffset), entity.CreatedAt);
+                // Should use the fixed time from our custom TimeProvider (2025-01-21 10:30:00 UTC)
+                Assert.Equal(new DateTimeOffset(2025, 1, 21, 10, 30, 0, TimeSpan.Zero), entity.CreatedAt);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WithDateTimeOffset_ShouldNotOverwriteExistingCreationTime()
         {
-            // Arrange
-            var existingTime = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
-            var entity = new AuditEntityWithCreationTimeDateTimeOffset
+            await RunInUowAsync(async dbContext =>
             {
-                Name = "Test",
-                CreatedAt = existingTime
-            };
+                // Arrange
+                var existingTime = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
+                var entity = new AuditEntityWithCreationTimeDateTimeOffset
+                {
+                    Name = "Test",
+                    CreatedAt = existingTime
+                };
 
-            // Act
-            _dbContext.AuditDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
+                // Act
+                dbContext.AuditDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.Equal(existingTime, entity.CreatedAt);
+                // Assert
+                Assert.Equal(existingTime, entity.CreatedAt);
+            });
         }
 
         #endregion
@@ -96,42 +118,48 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task SaveChanges_WithDateTimeOffset_ShouldSetModificationTime()
         {
-            // Arrange
-            var entity = new AuditEntityWithFullDateTimeOffset { Name = "Initial" };
-            _dbContext.FullAuditDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new AuditEntityWithFullDateTimeOffset { Name = "Initial" };
+                dbContext.FullAuditDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Act - Modify entity
-            entity.Name = "Modified";
-            await _dbContext.SaveChangesAsync();
+                // Act - Modify entity
+                entity.Name = "Modified";
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.NotNull(entity.UpdatedAt);
-            // Should use the fixed time from our custom TimeProvider
-            Assert.Equal(new DateTimeOffset(2025, 1, 21, 10, 30, 0, TimeSpan.Zero), entity.UpdatedAt.Value);
+                // Assert
+                Assert.NotNull(entity.UpdatedAt);
+                // Should use the fixed time from our custom TimeProvider
+                Assert.Equal(new DateTimeOffset(2025, 1, 21, 10, 30, 0, TimeSpan.Zero), entity.UpdatedAt.Value);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WithDateTimeOffset_ShouldUpdateModificationTime()
         {
-            // Arrange
-            var entity = new AuditEntityWithFullDateTimeOffset { Name = "Test" };
-            _dbContext.FullAuditDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
-
-            var firstUpdateTime = entity.UpdatedAt;
-            await Task.Delay(10); // Small delay to ensure time difference
-
-            // Act - Second modification
-            entity.Name = "Modified Again";
-            await _dbContext.SaveChangesAsync();
-
-            // Assert
-            if (firstUpdateTime.HasValue)
+            await RunInUowAsync(async dbContext =>
             {
-                Assert.NotNull(entity.UpdatedAt);
-                Assert.True(entity.UpdatedAt >= firstUpdateTime);
-            }
+                // Arrange
+                var entity = new AuditEntityWithFullDateTimeOffset { Name = "Test" };
+                dbContext.FullAuditDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
+
+                var firstUpdateTime = entity.UpdatedAt;
+                await Task.Delay(10); // Small delay to ensure time difference
+
+                // Act - Second modification
+                entity.Name = "Modified Again";
+                await dbContext.SaveChangesAsync();
+
+                // Assert
+                if (firstUpdateTime.HasValue)
+                {
+                    Assert.NotNull(entity.UpdatedAt);
+                    Assert.True(entity.UpdatedAt >= firstUpdateTime);
+                }
+            });
         }
 
         #endregion
@@ -141,43 +169,49 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task SaveChanges_WithDateTimeOffsetSoftDeletion_ShouldSetDeletionTime()
         {
-            // Arrange
-            var entity = new SoftDeletableEntityDateTimeOffset { Name = "To Delete" };
-            _dbContext.SoftDeleteDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new SoftDeletableEntityDateTimeOffset { Name = "To Delete" };
+                dbContext.SoftDeleteDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Act
-            _dbContext.SoftDeleteDateTimeOffsetEntities.Remove(entity);
-            await _dbContext.SaveChangesAsync();
+                // Act
+                dbContext.SoftDeleteDateTimeOffsetEntities.Remove(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.True(entity.IsDeleted);
-            Assert.NotNull(entity.DeletedAt);
-            // Should use the fixed time from our custom TimeProvider
-            Assert.Equal(new DateTimeOffset(2025, 1, 21, 10, 30, 0, TimeSpan.Zero), entity.DeletedAt.Value);
+                // Assert
+                Assert.True(entity.IsDeleted);
+                Assert.NotNull(entity.DeletedAt);
+                // Should use the fixed time from our custom TimeProvider
+                Assert.Equal(new DateTimeOffset(2025, 1, 21, 10, 30, 0, TimeSpan.Zero), entity.DeletedAt.Value);
+            });
         }
 
         [Fact]
         public async Task SaveChanges_WithDateTimeOffsetSoftDeletion_ShouldKeepEntityInDatabase()
         {
-            // Arrange
-            var entity = new SoftDeletableEntityDateTimeOffset { Name = "Soft Delete Test" };
-            _dbContext.SoftDeleteDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
-            var entityId = entity.Id;
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new SoftDeletableEntityDateTimeOffset { Name = "Soft Delete Test" };
+                dbContext.SoftDeleteDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
+                var entityId = entity.Id;
 
-            // Act
-            _dbContext.SoftDeleteDateTimeOffsetEntities.Remove(entity);
-            await _dbContext.SaveChangesAsync();
+                // Act
+                dbContext.SoftDeleteDateTimeOffsetEntities.Remove(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert - Entity should still exist in database (soft deleted)
-            var deletedEntity = await _dbContext.SoftDeleteDateTimeOffsetEntities
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(e => e.Id == entityId);
+                // Assert - Entity should still exist in database (soft deleted)
+                var deletedEntity = await dbContext.SoftDeleteDateTimeOffsetEntities
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(e => e.Id == entityId);
 
-            Assert.NotNull(deletedEntity);
-            Assert.True(deletedEntity.IsDeleted);
-            Assert.NotNull(deletedEntity.DeletedAt);
+                Assert.NotNull(deletedEntity);
+                Assert.True(deletedEntity.IsDeleted);
+                Assert.NotNull(deletedEntity.DeletedAt);
+            });
         }
 
         #endregion
@@ -187,33 +221,36 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task CompleteLifecycle_WithDateTimeOffset_ShouldTrackAllTimestamps()
         {
-            // Arrange - Create
-            var entity = new SoftDeletableEntityDateTimeOffset { Name = "Lifecycle Test" };
-            _dbContext.SoftDeleteDateTimeOffsetEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange - Create
+                var entity = new SoftDeletableEntityDateTimeOffset { Name = "Lifecycle Test" };
+                dbContext.SoftDeleteDateTimeOffsetEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            var createdAt = entity.CreatedAt;
-            Assert.NotEqual(default(DateTimeOffset), createdAt);
+                var createdAt = entity.CreatedAt;
+                Assert.NotEqual(default(DateTimeOffset), createdAt);
 
-            // Act - Modify
-            await Task.Delay(10);
-            entity.Name = "Modified";
-            await _dbContext.SaveChangesAsync();
+                // Act - Modify
+                await Task.Delay(10);
+                entity.Name = "Modified";
+                await dbContext.SaveChangesAsync();
 
-            var updatedAt = entity.UpdatedAt;
-            Assert.NotNull(updatedAt);
-            Assert.True(updatedAt >= createdAt);
+                var updatedAt = entity.UpdatedAt;
+                Assert.NotNull(updatedAt);
+                Assert.True(updatedAt >= createdAt);
 
-            // Act - Delete
-            await Task.Delay(10);
-            _dbContext.SoftDeleteDateTimeOffsetEntities.Remove(entity);
-            await _dbContext.SaveChangesAsync();
+                // Act - Delete
+                await Task.Delay(10);
+                dbContext.SoftDeleteDateTimeOffsetEntities.Remove(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.True(entity.IsDeleted);
-            Assert.NotNull(entity.DeletedAt);
-            Assert.True(entity.DeletedAt >= updatedAt);
-            Assert.Equal(createdAt, entity.CreatedAt); // Creation time should not change
+                // Assert
+                Assert.True(entity.IsDeleted);
+                Assert.NotNull(entity.DeletedAt);
+                Assert.True(entity.DeletedAt >= updatedAt);
+                Assert.Equal(createdAt, entity.CreatedAt); // Creation time should not change
+            });
         }
 
         #endregion
@@ -234,7 +271,6 @@ namespace MiCake.IntegrationTests.Uow
                 {
                     options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
-                    options.UseMiCakeInterceptors(sp);
                 });
 
                 // Register custom TimeProvider with fixed time
@@ -248,12 +284,14 @@ namespace MiCake.IntegrationTests.Uow
 
             try
             {
-                var scopedDb = customScope.GetRequiredService<TestDbContext>();
                 var entity = new AuditEntityWithCreationTimeDateTimeOffset { Name = "Custom Time Test" };
 
                 // Act
-                scopedDb.AuditDateTimeOffsetEntities.Add(entity);
-                await scopedDb.SaveChangesAsync();
+                await RunInUowAsync(customScope, async scopedDb =>
+                {
+                    scopedDb.AuditDateTimeOffsetEntities.Add(entity);
+                    await scopedDb.SaveChangesAsync();
+                });
 
                 // Assert
                 Assert.Equal(fixedTime, entity.CreatedAt);
@@ -271,17 +309,20 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task SaveChanges_WithLegacyDateTimeInterface_ShouldStillWork()
         {
-            // Arrange
-            var entity = new AuditEntityWithLegacyDateTime { Name = "Legacy Test" };
+            await RunInUowAsync(async dbContext =>
+            {
+                // Arrange
+                var entity = new AuditEntityWithLegacyDateTime { Name = "Legacy Test" };
 
-            // Act
-            _dbContext.LegacyAuditEntities.Add(entity);
-            await _dbContext.SaveChangesAsync();
+                // Act
+                dbContext.LegacyAuditEntities.Add(entity);
+                await dbContext.SaveChangesAsync();
 
-            // Assert
-            Assert.NotEqual(default(DateTime), entity.CreatedAt);
-            // Should use the fixed time from our custom TimeProvider (converted to DateTime)
-            Assert.Equal(new DateTime(2025, 1, 21, 10, 30, 0, DateTimeKind.Utc), entity.CreatedAt);
+                // Assert
+                Assert.NotEqual(default(DateTime), entity.CreatedAt);
+                // Should use the fixed time from our custom TimeProvider (converted to DateTime)
+                Assert.Equal(new DateTime(2025, 1, 21, 10, 30, 0, DateTimeKind.Utc), entity.CreatedAt);
+            });
         }
 
         #endregion

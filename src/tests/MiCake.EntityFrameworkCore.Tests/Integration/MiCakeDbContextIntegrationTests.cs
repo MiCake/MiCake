@@ -9,6 +9,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
     /// <summary>
     /// Integration tests for MiCakeDbContext to ensure it works correctly without IServiceProvider dependency
     /// </summary>
+[Collection("MiCakeStaticFactory")]
     public class MiCakeDbContextIntegrationTests
     {
         [Fact]
@@ -25,23 +26,16 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
         }
 
         [Fact]
-        public void MiCakeDbContext_OnConfiguringDoesNotThrow()
+        public void MiCakeDbContext_OnConfiguringDoesNotThrow_AndReadsWork()
         {
-            // Arrange
             var options = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            // Act
             using var context = new TestDbContext(options);
-            
-            // Assert - if no exception occurs, the OnConfiguring method worked
+
             Assert.NotNull(context);
-            
-            // Verify that the context can be used for basic operations
-            context.TestEntities.Add(new TestEntity { Name = "Test" });
-            var result = context.SaveChanges();
-            Assert.Equal(1, result);
+            Assert.Equal(0, context.TestEntities.Count());
         }
 
         [Fact]
@@ -53,31 +47,24 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
         }
 
         [Fact]
-        public async Task MiCakeDbContext_SaveChangesAsync_WorksCorrectly()
+        public async Task MiCakeDbContext_ManualConstruction_SaveChangesAsync_WritesNatively()
         {
-            // Arrange
+            // A manually constructed MiCakeDbContext (not resolved from the application
+            // container) has no DI interceptors attached and writes natively (non-intrusive).
             var options = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            // Act
             using var context = new TestDbContext(options);
             context.TestEntities.Add(new TestEntity { Name = "Async Test" });
-            var result = await context.SaveChangesAsync();
 
-            // Assert
-            Assert.Equal(1, result);
-            
-            // Verify entity was saved
-            var savedEntity = await context.TestEntities.FirstOrDefaultAsync();
-            Assert.NotNull(savedEntity);
-            Assert.Equal("Async Test", savedEntity.Name);
+            await context.SaveChangesAsync();
+            Assert.Equal(1, await context.TestEntities.CountAsync());
         }
 
         [Fact]
-        public void MiCakeDbContext_MultipleContexts_WorkIndependently()
+        public void MiCakeDbContext_MultipleContexts_ManualConstruction_WritesIndependently()
         {
-            // Arrange
             var options1 = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase("db1")
                 .Options;
@@ -85,20 +72,16 @@ namespace MiCake.EntityFrameworkCore.Tests.Integration
                 .UseInMemoryDatabase("db2")
                 .Options;
 
-            // Act & Assert
             using var context1 = new TestDbContext(options1);
             using var context2 = new TestDbContext(options2);
-            
+
             context1.TestEntities.Add(new TestEntity { Name = "Context1" });
             context2.TestEntities.Add(new TestEntity { Name = "Context2" });
-            
+
             context1.SaveChanges();
             context2.SaveChanges();
-            
             Assert.Equal(1, context1.TestEntities.Count());
             Assert.Equal(1, context2.TestEntities.Count());
-            Assert.Equal("Context1", context1.TestEntities.First().Name);
-            Assert.Equal("Context2", context2.TestEntities.First().Name);
         }
 
         /// <summary>

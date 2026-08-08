@@ -1,24 +1,29 @@
 using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Exceptions;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Data;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Uow
 {
     /// <summary>
-    /// Unit tests for EFCoreDbContextWrapper.
-    /// Tests the two-phase transaction pattern, commit, rollback, and savepoint operations.
+    /// Unit tests for EFCoreDbContextWrapper against the IUnitOfWorkResource contract:
+    /// collision-safe identity, prepare/rebind rules, idempotent activation, flush, terminal
+    /// commit/rollback, savepoint rejection, and synchronous/asynchronous disposal.
     /// </summary>
     public class EFCoreDbContextWrapperTests : IDisposable
     {
         private readonly TestDbContextForWrapper _dbContext;
         private readonly Mock<ILogger<EFCoreDbContextWrapper>> _mockLogger;
-        private readonly MiCakeEFCoreOptions _efCoreOptions;
+        private readonly UnitOfWorkResourceContext _context;
 
         public EFCoreDbContextWrapperTests()
         {
@@ -27,7 +32,35 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 .Options;
             _dbContext = new TestDbContextForWrapper(options);
             _mockLogger = new Mock<ILogger<EFCoreDbContextWrapper>>();
-            _efCoreOptions = new MiCakeEFCoreOptions(typeof(TestDbContextForWrapper));
+            _context = new UnitOfWorkResourceContext(Guid.NewGuid(), null, false);
+        }
+
+        public void Dispose()
+        {
+            _dbContext.Dispose();
+        }
+
+        private EFCoreDbContextWrapper CreateWrapper(bool shouldDisposeDbContext = false)
+            => new(_dbContext, _mockLogger.Object, shouldDisposeDbContext);
+
+        private static void SetTransaction(EFCoreDbContextWrapper wrapper, IDbContextTransaction transaction)
+        {
+            var field = typeof(EFCoreDbContextWrapper).GetField(
+                "_currentTransaction",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field.SetValue(wrapper, transaction);
+        }
+
+        private static async Task<TestDbContextForWrapper> CreateSqliteContextAsync()
+        {
+            var options = new DbContextOptionsBuilder<TestDbContextForWrapper>()
+                .UseSqlite("DataSource=:memory:")
+                .Options;
+            var context = new TestDbContextForWrapper(options);
+            await context.Database.OpenConnectionAsync();
+            await context.Database.EnsureCreatedAsync();
+            return context;
         }
 
         #region Constructor Tests
@@ -36,318 +69,352 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         public void Constructor_WithValidParameters_ShouldCreateInstance()
         {
             // Arrange & Act
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
+            var wrapper = CreateWrapper();
 
             // Assert
             Assert.NotNull(wrapper);
             Assert.Same(_dbContext, wrapper.DbContext);
             Assert.False(wrapper.HasActiveTransaction);
-            Assert.False(wrapper.IsInitialized);
+            Assert.False(wrapper.SupportsSavepoints);
+            Assert.Equal(_dbContext.GetType().FullName, wrapper.ResourceType);
+        }
+
+        [Fact]
+        public void Constructor_ShouldGenerateCollisionSafeIdNotDerivedFromHashCode()
+        {
+            // Arrange
+            var wrapper1 = CreateWrapper();
+            var wrapper2 = CreateWrapper();
+
+            // Assert
+            Assert.NotEqual(Guid.Empty, wrapper1.Id.Value);
+            Assert.NotEqual(wrapper1.Id, wrapper2.Id);
         }
 
         [Fact]
         public void Constructor_WithNullDbContext_ShouldThrowArgumentNullException()
         {
-            // Arrange, Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                new EFCoreDbContextWrapper(null!, _mockLogger.Object, _efCoreOptions));
+                new EFCoreDbContextWrapper(null!, _mockLogger.Object));
         }
 
         [Fact]
         public void Constructor_WithNullLogger_ShouldThrowArgumentNullException()
         {
-            // Arrange, Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                new EFCoreDbContextWrapper(_dbContext, null!, _efCoreOptions));
-        }
-
-        [Fact]
-        public void Constructor_WithNullOptions_ShouldThrowArgumentNullException()
-        {
-            // Arrange, Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
-                new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, null!));
-        }
-
-        [Fact]
-        public void ResourceIdentifier_ShouldContainDbContextTypeAndHashCode()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-
-            // Act
-            var identifier = wrapper.ResourceIdentifier;
-
-            // Assert
-            Assert.Contains(_dbContext.GetType().FullName!, identifier);
-            Assert.Contains(_dbContext.GetHashCode().ToString(), identifier);
+                new EFCoreDbContextWrapper(_dbContext, null!));
         }
 
         #endregion
 
-        #region PrepareForTransaction Tests
+        #region Prepare Tests
 
         [Fact]
-        public void PrepareForTransaction_WithValidOptions_ShouldSetIsPrepared()
+        public void Prepare_ShouldStoreUowContext()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            var options = UnitOfWorkOptions.Default;
+            var wrapper = CreateWrapper();
 
             // Act
-            wrapper.PrepareForTransaction(options);
+            wrapper.Prepare(_context);
 
             // Assert
-            Assert.False(wrapper.IsInitialized); // Not initialized until ActivateTransactionAsync
             Assert.False(wrapper.HasActiveTransaction);
         }
 
         [Fact]
-        public void PrepareForTransaction_WithNullOptions_ShouldThrowArgumentNullException()
+        public void Prepare_SameUowTwice_ShouldBeIdempotent()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
+            var wrapper = CreateWrapper();
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => wrapper.PrepareForTransaction(null!));
-        }
+            wrapper.Prepare(_context);
+            var exception = Record.Exception(() => wrapper.Prepare(_context));
 
-        [Fact]
-        public void PrepareForTransaction_CalledTwice_ShouldNotThrow()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            var options = UnitOfWorkOptions.Default;
-
-            // Act - Call twice
-            wrapper.PrepareForTransaction(options);
-            var exception = Record.Exception(() => wrapper.PrepareForTransaction(options));
-
-            // Assert
             Assert.Null(exception);
         }
 
         [Fact]
-        public void PrepareForTransaction_WhenDisposed_ShouldThrowObjectDisposedException()
+        public void Prepare_DifferentUow_ShouldRejectRebinding()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
+
+            var otherContext = new UnitOfWorkResourceContext(Guid.NewGuid(), IsolationLevel.Serializable, false);
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => wrapper.Prepare(otherContext));
+            Assert.Contains("rebound", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void Prepare_WhenDisposed_ShouldThrowObjectDisposedException()
+        {
+            // Arrange
+            var wrapper = CreateWrapper();
             wrapper.Dispose();
 
             // Act & Assert
-            Assert.Throws<ObjectDisposedException>(() => wrapper.PrepareForTransaction(UnitOfWorkOptions.Default));
+            Assert.Throws<ObjectDisposedException>(() => wrapper.Prepare(_context));
         }
 
         #endregion
 
-        #region ActivateTransactionAsync Tests
+        #region EnsureTransaction Tests
 
         [Fact]
-        public async Task ActivateTransactionAsync_WithoutPrepare_ShouldThrowInvalidOperationException()
+        public async Task EnsureTransactionAsync_WithoutPrepare_ShouldThrowInvalidOperationException()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
+            var wrapper = CreateWrapper();
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.ActivateTransactionAsync());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.EnsureTransactionAsync().AsTask());
         }
 
         [Fact]
-        public async Task ActivateTransactionAsync_WithOptimizeForSingleWrite_ShouldNotStartExplicitTransaction()
+        public async Task EnsureTransactionAsync_ShouldStartExplicitTransaction()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            var options = new UnitOfWorkOptions { Strategy = PersistenceStrategy.OptimizeForSingleWrite };
-            wrapper.PrepareForTransaction(options);
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
 
             // Act
-            await wrapper.ActivateTransactionAsync();
+            await wrapper.EnsureTransactionAsync();
 
             // Assert
-            Assert.True(wrapper.IsInitialized);
-            Assert.False(wrapper.HasActiveTransaction); // No explicit transaction for OptimizeForSingleWrite
-        }
-
-        [Fact]
-        public async Task ActivateTransactionAsync_WithTransactionManaged_ShouldStartExplicitTransaction()
-        {
-            // Arrange
-            // Use SQLite in-memory for real transaction support
-            var sqliteOptions = new DbContextOptionsBuilder<TestDbContextForWrapper>()
-                .UseSqlite("DataSource=:memory:")
-                .Options;
-            using var sqliteContext = new TestDbContextForWrapper(sqliteOptions);
-            await sqliteContext.Database.OpenConnectionAsync();
-            await sqliteContext.Database.EnsureCreatedAsync();
-
-            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, _efCoreOptions, shouldDisposeDbContext: true);
-            var options = new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged };
-            wrapper.PrepareForTransaction(options);
-
-            // Act
-            await wrapper.ActivateTransactionAsync();
-
-            // Assert
-            Assert.True(wrapper.IsInitialized);
             Assert.True(wrapper.HasActiveTransaction);
-
-            // Cleanup
-            wrapper.Dispose();
         }
 
         [Fact]
-        public async Task ActivateTransactionAsync_CalledTwice_ShouldBeIdempotent()
+        public async Task EnsureTransactionAsync_CalledTwice_ShouldBeIdempotent()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            var options = UnitOfWorkOptions.Default;
-            wrapper.PrepareForTransaction(options);
-            await wrapper.ActivateTransactionAsync();
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
 
-            // Act - Call again
-            var exception = await Record.ExceptionAsync(() => wrapper.ActivateTransactionAsync());
+            // Act
+            await wrapper.EnsureTransactionAsync();
+            var exception = await Record.ExceptionAsync(() => wrapper.EnsureTransactionAsync().AsTask());
 
             // Assert
             Assert.Null(exception);
-            Assert.True(wrapper.IsInitialized);
+            Assert.True(wrapper.HasActiveTransaction);
         }
 
         [Fact]
-        public async Task ActivateTransactionAsync_WhenDisposed_ShouldThrowObjectDisposedException()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            wrapper.PrepareForTransaction(UnitOfWorkOptions.Default);
-            wrapper.Dispose();
-
-            // Act & Assert
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => wrapper.ActivateTransactionAsync());
-        }
-
-        [Fact]
-        public async Task ActivateTransactionAsync_WithIsolationLevel_ShouldUseSpecifiedLevel()
+        public void EnsureTransaction_ShouldStartExplicitTransactionSynchronously()
         {
             // Arrange
             var sqliteOptions = new DbContextOptionsBuilder<TestDbContextForWrapper>()
                 .UseSqlite("DataSource=:memory:")
                 .Options;
             using var sqliteContext = new TestDbContextForWrapper(sqliteOptions);
-            await sqliteContext.Database.OpenConnectionAsync();
-            await sqliteContext.Database.EnsureCreatedAsync();
+            sqliteContext.Database.OpenConnection();
+            sqliteContext.Database.EnsureCreated();
 
-            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, _efCoreOptions, shouldDisposeDbContext: true);
-            var options = new UnitOfWorkOptions
-            {
-                Strategy = PersistenceStrategy.TransactionManaged,
-                IsolationLevel = IsolationLevel.Serializable
-            };
-            wrapper.PrepareForTransaction(options);
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
 
             // Act
-            await wrapper.ActivateTransactionAsync();
+            wrapper.EnsureTransaction();
 
             // Assert
             Assert.True(wrapper.HasActiveTransaction);
-
-            // Cleanup
-            wrapper.Dispose();
         }
 
-        #endregion
-
-        #region BeginTransactionAsync Tests
-
         [Fact]
-        public async Task BeginTransactionAsync_ShouldCombinePrepareAndActivate()
+        public async Task EnsureTransactionAsync_WithIsolationLevel_ShouldUseSpecifiedLevel()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            var options = UnitOfWorkOptions.Default;
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(new UnitOfWorkResourceContext(Guid.NewGuid(), IsolationLevel.Serializable, false));
 
             // Act
-            await wrapper.BeginTransactionAsync(options);
+            await wrapper.EnsureTransactionAsync();
 
             // Assert
-            Assert.True(wrapper.IsInitialized);
-        }
-
-        [Fact]
-        public async Task BeginTransactionAsync_WithNullOptions_ShouldThrowArgumentNullException()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => wrapper.BeginTransactionAsync(null!));
+            Assert.True(wrapper.HasActiveTransaction);
         }
 
         #endregion
 
-        #region CommitAsync Tests
+        #region FlushAsync Tests
 
         [Fact]
-        public async Task CommitAsync_WithActiveTransaction_ShouldCommitSuccessfully()
+        public async Task FlushAsync_WithoutPrepare_ShouldThrowInvalidOperationException()
         {
             // Arrange
-            var sqliteOptions = new DbContextOptionsBuilder<TestDbContextForWrapper>()
-                .UseSqlite("DataSource=:memory:")
-                .Options;
-            using var sqliteContext = new TestDbContextForWrapper(sqliteOptions);
-            await sqliteContext.Database.OpenConnectionAsync();
-            await sqliteContext.Database.EnsureCreatedAsync();
+            var wrapper = CreateWrapper();
 
-            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, _efCoreOptions, shouldDisposeDbContext: true);
-            await wrapper.BeginTransactionAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.FlushAsync().AsTask());
+        }
+
+        [Fact]
+        public async Task FlushAsync_ShouldReturnAffectedRowCount()
+        {
+            // Arrange - file-backed in-memory SQLite because flush requires an explicit transaction.
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
+            sqliteContext.Add(new TestEntity { Name = "item" });
+
+            // Act
+            var affected = await wrapper.FlushAsync();
+
+            // Assert
+            Assert.Equal(1, affected);
+        }
+
+        [Fact]
+        public async Task FlushAsync_WithoutActiveTransaction_ShouldThrowAndNotPersist()
+        {
+            // Arrange
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            sqliteContext.Add(new TestEntity { Name = "must not persist" });
+
+            // Act - flush without an active transaction is rejected before any write
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.FlushAsync().AsTask());
+
+            // Assert
+            Assert.Contains("active transaction", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(0, await sqliteContext.Set<TestEntity>().CountAsync());
+        }
+
+        #endregion
+
+        #region Commit Tests
+
+        [Fact]
+        public async Task CommitAsync_WithoutActiveTransaction_ShouldCompleteWithoutError()
+        {
+            // Arrange
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
             // Act
             await wrapper.CommitAsync();
 
             // Assert
-            Assert.False(wrapper.HasActiveTransaction); // Transaction should be disposed after commit
+            Assert.False(wrapper.HasActiveTransaction);
         }
 
         [Fact]
-        public async Task CommitAsync_WithoutActiveTransaction_ShouldNotThrow()
+        public async Task CommitAsync_ShouldPersistChanges()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            await wrapper.BeginTransactionAsync(UnitOfWorkOptions.Default); // OptimizeForSingleWrite - no explicit transaction
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
+            sqliteContext.Add(new TestEntity { Name = "committed" });
+            await sqliteContext.SaveChangesAsync();
 
             // Act
-            var exception = await Record.ExceptionAsync(() => wrapper.CommitAsync());
+            await wrapper.CommitAsync();
 
             // Assert
-            Assert.Null(exception);
+            Assert.False(wrapper.HasActiveTransaction);
+            Assert.Equal(1, await sqliteContext.Set<TestEntity>().CountAsync());
         }
 
         [Fact]
-        public async Task CommitAsync_WhenDisposed_ShouldThrowObjectDisposedException()
+        public async Task CommitAsync_CalledTwice_ShouldThrowInvalidOperationException()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            wrapper.Dispose();
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
-            // Act & Assert
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => wrapper.CommitAsync());
+            // Act
+            await wrapper.CommitAsync();
+
+            // Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.CommitAsync().AsTask());
+        }
+
+        [Fact]
+        public async Task CommitAsync_AfterRollback_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
+
+            // Act
+            await wrapper.RollbackAsync();
+
+            // Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.CommitAsync().AsTask());
+        }
+
+        [Fact]
+        public async Task CommitAsync_WhenCommitFails_ShouldRemainEligibleForRollback()
+        {
+            // Arrange
+            var commitFailure = new InvalidOperationException("Commit failed");
+            var transaction = new Mock<IDbContextTransaction>();
+            transaction
+                .Setup(t => t.CommitAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(commitFailure);
+            transaction
+                .Setup(t => t.RollbackAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            transaction
+                .Setup(t => t.DisposeAsync())
+                .Returns(ValueTask.CompletedTask);
+
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
+            SetTransaction(wrapper, transaction.Object);
+
+            // Act
+            var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.CommitAsync().AsTask());
+            await wrapper.RollbackAsync();
+
+            // Assert
+            Assert.Same(commitFailure, actual);
+            Assert.False(wrapper.HasActiveTransaction);
+            transaction.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+            await wrapper.DisposeAsync();
         }
 
         #endregion
 
-        #region RollbackAsync Tests
+        #region Rollback Tests
 
         [Fact]
-        public async Task RollbackAsync_WithActiveTransaction_ShouldRollbackSuccessfully()
+        public async Task RollbackAsync_ShouldDiscardChanges()
         {
             // Arrange
-            var sqliteOptions = new DbContextOptionsBuilder<TestDbContextForWrapper>()
-                .UseSqlite("DataSource=:memory:")
-                .Options;
-            using var sqliteContext = new TestDbContextForWrapper(sqliteOptions);
-            await sqliteContext.Database.OpenConnectionAsync();
-            await sqliteContext.Database.EnsureCreatedAsync();
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
+            sqliteContext.Add(new TestEntity { Name = "rolled back" });
+            await sqliteContext.SaveChangesAsync();
 
-            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, _efCoreOptions, shouldDisposeDbContext: true);
-            await wrapper.BeginTransactionAsync(new UnitOfWorkOptions { Strategy = PersistenceStrategy.TransactionManaged });
+            // Act
+            await wrapper.RollbackAsync();
+
+            // Assert
+            Assert.False(wrapper.HasActiveTransaction);
+            Assert.Equal(0, await sqliteContext.Set<TestEntity>().CountAsync());
+        }
+
+        [Fact]
+        public async Task RollbackAsync_WithoutActiveTransaction_ShouldCompleteWithoutError()
+        {
+            // Arrange
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
             // Act
             await wrapper.RollbackAsync();
@@ -357,61 +424,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public async Task RollbackAsync_WithoutActiveTransaction_ShouldNotThrow()
+        public async Task RollbackAsync_CalledTwice_ShouldThrowInvalidOperationException()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            await wrapper.BeginTransactionAsync(UnitOfWorkOptions.Default);
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
             // Act
-            var exception = await Record.ExceptionAsync(() => wrapper.RollbackAsync());
+            await wrapper.RollbackAsync();
 
             // Assert
-            Assert.Null(exception);
-        }
-
-        [Fact]
-        public async Task RollbackAsync_WhenDisposed_ShouldNotThrow()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            wrapper.Dispose();
-
-            // Act - Rollback should be safe even when disposed
-            var exception = await Record.ExceptionAsync(() => wrapper.RollbackAsync());
-
-            // Assert
-            Assert.Null(exception);
-        }
-
-        #endregion
-
-        #region SaveChangesAsync Tests
-
-        [Fact]
-        public async Task SaveChangesAsync_ShouldCallDbContextSaveChanges()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            _dbContext.TestEntities.Add(new TestEntityForWrapper { Name = "Test" });
-
-            // Act
-            await wrapper.SaveChangesAsync();
-
-            // Assert
-            var count = await _dbContext.TestEntities.CountAsync();
-            Assert.Equal(1, count);
-        }
-
-        [Fact]
-        public async Task SaveChangesAsync_WhenDisposed_ShouldThrowObjectDisposedException()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            wrapper.Dispose();
-
-            // Act & Assert
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => wrapper.SaveChangesAsync());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.RollbackAsync().AsTask());
         }
 
         #endregion
@@ -419,166 +442,275 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         #region Savepoint Tests
 
         [Fact]
-        public async Task CreateSavepointAsync_WithoutActiveTransaction_ShouldThrowInvalidOperationException()
+        public async Task CreateSavepointAsync_ShouldThrowNotSupportedException()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            await wrapper.BeginTransactionAsync(UnitOfWorkOptions.Default); // No explicit transaction
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.CreateSavepointAsync("sp1"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => wrapper.CreateSavepointAsync("sp").AsTask());
         }
 
         [Fact]
-        public async Task RollbackToSavepointAsync_WithoutActiveTransaction_ShouldThrowInvalidOperationException()
+        public async Task RollbackToSavepointAsync_ShouldThrowNotSupportedException()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            await wrapper.BeginTransactionAsync(UnitOfWorkOptions.Default);
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.RollbackToSavepointAsync("sp1"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => wrapper.RollbackToSavepointAsync("sp").AsTask());
         }
 
         [Fact]
-        public async Task ReleaseSavepointAsync_WithoutActiveTransaction_ShouldThrowInvalidOperationException()
+        public async Task ReleaseSavepointAsync_ShouldThrowNotSupportedException()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            await wrapper.BeginTransactionAsync(UnitOfWorkOptions.Default);
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => wrapper.ReleaseSavepointAsync("sp1"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => wrapper.ReleaseSavepointAsync("sp").AsTask());
         }
 
         [Fact]
-        public async Task CreateSavepointAsync_WhenDisposed_ShouldThrowObjectDisposedException()
+        public async Task CreateSavepointAsync_WithActiveTransaction_ShouldReportSupportedAndCreate()
         {
             // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-            wrapper.Dispose();
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
+
+            // Act & Assert - SQLite exposes savepoints through the provider transaction
+            Assert.True(wrapper.SupportsSavepoints);
+            await wrapper.CreateSavepointAsync("sp1");
+        }
+
+        [Fact]
+        public async Task RollbackToSavepointAsync_ShouldUndoWritesAfterSavepoint()
+        {
+            // Arrange
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
+            sqliteContext.Add(new TestEntity { Name = "kept" });
+            await sqliteContext.SaveChangesAsync();
+            await wrapper.CreateSavepointAsync("sp1");
+
+            var discarded = new TestEntity { Name = "discarded" };
+            sqliteContext.Add(discarded);
+            await sqliteContext.SaveChangesAsync();
+
+            // Act - roll back to the savepoint and detach the rolled-back entity so it is not re-inserted
+            await wrapper.RollbackToSavepointAsync("sp1");
+            sqliteContext.Entry(discarded).State = EntityState.Detached;
+            await wrapper.CommitAsync();
+
+            // Assert - only the pre-savepoint write is durable
+            Assert.Equal(1, await sqliteContext.Set<TestEntity>().CountAsync());
+            Assert.Equal("kept", (await sqliteContext.Set<TestEntity>().SingleAsync()).Name);
+        }
+
+        [Fact]
+        public async Task ReleaseSavepointAsync_WithActiveTransaction_ShouldComplete()
+        {
+            // Arrange
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
+            await wrapper.CreateSavepointAsync("sp1");
 
             // Act & Assert
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => wrapper.CreateSavepointAsync("sp1"));
+            await wrapper.ReleaseSavepointAsync("sp1");
+            await wrapper.CommitAsync();
         }
 
         #endregion
 
-        #region Dispose Tests
+        #region Disposal Tests
 
         [Fact]
-        public void Dispose_ShouldSetDisposedFlag()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-
-            // Act
-            wrapper.Dispose();
-
-            // Assert - Verify disposed by checking subsequent operations throw
-            Assert.Throws<ObjectDisposedException>(() => wrapper.PrepareForTransaction(UnitOfWorkOptions.Default));
-        }
-
-        [Fact]
-        public void Dispose_CalledMultipleTimes_ShouldNotThrow()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions);
-
-            // Act
-            wrapper.Dispose();
-            var exception = Record.Exception(() => wrapper.Dispose());
-
-            // Assert
-            Assert.Null(exception);
-        }
-
-        [Fact]
-        public void Dispose_WithShouldDisposeDbContext_ShouldDisposeDbContext()
-        {
-            // Arrange
-            var options = new DbContextOptionsBuilder<TestDbContextForWrapper>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            var dbContext = new TestDbContextForWrapper(options);
-            var wrapper = new EFCoreDbContextWrapper(dbContext, _mockLogger.Object, _efCoreOptions, shouldDisposeDbContext: true);
-
-            // Act
-            wrapper.Dispose();
-
-            // Assert - DbContext should be disposed
-            Assert.Throws<ObjectDisposedException>(() => dbContext.TestEntities.Add(new TestEntityForWrapper()));
-        }
-
-        [Fact]
-        public void Dispose_WithoutShouldDisposeDbContext_ShouldNotDisposeDbContext()
-        {
-            // Arrange
-            var wrapper = new EFCoreDbContextWrapper(_dbContext, _mockLogger.Object, _efCoreOptions, shouldDisposeDbContext: false);
-
-            // Act
-            wrapper.Dispose();
-
-            // Assert - DbContext should still be usable
-            var exception = Record.Exception(() => _dbContext.TestEntities.Add(new TestEntityForWrapper()));
-            Assert.Null(exception);
-        }
-
-        #endregion
-
-        #region User-Managed Transaction Tests
-
-        [Fact]
-        public async Task Constructor_WithExistingTransaction_ShouldDetectUserManagedTransaction()
+        public void Dispose_ShouldReleaseTransaction()
         {
             // Arrange
             var sqliteOptions = new DbContextOptionsBuilder<TestDbContextForWrapper>()
                 .UseSqlite("DataSource=:memory:")
                 .Options;
             using var sqliteContext = new TestDbContextForWrapper(sqliteOptions);
-            await sqliteContext.Database.OpenConnectionAsync();
-            await sqliteContext.Database.EnsureCreatedAsync();
+            sqliteContext.Database.OpenConnection();
+            sqliteContext.Database.EnsureCreated();
 
-            // Start user-managed transaction
-            await sqliteContext.Database.BeginTransactionAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: false);
+            wrapper.Prepare(_context);
+            wrapper.EnsureTransaction();
+            Assert.True(wrapper.HasActiveTransaction);
 
             // Act
-            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, _efCoreOptions);
-            wrapper.PrepareForTransaction(UnitOfWorkOptions.Default);
+            wrapper.Dispose();
 
             // Assert
+            Assert.False(wrapper.HasActiveTransaction);
+            Assert.True(wrapper.DbContext is not null);
+        }
+
+        [Fact]
+        public void Dispose_WhenOwned_ShouldDisposeDbContext()
+        {
+            // Arrange
+            var options = new DbContextOptionsBuilder<DisposeTrackingDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var trackedContext = new DisposeTrackingDbContext(options);
+            var wrapper = new EFCoreDbContextWrapper(trackedContext, _mockLogger.Object, shouldDisposeDbContext: true);
+
+            // Act
+            wrapper.Dispose();
+
+            // Assert
+            Assert.Equal(1, trackedContext.DisposeCount);
+            Assert.Equal(0, trackedContext.DisposeAsyncCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_WhenOwned_ShouldUseAsyncDisposalPath()
+        {
+            // Arrange
+            var options = new DbContextOptionsBuilder<DisposeTrackingDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var trackedContext = new DisposeTrackingDbContext(options);
+            var wrapper = new EFCoreDbContextWrapper(trackedContext, _mockLogger.Object, shouldDisposeDbContext: true);
+
+            // Act
+            await wrapper.DisposeAsync();
+
+            // Assert
+            Assert.Equal(1, trackedContext.DisposeAsyncCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_ShouldReleaseTransactionAndDisposeDbContextWhenOwned()
+        {
+            // Arrange
+            await using var sqliteContext = await CreateSqliteContextAsync();
+            var wrapper = new EFCoreDbContextWrapper(sqliteContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            wrapper.Prepare(_context);
+            await wrapper.EnsureTransactionAsync();
             Assert.True(wrapper.HasActiveTransaction);
-            Assert.True(wrapper.IsInitialized); // User-managed counts as initialized
+
+            // Act
+            await wrapper.DisposeAsync();
+
+            // Assert
+            Assert.False(wrapper.HasActiveTransaction);
         }
 
-        #endregion
-
-        #region Helper Classes
-
-        public class TestDbContextForWrapper : DbContext
+        [Fact]
+        public async Task DisposeAsync_AfterSuccessfulCommit_WhenTransactionCleanupFails_ShouldExposeCleanupFailure()
         {
-            public TestDbContextForWrapper(DbContextOptions options) : base(options) { }
+            // Arrange
+            var cleanupFailure = new InvalidOperationException("Transaction cleanup failed");
+            var transaction = new Mock<IDbContextTransaction>();
+            transaction
+                .Setup(t => t.CommitAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            transaction
+                .Setup(t => t.DisposeAsync())
+                .Throws(cleanupFailure);
 
-            public DbSet<TestEntityForWrapper> TestEntities { get; set; } = null!;
+            var wrapper = CreateWrapper();
+            wrapper.Prepare(_context);
+            SetTransaction(wrapper, transaction.Object);
 
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
+            // Act - commit records the durable outcome; cleanup remains resource-disposal work
+            await wrapper.CommitAsync();
+            var exception = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => wrapper.DisposeAsync().AsTask());
+
+            // Assert
+            Assert.False(wrapper.HasActiveTransaction);
+            Assert.Single(exception.CleanupExceptions);
+            Assert.Same(cleanupFailure, exception.CleanupExceptions[0]);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_WhenTransactionAndDbContextCleanupFail_ShouldExposeBothFailures()
+        {
+            // Arrange
+            var transactionFailure = new InvalidOperationException("Transaction cleanup failed");
+            var contextFailure = new InvalidOperationException("DbContext cleanup failed");
+            var transaction = new Mock<IDbContextTransaction>();
+            transaction
+                .Setup(t => t.DisposeAsync())
+                .Throws(transactionFailure);
+
+            var options = new DbContextOptionsBuilder<DisposeTrackingDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var trackedContext = new DisposeTrackingDbContext(options)
             {
-                base.OnModelCreating(modelBuilder);
-                modelBuilder.Entity<TestEntityForWrapper>().HasKey(e => e.Id);
-            }
-        }
+                DisposeAsyncException = contextFailure
+            };
+            var wrapper = new EFCoreDbContextWrapper(trackedContext, _mockLogger.Object, shouldDisposeDbContext: true);
+            SetTransaction(wrapper, transaction.Object);
 
-        public class TestEntityForWrapper
-        {
-            public int Id { get; set; }
-            public string Name { get; set; } = string.Empty;
+            // Act
+            var exception = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => wrapper.DisposeAsync().AsTask());
+
+            // Assert
+            Assert.Equal(2, exception.CleanupExceptions.Count);
+            Assert.Contains(transactionFailure, exception.CleanupExceptions);
+            Assert.Contains(contextFailure, exception.CleanupExceptions);
         }
 
         #endregion
+    }
 
-        public void Dispose()
+    /// <summary>
+    /// DbContext that records whether its Dispose / DisposeAsync path was invoked.
+    /// </summary>
+    public class DisposeTrackingDbContext : DbContext
+    {
+        public int DisposeCount { get; private set; }
+        public int DisposeAsyncCount { get; private set; }
+        public Exception? DisposeAsyncException { get; init; }
+
+        public DisposeTrackingDbContext(DbContextOptions<DisposeTrackingDbContext> options) : base(options)
         {
-            _dbContext?.Dispose();
         }
+
+        public override void Dispose()
+        {
+            DisposeCount++;
+            base.Dispose();
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            DisposeAsyncCount++;
+            if (DisposeAsyncException != null)
+            {
+                throw DisposeAsyncException;
+            }
+            return base.DisposeAsync();
+        }
+    }
+
+    public class TestEntity
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+
+    public class TestDbContextForWrapper : DbContext
+    {
+        public TestDbContextForWrapper(DbContextOptions<TestDbContextForWrapper> options) : base(options)
+        {
+        }
+
+        public DbSet<TestEntity> Entities => Set<TestEntity>();
     }
 }

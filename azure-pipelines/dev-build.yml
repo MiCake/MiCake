@@ -35,7 +35,10 @@ steps:
   inputs:
     command: test
     projects: 'src/tests/**/*.csproj'
-    arguments: -c $(BuildConfiguration) --settings $(Build.SourcesDirectory)/src/tests/runsettings.xml --collect:"XPlat Code Coverage" -- RunConfiguration.DisableAppDomain=true
+    # The performance baseline scenarios (Category=Performance) are excluded from the
+    # regular suite: they are serialized and their elapsed measurements are sensitive
+    # to machine state. Run them on demand with the Performance filter.
+    arguments: '-c $(BuildConfiguration) --settings $(Build.SourcesDirectory)/src/tests/runsettings.xml --filter "Category!=Performance" --collect:"XPlat Code Coverage" -- RunConfiguration.DisableAppDomain=true'
 
 # Generate test report
 - task: DotNetCoreCLI@2
