@@ -9,13 +9,12 @@ on:
 
 # Prevent concurrent preview releases
 concurrency:
-  # Global group: the daily revision counter is shared across branches, so serialize all preview releases
+  # The timestamp-based version is only unique per minute, so serialize runs to avoid two runs stamping the same version number
   group: preview-release
   cancel-in-progress: false
 
 permissions:
   contents: read
-  actions: read # required to query today's workflow runs for the daily revision counter
   packages: write
   id-token: write # enable GitHub OIDC token issuance for this job
 
@@ -67,50 +66,28 @@ jobs:
 
       - name: Get preview version number
         id: preview_version
-        env:
-          GH_TOKEN: ${{ github.token }}
-          WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
-          # Resolve branch name per trigger event:
-          # - pull_request: GITHUB_REF is refs/pull/<n>/merge (unusable); GITHUB_BASE_REF holds the target branch name
-          # - workflow_dispatch: GITHUB_REF is refs/heads/releases/preview-v1.0.0
+          # pull_request: GITHUB_BASE_REF is the target branch; dispatch: GITHUB_REF is the branch
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             BRANCH_NAME="${GITHUB_BASE_REF#releases/}"
           else
             BRANCH_NAME="${GITHUB_REF#refs/heads/releases/}"
           fi
 
-          # Try to extract version from branch name (format: preview-v1.0.0 or preview-1.0.0)
+          # Extract version from branch name (format: preview-v1.0.0 or preview-1.0.0)
           if [[ "$BRANCH_NAME" =~ v?([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
             echo "Extracted version from branch name: $MAJOR.$MINOR.$PATCH"
           else
-            # throw error if version cannot be determined
             echo "Error: Cannot determine version from branch name '$BRANCH_NAME'. Ensure it follows 'releases/preview-vX.Y.Z' format."
             exit 1
           fi
 
-          # Date stamp in YYMMDD format (e.g. 2026-12-12 -> 261212). Monotonic and human-readable.
-          DATE_STAMP=$(date -u +%y%m%d)
-
-          # Daily revision: count today's completed runs of this workflow, then +1.
-          # Resets every day, mirroring the .NET SDK official build scheme (yyyymmdd.r).
-          # Note: failed/cancelled runs count too, so the revision may skip numbers; that is fine.
-          TODAY=$(date -u +%Y-%m-%dT00:00:00Z)
-          WORKFLOW_FILE=$(basename "${WORKFLOW_REF%%@*}")
-          WORKFLOW_FILE="${WORKFLOW_FILE:-preview-release.yml}" # fallback if the context is unexpectedly empty
-          RUNS_TODAY=$(gh api \
-            "/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/runs" \
-            -f "created=>=${TODAY}" \
-            -f "status=completed" \
-            -f "per_page=1" \
-            --jq '.total_count')
-          REVISION=$((RUNS_TODAY + 1))
-
-          # Format: Major.Minor.Patch-preview.YYMMDD.DailyRevision (e.g. 1.0.0-preview.261212.1)
-          PREVIEW_VERSION="${MAJOR}.${MINOR}.${PATCH}-preview.${DATE_STAMP}.${REVISION}"
+          # Unique per minute: Major.Minor.Patch-preview.YYMMDDHHMM (e.g. 1.0.0-preview.2612121542)
+          DATE_STAMP=$(date -u +%y%m%d%H%M)
+          PREVIEW_VERSION="${MAJOR}.${MINOR}.${PATCH}-preview.${DATE_STAMP}"
 
           echo "version=${PREVIEW_VERSION}" >> $GITHUB_OUTPUT
           echo "::notice ::Preview version: ${PREVIEW_VERSION}"
