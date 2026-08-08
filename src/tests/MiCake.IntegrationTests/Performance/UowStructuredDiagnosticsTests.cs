@@ -1,13 +1,10 @@
 using MiCake.DDD.Uow;
-using MiCake.EntityFrameworkCore.Uow;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace MiCake.IntegrationTests.Performance
 {

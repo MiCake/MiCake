@@ -5,7 +5,6 @@ using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.IO;

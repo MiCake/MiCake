@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 

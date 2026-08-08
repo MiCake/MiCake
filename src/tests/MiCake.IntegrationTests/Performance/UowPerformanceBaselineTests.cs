@@ -1,7 +1,6 @@
 using MiCake.DDD.Infrastructure;
 using MiCake.DDD.Infrastructure.Lifetime;
 using MiCake.DDD.Uow;
-using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -10,7 +9,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace MiCake.IntegrationTests.Performance

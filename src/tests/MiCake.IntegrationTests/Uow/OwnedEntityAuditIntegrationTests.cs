@@ -11,7 +11,6 @@ using MiCake.IntegrationTests.Fixtures;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 using MiCake.DDD.Domain;
 
 namespace MiCake.IntegrationTests.Uow

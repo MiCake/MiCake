@@ -1,5 +1,4 @@
 using MiCake.DDD.Uow;
-using MiCake.DDD.Uow.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;

@@ -3,7 +3,6 @@ using MiCake.DDD.Uow.Exceptions;
 using MiCake.DDD.Uow.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System;
 using System.Data;

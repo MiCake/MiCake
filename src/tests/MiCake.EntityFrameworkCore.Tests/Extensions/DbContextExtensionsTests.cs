@@ -3,7 +3,6 @@ using MiCake.Audit.SoftDeletion;
 using MiCake.DDD.Domain;
 using MiCake.DDD.Infrastructure.Store;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using Xunit;
