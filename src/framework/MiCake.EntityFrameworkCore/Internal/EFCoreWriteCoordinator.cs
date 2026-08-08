@@ -51,9 +51,10 @@ namespace MiCake.EntityFrameworkCore.Internal
 
     /// <summary>
     /// Scoped implementation of <see cref="IEFCoreWriteCoordinator"/>.
-    /// Rejects missing and read-only units of work, resolves the frame-stable resource wrapper,
-    /// activates its explicit transaction, and binds the current provider transaction to the
-    /// command before EF executes it.
+    /// Invoked only when an ambient unit of work is active (the interceptors pass through
+    /// unguarded without one — Permissive policy). Rejects read-only units of work,
+    /// resolves the frame-stable resource wrapper, activates its explicit transaction,
+    /// and binds the current provider transaction to the command before EF executes it.
     /// </summary>
     internal sealed class EFCoreWriteCoordinator : IEFCoreWriteCoordinator
     {

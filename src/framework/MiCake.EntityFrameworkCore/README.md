@@ -34,6 +34,30 @@ public class AppDbContext : MiCakeDbContext
 }
 ```
 
+## Automatic Write Pipeline (Interceptors)
+
+The write pipeline (write guard, transaction binding, and save lifecycle) is installed
+**automatically** for every DbContext registered in the container: the MiCake EF Core
+module registers an `IDbContextOptionsConfiguration<TContext>` configurator
+(`ConfigureDbContext`) that attaches the interceptors and the `UseMiCake()` options for
+you. No interceptor-install API call is required:
+
+```csharp
+// Register the DbContext in the container — that is all.
+services.AddDbContext<AppDbContext>(opt => opt.UseSqlite(connectionString));
+```
+
+- **Permissive policy**: a direct DbContext write *without* an ambient writable unit of
+  work passes through with native EF Core semantics (e.g. implicit transaction).
+  Guards, transaction binding, and lifecycle processing apply only when an ambient
+  writable unit of work is active. MiCake never interferes with vanilla EF usage.
+- **Inside a unit of work**, every write is guarded and transaction-bound: the first
+  `SaveChanges`, `ExecuteUpdate`/`ExecuteDelete`, and raw SQL command executes inside the
+  active unit-of-work transaction.
+- Inheriting `MiCakeDbContext` is optional — plain `DbContext` types registered in the
+  container get the same pipeline through the configurator. `UseMiCake()` remains the
+  options-level entry for `OnConfiguring` scenarios.
+
 ## Key Features
 
 | Feature | Description |
@@ -97,6 +121,7 @@ await context.Database.ExecuteSqlRawAsync("DELETE FROM \"Books\" WHERE ...");
 | `IRepository.AddAndReturnAsync(...)` | `AddAsync(...)` plus `IUnitOfWork.FlushAsync()` where a generated key is required |
 | `IDbContextWrapper` | `IUnitOfWorkResource` (provider integration contract) |
 | `PersistenceStrategy` / `Timeout` | Removed; every writable unit of work uses explicit transactions |
+| `UseMiCakeInterceptors()` / `UseMiCakeInterceptors(sp)` | Removed; interceptors are installed automatically via `ConfigureDbContext` — register the DbContext in the container and the MiCake EF Core module |
 | `IEFCoreContextFactory` / `IEFCoreAnchoredContextFactory` / `GetDbContextWrapper()` | Merged into `IEFCoreContextFactory<TDbContext>` with `GetDbContext()` and `GetOrCreateWrapperFor(DbContext)`; the non-generic interface and the parameterless wrapper method were removed |
 
 ## Documentation

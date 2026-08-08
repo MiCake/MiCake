@@ -27,9 +27,10 @@ namespace MiCake.EntityFrameworkCore
         /// </list>
         /// </para>
         /// <para>
-        /// <b>WRITE SAFETY IS UNAFFECTED:</b> this option only relaxes context resolution. Every
-        /// framework-mediated write path (SaveChanges, bulk operations, raw SQL) is still rejected
-        /// by the write guard when no active writable UoW exists, regardless of this setting.
+        /// <b>WRITE POLICY IS PERMISSIVE:</b> this option only relaxes context resolution. The write
+        /// guard applies inside an ambient writable UoW; without one, framework-mediated write paths
+        /// (SaveChanges, bulk operations, raw SQL) pass through with native EF semantics — no
+        /// transaction or lifecycle guarantee applies.
         /// </para>
         /// <para>
         /// <b>LIMITATIONS:</b>

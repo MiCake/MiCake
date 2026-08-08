@@ -33,6 +33,8 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         public virtual async Task AddAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
+            ThrowIfReadOnlyUnitOfWork();
+
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             await dbset.AddAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
         }
@@ -70,6 +72,8 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         public virtual async Task DeleteAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
+            ThrowIfReadOnlyUnitOfWork();
+
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             dbset.Remove(aggregateRoot);
         }
@@ -79,6 +83,8 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         public virtual async Task DeleteByIdAsync(TKey id, CancellationToken cancellationToken = default)
         {
+            ThrowIfReadOnlyUnitOfWork();
+
             // Loads the aggregate into the stable UoW context and then performs tracked
             // deletion so audit, soft deletion, domain events, and rollback semantics match
             // DeleteAsync. No operation when no aggregate with the id exists.
@@ -94,8 +100,26 @@ namespace MiCake.EntityFrameworkCore.Repository
         /// </summary>
         public virtual async Task UpdateAsync(TAggregateRoot aggregateRoot, CancellationToken cancellationToken = default)
         {
+            ThrowIfReadOnlyUnitOfWork();
+
             var dbset = await GetDbSetAsync(cancellationToken).ConfigureAwait(false);
             dbset.Update(aggregateRoot);
+        }
+
+        /// <summary>
+        /// Rejects a repository write when the ambient unit of work is read-only, so the
+        /// mutation fails immediately instead of silently modifying the ChangeTracker of a
+        /// read-only unit of work whose completion would discard the change. Missing units
+        /// of work (Permissive access) are not affected and remain unguarded here.
+        /// </summary>
+        private void ThrowIfReadOnlyUnitOfWork()
+        {
+            var current = Dependencies.UnitOfWorkManager.Current;
+            if (current?.IsReadOnly == true)
+            {
+                throw new InvalidOperationException(
+                    $"Repository write on {typeof(TAggregateRoot).Name} is rejected: the active unit of work {current.Id} is read-only.");
+            }
         }
     }
 }

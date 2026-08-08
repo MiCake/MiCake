@@ -50,7 +50,7 @@ namespace MiCake.EntityFrameworkCore.Internal
                     "Begin one with IUnitOfWorkManager.BeginAsync() before saving or executing write commands.")
                 : new InvalidOperationException(
                     $"Write operation on {context.GetType().Name} cannot be guarded because the MiCake write pipeline is " +
-                    "not registered for this DbContext. Configure the DbContext with UseMiCakeInterceptors(IServiceProvider) " +
-                    "inside AddDbContext and register the MiCake EF Core module.");
+                    "not registered for this DbContext. Register the MiCake EF Core module (AddMiCake/AddMiCakeWithDefault) " +
+                    "and register the DbContext in the container so the interceptor configurator attaches the write pipeline.");
     }
 }

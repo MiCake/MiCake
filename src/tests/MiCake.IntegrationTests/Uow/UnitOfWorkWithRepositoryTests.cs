@@ -292,12 +292,11 @@ namespace MiCake.IntegrationTests.Uow
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
-                // This file intentionally exercises aggregate and domain-event mechanics
-                // WITHOUT the MiCake write pipeline (per the class documentation). Skipping
-                // the base call avoids the provider-less fallback write-guard interceptor
-                // (see the t7 test-design.md defect note); plain EF persistence applies here.
-                // UoW-contracted persistence guarantees are covered by the SQLite acceptance
-                // matrix (UnitOfWorkWritePathTests / UnitOfWorkCompositionMatrixTests).
+                // This file exercises aggregate and domain-event mechanics with plain EF
+                // persistence; it deliberately does not use the MiCake write pipeline.
+                // MiCakeDbContext.OnConfiguring only installs the per-context options
+                // extension (UseMiCake()), so calling the base is harmless here.
+                base.OnConfiguring(optionsBuilder);
             }
 
             public DbSet<TestAggregate> TestAggregates { get; set; }

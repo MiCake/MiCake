@@ -12,7 +12,7 @@ using Xunit;
 namespace MiCake.EntityFrameworkCore.Tests.Uow
 {
     /// <summary>
-    /// Tests for the MiCakeEFCoreModule execution strategy validation (ADR-011):
+    /// Tests for the MiCakeEFCoreModule execution strategy validation:
     /// retrying execution strategies are rejected for ambient writable units of work.
     /// </summary>
     public class MiCakeEFCoreModuleValidationTests

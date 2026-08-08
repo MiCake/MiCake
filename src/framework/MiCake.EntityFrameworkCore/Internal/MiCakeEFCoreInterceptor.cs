@@ -171,7 +171,11 @@ namespace MiCake.EntityFrameworkCore.Internal
                 var handlerProvider = accessor.Current?.HandlerProvider;
                 accessor.EndOperation();
 
-                if (ex is SaveChangesReentryException && handlerProvider != null)
+                // Any failure inside the root save operation — a post-save or follow-up
+                // pre-save handler, a database write, or a re-entry cycle — leaves the unit
+                // of work non-committable: data may already be written to the uncommitted
+                // transaction, and a later commit would make that failure silently durable.
+                if (handlerProvider != null)
                 {
                     MarkUnitOfWorkRollbackOnly(handlerProvider, context);
                 }
@@ -205,7 +209,13 @@ namespace MiCake.EntityFrameworkCore.Internal
             {
                 _logger.LogError(ex, "Error in synchronous SavingChanges for {ContextType}",
                     eventData.Context?.GetType().Name);
-                ResolveAccessor(eventData.Context)?.EndOperation();
+                var accessor = ResolveAccessor(eventData.Context);
+                var handlerProvider = accessor?.Current?.HandlerProvider;
+                accessor?.EndOperation();
+                if (handlerProvider != null)
+                {
+                    MarkUnitOfWorkRollbackOnly(handlerProvider, eventData.Context!);
+                }
                 throw;
             }
         }
@@ -231,7 +241,13 @@ namespace MiCake.EntityFrameworkCore.Internal
                 _logger.LogError(ex, "Error in SavingChangesAsync for {ContextType}", eventData.Context!.GetType().Name);
                 // EF Core does not raise SaveChangesFailed when the failure originates in
                 // this interceptor, so the operation frame must be ended here.
-                ResolveAccessor(eventData.Context)?.EndOperation();
+                var accessor = ResolveAccessor(eventData.Context);
+                var handlerProvider = accessor?.Current?.HandlerProvider;
+                accessor?.EndOperation();
+                if (handlerProvider != null)
+                {
+                    MarkUnitOfWorkRollbackOnly(handlerProvider, eventData.Context);
+                }
                 throw;
             }
         }

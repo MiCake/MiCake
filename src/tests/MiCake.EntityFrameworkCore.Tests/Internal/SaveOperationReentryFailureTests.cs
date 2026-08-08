@@ -147,7 +147,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task PostSaveFailure_EndsOperation_NextSaveStartsFreshRoot()
+        public async Task PostSaveFailure_MarksUnitOfWorkRollbackOnly_CommitRejected_AndNothingDurable()
         {
             using var provider = BuildProvider(s =>
                 s.AddScoped<IRepositoryPostSaveChanges, ThrowOncePostSaveHandler>());
@@ -162,13 +162,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             // First save fails in the post-save handler; the operation ends.
             await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
 
-            // A second save starts a fresh root operation and succeeds.
-            context.Add(new UniqueLifecycleTestEntity { Name = "second" });
-            await context.SaveChangesAsync();
-            await uow.CommitAsync();
-
-            Assert.True(ThrowOncePostSaveHandler.CallCount >= 2);
-            Assert.Equal(2, await context.Entities.CountAsync());
+            // The data written by the failed save is already inside the uncommitted
+            // transaction: the unit of work is rollback-only, so a later commit must be
+            // rejected instead of making the handler failure silently durable.
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+            await uow.RollbackAsync();
+            Assert.Equal(0, await context.Entities.CountAsync());
         }
 
         [Fact]

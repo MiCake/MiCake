@@ -75,7 +75,11 @@ namespace MiCake.DDD.Uow.Internal
                 _ambientAccessor.Push(new UnitOfWorkFrame(token, nestedUow, currentFrame.ServiceProvider, currentFrame));
                 _logger.LogDebug("Created nested UnitOfWork {UnitOfWorkId} under parent {ParentId}",
                     nestedUow.Id, currentFrame.UnitOfWork.Id);
-                return Task.FromResult<IUnitOfWork>(nestedUow);
+
+                // Nested units of work run the same initialization pipeline as root units of
+                // work: lifecycle hooks observe every created UoW, and Immediate activation
+                // delegates to the root through the parent link (idempotent and harmless).
+                return InitializeUnitOfWorkAsync(nestedUow, currentFrame.ServiceProvider, nestedOptions, cancellationToken);
             }
 
             var rootToken = UnitOfWorkFrameToken.New();

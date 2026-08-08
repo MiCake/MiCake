@@ -13,9 +13,9 @@ using Xunit;
 namespace MiCake.Tests.Uow
 {
     /// <summary>
-    /// Regression tests capturing the t1 review findings (2026-08-06).
-    /// Each test documents the expected behavior per ADR-007 / ADR-011 and the resource contract.
-    /// The failure-path tests currently fail and are the red phase for /mvt-fix.
+    /// Regression tests capturing the review findings (2026-08-06).
+    /// Each test documents the expected behavior of the resource activation contract and the
+    /// commit/rollback state machine.
     /// </summary>
     public class UnitOfWorkReviewRegressionTests
     {
@@ -56,7 +56,7 @@ namespace MiCake.Tests.Uow
             uow.RegisterResource(late);
             await uow.FlushAsync();
 
-            // ADR-011: every writable resource is activated before its first supported write.
+            // Every writable resource is activated before its first supported write.
             Assert.Equal(1, late.EnsureTransactionCount);
             Assert.True(late.HasActiveTransaction);
             Assert.Equal(1, late.FlushCount);
@@ -155,6 +155,22 @@ namespace MiCake.Tests.Uow
             Assert.Equal("Commit failed", ex.Message);
         }
 
+        [Fact]
+        public async Task CommitAsync_AfterPartialCommit_ShouldRejectSecondCommit()
+        {
+            var uow = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            uow.RegisterResource(new TestUowResource());
+            uow.RegisterResource(new TestUowResource { CommitException = new InvalidOperationException("Commit failed") });
+
+            await Assert.ThrowsAsync<PartialUnitOfWorkCommitException>(() => uow.CommitAsync());
+
+            // A partial commit is terminal: the first resource is durable, so a second
+            // commit must be rejected instead of re-running the commit loop and
+            // overwriting the recorded per-resource outcomes.
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+            Assert.Contains("partial-commit", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
         #endregion
 
         #region C4: A partial commit is never reported as a successful overall rollback
@@ -178,7 +194,7 @@ namespace MiCake.Tests.Uow
                 });
             }));
 
-            // ADR-007: never report the overall UoW as rolled back after any resource committed.
+            // Never report the overall UoW as rolled back after any resource committed.
             Assert.False(rolledBackRaised);
             Assert.Same(outer, manager.Current);
         }

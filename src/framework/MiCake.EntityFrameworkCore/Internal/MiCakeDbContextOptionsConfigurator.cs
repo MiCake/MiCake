@@ -24,10 +24,20 @@ namespace MiCake.EntityFrameworkCore.Internal
 
             // Resolve the singleton interceptor instances (reused across all contexts of this
             // type, avoiding EF's ManyServiceProvidersCreatedWarning) and attach them
-            // explicitly — the only mechanism EF Core supports.
-            optionsBuilder.AddInterceptors(
-                serviceProvider.GetRequiredService<MiCakeEFCoreInterceptor>(),
-                serviceProvider.GetRequiredService<MiCakeDbCommandInterceptor>());
+            // explicitly — the only mechanism EF Core supports. When the module has not
+            // registered them (e.g. a host wired this configurator manually), fail with
+            // guidance instead of a bare DI resolution error.
+            var saveChangesInterceptor = serviceProvider.GetService<MiCakeEFCoreInterceptor>();
+            var commandInterceptor = serviceProvider.GetService<MiCakeDbCommandInterceptor>();
+            if (saveChangesInterceptor == null || commandInterceptor == null)
+            {
+                throw new InvalidOperationException(
+                    $"The MiCake EF Core write pipeline is not registered for DbContext '{typeof(TContext).Name}'. " +
+                    "Register the MiCake EF Core module (AddMiCake/AddMiCakeWithDefault with UseEFCore) so it registers " +
+                    "the interceptor services and this configurator automatically.");
+            }
+
+            optionsBuilder.AddInterceptors(saveChangesInterceptor, commandInterceptor);
         }
     }
 }

@@ -258,6 +258,34 @@ namespace MiCake.Tests.Uow
             Assert.True(uow.HasActiveTransactions);
         }
 
+        [Fact]
+        public async Task BeginAsync_NestedUow_ShouldInvokeApplicableHook()
+        {
+            var hookInvoked = false;
+            var mockHook = new Mock<IUnitOfWorkLifetimeHook>();
+            mockHook.Setup(h => h.ApplicableMode).Returns((TransactionInitializationMode?)null);
+            mockHook.Setup(h => h.OnUnitOfWorkCreatedAsync(It.IsAny<IUnitOfWork>(), It.IsAny<UnitOfWorkOptions>(), It.IsAny<CancellationToken>()))
+                .Callback(() => hookInvoked = true)
+                .Returns(Task.CompletedTask);
+
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton(mockHook.Object);
+            var provider = services.BuildServiceProvider();
+            var manager = new UnitOfWorkManager(
+                provider,
+                new AmbientUnitOfWorkAccessor(),
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                provider.GetRequiredService<ILogger<UnitOfWorkManager>>());
+
+            using var outer = await manager.BeginAsync();
+            using var nested = await manager.BeginAsync();
+
+            // Nested units of work run the same initialization pipeline as root units of
+            // work, so lifecycle hooks observe every created UoW.
+            Assert.True(hookInvoked);
+        }
+
         #endregion
 
         #region ExecuteRequiresNewAsync Tests

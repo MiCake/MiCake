@@ -311,7 +311,8 @@ public class BookService
 ```
 
 - No ambient UoW -> repository mutations are tracked but never saved; a direct
-  `SaveChangesAsync` without a UoW is rejected before SQL.
+  `SaveChangesAsync` without a UoW passes through with native EF semantics (Permissive
+  policy) — no transaction or lifecycle guarantee applies.
 - Failure path: `await uow.RollbackAsync()` (or let `await using` disposal roll back).
 
 ### 4.2 Generated identity (database-generated keys)
@@ -449,13 +450,15 @@ catch (PartialUnitOfWorkCommitException ex)
 | DbContext | scoped or pooled (`AddDbContext` / `AddDbContextPool`); missing, singleton, or transient fail startup with context-specific guidance |
 | Execution strategy | `RetriesOnFailure = true` is rejected for ambient writable UoWs (requires an application-owned replayable boundary) |
 | `IUnitOfWorkAmbientAccessor` | framework-provided singleton; hosts must NOT register a replacement (would split ambient state between interceptors and the manager) |
-| Interceptors | use the DI overload `UseMiCakeInterceptors(sp)` inside `AddDbContext`; the provider-less static path is a legacy no-op |
+| Interceptors | installed automatically by the module's `ConfigureDbContext` configurator for every container-registered DbContext; no user API call required |
 
 ```csharp
-services.AddDbContext<AppDbContext>((sp, opt) =>
+// No interceptor-install call is needed: registering the DbContext in the container
+// (AddDbContext / AddDbContextPool) is enough — the module's configurator attaches
+// the interceptors and UseMiCake() options automatically.
+services.AddDbContext<AppDbContext>(opt =>
 {
     opt.UseSqlite(connectionString);
-    opt.UseMiCakeInterceptors(sp);
 });
 ```
 
@@ -480,12 +483,15 @@ services.AddDbContext<AppDbContext>((sp, opt) =>
 | `IDbContextWrapper` | `IUnitOfWorkResource` (provider integration contract) |
 | `UnitOfWorkAttribute.InitializationMode` / `CreateOptions()` / `IsUowEnabled` | removed; attribute is sealed with `IsReadOnly` + `IsolationLevel?` |
 | Non-generic `IEFCoreContextFactory` / `IEFCoreAnchoredContextFactory` / `GetDbContextWrapper()` | merged into `IEFCoreContextFactory<TDbContext>` (`GetDbContext()` + `GetOrCreateWrapperFor(DbContext)`) |
-| No-UoW direct save | rejected before SQL; use an ambient writable UoW or `IStandaloneUnitOfWorkExecutor` |
+| `UseMiCakeInterceptors()` / `UseMiCakeInterceptors(sp)` | removed; interceptors are installed automatically via `ConfigureDbContext` — register the DbContext in the container and the MiCake EF Core module |
+| No-UoW direct DbContext save | passes through with native EF semantics (Permissive policy); use a UoW or `IStandaloneUnitOfWorkExecutor` where transaction guarantees are required |
 
 ## 8. Common Pitfalls
 
-1. **Forgetting the UoW**: any framework-mediated write without an ambient writable UoW
-   throws before SQL executes. Begin a UoW first (or use standalone execution).
+1. **Writing without a UoW**: a direct DbContext write without an ambient writable UoW
+   passes through with native EF semantics (Permissive policy) — no transaction or
+   lifecycle guarantee. Repository/UoW paths are always guarded; begin a UoW first
+   (or use standalone execution) where guarantees are required.
 2. **Capturing outer scoped services in a `requiresNew` callback**: resolve from the
    callback's `IServiceProvider`; ownership validation rejects captured outer contexts.
 3. **Read-only write attempts**: they fail fast with the UoW id in the message — do not
@@ -497,7 +503,9 @@ services.AddDbContext<AppDbContext>((sp, opt) =>
    runtime view. The wrapper must wrap the exact context that performs the work.
 6. **Context access without UoW**: `AllowDbContextAccessWithoutUoW = true` returns a standalone
    wrapper without UoW integration — intended for read-only access in filters/middleware only.
-   Writes without an active writable UoW are still rejected by the write guard.
+   Writes without an active writable UoW pass through with native EF semantics (Permissive
+   policy) — no transaction or lifecycle guarantee; begin a UoW (or use standalone execution)
+   where guarantees are required.
 7. **Performance baseline**: run on demand with
    `dotnet test src/tests/MiCake.IntegrationTests --filter Category=Performance`; the
    regular suite excludes these scenarios.

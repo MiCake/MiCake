@@ -265,7 +265,8 @@ namespace MiCake.EntityFrameworkCore.Uow
         /// <summary>
         /// Enforces the no-UoW policy: without an ambient unit of work the default is to fail
         /// with registration guidance; AllowDbContextAccessWithoutUoW downgrades to a warning and
-        /// allows read-only access. Writes remain guarded regardless of this option.
+        /// allows context access. Write guarding applies inside an ambient UoW (Permissive policy
+        /// outside one), so relaxed resolution does not weaken UoW-internal guarantees.
         /// </summary>
         private void EnsureNoActiveUoWIsAllowed()
         {

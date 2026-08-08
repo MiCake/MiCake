@@ -126,6 +126,7 @@ namespace MiCake.AspNetCore.Uow
             ActionExecutionDelegate next)
         {
             IUnitOfWork? unitOfWork = null;
+            Exception? exceptionDuringBody = null;
             try
             {
                 unitOfWork = await _unitOfWorkManager.BeginAsync(options, cancellationToken).ConfigureAwait(false);
@@ -191,6 +192,8 @@ namespace MiCake.AspNetCore.Uow
             }
             catch (Exception ex)
             {
+                exceptionDuringBody = ex;
+
                 // Exception during UoW management - attempt rollback
                 if (unitOfWork != null && !unitOfWork.IsCompleted)
                 {
@@ -219,10 +222,35 @@ namespace MiCake.AspNetCore.Uow
             }
             finally
             {
-                // Dispose the Unit of Work asynchronously
+                // Dispose the Unit of Work asynchronously. A dispose failure must not replace the
+                // primary exception (C# finally semantics would otherwise let the dispose exception
+                // overwrite the action/rollback failure), so when the body already failed we only
+                // log the dispose failure. When the body succeeded, the dispose failure is surfaced
+                // so a resource/rollback cleanup problem is not silently swallowed.
                 if (unitOfWork != null)
                 {
-                    await unitOfWork.DisposeAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await unitOfWork.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception disposeEx)
+                    {
+                        if (exceptionDuringBody != null)
+                        {
+                            _logger.LogError(
+                                disposeEx,
+                                "Unit of Work {UowId} dispose failed after an earlier failure; preserving the original exception",
+                                unitOfWork.Id);
+                        }
+                        else
+                        {
+                            _logger.LogError(
+                                disposeEx,
+                                "Unit of Work {UowId} dispose failed after a successful operation",
+                                unitOfWork.Id);
+                            throw;
+                        }
+                    }
                 }
             }
         }

@@ -14,7 +14,7 @@ using Xunit;
 namespace MiCake.IntegrationTests.Uow
 {
     /// <summary>
-    /// t7 relational acceptance matrix (part 2): first-write transaction binding for
+    /// Acceptance matrix (part 2): first-write transaction binding for
     /// SaveChanges/bulk/raw SQL, generated-key flush, detached concurrency, lifecycle
     /// failure, post-save re-entry convergence, and host isolation on file-backed SQLite.
     /// </summary>
@@ -160,7 +160,7 @@ namespace MiCake.IntegrationTests.Uow
         [Fact]
         public async Task WriteWithoutUoW_PassesThrough_NativeEfSemantics()
         {
-            // Permissive policy (ADR-1a): a direct DbContext write without an ambient writable
+            // Permissive: a direct DbContext write without an ambient writable
             // UoW passes through unguarded (native EF implicit transaction). MiCake only
             // guards/binds writes inside a UoW.
             using var provider = _fixture.BuildProvider();

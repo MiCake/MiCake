@@ -17,7 +17,7 @@ using Xunit;
 namespace MiCake.EntityFrameworkCore.Tests.Repository
 {
     /// <summary>
-    /// t5 repository contract tests: tracked lifecycle deletion by id, explicit physical
+    /// Repository contract tests: tracked lifecycle deletion by id, explicit physical
     /// deletion inside the UoW transaction, detached stale replacement concurrency, and
     /// no-op deletion of missing aggregates.
     /// </summary>
@@ -213,6 +213,29 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
                 executor.ExecuteDeleteAsync<RepoContractEntity>(e => e.Name == "x"));
 
             Assert.Contains("read-only", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task RepositoryWrite_ReadOnlyUoW_Throws()
+        {
+            using var provider = BuildProvider();
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+            var repository = GetRepository(scope.ServiceProvider);
+
+            await using var uow = await manager.BeginAsync(UnitOfWorkOptions.ReadOnly);
+
+            var entity = new RepoContractEntity { Name = "x" };
+
+            // Repository mutations fail immediately on a read-only unit of work instead of
+            // silently modifying the ChangeTracker of a unit of work whose completion
+            // would discard the change.
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => repository.AddAsync(entity));
+            Assert.Contains("read-only", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => repository.UpdateAsync(entity));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => repository.DeleteAsync(entity));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => repository.DeleteByIdAsync(1));
         }
 
         [Fact]

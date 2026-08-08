@@ -17,8 +17,9 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
 {
     /// <summary>
     /// End-to-end write-guard tests through the installed interceptors:
-    /// SaveChanges, ExecuteSqlRaw, and ExecuteDelete are rejected without a writable
-    /// unit of work and participate in the active UoW transaction when present.
+    /// writes without an ambient writable unit of work pass through with native EF
+    /// semantics (Permissive), and writes inside a unit of work are bound to its
+    /// transaction and roll back with it.
     /// </summary>
     public class MiCakeWriteGuardInterceptorsTests : IDisposable
     {
@@ -40,7 +41,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         private ServiceProvider BuildProvider(bool allowDbContextAccessWithoutUoW = false)
         {
             var services = new ServiceCollection();
-            // Interceptors are attached via ConfigureDbContext (design ADR-1); the user's
+            // Interceptors are attached via ConfigureDbContext; the user's
             // AddDbContext delegate only configures the provider.
             services.AddDbContext<WriteGuardTestDbContext>((sp, opt) =>
                 opt.UseSqlite($"Data Source={_dbPath};Pooling=False"));
@@ -64,7 +65,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
                     AllowDbContextAccessWithoutUoW = allowDbContextAccessWithoutUoW
                 });
 
-            // Save lifecycle is a t4 concern; the write guard only needs a non-null lifetime.
+            // Save lifecycle is tested separately; the write guard only needs a non-null lifetime.
             services.AddSingleton<IEFSaveChangesLifetime>(Mock.Of<IEFSaveChangesLifetime>());
             services.AddSingleton<MiCakeEFCoreInterceptor>();
             services.AddSingleton<MiCakeDbCommandInterceptor>();
@@ -77,7 +78,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         [Fact]
         public async Task SaveChangesAsync_WithoutUoW_WhenAccessAllowed_Succeeds()
         {
-            // Permissive policy (ADR-1a): a direct DbContext write without an ambient writable
+            // Permissive: a direct DbContext write without an ambient writable
             // UoW passes through unguarded (native EF implicit transaction). The access option
             // only relaxes context resolution; writes are not guarded outside a UoW.
             using var provider = BuildProvider(allowDbContextAccessWithoutUoW: true);
@@ -93,7 +94,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         [Fact]
         public async Task SaveChangesAsync_WithoutUoW_Succeeds()
         {
-            // Permissive policy (ADR-1a): no ambient UoW -> write succeeds with native EF semantics.
+            // Permissive: no ambient UoW -> write succeeds with native EF semantics.
             using var provider = BuildProvider();
             await using var scope = provider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<WriteGuardTestDbContext>();
@@ -107,7 +108,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         [Fact]
         public async Task SaveChanges_WithoutUoW_Succeeds()
         {
-            // Permissive policy (ADR-1a): synchronous SaveChanges without a UoW also passes
+            // Permissive: synchronous SaveChanges without a UoW also passes
             // through (native EF semantics).
             using var provider = BuildProvider();
             using var scope = provider.CreateScope();
@@ -158,7 +159,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         [Fact]
         public async Task ExecuteSqlRawAsync_WithoutUoW_Succeeds()
         {
-            // Permissive policy (ADR-1a): a non-query command without an ambient UoW passes
+            // Permissive: a non-query command without an ambient UoW passes
             // through unguarded (native EF semantics).
             using var provider = BuildProvider();
             await using var scope = provider.CreateAsyncScope();
@@ -189,7 +190,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         [Fact]
         public async Task ExecuteDeleteAsync_WithoutUoW_Succeeds()
         {
-            // Permissive policy (ADR-1a): a bulk delete without an ambient UoW passes through
+            // Permissive: a bulk delete without an ambient UoW passes through
             // unguarded (native EF semantics).
             using var provider = BuildProvider();
             await using var scope = provider.CreateAsyncScope();
@@ -259,7 +260,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         [Fact]
         public void Configurator_AttachesInterceptors_ToContainerContext()
         {
-            // The ConfigureDbContext configurator (design ADR-1) must attach the MiCake
+            // The ConfigureDbContext configurator must attach the MiCake
             // interceptors to the container-resolved DbContext without any user-side call.
             // Interceptors attached via AddInterceptors live in the options extensions,
             // not as resolvable DI services, so inspect CoreOptionsExtension.Interceptors.

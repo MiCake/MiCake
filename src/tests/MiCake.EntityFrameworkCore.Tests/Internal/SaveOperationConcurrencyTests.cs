@@ -21,7 +21,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
 {
     /// <summary>
     /// Concurrency and lifecycle state-machine tests for the per-DbContext save-operation
-    /// accessor (ADR-004/005): operation isolation, pool reset, failure cleanup, pre-save
+    /// accessor: operation isolation, pool reset, failure cleanup, pre-save
     /// state retention, controlled re-entry, and the bounded save-cycle limit.
     /// </summary>
     [Collection("SaveOperation")]
@@ -179,7 +179,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task PreSaveFailure_EndsOperation_NextSaveStartsFreshRoot()
+        public async Task PreSaveFailure_MarksUnitOfWorkRollbackOnly_CommitRejected_AndNothingDurable()
         {
             using var provider = BuildProvider(registerHandlers: s =>
             {
@@ -196,13 +196,12 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
             // First save fails in the pre-save handler.
             await Assert.ThrowsAsync<InvalidOperationException>(() => context.SaveChangesAsync());
 
-            // A second save must start a fresh root operation and succeed.
-            context.Add(new LifecycleTestEntity { Name = "second" });
-            await context.SaveChangesAsync();
-            await uow.CommitAsync();
-
-            Assert.True(ThrowOncePreSaveHandler.CallCount >= 2);
-            Assert.Equal(2, await context.Entities.CountAsync());
+            // The pre-save failure leaves the unit of work rollback-only: the transaction
+            // is already activated and the handler pass may have mutated tracker state, so
+            // a later commit must be rejected instead of persisting that state.
+            await Assert.ThrowsAsync<InvalidOperationException>(() => uow.CommitAsync());
+            await uow.RollbackAsync();
+            Assert.Equal(0, await context.Entities.CountAsync());
         }
 
         [Fact]

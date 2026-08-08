@@ -9,7 +9,7 @@ using Xunit;
 namespace MiCake.IntegrationTests.Uow
 {
     /// <summary>
-    /// t7 relational acceptance matrix (part 1): root/shared nested/requiresNew/read-only/
+    /// Relational acceptance matrix (part 1): root/shared nested/requiresNew/read-only/
     /// savepoint composition against file-backed SQLite.
     /// </summary>
     public class UnitOfWorkCompositionMatrixTests : IDisposable

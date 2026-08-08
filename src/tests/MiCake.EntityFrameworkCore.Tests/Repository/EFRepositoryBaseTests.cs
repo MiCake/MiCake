@@ -245,7 +245,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             var results = await Task.WhenAll(tasks);
 
             // Assert: every access delegates to the frame-stable factory; identity stability
-            // is the factory's contract (t2), not a repository-local cache.
+            // is the factory's contract, not a repository-local cache.
             foreach (var r in results)
                 Assert.Same(dbContext, r);
 

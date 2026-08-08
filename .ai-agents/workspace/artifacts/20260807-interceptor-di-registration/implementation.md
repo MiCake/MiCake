@@ -37,9 +37,12 @@ status: 'implemented'
 | `src/tests/MiCake.IntegrationTests/Uow/AuditIntegrationTests.cs` | modify | 移除 `UseMiCakeInterceptors(sp)` |
 | `src/tests/MiCake.IntegrationTests/Uow/GenericAuditIntegrationTests.cs` | modify | 移除 `UseMiCakeInterceptors(sp)` |
 | `src/tests/MiCake.IntegrationTests/Uow/OwnedEntityAuditIntegrationTests.cs` | modify | 移除 `UseMiCakeInterceptors(sp)` |
-| `src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkLazyImmediateModeIntegrationTests.cs` | modify | 移除 `(sp)` + 拦截器 singleton |
-| `src/tests/MiCake.IntegrationTests/Repository/CommonFilterPagingQueryIntegrationTests.cs` | modify | 移除 `(sp)` + 拦截器 singleton |
+| `src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkLazyImmediateModeIntegrationTests.cs` | modify | 移除 `(sp)` + 拦截器 singleton；后续收尾：恢复 `base.OnConfiguring` 调用（新机制下无冲突） |
+| `src/tests/MiCake.IntegrationTests/Repository/CommonFilterPagingQueryIntegrationTests.cs` | modify | 移除 `(sp)` + 拦截器 singleton；后续收尾：恢复 `base.OnConfiguring` 调用（新机制下无冲突） |
 | `src/tests/MiCake.IntegrationTests/Fixtures/MiCakeAppFixture.cs` | modify | 移除 Helper.Reset() 引用 |
+| `src/framework/MiCake.EntityFrameworkCore/Internal/MiCakeInterceptorPipeline.cs` | modify（收尾） | 过时错误消息不再引用已删除的 `UseMiCakeInterceptors(sp)`，改为提示注册模块 + 容器注册 DbContext |
+| `docs/UoW-v2-Architecture-and-Usage.md` | modify（收尾） | §5 拦截器行/示例改自动安装；§7 迁移表补 `UseMiCakeInterceptors` 行并修正 No-UoW 语义；§8 陷阱 1 与 Permissive 对齐 |
+| `src/framework/MiCake.EntityFrameworkCore/README.md` | modify（收尾） | 新增 Automatic Write Pipeline 小节（自动安装 + Permissive 策略）；迁移表补 `UseMiCakeInterceptors` 行 |
 
 ## Design Compliance
 
@@ -65,10 +68,18 @@ status: 'implemented'
 - 测试：MiCake.Tests 269/269、EF Core 235/235、Integration 178/178、ASP.NET 432/432 全通过。
 - 验证过程：26 个 EF Core 失败 + 22 个集成失败全部修复（A 类 Permissive 语义 5、B 类过时引导 5、C 类探针 2、D 类 fixture 漏 `UseMiCake()` 12、E 类模块配置器强转 22）。
 
+## 收尾验证（2026-08-07）
+
+- 修复 `MiCakeInterceptorPipeline.CreateUnavailableException` 过时错误消息（仍引用已删除的 `UseMiCakeInterceptors(IServiceProvider)`）；无测试断言该消息，构建 0 错误。
+- 移除两个集成测试的 t7 遗留 WORKAROUND（跳过 `base.OnConfiguring` 的理由已不存在——新机制下 base 仅装 options），恢复 base 调用；两个文件 14 个测试全通过。
+- `docs/UoW-v2-Architecture-and-Usage.md` §5/§7/§8 与 Permissive 语义对齐（拦截器自动安装、No-UoW 直写放行）；`MiCake.EntityFrameworkCore/README.md` 新增 Automatic Write Pipeline 小节。
+- 验证：构建 0 警告 0 错误；Integration 178/178、EF Core 235/235 全通过。
+- 残留引用核查：仓库内不再有代码/文档引用 `UseMiCakeInterceptors`/`MiCakeInterceptorFactory`（仅历史工件与旧 bin 产物）。
+
 ## Open TODOs
 
-- `/mvt-review`：复核本次实施（设计合规 + Permissive 语义 + 配置器机制）。
-- `/mvt-implement` 后续：README ×4 迁移文档（`UseMiCake()` 自动安装说明）——设计 Change Tracking 含但本次未做。
+- `/mvt-review`：复核本次实施（设计合规 + Permissive 语义 + 配置器机制）——含收尾改动（错误消息、文档迁移）。
+- 已关闭：README/docs 迁移完成（2026-08-07 收尾）。实际仅 `MiCake.EntityFrameworkCore/README.md` 需要拦截器安装说明——`MiCake`/`MiCake.AspNetCore`/根 README 无相关配置示例（核实结论，非设计预估的 ×4）。
 - 可选：`ConfigureDbContextPrototypeTests` 是否保留（当前保留作为机制回归）。
 
 ## Change Tracking

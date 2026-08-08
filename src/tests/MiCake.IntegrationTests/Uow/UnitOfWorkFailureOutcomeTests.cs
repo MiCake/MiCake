@@ -12,10 +12,10 @@ using Xunit;
 namespace MiCake.IntegrationTests.Uow
 {
     /// <summary>
-    /// t7 relational acceptance matrix (part 3): multi-resource failure semantics on
+    /// Relational acceptance matrix (part 3): multi-resource failure semantics on
     /// file-backed SQLite. The relational resource provides the durable backbone while a
     /// hand-written <see cref="IUnitOfWorkResource"/> double injects commit/rollback failures
-    /// that a real provider cannot reproduce deterministically (ADR-007 best-effort contract).
+    /// that a real provider cannot reproduce deterministically.
     /// </summary>
     public class UnitOfWorkFailureOutcomeTests : IDisposable
     {
@@ -66,7 +66,8 @@ namespace MiCake.IntegrationTests.Uow
                 var exception = await Assert.ThrowsAsync<PartialUnitOfWorkCommitException>(() => uow.CommitAsync());
 
                 // Structured outcome: the durable resource is Committed, the failing one Failed;
-                // CommitState and RollbackState are tracked separately (ADR-007 diagnostic contract).
+                // CommitState and RollbackState are tracked separately: a commit-failed resource
+                // is never conflated with a resource that was never committed.
                 var durableOutcome = Assert.Single(exception.Outcome.Resources,
                     r => r.CommitState == UnitOfWorkResourceCommitState.Committed);
                 Assert.Contains("UowAcceptanceDbContext", durableOutcome.ResourceType, StringComparison.Ordinal);

@@ -14,7 +14,7 @@ using System.IO;
 namespace MiCake.IntegrationTests.Uow
 {
     /// <summary>
-    /// File-backed SQLite acceptance fixture for the relational transaction matrix (t7).
+    /// File-backed SQLite acceptance fixture for the relational transaction matrix.
     /// Each provider owns a unique temporary database file; every scope resolves its own
     /// DbContext through the frame-stable factory so transaction and rollback guarantees
     /// are exercised against a real relational store, never EF Core InMemory.

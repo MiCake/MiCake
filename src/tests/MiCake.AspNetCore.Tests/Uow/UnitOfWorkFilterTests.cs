@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1082,6 +1083,54 @@ namespace MiCake.AspNetCore.Tests.Uow
             // The failed completion must leave the UoW rolled back and asynchronously disposed
             mockUow.Verify(u => u.RollbackAsync(default), Times.Once);
             mockUow.Verify(u => u.DisposeAsync(), Times.Once);
+        }
+
+        #endregion
+
+        #region Dispose Failure Tests
+
+        [Fact]
+        public async Task OnActionExecutionAsync_WhenActionSucceeds_ButDisposeFails_ShouldPropagateDisposeFailure()
+        {
+            // Arrange: a successful action whose UoW dispose fails must surface the dispose
+            // failure so a resource/rollback cleanup problem is not silently swallowed.
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.IsCompleted).Returns(true);
+            mockUow.Setup(u => u.DisposeAsync())
+                .Returns(ValueTask.FromException(new InvalidOperationException("dispose failed")));
+
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), default)).ReturnsAsync(mockUow.Object);
+
+            ActionExecutionDelegate next = () => Task.FromResult(_executedContext);
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _filter.OnActionExecutionAsync(_executingContext, next));
+            Assert.Contains("dispose failed", ex.Message);
+        }
+
+        [Fact]
+        public async Task OnActionExecutionAsync_WhenActionFails_ButDisposeAlsoFails_ShouldPreserveOriginalException()
+        {
+            // Arrange: when the body already failed, a dispose failure must NOT replace the
+            // primary exception (C# finally semantics would otherwise overwrite it).
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.IsCompleted).Returns(false);
+            mockUow.Setup(u => u.RollbackAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            mockUow.Setup(u => u.DisposeAsync())
+                .Returns(ValueTask.FromException(new InvalidOperationException("dispose failed")));
+
+            _mockUowManager.Setup(m => m.BeginAsync(It.IsAny<UnitOfWorkOptions>(), default)).ReturnsAsync(mockUow.Object);
+
+            var bodyException = new InvalidOperationException("action failed");
+            ActionExecutionDelegate next = () => throw bodyException;
+
+            // Act & Assert: the original action failure surfaces, not the dispose failure.
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _filter.OnActionExecutionAsync(_executingContext, next));
+            Assert.Same(bodyException, ex);
+            Assert.Contains("action failed", ex.Message);
         }
 
         #endregion

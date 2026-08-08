@@ -14,6 +14,10 @@ namespace MiCake.DDD.Uow.Internal
     /// Implementation of Unit of Work with explicit transactions, shared nested units of work,
     /// deterministic registration-order flush, best-effort multi-resource commit, savepoint coverage,
     /// and asynchronous disposal. The unit of work is the sole persistence owner.
+    /// Not thread-safe: an instance is bound to one execution context through the ambient frame
+    /// stack and must not be shared across concurrent flows. Resource registration and rollback-only
+    /// marking are internally synchronized for the interceptor path; all other operations assume
+    /// single-threaded access.
     /// </summary>
     internal class UnitOfWork : IUnitOfWork, IUnitOfWorkInternal
     {
@@ -279,6 +283,14 @@ namespace MiCake.DDD.Uow.Internal
             ThrowIfDisposed();
             ThrowIfCompleted("Unit of work has already been completed");
 
+            // A partial commit is a terminal state: some resources are durable, so the UoW
+            // cannot be committed again. Only the boundary may dispose it.
+            if (_hasPartialCommit)
+            {
+                throw new InvalidOperationException(
+                    $"Unit of work {Id} is in a partial-commit state and cannot be committed again; dispose it to release resources.");
+            }
+
             // Shared nested commit performs no physical commit, raises no transaction events,
             // and completes in the caller's execution context.
             if (Parent != null)
@@ -353,7 +365,7 @@ namespace MiCake.DDD.Uow.Internal
 
             // Commit resources in deterministic registration order with structured outcome tracking.
             // CommitState and RollbackState are tracked separately so a commit-failed resource is
-            // never conflated with a resource that was never committed (ADR-007 diagnostic contract).
+            // never conflated with a resource that was never committed.
             var commitFailures = new List<Exception>();
 
             foreach (var resource in _resources)
@@ -429,9 +441,11 @@ namespace MiCake.DDD.Uow.Internal
             // and completes in the caller's execution context.
             if (Parent != null)
             {
-                if (Parent is UnitOfWork parentUow)
+                // Mark the root rollback-only through the internal contract so custom parent
+                // implementations participate in the same propagation as framework units of work.
+                if (Parent is IUnitOfWorkInternal parentInternal)
                 {
-                    parentUow.MarkRollbackOnly();
+                    parentInternal.MarkRollbackOnly();
                 }
 
                 MarkAsCompleted();
@@ -781,6 +795,14 @@ namespace MiCake.DDD.Uow.Internal
             }
         }
 
+        /// <summary>
+        /// Raises a unit of work event. Handler failures are logged; with
+        /// <paramref name="throwOnFailure"/> they also propagate (used for events that must
+        /// abort the operation, such as <see cref="OnCommitting"/> and <see cref="OnRollingBack"/>).
+        /// Events raised after the operation completed (<see cref="OnCommitted"/>, <see cref="OnRolledBack"/>)
+        /// swallow handler failures deliberately: the transaction outcome is already durable and cannot
+        /// be undone, so the exception is logged and the boundary continues.
+        /// </summary>
         private void RaiseEvent(EventHandler<UnitOfWorkEventArgs>? eventHandler, UnitOfWorkEventArgs args, string eventName, bool throwOnFailure = false)
         {
             if (eventHandler == null)
@@ -877,7 +899,7 @@ namespace MiCake.DDD.Uow.Internal
             }
 
             // Resources registered after the savepoint was created are not covered and must be
-            // rejected before any state change (R8). Resources that were present at creation time
+            // rejected before any state change. Resources that were present at creation time
             // but failed to create the savepoint are simply skipped, not treated as late registrations.
             var attempted = _savepointAttempted[name];
             foreach (var resource in _resources)

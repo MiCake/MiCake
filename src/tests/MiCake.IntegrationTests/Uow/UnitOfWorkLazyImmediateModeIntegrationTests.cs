@@ -24,10 +24,10 @@ namespace MiCake.IntegrationTests.Uow
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // WORKAROUND for defect found during t7 acceptance testing:
-            // MiCakeDbContext.OnConfiguring installs a provider-less fallback write-guard
-            // interceptor that conflicts with UseMiCakeInterceptors(sp); skip the base call
-            // until the defect is fixed (see test-design.md).
+            // MiCakeDbContext.OnConfiguring only installs the per-context options
+            // extension (UseMiCake()); interceptors are attached by the module's
+            // ConfigureDbContext configurator, so no conflict exists.
+            base.OnConfiguring(optionsBuilder);
         }
 
         public DbSet<IntegrationTestAggregate> TestAggregates { get; set; }

@@ -21,33 +21,6 @@ changes:
     updated_at: 2026-08-07T03:54:23.441Z
     epic_id: ""
 history:
-  - skill: /mvt-review
-    completed_at: 2026-08-07T04:31:17.815Z
-    summary: 全变更抽样复审（Approve，0 Critical/0 Warning/3 Suggestion）：抽样覆盖 t1-t8 跨模块核心面——AmbientUnitOfWorkAccessor 帧栈自愈与 compare-and-pop、UnitOfWork.CommitCoreAsync
-      rollback-only/先flush后提交/CommitState-RollbackState 分离/partial-commit 结构化异常、UnitOfWorkFilter 异步释放与只读优先级、IRepository Key Interfaces 一致、EFRepositoryHasPaging 全序分页+keyless拒绝+shadow
-      属性、MiCakeEFCoreInterceptor re-entry 状态机；未发现跨任务设计偏离；S1=OnCommitting 内层 catch 缺一行注释、S2=AmbientAccessor getter 内自愈写回、S3=filter partial-commit 后资格守卫回滚可加注释；全套件 261/250/173+5/432 构建 0 错误；用户选择不写
-      review.md
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-quick-dev
-    completed_at: 2026-08-07T06:37:16.507Z
-    summary: 选项 B 实施：EFRepository 新增 AddAndGetIdAsync（AddAsync + ambient UoW FlushAsync 取生成键后返回 TKey；无 UoW 抛清晰异常、不独立提交、durable 归 UoW commit；区别于已移除的 AddAndReturnAsync）；接口/基类不变，纯附加非破坏；构建 0 错误，EF Core 仓储测试
-      26/26 通过
-    change_id: ""
-  - skill: /mvt-review
-    completed_at: 2026-08-07T07:16:02.407Z
-    summary: 复核上次框架代码 review：3 个 Warning 均基本属实；确认同步释放 partial-commit 语义不一致、同步回滚逻辑重复、requiresNew 与 standalone 执行骨架重复；RootCycleSave 残留暂属未证实建议；未修改代码
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-fix
-    completed_at: 2026-08-07T07:26:23.055Z
-    summary: 修复评审发现：W3=同步 Dispose 不再将 partial-commit/无活动事务标记为完成（语义与 DisposeAsync 对齐）+ 2 个同步回归测试；W2=删除 RollbackInternalSync 重复实现，同步释放委托异步核心；W1=requiresNew 与 standalone 统一走 IsolatedUowExecution
-      共享核心（新文件），删除约 70 行重复骨架；S1=两个拦截器收敛到 MiCakeInterceptorPipeline 共享助手；S2=EFCoreContextFactory bypass 分支合并为 EnsureNoActiveUoWIsAllowed；S3=AddAndGetIdAsync 先检查 UoW 再 Add；S4=EFCoreDbContextWrapper
-      同步释放不再吞事务释放异常；全套件 MiCake 265/265、EF Core 250/250、集成 178/178、ASP.NET 432/432，构建 0 警告 0 错误
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-fix
-    completed_at: 2026-08-07T07:48:34.256Z
-    summary: 重命名 BypassUnitOfWorkCheck 为 AllowDbContextAccessWithoutUoW：属性名与 XML 文档修正（消除'独立提交/无回滚'过时描述，明确写守卫不受该选项影响）；EFCoreContextFactory 引用与警告/错误消息同步；测试文件重命名 AllowDbContextAccessWithoutUoWTests.cs
-      并更新全部引用；新增回归测试（Allow=true 时无 UoW SaveChanges 仍被写守卫拒绝，MiCakeWriteGuardInterceptorsTests）；docs/UoW-v2 两处更新；EF Core 251/251、集成 178/178，构建 0 错误
-    change_id: 20260806-uow-transaction-reliability
   - skill: /mvt-test
     completed_at: 2026-08-07T07:57:21.263Z
     summary: 补齐 5 个 edge-case 测试：取消令牌路径（CommitAsync 取消→BoundaryException 组合、FlushAsync 取消→OCE+rollback-only、RollbackAsync 取消→BoundaryException 且不完成）、并行 ambient 流隔离（Task.WhenAll 两流互不串扰）、同步 SaveChanges
@@ -74,4 +47,30 @@ history:
     summary: 方案C修订版实施完成（ConfigureDbContext 拦截器自动安装）：新增 MiCakeDbContextOptionsConfigurator + 模块配置器注册（反射调用泛型，修复 InvalidCastException）；拦截器 ctor 注入 accessor、Permissive 策略（无 UoW 写放行）、ResolveMaxSaveCycles 读全局
       options；删 UseMiCakeInterceptors×3 重载与工厂，新增 UseMiCake()；26 EF Core + 22 集成失败全部修复（Permissive/过时引导/fixture 漏 UseMiCake/模块强转），新增配置器挂载验证；全套件 MiCake 269、EF Core 235、集成 178、ASP.NET 432
       通过；implementation.md 已写入
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-07T13:56:12.691Z
+    summary: 修复 review S1-S3（Gate1-3 补 SaveCount 断言、Invaild 拼写×2、未使用 using/死字段）+ 按注释规范清理本次变更 6 文件的 ADR/设计章节/任务编号引用注释（ADR-1/ADR-1a/方案 C/t4/t7/Verification Prerequisites）+ 修正
+      MiCakeWriteGuardInterceptorsTests 过时类注释；EF Core 236/236、集成 178/178 通过
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-07T14:13:29.957Z
+    summary: 20260806 变更注释规范审查（Approve with comments，0 Critical/3 Warning/1 Suggestion）：W1=UnitOfWork.cs 2 处 ADR-007/R8 编号引用；W2=8 测试文件 11 处 ADR/t2/t5/t7 编号引用；W3=UnitOfWorkWithRepositoryTests 过时 workaround
+      注释（引用已删除的 fallback 拦截器机制，与同源已修复两文件不一致）；S1=ReviewRegressionTests 'red phase' 过时句；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-07T14:17:22.256Z
+    summary: 修复 20260806 变更注释规范问题：W1=UnitOfWork.cs 2 处 ADR-007/R8 引用清除；W2=8 测试文件 11 处 ADR/t2/t5/t7 编号引用清除（ReviewRegressionTests 类注释含 red phase 过时句一并重写、FailureOutcomeTests/CompositionMatrixTests 前缀改
+      Relational acceptance matrix、EFRepositoryContractTests 改 Repository contract tests）；W3=UnitOfWorkWithRepositoryTests 恢复 base.OnConfiguring 并改写真实理由（与同源已修复两文件对齐）；残留扫描 0；MiCake 269/269、EF Core
+      236/236、集成 178/178 通过
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-07T14:52:23.813Z
+    summary: 修复深度 review 的 W1/W2 + S3：W2=UnitOfWork 嵌套回滚改用 IUnitOfWorkInternal.MarkRollbackOnly（与同文件其余 3 处嵌套委托模式对齐，自定义父实现契约生效）；W1=UnitOfWorkFilter finally 捕获 dispose 异常——主体成功时传播、主体失败时仅记录日志不掩盖原始异常（+2
+      回归测试）；S3=RaiseEvent XML 文档说明提交后事件吞异常为设计决定；ASP.NET filter 34/34、MiCake 269/269、构建 0 错误
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-review
+    completed_at: 2026-08-07T15:01:08.771Z
+    summary: framework 全量深度 review（47 文件逐行）：Approve with comments，0 Critical/5 Warning/10 Suggestion；W1=partial commit 后重复 CommitAsync 污染 outcome、W2=read-only UoW 下仓储写静默丢弃、W3=UoW 内部集合并发锁策略不一致、W4=post-save
+      handler 失败不标 rollback-only、W5=nested BeginAsync 跳过 hooks/immediate 激活；用户选择不写 review.md
     change_id: 20260806-uow-transaction-reliability
