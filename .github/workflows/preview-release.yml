@@ -67,6 +67,8 @@ jobs:
 
       - name: Get preview version number
         id: preview_version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Resolve branch name per trigger event:
           # - pull_request: GITHUB_REF is refs/pull/<n>/merge (unusable); GITHUB_BASE_REF holds the target branch name
