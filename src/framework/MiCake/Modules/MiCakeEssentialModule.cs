@@ -87,7 +87,7 @@ namespace MiCake.Modules
             {
                 var manager = provider.GetRequiredService<IUnitOfWorkManager>();
                 return manager.Current ?? throw new InvalidOperationException(
-                    "No active Unit of Work. Call IUnitOfWorkManager.Begin() to start a new Unit of Work.");
+                    "No active Unit of Work. Call IUnitOfWorkManager.BeginAsync() to start a new Unit of Work.");
             });
 
             //register all domain event handler to services

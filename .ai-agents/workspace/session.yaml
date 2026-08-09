@@ -21,17 +21,6 @@ changes:
     updated_at: 2026-08-07T03:54:23.441Z
     epic_id: ""
 history:
-  - skill: /mvt-review
-    completed_at: 2026-08-07T15:01:08.771Z
-    summary: framework 全量深度 review（47 文件逐行）：Approve with comments，0 Critical/5 Warning/10 Suggestion；W1=partial commit 后重复 CommitAsync 污染 outcome、W2=read-only UoW 下仓储写静默丢弃、W3=UoW 内部集合并发锁策略不一致、W4=post-save
-      handler 失败不标 rollback-only、W5=nested BeginAsync 跳过 hooks/immediate 激活；用户选择不写 review.md
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-refactor
-    completed_at: 2026-08-08T03:28:36.520Z
-    summary: P0 性能重构完成（行为保持）：SaveOperationEntityHelper 新增 SaveScanResult+ScanChangedEntities 单遍扫描（1 遍主遍历+owned 子集），替换 MiCakeEFCoreInterceptor 3 组调用序列与循环内 HasChangedEntries（保留 frame==null
-      守卫与四分支映射）、LazyEFSaveChangesLifetime 2 处 Build* 调用；删除 5 个无调用者成员（GetChangedEntities/BuildEntriesByType/BuildChangedOwnedOwners/ResolvePreSaveState 单参两参重载/CollectOwnerEntityIfNeeded）；全套件 1660 测试 0
-      回归（EF Core 237/集成 178/MiCake 271/ASP.NET 434/Core 540）；用户选择不写 refactor-notes.md；P1-1 owner 索引与 P2 项留待后续评估
-    change_id: 20260806-uow-transaction-reliability
   - skill: /mvt-fix
     completed_at: 2026-08-08T05:49:48.841Z
     summary: "修复 PR #45 SonarCloud 问题：7 个 Reliability Bug 中 6 个代码修复（S1163 UnitOfWorkFilter finally throw 改 EDI 移出、S4487 删未用 _logger、S2139×3 删重复日志保留补偿、S3971×3 删 GC.SuppressFinalize），S2583 验证为分析器误报标记 FP；顺手修
@@ -76,4 +65,14 @@ history:
     summary: 复审 ExecuteWithinUnitOfWorkAsync 复杂度重构+注释精简（UnitOfWorkFilter.cs）：Approve，0 Critical/0 Warning/3 Suggestion——catch 逻辑德摩根等价验证通过（null||IsCompleted return 与原 !=null&&!IsCompleted
       精确对应）、RollbackAsync(None)/AggregateException/throw; 栈保留逐字确认、finally EDI 返回+finally 后 Throw 语义与 S1163 修复一致、无异常吞没；注释精简质量高（关键契约保留、S8949 opt-out 注释未误删）；3 条 Suggestion 均为可选（exceptionDuringBody
       内联、空引用注释、catch 注释与 helper 名重叠）；安全/性能无关注；ASP.NET 434 + 集成 178 覆盖充分；用户选择不写 review.md
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-bug-detect
+    completed_at: 2026-08-09T07:14:51.888Z
+    summary: 确认误导性错误消息 bug：IUnitOfWorkManager.Begin() 不存在（接口只有 BeginAsync/ExecuteRequiresNewAsync），文案由 44bf4b1 .NET10 重构遗留未同步；影响 MiCakeEssentialModule.cs:90 与 EFCoreContextFactory.cs:284 及两处测试断言；Severity
+      Low，建议 mvt-fix 同步改文案
+    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-fix
+    completed_at: 2026-08-09T07:21:07.557Z
+    summary: 修复误导性错误文案（4 处单行，零逻辑变更）：MiCakeEssentialModule.cs:90 与 EFCoreContextFactory.cs:284 的 IUnitOfWorkManager.Begin() 改为 BeginAsync()（await using 引导），同步 AllowDbContextAccessWithoutUoWTests.cs:427 与
+      EFCoreContextFactoryTests.cs:533 断言；相关测试 34/34 通过；用户选择不写 fix-notes.md
     change_id: 20260806-uow-transaction-reliability

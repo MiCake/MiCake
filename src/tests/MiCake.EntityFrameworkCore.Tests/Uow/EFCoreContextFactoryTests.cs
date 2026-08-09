@@ -530,7 +530,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
 
             // Assert
             Assert.Contains(nameof(TestFactoryDbContext), exception.Message);
-            Assert.Contains("unitOfWorkManager.Begin()", exception.Message);
+            Assert.Contains("unitOfWorkManager.BeginAsync()", exception.Message);
         }
 
         [Fact]
