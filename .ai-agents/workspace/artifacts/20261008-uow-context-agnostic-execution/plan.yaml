@@ -1,0 +1,116 @@
+version: 1
+change_id: 20261008-uow-context-agnostic-execution
+title: Context-Agnostic Isolated UoW Execution
+created_at: 2026-10-08T15:26:32
+updated_at: 2026-10-08T09:25:14.255Z
+status: done
+current_tasks: {}
+tasks:
+  - id: t1-isolated-execution-api
+    title: Deliver ExecuteIsolatedAsync API and shared isolated core
+    status: done
+    completed_at: 2026-10-08T09:25:13.993Z
+    depends_on: []
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake/DDD/Uow/IUnitOfWorkManager.cs
+        - src/framework/MiCake/DDD/Uow/IStandaloneUnitOfWorkExecutor.cs
+        - src/framework/MiCake/DDD/Uow/Internal/UnitOfWorkManager.cs
+        - src/framework/MiCake/DDD/Uow/Internal/StandaloneUnitOfWorkExecutor.cs
+        - src/framework/MiCake/DDD/Uow/Internal/IsolatedUowExecution.cs
+        - src/tests/MiCake.IntegrationTests/Filters/FilterOrderIntegrationTests.cs
+    notes: >
+      ADR-012/013/014. Extract the standalone start path from StandaloneUnitOfWorkExecutor.ExecuteCoreAsync into a shared internal helper and re-point the executor at it first; existing standalone
+      tests must pass unchanged as the behavior-preservation proof. Add ExecuteIsolatedAsync (void + TResult) to IUnitOfWorkManager with the semantics matrix from design.md Key Interfaces (ambient ->
+      requiresNew suspend/restore; no ambient -> standalone root; restore is a no-op without ambient), dispatched in UnitOfWorkManager. Frame push must stay in the synchronous segment (AsyncLocal
+      constraint). Rewrite the missing-ambient message to name all three remediation paths; extend the standalone rejection message with ExecuteIsolatedAsync; add seealso XML cross-links across the
+      three entries. Update the IUnitOfWorkManager test fake in FilterOrderIntegrationTests.cs within this task to keep the solution compiling. Zero behavior change for existing entries.
+    acceptance:
+      - dotnet build MiCake.All.sln completes with 0 errors and 0 new warnings
+      - IUnitOfWorkManager exposes ExecuteIsolatedAsync and ExecuteIsolatedAsync<TResult> with the semantics matrix documented in XML
+      - ExecuteRequiresNewAsync_WithoutOuterUow_ShouldThrow and the standalone rejection tests pass unchanged
+      - The missing-ambient message names BeginAsync, ExecuteIsolatedAsync, and IStandaloneUnitOfWorkExecutor remediation paths
+      - XML docs of all three execution entries cross-reference each other via seealso
+    deliverables:
+      freshness: current
+  - id: t2-comprehension-guardrail-docs
+    title: Ship decision table and non-HTTP host guide
+    status: done
+    completed_at: 2026-10-08T09:25:14.085Z
+    depends_on:
+      - t1-isolated-execution-api
+    project:
+      - default
+    skill_hint: mvt-implement
+    artifacts:
+      files:
+        - src/framework/MiCake/README.md
+        - docs/Background-Jobs-and-Non-HTTP-Hosts.md
+        - docs/Breaking-Changes-and-Migration-v2.md
+    notes: >
+      ADR-015 and analysis R14-R16. README: four-quadrant decision table (boundary frame / shared nested / requiresNew isolated / standalone isolated) keyed on intent and ambient context, plus an
+      ExecuteIsolatedAsync section; reposition the strict pair as wiring self-check variants. New guide docs/Background-Jobs-and-Non-HTTP-Hosts.md: Hangfire async job base class (preferred) and
+      IServerFilter patterns mirroring UnitOfWorkFilter, entry-agnostic helper shape, AsyncLocal synchronous-segment constraint, opt-out for notification-only jobs, cancellation and retry semantics.
+      Migration note in Breaking-Changes-and-Migration-v2.md: two added IUnitOfWorkManager members (source-breaking for implementers, non-breaking for consumers) and ExecuteIsolatedAsync as the
+      recommended default entry for isolated write blocks; keep the appended section consistent with the file's existing zh-CN language.
+    acceptance:
+      - README contains the four-quadrant decision table covering all four execution modes
+      - docs/Background-Jobs-and-Non-HTTP-Hosts.md contains both Hangfire reference patterns and the sync-segment constraint note
+      - Breaking-Changes-and-Migration-v2.md documents the two added interface members with implementer guidance
+      - README positions ExecuteRequiresNewAsync and IStandaloneUnitOfWorkExecutor as wiring self-check variants
+    deliverables:
+      freshness: current
+  - id: t3-execution-test-matrix
+    title: Cover ambient-outcome matrix and relational rows
+    status: done
+    completed_at: 2026-10-08T09:25:14.171Z
+    depends_on:
+      - t1-isolated-execution-api
+    project:
+      - default
+    skill_hint: mvt-test
+    artifacts:
+      files:
+        - src/tests/MiCake.Tests/Uow/UnitOfWorkManagerTests.cs
+        - src/tests/MiCake.Tests/Uow/StandaloneUnitOfWorkExecutorTests.cs
+        - src/tests/MiCake.IntegrationTests/Uow/UnitOfWorkCompositionMatrixTests.cs
+    notes: >
+      Analysis R17-R19. Unit matrix for ExecuteIsolatedAsync: ambient present/absent x outcome (success, operation failure, cancellation, commit failure, rollback failure) using the naming pattern
+      ExecuteIsolatedAsync_{With|Without}Ambient_{Outcome} and the assertion style of UnitOfWorkManagerTests. SQLite composition rows: inner commit invisible to outer pending state, outer ambient
+      restored after inner completion, no-ambient path commits and leaves the ambient empty. Adjust StandaloneUnitOfWorkExecutorTests only for the shared-helper extraction (behavior unchanged).
+      Strict-pair tests must remain untouched as contract locks.
+    acceptance:
+      - Unit tests cover the 10-case ambient x outcome matrix for ExecuteIsolatedAsync
+      - SQLite integration rows prove inner isolation, ambient restoration, and the no-ambient commit path
+      - dotnet test MiCake.All.sln is fully green including all new tests
+      - dotnet build MiCake.All.sln completes with 0 errors and 0 new warnings
+    deliverables:
+      freshness: stale
+  - id: t4-final-verification-review
+    title: Review delivery against baseline requirements
+    status: done
+    completed_at: 2026-10-08T09:25:14.255Z
+    depends_on:
+      - t2-comprehension-guardrail-docs
+      - t3-execution-test-matrix
+    project:
+      - default
+    skill_hint: mvt-review
+    artifacts:
+      files:
+        - src/framework
+        - src/tests
+        - docs
+    notes: >
+      Final delivery gate mirroring the prior change's closing review. Trace every analysis requirement R1-R19 to implementation or executable verification; confirm no undocumented deviation from
+      ADR-012..015 and zero behavior change for the strict pair; verify docs and diagnostics satisfy the discoverability and comprehension rules before the API ships (ADR-015 couples them). Run the
+      complete solution verification as closing evidence.
+    acceptance:
+      - Review traces all R1-R19 requirements to implementation or executable verification
+      - No undocumented deviation from ADR-012 through ADR-015 is found
+      - dotnet build MiCake.All.sln and dotnet test MiCake.All.sln complete successfully
+    deliverables:
+      freshness: stale

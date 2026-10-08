@@ -123,6 +123,48 @@ namespace MiCake.DDD.Uow.Internal
             return ExecuteRequiresNewCoreAsync(operation, options, cancellationToken);
         }
 
+        public Task ExecuteIsolatedAsync(
+            Func<IServiceProvider, CancellationToken, Task> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(operation);
+
+            return ExecuteIsolatedCoreAsync(
+                async (provider, ct) =>
+                {
+                    await operation(provider, ct).ConfigureAwait(false);
+                    return true;
+                },
+                options,
+                cancellationToken);
+        }
+
+        public Task<TResult> ExecuteIsolatedAsync<TResult>(
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentNullException.ThrowIfNull(operation);
+
+            return ExecuteIsolatedCoreAsync(operation, options, cancellationToken);
+        }
+
+        private Task<TResult> ExecuteIsolatedCoreAsync<TResult>(
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options,
+            CancellationToken cancellationToken)
+        {
+            // Ambient presence is resolved in this synchronous segment so both branches
+            // observe the caller's execution context (AsyncLocal frame constraint).
+            return _ambientAccessor.Current != null
+                ? ExecuteRequiresNewCoreAsync(operation, options, cancellationToken)
+                : IsolatedUowExecution.ExecuteStandaloneAsync(
+                    _scopeFactory, _logger, operation, options, "isolated", cancellationToken);
+        }
+
         private async Task<TResult> ExecuteRequiresNewCoreAsync<TResult>(
             Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
             UnitOfWorkOptions? options,
@@ -132,7 +174,10 @@ namespace MiCake.DDD.Uow.Internal
             if (outerFrame == null)
             {
                 throw new InvalidOperationException(
-                    "ExecuteRequiresNewAsync requires an active outer unit of work.");
+                    "ExecuteRequiresNewAsync requires an active outer unit of work. " +
+                    "Establish a boundary frame with IUnitOfWorkManager.BeginAsync(...) at the host edge, " +
+                    "use ExecuteIsolatedAsync(...) for context-agnostic isolated execution, " +
+                    "or use IStandaloneUnitOfWorkExecutor.ExecuteAsync(...) when no ambient unit of work exists.");
             }
 
             options ??= UnitOfWorkOptions.Default;

@@ -281,7 +281,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 
             throw new InvalidOperationException(
                 $"No active Unit of Work found. Please ensure you're within a Unit of Work scope when accessing {typeof(TDbContext).Name}. " +
-                "You can create one using: using var uow = unitOfWorkManager.Begin(); " +
+                "You can create one using: await using var uow = await unitOfWorkManager.BeginAsync(); " +
                 $"If you intentionally want to access DbContext without UoW (e.g., for read-only queries in ResourceFilter/Middleware), " +
                 $"set {nameof(MiCakeEFCoreOptions)}.{nameof(MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW)} = true.");
         }

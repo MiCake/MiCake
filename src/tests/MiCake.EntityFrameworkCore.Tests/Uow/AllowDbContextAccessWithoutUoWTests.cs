@@ -424,7 +424,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Assert - Error message should contain helpful information
             Assert.Contains("No active Unit of Work", exception.Message);
             Assert.Contains("TestDbContext", exception.Message);
-            Assert.Contains("unitOfWorkManager.Begin()", exception.Message);
+            Assert.Contains("unitOfWorkManager.BeginAsync()", exception.Message);
             Assert.Contains(nameof(MiCakeEFCoreOptions), exception.Message);
             Assert.Contains(nameof(MiCakeEFCoreOptions.AllowDbContextAccessWithoutUoW), exception.Message);
         }
