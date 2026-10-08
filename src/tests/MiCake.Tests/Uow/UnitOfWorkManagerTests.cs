@@ -417,6 +417,205 @@ namespace MiCake.Tests.Uow
 
         #endregion
 
+        #region ExecuteIsolatedAsync Tests
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithAmbient_Success_ShouldCommitInnerAndRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+            TestUowResource? innerResource = null;
+
+            var result = await _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var innerManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = innerManager.Current!;
+                Assert.Null(inner.Parent);
+                Assert.NotEqual(outer.Id, inner.Id);
+
+                innerResource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(innerResource);
+                return 42;
+            });
+
+            Assert.Equal(42, result);
+            Assert.Equal(1, innerResource!.CommitCount);
+            Assert.Equal(0, innerResource.RollbackCount);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithAmbient_OperationFailure_ShouldRollbackInnerAndRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+            TestUowResource? innerResource = null;
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                innerResource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(innerResource);
+
+                throw new InvalidOperationException("boom");
+            }));
+
+            Assert.Equal(1, innerResource!.RollbackCount);
+            Assert.Equal(0, innerResource.CommitCount);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithAmbient_Cancellation_ShouldPreserveOriginalCancellation()
+        {
+            using var outer = await _manager.BeginAsync();
+            using var cts = new CancellationTokenSource();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => _manager.ExecuteIsolatedAsync(
+                async (sp, ct) =>
+                {
+                    var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                    ((IUnitOfWorkInternal)inner).RegisterResource(new TestUowResource { ThrowIfCanceled = true });
+                    cts.Cancel();
+                    ct.ThrowIfCancellationRequested();
+                    await Task.CompletedTask;
+                },
+                cancellationToken: cts.Token));
+
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithAmbient_CommitFailure_ShouldPreserveCommitErrorAndRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+
+            // A single failing resource commits nothing: the original commit exception
+            // is preserved rather than reported as a partial commit.
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                var resource = new TestUowResource { CommitException = new InvalidOperationException("commit failed") };
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+                await Task.CompletedTask;
+            }));
+
+            Assert.Equal("commit failed", ex.Message);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithAmbient_RollbackFailure_ShouldThrowBoundaryExceptionAndRestoreOuter()
+        {
+            using var outer = await _manager.BeginAsync();
+
+            var ex = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                var resource = new TestUowResource { RollbackException = new InvalidOperationException("rollback failed") };
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+
+                throw new InvalidOperationException("boom");
+            }));
+
+            Assert.IsType<InvalidOperationException>(ex.PrimaryException);
+            Assert.Single(ex.RollbackExceptions);
+            Assert.Same(outer, _manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithoutAmbient_Success_ShouldCommitRootAndLeaveAmbientEmpty()
+        {
+            Assert.Null(_manager.Current);
+            TestUowResource? resource = null;
+
+            await _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var isolatedManager = sp.GetRequiredService<IUnitOfWorkManager>();
+                var inner = isolatedManager.Current!;
+                Assert.Null(inner.Parent);
+                Assert.Same(inner, isolatedManager.Current);
+
+                resource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+                await Task.CompletedTask;
+            });
+
+            Assert.Equal(1, resource!.CommitCount);
+            Assert.Equal(0, resource.RollbackCount);
+            Assert.Null(_manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithoutAmbient_OperationFailure_ShouldRollbackRootAndLeaveAmbientEmpty()
+        {
+            TestUowResource? resource = null;
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                resource = new TestUowResource();
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+
+                throw new InvalidOperationException("boom");
+            }));
+
+            Assert.Equal(1, resource!.RollbackCount);
+            Assert.Equal(0, resource.CommitCount);
+            Assert.Null(_manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithoutAmbient_Cancellation_ShouldPreserveOriginalCancellation()
+        {
+            using var cts = new CancellationTokenSource();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => _manager.ExecuteIsolatedAsync(
+                async (sp, ct) =>
+                {
+                    var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                    ((IUnitOfWorkInternal)inner).RegisterResource(new TestUowResource { ThrowIfCanceled = true });
+                    cts.Cancel();
+                    ct.ThrowIfCancellationRequested();
+                    await Task.CompletedTask;
+                },
+                cancellationToken: cts.Token));
+
+            Assert.Null(_manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithoutAmbient_CommitFailure_ShouldPreserveCommitErrorAndLeaveAmbientEmpty()
+        {
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                var resource = new TestUowResource { CommitException = new InvalidOperationException("commit failed") };
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+                await Task.CompletedTask;
+            }));
+
+            Assert.Equal("commit failed", ex.Message);
+            Assert.Null(_manager.Current);
+        }
+
+        [Fact]
+        public async Task ExecuteIsolatedAsync_WithoutAmbient_RollbackFailure_ShouldThrowBoundaryExceptionAndLeaveAmbientEmpty()
+        {
+            var ex = await Assert.ThrowsAsync<UnitOfWorkBoundaryException>(() => _manager.ExecuteIsolatedAsync(async (sp, ct) =>
+            {
+                var inner = sp.GetRequiredService<IUnitOfWorkManager>().Current!;
+                var resource = new TestUowResource { RollbackException = new InvalidOperationException("rollback failed") };
+                ((IUnitOfWorkInternal)inner).RegisterResource(resource);
+
+                throw new InvalidOperationException("boom");
+            }));
+
+            Assert.IsType<InvalidOperationException>(ex.PrimaryException);
+            Assert.Single(ex.RollbackExceptions);
+            Assert.Null(_manager.Current);
+        }
+
+        #endregion
+
         #region Disposal Tests
 
         [Fact]

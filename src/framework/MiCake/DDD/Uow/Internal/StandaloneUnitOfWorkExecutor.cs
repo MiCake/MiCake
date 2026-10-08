@@ -64,22 +64,15 @@ namespace MiCake.DDD.Uow.Internal
             {
                 throw new InvalidOperationException(
                     "Standalone unit of work execution requires no ambient unit of work. " +
-                    "Use the ambient UoW or ExecuteRequiresNewAsync instead.");
+                    "Use the ambient UoW or ExecuteRequiresNewAsync instead, or use " +
+                    "ExecuteIsolatedAsync for context-agnostic isolated execution.");
             }
 
-            options ??= UnitOfWorkOptions.Default;
-
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var provider = scope.ServiceProvider;
-            var manager = provider.GetRequiredService<IUnitOfWorkManager>();
-
-            var unitOfWork = await manager.BeginAsync(options, cancellationToken).ConfigureAwait(false);
-
-            return await IsolatedUowExecution.ExecuteAsync(
-                    operation,
-                    provider,
-                    unitOfWork,
+            return await IsolatedUowExecution.ExecuteStandaloneAsync(
+                    _scopeFactory,
                     _logger,
+                    operation,
+                    options,
                     "standalone",
                     cancellationToken)
                 .ConfigureAwait(false);

@@ -433,6 +433,22 @@ namespace MiCake.IntegrationTests.Filters
             return Task.FromResult<TResult>(default!);
         }
 
+        public Task ExecuteIsolatedAsync(
+            Func<IServiceProvider, CancellationToken, Task> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<TResult> ExecuteIsolatedAsync<TResult>(
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<TResult>(default!);
+        }
+
         public void Dispose() { }
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

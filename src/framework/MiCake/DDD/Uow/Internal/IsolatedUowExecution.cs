@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiCake.DDD.Uow.Exceptions;
 using System;
@@ -92,6 +93,26 @@ namespace MiCake.DDD.Uow.Internal
 
             primaryEDI?.Throw();
             return result;
+        }
+
+        public static async Task<TResult> ExecuteStandaloneAsync<TResult>(
+            IServiceScopeFactory scopeFactory,
+            ILogger logger,
+            Func<IServiceProvider, CancellationToken, Task<TResult>> operation,
+            UnitOfWorkOptions? options,
+            string operationName,
+            CancellationToken cancellationToken)
+        {
+            options ??= UnitOfWorkOptions.Default;
+
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var provider = scope.ServiceProvider;
+            var manager = provider.GetRequiredService<IUnitOfWorkManager>();
+
+            var unitOfWork = await manager.BeginAsync(options, cancellationToken).ConfigureAwait(false);
+
+            return await ExecuteAsync(operation, provider, unitOfWork, logger, operationName, cancellationToken)
+                .ConfigureAwait(false);
         }
     }
 }

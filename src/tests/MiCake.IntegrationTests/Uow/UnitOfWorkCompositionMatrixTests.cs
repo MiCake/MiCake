@@ -407,5 +407,112 @@ namespace MiCake.IntegrationTests.Uow
 
             Assert.Equal(1, await CountAggregatesAsync(provider));
         }
+
+        [Fact]
+        public async Task Isolated_WithAmbient_InnerCommit_LeavesOuterPending_AndRestoresAmbient()
+        {
+            using var provider = _fixture.BuildProvider();
+            await EnsureCreatedAsync(provider);
+
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var outer = await manager.BeginAsync();
+                var context = SqliteUnitOfWorkFixture.GetPrimaryContext(scope.ServiceProvider);
+                context.Aggregates.Add(new UowAcceptanceAggregate("outer-pending"));
+
+                await manager.ExecuteIsolatedAsync(async (isolatedProvider, ct) =>
+                {
+                    var innerContext = SqliteUnitOfWorkFixture.GetPrimaryContext(isolatedProvider);
+                    innerContext.Aggregates.Add(new UowAcceptanceAggregate("inner-committed"));
+                });
+
+                // The context-agnostic inner unit of work committed independently; the outer
+                // write is still pending and must not be visible.
+                Assert.Equal(1, await CountAggregatesAsync(provider));
+                Assert.Same(outer, manager.Current);
+
+                await outer.CommitAsync();
+            }
+
+            Assert.Equal(2, await CountAggregatesAsync(provider));
+        }
+
+        [Fact]
+        public async Task Isolated_WithAmbient_InnerFailure_RollsBackInner_LeavesOuterPending_AndRestoresAmbient()
+        {
+            using var provider = _fixture.BuildProvider();
+            await EnsureCreatedAsync(provider);
+
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+                await using var outer = await manager.BeginAsync();
+                var context = SqliteUnitOfWorkFixture.GetPrimaryContext(scope.ServiceProvider);
+                context.Aggregates.Add(new UowAcceptanceAggregate("outer-pending"));
+
+                await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    manager.ExecuteIsolatedAsync(async (isolatedProvider, ct) =>
+                    {
+                        var innerContext = SqliteUnitOfWorkFixture.GetPrimaryContext(isolatedProvider);
+                        innerContext.Aggregates.Add(new UowAcceptanceAggregate("inner-doomed"));
+                        await innerContext.SaveChangesAsync(ct);
+                        throw new InvalidOperationException("inner failure");
+                    }));
+
+                Assert.Equal(0, await CountAggregatesAsync(provider));
+                Assert.Same(outer, manager.Current);
+
+                await outer.CommitAsync();
+            }
+
+            await using (var verifyScope = provider.CreateAsyncScope())
+            {
+                var context = verifyScope.ServiceProvider.GetRequiredService<UowAcceptanceDbContext>();
+                var names = await context.Aggregates.Select(a => a.Name).ToListAsync();
+                Assert.Equal(new[] { "outer-pending" }, names);
+            }
+        }
+
+        [Fact]
+        public async Task Isolated_WithoutAmbient_Commits_AndLeavesAmbientEmpty()
+        {
+            using var provider = _fixture.BuildProvider();
+            await EnsureCreatedAsync(provider);
+
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+
+            await manager.ExecuteIsolatedAsync(async (isolatedProvider, ct) =>
+            {
+                var innerContext = SqliteUnitOfWorkFixture.GetPrimaryContext(isolatedProvider);
+                innerContext.Aggregates.Add(new UowAcceptanceAggregate("isolated-committed"));
+            });
+
+            Assert.Null(manager.Current);
+            Assert.Equal(1, await CountAggregatesAsync(provider));
+        }
+
+        [Fact]
+        public async Task Isolated_WithoutAmbient_Failure_RollsBack_AndLeavesAmbientEmpty()
+        {
+            using var provider = _fixture.BuildProvider();
+            await EnsureCreatedAsync(provider);
+
+            await using var scope = provider.CreateAsyncScope();
+            var manager = scope.ServiceProvider.GetRequiredService<IUnitOfWorkManager>();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                manager.ExecuteIsolatedAsync(async (isolatedProvider, ct) =>
+                {
+                    var innerContext = SqliteUnitOfWorkFixture.GetPrimaryContext(isolatedProvider);
+                    innerContext.Aggregates.Add(new UowAcceptanceAggregate("isolated-doomed"));
+                    await innerContext.SaveChangesAsync(ct);
+                    throw new InvalidOperationException("isolated failure");
+                }));
+
+            Assert.Null(manager.Current);
+            Assert.Equal(0, await CountAggregatesAsync(provider));
+        }
     }
 }

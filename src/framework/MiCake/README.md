@@ -88,9 +88,38 @@ Read-only units of work reject resource flush and write activation — every att
 var uow = await _uowManager.BeginAsync(UnitOfWorkOptions.ReadOnly);
 ```
 
-### Isolated Execution (`requiresNew`)
+### Choosing an Execution Mode
 
-Use callback-based APIs instead of the removed `requiresNew` boolean overloads. `ExecuteRequiresNewAsync` runs the callback in a fully isolated DI scope with its own root unit of work, and restores the previous ambient unit of work afterwards:
+| Intent | Ambient UoW at call site | Entry |
+|--------|--------------------------|-------|
+| Own a transaction boundary (host edge, long-running flow) | any | `BeginAsync` (a nested `BeginAsync` shares the root when an ambient UoW exists) |
+| Isolated committed write block | unknown — entry-agnostic service | `ExecuteIsolatedAsync` (recommended default) |
+| Isolated committed write block | always present; misuse must fail fast | `ExecuteRequiresNewAsync` (strict — throws without an ambient UoW) |
+| Isolated committed write block | never present; misuse must fail fast | `IStandaloneUnitOfWorkExecutor` (strict — throws with an ambient UoW) |
+
+The two strict entries are wiring self-check variants of `ExecuteIsolatedAsync`: their preconditions turn
+misuse into an immediate, diagnosable failure.
+
+### Context-Agnostic Isolated Execution (`ExecuteIsolatedAsync`)
+
+`ExecuteIsolatedAsync` runs the callback in a fully isolated DI scope with its own root unit of work
+regardless of any ambient unit of work. With an ambient UoW it is suspended and restored on every exit
+path (success, failure, cancellation, commit failure, rollback failure); without one, restoration is a
+no-op. It commits on success and rolls back on failure — the recommended default entry for isolated
+write blocks in any host:
+
+```csharp
+await uowManager.ExecuteIsolatedAsync(async (provider, ct) =>
+{
+    var repo = provider.GetRequiredService<IRepository<Order, Guid>>();
+    await repo.AddAsync(new Order(...), ct);
+    // Commits on success, rolls back on failure
+}, options: null, cancellationToken: ct);
+```
+
+### Isolated Execution (`requiresNew`, strict)
+
+Use callback-based APIs instead of the removed `requiresNew` boolean overloads. `ExecuteRequiresNewAsync` runs the callback in a fully isolated DI scope with its own root unit of work, and restores the previous ambient unit of work afterwards. As a wiring self-check it requires an ambient UoW — use `ExecuteIsolatedAsync` when the same call site must also run without one:
 
 ```csharp
 await uowManager.ExecuteRequiresNewAsync(async (provider, ct) =>
@@ -101,11 +130,11 @@ await uowManager.ExecuteRequiresNewAsync(async (provider, ct) =>
 }, options: null, cancellationToken: ct);
 ```
 
-`ExecuteRequiresNewAsync` requires a live outer unit of work.
+`ExecuteRequiresNewAsync` requires a live outer unit of work; without one it throws `InvalidOperationException` naming the remediation paths (`BeginAsync` boundary frame, `ExecuteIsolatedAsync`, or `IStandaloneUnitOfWorkExecutor`).
 
-### Standalone Execution
+### Standalone Execution (strict)
 
-`IStandaloneUnitOfWorkExecutor` executes an operation without any ambient unit of work, in its own DI scope with a root writable unit of work. It rejects an existing ambient unit of work to keep its contract unambiguous:
+`IStandaloneUnitOfWorkExecutor` executes an operation without any ambient unit of work, in its own DI scope with a root writable unit of work. As a wiring self-check it rejects an existing ambient unit of work to keep its contract unambiguous — use `ExecuteIsolatedAsync` when the same call site must also run with one:
 
 ```csharp
 var executor = provider.GetRequiredService<IStandaloneUnitOfWorkExecutor>();

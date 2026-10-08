@@ -8,71 +8,74 @@ active_epic:
   epic_path: ""
 epics: []
 active_change:
-  id: 20260806-uow-transaction-reliability
-  title: UoW Transaction Reliability
-  created_at: 2026-08-06T03:19:32.429Z
-  plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
+  id: ""
+  title: ""
+  created_at: ""
+  plan_path: ""
   epic_id: ""
 changes:
   - id: 20260806-uow-transaction-reliability
     title: UoW Transaction Reliability
     plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
-    status: active
-    updated_at: 2026-08-07T03:54:23.441Z
+    status: done
+    updated_at: 2026-10-08T06:32:59.298Z
+    epic_id: ""
+  - id: 20261008-uow-context-agnostic-execution
+    title: Context-Agnostic Isolated UoW Execution
+    plan_path: .ai-agents/workspace/artifacts/20261008-uow-context-agnostic-execution/plan.yaml
+    status: done
+    updated_at: 2026-10-08T09:25:47.435Z
     epic_id: ""
 history:
-  - skill: /mvt-fix
-    completed_at: 2026-08-08T05:49:48.841Z
-    summary: "修复 PR #45 SonarCloud 问题：7 个 Reliability Bug 中 6 个代码修复（S1163 UnitOfWorkFilter finally throw 改 EDI 移出、S4487 删未用 _logger、S2139×3 删重复日志保留补偿、S3971×3 删 GC.SuppressFinalize），S2583 验证为分析器误报标记 FP；顺手修
-      S3267×3/S1450/S8970×4；15 个 issue 标记 False Positive（S8970×13 本地 nullable 上下文下移除会产生 CS8600/CS8603、S2326 设计保留）；全套件 1124 测试通过（MiCake 271/EFCore 241/ASP.NET 434/集成 178），编译 0 警告；S3776×5 复杂度重构留待后续"
+  - skill: /mvt-update-plan
+    completed_at: 2026-10-08T06:32:59.298Z
+    summary: 完结变更 20260806-uow-transaction-reliability：t8-performance-final-review 经用户确认会话外完成后置为 done，计划 8/8 全部完成，Finalize now 关闭变更，为新变更 20261008-uow-context-agnostic-execution 的规划让路
     change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-refactor
-    completed_at: 2026-08-08T05:58:25.960Z
-    summary: S3776 复杂度重构完成（行为保持）：5 个方法 Extract Method 拆分——UnitOfWorkFilter.ExecuteWithinUnitOfWorkAsync(23→9) 拆 HandleSuccess/HandleFailure；UnitOfWork.CommitCoreAsync(21→1) 拆
-      EnsureCommitable/RaiseOnCommitting/FlushAll/CommitAll/HandleCommitFailures（CancellationToken.None 补偿语义保留）；EFCoreInterceptor.SavedChangesAsync(18→5) 拆
-      RunSaveCyclesAsync；SaveOperationEntityHelper.ScanChangedEntities(16→4) 拆 CollectChangedEntries/ResolveChangedOwnedOwners；DomainEventDispatchLifetime.PreSaveChangesAsync(16→5) 拆
-      DispatchEventAsync+DispatchOutcome 枚举（StopOnError 日志移至调用侧保持同文案）；编译 0 错误 0 新警告，全量 1124/1124 通过（MiCake 271/EFCore 241/ASP.NET 434/集成 178）；用户选择不写 refactor-notes.md
-    change_id: 20260806-uow-transaction-reliability
+  - skill: /mvt-analyze
+    completed_at: 2026-10-08T06:42:02.409Z
+    summary: 基于两份 issue 报告建立新变更 20261008-uow-context-agnostic-execution 需求基线（analysis.md，19 条需求）：P1 上下文无关 ExecuteIsolatedAsync 语义 R1-R7、严格契约保持 R8-R10、可发现性 R11-R13、可理解性护栏 R14-R16、验证 R17-R19；P2
+      宿主集成包出域；无歧义（治理决策已随设计 ADR-012..015 确认）；design.md 已同目录就位，下一步 mvt-plan-dev
+    change_id: 20261008-uow-context-agnostic-execution
+  - skill: /mvt-plan-dev
+    completed_at: 2026-10-08T07:30:54.990Z
+    summary: 生成变更 20261008-uow-context-agnostic-execution 实施计划（plan.yaml，4 任务 coarse 粒度）：t1 ExecuteIsolatedAsync API+共享核心（in_progress）、t2 四象限对照表+非 HTTP 宿主指南+迁移说明、t3 ambient x 结果矩阵+SQLite 集成行、t4 R1-R19
+      交付评审；依赖 DAG t1→{t2,t3}→t4，校验脚本 exit 0
+    change_id: 20261008-uow-context-agnostic-execution
+  - skill: /mvt-implement
+    completed_at: 2026-10-08T07:48:27.253Z
+    summary: 实施 t1-isolated-execution-api（6 文件）：IsolatedUowExecution 新增共享 ExecuteStandaloneAsync 启动入口、StandaloneUnitOfWorkExecutor 改指共享入口并补 ExecuteIsolatedAsync 指引、IUnitOfWorkManager 新增
+      ExecuteIsolatedAsync 双重载+三入口 seealso 互链、UnitOfWorkManager 同步段 dispatch+缺 ambient 消息列明三条修复路径、测试 fake 同步；构建 0 错误 0 新警告，MiCake.Tests Uow 119/119 + FilterOrder 4/4（严格对契约锁原样通过），Deliverables 已登记并标记
+      t2/t3 stale
+    change_id: 20261008-uow-context-agnostic-execution
   - skill: /mvt-review
-    completed_at: 2026-08-08T06:01:39.965Z
-    summary: S3776 重构审查（5 文件，行为保持型）：Approve，0 Critical/0 Warning/6 Suggestion——拆分前后逐段比对逻辑等价（CancellationToken.None 补偿、EndOperation+MarkRollbackOnly、StopOnError
-      日志时机、首败即停全部保留）；Suggestion：HandleCommitFailuresAsync 改名 ThrowCommitFailureAsync、CollectChangedEntries 三元素元组可读性、DispatchOutcome 未穷尽处理、ThrowOnError 下死列表写入、既有重复守卫、CommitAllResourcesAsync 返回
-      IReadOnlyList；安全/性能无关注；测试基线 1124/1124 覆盖充分；用户选择不写 review.md
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-fix
-    completed_at: 2026-08-08T06:09:42.519Z
-    summary: 应用 review Suggestion 安全子集 S1/S4/S6（行为保持）：UnitOfWork.cs 改名 HandleCommitFailuresAsync→ThrowCommitFailureAsync（调用点同步）+ CommitAllResourcesAsync 返回 IReadOnlyList、ThrowCommitFailureAsync 参数改
-      IReadOnlyList；DomainEventDispatchLifetime.cs 将 failedEvents.Add 移至策略判断后（ThrowOnError 不再死写入，行为不变）；编译 0 错误 0 新警告，全量 1124/1124 通过（MiCake 271/EFCore 241/ASP.NET 434/集成 178）；S2/S3/S5
-      可选可读性优化未采纳；用户选择不写 fix-notes.md
-    change_id: 20260806-uow-transaction-reliability
+    completed_at: 2026-10-08T08:30:04.007Z
+    summary: 审查 t1-isolated-execution-api（6 文件 git diff 逐块核验）：Approve with comments，0 Critical/1 Warning/2 Suggestion——W1 新公共 API ExecuteIsolatedAsync 测试待 t3 落地（计划内时序，合并前必补）；S1 IsolatedUowExecution
+      类摘要未覆盖新启动职责、S2 void 重载 return true 重复 2 处未达提取阈值；独立复核 implementation.md 自检全部属实（签名逐字一致/同步段 dispatch 正确/契约锁 119 原样通过）；用户选择 Skip 不写 review.md
+    change_id: 20261008-uow-context-agnostic-execution
+  - skill: /mvt-implement
+    completed_at: 2026-10-08T08:43:59.405Z
+    summary: 实施 t2-comprehension-guardrail-docs（3 文件纯文档）：包 README 新增四象限执行模式对照表+ExecuteIsolatedAsync 小节并把严格双入口重新定位为接线自检、新建 docs/Background-Jobs-and-Non-HTTP-Hosts.md（Hangfire 异步作业基类+IServerFilter
+      双参考实现、entry-agnostic 写法、AsyncLocal 同步段约束、opt-out/取消/重试语义、验证清单）、Breaking-Changes 补 v11 preview 增补（2 成员 source-breaking 实现者指引）+清单项+速查行；t2 验收 4/4 逐条达成、设计合规零偏差、Deliverables 已登记并标记 t4 stale
+    change_id: 20261008-uow-context-agnostic-execution
   - skill: /mvt-review
-    completed_at: 2026-08-08T06:11:37.330Z
-    summary: 复审 Suggestion S1/S4/S6 应用（2 文件，增量变更）：Approve，0 Critical/0 Warning/2 Suggestion——S1 改名 ThrowCommitFailureAsync 调用点同步无遗漏、S6 IReadOnlyList 类型链一致且 commitFailures[0] 在非空守卫下安全、S4 failedEvents.Add
-      移至 ThrowOnError 后且 StopOnError/ContinueOnError 仍正确记录（UnmarkDispatched/LogError 顺序未变）；2 条 Suggestion 均为可选可读性（调用点结构保持、注释可精简）；安全/性能无关注；全量 1124/1124 通过佐证行为等价；用户选择不写 review.md
-    change_id: 20260806-uow-transaction-reliability
+    completed_at: 2026-10-08T09:16:22.263Z
+    summary: 深度审查 uow-context-agnostic-execution 全部实施（t1+t2+t3，11 文件 git diff 逐块核验）：Approve with comments，0 Critical/0 Warning/3 Suggestion——S1 README 指南相对链接少上一级（../../docs 应为 ../../../docs，死链待修）；S2
+      requiresNew 泛型重载 cref 指向 void 版 ExecuteIsolatedAsync（可选润色）；S3 单元矩阵 8 处同构样板未达提取阈值（可接受）；独立复核 implementation.md 自检属实、签名与 Key Interfaces 一致、同步段 dispatch 正确、strict-pair 契约锁原样通过、全量 1678/1678
+      绿；亮点：集成回滚证明先 flush 再抛错、取消用例复刻 W2 范式；用户选择 Skip 不写 review.md
+    change_id: 20261008-uow-context-agnostic-execution
   - skill: /mvt-fix
-    completed_at: 2026-08-08T06:14:27.403Z
-    summary: 修复 SonarQube S8949：UnitOfWorkFilter.cs 4 处 UoW 生命周期调用（HandleFailureAsync/catch 补偿回滚的 RollbackAsync×2、HandleSuccessAsync 的 CommitAsync/MarkAsCompletedAsync）显式传 CancellationToken.None 并加
-      opt-out 注释，保持'commit/rollback 不随请求取消'设计语义（None 与默认值等价，行为零变化）；编译 0 错误，ASP.NET 434/434 + 集成 178/178 通过；fix-notes 未落盘
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-refactor
-    completed_at: 2026-08-08T06:18:21.338Z
-    summary: S3776 ExecuteWithinUnitOfWorkAsync 复杂度重构（16→约5，行为保持）：提取 HandleBodyExceptionAsync（catch 补偿回滚，CancellationToken.None + AggregateException 组合，调用方保留 throw; 保持原栈）与 DisposeUnitOfWorkAsync（finally
-      dispose 返回 ExceptionDispatchInfo?，主体失败仅日志/成功返回 EDI，finally 后 ?.Throw() 保持 S1163 语义）；主方法退化为 try/action/catch/finally 骨架；编译 0 错误 0 新警告，ASP.NET 434/434 + 集成 178/178 通过；用户选择不写 refactor-notes.md
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-review
-    completed_at: 2026-08-08T06:22:32.631Z
-    summary: 复审 ExecuteWithinUnitOfWorkAsync 复杂度重构+注释精简（UnitOfWorkFilter.cs）：Approve，0 Critical/0 Warning/3 Suggestion——catch 逻辑德摩根等价验证通过（null||IsCompleted return 与原 !=null&&!IsCompleted
-      精确对应）、RollbackAsync(None)/AggregateException/throw; 栈保留逐字确认、finally EDI 返回+finally 后 Throw 语义与 S1163 修复一致、无异常吞没；注释精简质量高（关键契约保留、S8949 opt-out 注释未误删）；3 条 Suggestion 均为可选（exceptionDuringBody
-      内联、空引用注释、catch 注释与 helper 名重叠）；安全/性能无关注；ASP.NET 434 + 集成 178 覆盖充分；用户选择不写 review.md
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-bug-detect
-    completed_at: 2026-08-09T07:14:51.888Z
-    summary: 确认误导性错误消息 bug：IUnitOfWorkManager.Begin() 不存在（接口只有 BeginAsync/ExecuteRequiresNewAsync），文案由 44bf4b1 .NET10 重构遗留未同步；影响 MiCakeEssentialModule.cs:90 与 EFCoreContextFactory.cs:284 及两处测试断言；Severity
-      Low，建议 mvt-fix 同步改文案
-    change_id: 20260806-uow-transaction-reliability
+    completed_at: 2026-10-08T09:20:54.625Z
+    summary: 修复 review/API 评估发现（5 处纯文档，零行为变更）：IUnitOfWorkManager.cs 接口摘要补 context-agnostic 入口（W1）、Current 注释补 null 时推荐入口指引（S1）、BeginAsync 措辞修正为按 options 开启+嵌套继承只读/隔离委托 root+调用方 dispose
+      责任（S2/S3）、requiresNew 泛型重载 cref 改指 ExecuteIsolatedAsync<TResult>（S4）；README.md 指南链接 ../../docs 修为 ../../../docs 消除死链（上轮 S1）。验证：MiCake 构建 0 错误 0 警告（cref 解析通过）、UnitOfWorkManagerTests
+      33/33；fix-notes 未落盘
+    change_id: 20261008-uow-context-agnostic-execution
   - skill: /mvt-fix
-    completed_at: 2026-08-09T07:21:07.557Z
-    summary: 修复误导性错误文案（4 处单行，零逻辑变更）：MiCakeEssentialModule.cs:90 与 EFCoreContextFactory.cs:284 的 IUnitOfWorkManager.Begin() 改为 BeginAsync()（await using 引导），同步 AllowDbContextAccessWithoutUoWTests.cs:427 与
-      EFCoreContextFactoryTests.cs:533 断言；相关测试 34/34 通过；用户选择不写 fix-notes.md
-    change_id: 20260806-uow-transaction-reliability
+    completed_at: 2026-10-08T09:24:06.194Z
+    summary: 按用户确认删除 docs 下两份文档（Background-Jobs-and-Non-HTTP-Hosts.md 新建指南 + Breaking-Changes-and-Migration-v2.md 既有 400+ 行迁移文档）并移除 README 中指向指南的引用句；docs/ 目录已空并删除；验证无残留引用（git grep 零命中）、构建/CI/打包无 docs
+      耦合；注意：此举使 t2 验收第 2/3 条与 analysis R15/R16 失效、ADR-015 护栏交付物不再存在，plan/analysis/design 产物仍引用被删文件，需经 mvt-update-plan 或 mvt-design 重新裁定
+    change_id: 20261008-uow-context-agnostic-execution
+  - skill: /mvt-update-plan
+    completed_at: 2026-10-08T09:25:47.435Z
+    summary: 按用户要求将变更 20261008-uow-context-agnostic-execution 全部 4 个子任务标记 done（t1 API+共享核心、t2 文档护栏、t3 测试矩阵、t4 终审），进度 4/4、plan_status done、current_tasks 清空；用户选择不写 notes（已知真实性落差：t2 验收第 2/3 条与 t4 的 ADR-015
+      无偏离条件因两份 docs 被删除而失效，已在会话中提示）；随后选择 Finalize now 完结该变更
+    change_id: 20261008-uow-context-agnostic-execution

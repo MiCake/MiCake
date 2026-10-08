@@ -8,7 +8,11 @@ namespace MiCake.DDD.Uow
     /// Executes an application operation in a standalone unit of work without an ambient UoW.
     /// Rejects an existing ambient UoW. The executor owns the isolated DI scope, the UoW,
     /// the commit, the rollback, and the asynchronous disposal lifecycle.
+    /// This strict precondition doubles as a wiring self-check; use
+    /// <see cref="IUnitOfWorkManager.ExecuteIsolatedAsync(Func{IServiceProvider, CancellationToken, Task}, UnitOfWorkOptions, CancellationToken)"/>
+    /// when the same call site must also run with an ambient UoW.
     /// </summary>
+    /// <seealso cref="IUnitOfWorkManager.ExecuteRequiresNewAsync(Func{IServiceProvider, CancellationToken, Task}, UnitOfWorkOptions, CancellationToken)"/>
     public interface IStandaloneUnitOfWorkExecutor
     {
         /// <summary>
