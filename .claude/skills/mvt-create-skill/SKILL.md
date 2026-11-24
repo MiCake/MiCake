@@ -16,14 +16,14 @@ You are the **Conductor** -- a Workflow Coordinator.
 ### Decision Rules
 - User provides skill name -> Validate and proceed with design
 - Name conflicts with existing skill -> Warn and ask for alternative
-- Skill needs output template -> Create template in `_templates/` and update manifest
+- Skill needs output template -> Pass --template and --template-body to the scaffolder
 - Skill needs state updates -> Include session.yaml update rules
 - Skill needs bundled resources -> Plan scripts/references/assets in Step 3
 - Usage patterns unclear -> Ask for concrete examples before proceeding
 
 ### Boundaries
 - Do NOT generate skills that deviate from MVTT SKILL.md standard structure (follow the standard structure as documented)
-- Do NOT use arbitrary prefixes without validating naming conventions (use `mvt-` or a project-specific prefix like `app-`, `proj-`)
+- Do NOT use arbitrary prefixes without validating naming conventions (use a project-specific prefix like `app-`, `proj-` (`mvt-` is reserved))
 - Do NOT create skills without registering in registry.yaml (register with `custom: true` in registry.yaml)
 - Do NOT write vague or first-person descriptions (write third-person with effective trigger keywords)
 - Do NOT exceed ~5k words in SKILL.md body (push detailed content to references/)
@@ -42,17 +42,17 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
 - *Extended Context* (listed below) — once `session.yaml` values such as `{active_change.id}` / `{plan_path}` are known, read the concrete files (e.g. `analysis.md`, `design.md`, `plan.yaml`, template paths) in ONE parallel sub-batch. Discovery directives (e.g. "scan the project root", "load source files per the runtime target or user-provided signals") are NOT files: load them on demand at runtime.
 
 Extended Context entries:
-- Load one existing SKILL.md as structural reference (e.g., `.claude/skills/mvt-status/SKILL.md`)
+- Load one existing SKILL.md as structural reference from the same skills directory as this skill (prefer the `mvt-status` skill)
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -62,9 +62,9 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
 ## Language Constraint (Mandatory)
 
@@ -131,8 +131,8 @@ The `name` and `description` in YAML frontmatter determine when Claude will use 
 
 ### Step 1: Load Inputs
 - **Recommended**:
-  - One existing skill's SKILL.md under `.claude/skills/<existing>/SKILL.md` as a structural reference (to extract shared section patterns like Activation Protocol, State Update, Next Steps).
-  - `.ai-agents/registry.yaml` -- to check for name collisions and understand skill categories.
+  - One existing skill's `SKILL.md` as a structural reference. Read any `mvt-*` skill from the skills directory of the platform you are running in (the directory that contains this `SKILL.md`); prefer `mvt-status`.
+  - `.mvtt/registry.yaml` -- to check for name collisions.
 
 ### Step 2: Understand Usage with Concrete Examples
 Skip only when usage patterns are already crystal clear.
@@ -150,12 +150,10 @@ Collect core metadata. Each field has an explicit constraint -- do not accept va
 
 | Field | Constraint | Notes |
 |-------|------------|-------|
-| Name | Lowercase, kebab-case, no spaces, must match `^[a-z][a-z0-9-]*$`. Prefix `mvt-` for framework skills; project-specific prefixes (e.g., `app-`, `proj-`) are also acceptable | Reject if invalid or if it conflicts with an existing entry in `registry.yaml` |
-| Agent role | One of: `conductor`, `analyst`, `architect`, `developer`, `reviewer`, `tester` | Maps the skill to an existing role family |
+| Name | Lowercase, kebab-case, no spaces, must match `^[a-z][a-z0-9-]*$`. Use a project-specific prefix (e.g., `app-`, `proj-`); `mvt-` is reserved for framework skills | Reject if invalid or if it conflicts with an existing entry in `registry.yaml` |
+| Agent role | One of: `conductor`, `analyst`, `architect`, `developer`, `reviewer`, `tester`, `strategist`, `consultant` | Maps the skill to an existing role family |
 | Purpose | One sentence | Will become the SKILL.md `## Purpose` section |
-| Category | One of: `workflow`, `shortcut`, `project`, `utility` | Drives how `/mvt-help` groups it |
 | Description | Third-person, includes what + when + how it differs | Will become the frontmatter `description` |
-| Variants (optional) | List of flag/sub-mode entries | Becomes the Variants table |
 
 If the user is unsure on any field, propose a default and ask for confirmation rather than leaving it blank.
 
@@ -169,14 +167,14 @@ If the user is unsure on any field, propose a default and ask for confirmation r
   | References | `references/` | Documentation Claude should read while working (schemas, API docs, policies) | `references/api_spec.md` |
   | Assets | `assets/` | Files used in the output, not in context (templates, icons, fonts) | `assets/report_template.md` |
   | Knowledge | (declared in registry) | Loaded via Activation Protocol; share across skills or manage via `/mvt-manage-context` | `knowledge/principle/coding-standards/` |
-  | Output template | `_templates/` | Persisted document that needs a stable structure | `_templates/{name}-output.md` |
+  | Output template | `.mvtt/skills/_templates/` | Persisted document that needs a stable structure | `{name}-output.md` |
 
 - **Reuse vs new**: before declaring a new shared resource, check existing skills' SKILL.md files and knowledge entries -- prefer reusing patterns that already exist.
 - **Output of this step**: a checklist `(name | purpose | path)` shown to user.
 
 ### Step 5: Design the Skill
 - **What**: produce a one-page outline before generating any file.
-- **How**: load an existing skill's SKILL.md (e.g., `.claude/skills/mvt-fix/SKILL.md`) as a structural reference, then fill in:
+- **How**: load an existing skill's SKILL.md (for example the `mvt-fix` skill in the same skills directory as this `SKILL.md`) as a structural reference, then fill in:
 
   | Aspect | Decision |
   |--------|----------|
@@ -189,10 +187,13 @@ If the user is unsure on any field, propose a default and ask for confirmation r
   | Output | What gets written to disk (artifact path + template) OR pure conversation output |
 
 ### Step 6: Generate Skill Files
-1. Create skill directory: `.claude/skills/{name}/`.
-2. Generate a complete `SKILL.md` file (see Generated SKILL.md Structure below). This file must be fully self-contained — there is no assembler or build step to resolve shared section references. All content must be inlined directly into the SKILL.md.
-3. For standard sections (Activation Protocol, Language Constraint, Output Format Constraint, State Update, Next Steps), read the existing shared section files under `.ai-agents/sections/` or the corresponding installed skill section and substitute only the skill-specific values (role, decision rules, boundaries, pre-flight checks, next-skill suggestions). Do NOT reproduce these sections from memory; use the checked-in source text as the canonical template.
-4. For skill-specific sections (frontmatter, Purpose, Execution Flow, Edge Cases & Errors), generate fresh content following the skeleton below.
+
+File placement and registry mutation are owned by the scaffolder script. Never create platform skill directories or edit `registry.yaml` by hand.
+
+1. Create the staging directory `.mvtt/workspace/.skill-draft/{name}/`.
+2. Write the complete `SKILL.md` into that staging directory. It must be fully self-contained -- there is no assembler or build step to resolve shared section references; inline all content.
+3. For standard sections (Activation Protocol, Language Constraint, Output Format Constraint, State Update, Next Steps), load the canonical text from an already-installed `mvt-*` skill's `SKILL.md` (the exemplar from Step 1) and substitute only the skill-specific values (role, decision rules, boundaries, pre-flight checks, next-skill suggestions). Do NOT reproduce these sections from memory, and do NOT look for a `.mvtt/sections/` directory -- section sources are not installed into user projects.
+4. Write skill-specific sections (frontmatter, Purpose, Execution Flow, Edge Cases & Errors) fresh, following the skeleton below.
    - `## Execution Flow`
    - `### Step 1: Load Inputs` -- list required and recommended files, plus fallback rules.
    - Skill-specific main steps (1-5 of them), each with **What / How / Branches** sub-structure when there is real branching.
@@ -200,51 +201,71 @@ If the user is unsure on any field, propose a default and ask for confirmation r
    - `### Step N+1: Write Artifacts` -- only when the skill persists files; specify path, template, required content.
    - Final session update step.
    - `## Edge Cases & Errors` table with at least 3 rows.
-5. If an output template was decided in Step 4, create `.ai-agents/skills/_templates/{name}-output.md` with **headings only** (this is a document structure, not a conversation reply template). If a custom version directory exists at `_templates/custom/`, note that users can override there.
-6. If scripts / references / assets are needed, create them under the skill directory.
+5. If the skill needs bundled resources, create them under the staging directory: `references/`, `scripts/`, and/or `assets/`. The scaffolder mirrors the whole staging tree to every installed platform.
+6. If an output template was decided in Step 4, write it to a staging file such as `.mvtt/workspace/.skill-draft/{name}-output.md` (a document structure, not a conversation reply template).
 7. SKILL.md word budget: aim for the body to be under ~5k words. Push reference material to `references/`.
+8. Run the scaffolder exactly once (see `.mvtt/scripts/skill-scaffold.md` for the authoritative flag semantics):
 
-### Step 7: Register in Registry (MANDATORY)
-Create a pre-write backup of `.ai-agents/registry.yaml`, then add the skill entry to `.ai-agents/registry.yaml` > `skills` section using structured YAML serialization (not hand-written string concatenation):
+   ```bash
+   node .mvtt/scripts/skill-scaffold.cjs scaffold --name {name} --description "{third-person description}" --from .mvtt/workspace/.skill-draft/{name} [--template {name}-output.md --template-body .mvtt/workspace/.skill-draft/{name}-output.md] [--resource references,scripts,assets]
+   ```
+
+   The script writes the skill to every installed platform, adds the `custom: true` registry entry, and returns one JSON line. If it exits non-zero, surface its stderr and stop -- do not fall back to manual writes.
+
+### Step 7: Verify Registration (MANDATORY)
+
+The scaffolder already registered the skill. Verify it -- do not re-edit the registry.
+
+1. The script's JSON output has `"ok": true` and exit code 0.
+2. Its `platforms[]` entries cover every platform listed in `platforms` inside `.mvtt/.mvtt-manifest.json`.
+3. `.mvtt/registry.yaml` > `skills` contains `{name}` with `custom: true`, and no existing sibling entry changed.
+4. If any check fails, restore `.mvtt/.backup/registry-<timestamp>.yaml` (the backup path is in the script's JSON output) and surface the error. Never hand-edit the registry to "fix" a failed scaffold.
+
+The registry entry written by the script has this shape:
 
 ```yaml
   {name}:
     description: "{third-person description with trigger keywords}"
     custom: true
-    template: "_templates/{name}-output.md"   # include ONLY if an output template was created in Step 6; omit this key otherwise
+    template: ".mvtt/skills/_templates/{name}-output.md"   # only when --template was passed
 ```
 
-- If an output template was created in Step 6, set `template:` to its path so `/mvt-template` can discover it; otherwise omit the key entirely.
-- The `custom: true` field is **required** for user-created skills; without it, framework updates will overwrite the entry.
-- Refuse to overwrite an existing skill key.
-- Escape `description` through the YAML serializer; never interpolate raw user text into YAML.
-- Validate the YAML still parses after the write; if not, restore the backup and surface the parse error.
-- Post-write, assert the skills entry count increased by exactly 1 and no existing sibling skill entry changed.
+The `custom: true` field is **required** for user-created skills; without it, framework updates drop the entry.
 
 ### Step 8: Validation
 Walk this checklist; any failed item must be fixed before declaring success.
 
 | Check | Pass criterion |
 |-------|----------------|
+| Scaffolder succeeded | Exit code 0 and JSON output has `"ok": true` |
+| Every platform materialized | The JSON `platforms[]` ids match `platforms` in `.mvtt/.mvtt-manifest.json` |
 | Frontmatter present | `name` and `description` exist in SKILL.md YAML frontmatter |
 | Description quality | Third-person, includes what + when, distinguishes from neighbors |
 | Writing style | Imperative/infinitive throughout; no "you" / "your" |
 | Naming uniqueness | No collision with another entry in `registry.yaml` |
-| `custom: true` | Set in registry entry |
+| `custom: true` | Set in the registry entry |
 | Standard sections present | SKILL.md contains Role, Activation Protocol, Execution Flow, Edge Cases & Errors, State Update, Suggested Next Steps |
 | Knowledge files exist | Every file referenced in `knowledge:` resolves on disk |
-| Template path correct | If `template:` set, file exists at that path; the template is headings-only |
-| Word budget | SKILL.md body under ~5k words (use any available word-count method, e.g., editor statistics) |
+| Template path correct | If `template:` set, file exists under `.mvtt/skills/_templates/` |
+| Portability | JSON `warnings` is empty, or every warning was addressed and the skill re-synced |
+| Word budget | SKILL.md body under ~5k words (the JSON reports `wordCount`) |
 | Standard skeleton | Execution Flow contains Load Inputs, main steps with branches, Edge Cases & Errors |
 
-Show the user how to invoke: `/{name}`.
+Show the user how to invoke `/{name}`, and report the `platforms[].files` paths from the script output as the skill locations.
 
 ### Step 9: Iteration Guidance
 Tell the user the iteration loop:
 1. Use `/{name}` on real tasks.
 2. Notice struggles or inefficiencies.
 3. Decide whether to update SKILL.md, add a `references/` file, add a knowledge entry, or split into a new skill.
-4. Re-run `/mvt-create-skill` to refine, or edit the source files directly and rebuild.
+4. Edit the staged copy (preferred) or any installed platform copy, then re-materialize every platform:
+
+   ```bash
+   node .mvtt/scripts/skill-scaffold.cjs sync --name {name} --from .mvtt/workspace/.skill-draft/{name}
+   ```
+
+   Use `--body <edited SKILL.md>` instead of `--from` when the skill has no bundled resources.
+5. Alternatively re-run `/mvt-create-skill` to redesign the skill from scratch.
 
 ### Step 10: State Update
 Apply the State Update rules defined in the **State Update** section below.
@@ -261,6 +282,11 @@ Apply the State Update rules defined in the **State Update** section below.
 | User provides a non-third-person description ("Use this skill when you need...") | Rewrite to third-person before saving; show the rewrite for confirmation |
 | Generated SKILL.md is missing a standard section (e.g., State Update, Next Steps) | Abort generation; inform user which section is missing; read an existing SKILL.md for the correct structure |
 | `registry.yaml` parse fails after write | Restore from the pre-write backup; surface the error; do not leave the registry corrupt |
+| `.mvtt/.mvtt-manifest.json` missing or unreadable | STOP at Step 6; recommend `mvtt install`; do not create skill directories manually |
+| Scaffolder exits non-zero | Surface stderr and stop; do not retry with manual file writes (the script rolls back partial output) |
+| Scaffolder reports a portability warning | The SKILL.md references another platform's skills directory; rewrite it to "the skills directory of the platform you are running in", then re-run `sync` |
+| Skill name already registered when scaffolding | Use `sync` to update the existing skill, or confirm with the user before passing `--force` |
+| Existing custom skill predates the scaffolder | Adopt it with `sync --name {name}`; the source is auto-detected from the first installed platform that has it |
 
 ## Generated SKILL.md Structure
 
@@ -326,23 +352,23 @@ Copy the following sections verbatim from this document (the assembled SKILL.md 
 | State Update | `## State Update` | Replace `/{name}` with the new skill's command; include `active_change` conditional block only if the skill creates changes; include `Shortcut Operation Rules` if the user opted for shortcut semantics during Step 5 design |
 | Suggested Next Steps | `## Suggested Next Steps` | Replace `current_skill` with the new skill name; replace conditional suggestions with skill-appropriate ones |
 
-**Important**: Do NOT paraphrase or rewrite the standard sections. Load them from the checked-in shared section sources or a selected installed exemplar and only substitute the skill-specific values. This ensures consistency across all MVTT skills.
+**Important**: Do NOT paraphrase or rewrite the standard sections. Load them from a selected installed exemplar and only substitute the skill-specific values. This ensures consistency across all MVTT skills.
 
 ## Output Format
 
-No external template -- output is the generated skill files plus a creation summary:
+No external template -- output is the generated skill files plus a creation summary. Fill the summary from the scaffolder's JSON output; never hardcode a platform path:
 
 ```markdown
 ## Custom Skill Created
 
 - **Skill**: `/{name}`
 - **Agent**: {agent role}
-- **Location**: `.claude/skills/{name}/SKILL.md`
-- **Registry**: `registry.yaml` (custom: true)
-- **Template**: {created/none}
+- **Platforms**: {platforms[].id from the script JSON}
+- **Locations**: {platforms[].files joined with ", "}
+- **Registry**: `.mvtt/registry.yaml` (custom: true)
+- **Template**: {template from the script JSON, or "none"}
 - **Resources**: {scripts/references/assets listing, or none}
-- **Knowledge**: {per-skill entries / shared only}
-- **Context Budget**: SKILL.md body ~{N} words
+- **Context Budget**: SKILL.md body ~{wordCount} words (from the script JSON)
 
 Use `/{name}` to invoke the new skill.
 
@@ -358,7 +384,7 @@ Use `/{name}` to invoke the new skill.
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-create-skill --summary "<concise one-line summary>"
+node .mvtt/scripts/session-update.cjs --skill mvt-create-skill --summary "<concise one-line summary>"
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -376,11 +402,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-create-skill`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`skill created successfully`** → `/mvt-help` -- Verify the new skill appears in the catalog
 - **`skill needs knowledge entries`** → `/mvt-manage-context` -- Add knowledge files for the new skill

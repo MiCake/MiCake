@@ -50,17 +50,17 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
 - *Extended Context* (listed below) — once `session.yaml` values such as `{active_change.id}` / `{plan_path}` are known, read the concrete files (e.g. `analysis.md`, `design.md`, `plan.yaml`, template paths) in ONE parallel sub-batch. Discovery directives (e.g. "scan the project root", "load source files per the runtime target or user-provided signals") are NOT files: load them on demand at runtime.
 
 Extended Context entries:
-- .ai-agents/config.yaml -- Current configuration (this skill's primary target)
+- .mvtt/config.yaml -- Current configuration (this skill's primary target)
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -70,9 +70,9 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
 ## Language Constraint (Mandatory)
 
@@ -108,12 +108,15 @@ Presentation is all that changes — the choices and their meaning stay as writt
 | `preferences.interaction_language` | enum | `en-US` | Language for interactive output: chat replies, prompts, tables. Values: `en-US` (English), `zh-CN` (简体中文) |
 | `preferences.document_output_language` | enum | `en-US` | Language for persisted documents: artifacts, project-context.md (falls back to interaction_language). Values: `en-US` (English), `zh-CN` (简体中文) |
 | `preferences.output.no_emojis` | bool | `true` | Disable emojis in output |
-| `preferences.output.data_format` | enum | `yaml` | Data output format (yaml, json) |
-| `preferences.context_routing.relevance_threshold` | int | `70` | AI routing threshold for `/mvt-manage-context add` (0-100) |
+| `preferences.context_routing.relevance_threshold` | int | `70` | AI routing threshold for the add operation in `/mvt-manage-context` (0-100) |
 | `preferences.history_limits.history` | int | `10` | Max history entries (1-100) |
 | `preferences.history_limits.changes` | int | `10` | Max changes entries (1-100) |
 | `preferences.context_thresholds.*` | map | built-in thresholds | Optional context health thresholds read by `/mvt-check-context`; omitted keys use built-in defaults |
-| `preferences.planning.granularity` | enum | `medium` | Task decomposition granularity for `/mvt-plan-dev`. Qualitative AI guidance, not hard limits. Values: `coarse` (fewer, larger tasks), `medium` (balanced), `fine` (more, smaller tasks) |
+| `preferences.planning.granularity` | enum | `coarse` | Task decomposition granularity for `/mvt-plan-dev`. Qualitative AI guidance, not hard limits. Values: `coarse` (fewer, larger tasks), `medium` (balanced), `fine` (more, smaller tasks) |
+| `preferences.silent.plan_dev` | bool | `false` | Skip the draft confirmation in `/mvt-plan-dev`; an existing plan is never overwritten |
+| `preferences.silent.implement` | bool | `false` | Skip the preview, scope, and deliverables prompts in `/mvt-implement`, and the dispatch choice when parallel dispatch is on |
+| `preferences.parallel.max_agents` | int | empty | Maximum sub-agents that `/mvt-implement` and `/mvt-review` run at once for ready plan tasks. Empty or `1` = off, with no parallel prompts; `2`-`8` = on |
+| `preferences.artifacts.skip` | array-of-enum | `[]` | Skills that skip artifact confirmation (conversation-only). Allowed: `mvt-review`, `mvt-test`, `mvt-fix`, `mvt-refactor`. Empty = ask every time. Note: `mvt-test` covers only `test-design.md`; test files in the project tree are unaffected |
 
 ### Knowledge Settings
 
@@ -125,10 +128,10 @@ Knowledge routing is managed by `/mvt-manage-context`, not by `/mvt-config`. Req
 
 ### Step 1: Load Inputs
 - **Required**:
-  - `.ai-agents/config.yaml` -- the configuration to inspect and edit.
+  - `.mvtt/config.yaml` -- the configuration to inspect and edit.
 - **Recommended**:
-  - `.ai-agents/knowledge/core/manifest.yaml` -- only when computing token estimates for the shared knowledge view.
-- **Fallback**: if `config.yaml` is missing, surface the error and recommend `mvtt install` or `/mvt-init`. Do not silently create a fresh config from this skill.
+  - `.mvtt/knowledge/core/manifest.yaml` -- only when computing token estimates for the shared knowledge view.
+- **Fallback**: if `config.yaml` is missing, surface the error and recommend `mvtt install`. Do not silently create a fresh config from this skill.
 
 ### Step 2: Interactive Menu (entry point)
 1. Read current `config.yaml`.
@@ -166,8 +169,9 @@ Used by Step 4 and by each stage of Step 5.
    | Type | Validation |
    |------|------------|
    | `enum` | Value MUST be in the allowed list. Reject with the allowed list shown. For `language` enums (`en-US` = English, `zh-CN` = 简体中文), reject other locale strings -- ask the user to pick from the allowed list (do not fuzzy-match) |
+   | `array-of-enum` | Every entry MUST be in the allowed list (`mvt-review`, `mvt-test`, `mvt-fix`, `mvt-refactor`). Reject unknown entries; drop duplicates silently |
    | `bool` | Accept exactly `true` / `false` (case-insensitive). Reject `yes`/`1`/`y` |
-   | `int` | Parse as integer; check range when range is documented (e.g., `relevance_threshold` must be 0-100) |
+   | `int` | Parse as integer; check range when range is documented (e.g., `relevance_threshold` must be 0-100). `parallel.max_agents` accepts 1-8, or an empty value to clear it |
 
 3. **Preview**: render `key: <current> -> <new>` on a single line.
 4. **Confirm** — choices `Apply` / `Cancel`: "Apply this change?" On `Cancel`, discard and return.
@@ -184,10 +188,9 @@ Used by Step 4 and by each stage of Step 5.
   | 1 | `preferences.interaction_language` | Default `en-US`. Show allowed list |
   | 2 | `preferences.document_output_language` | Default = whatever was just set in stage 1; user may override. Reuse stage-1 value when user accepts default |
   | 3 | `preferences.output.no_emojis` | Default `true` |
-  | 4 | `preferences.output.data_format` | Default `yaml`; allowed: `yaml`, `json` |
-  | 5 | `preferences.context_routing.relevance_threshold` | Default `70`; allowed: 0-100 |
-  | 6 | `preferences.history_limits.*` | Show each limit with current value; accept new int or Enter to keep |
-  | 7 | `preferences.planning.granularity` | Default `medium`; allowed: `coarse`, `medium`, `fine` |
+  | 4 | `preferences.context_routing.relevance_threshold` | Default `70`; allowed: 0-100 |
+  | 5 | `preferences.history_limits.*` | Show each limit with current value; accept new int or Enter to keep |
+  | 6 | `preferences.planning.granularity` | Default `coarse`; allowed: `coarse`, `medium`, `fine` |
 
 - After all stages, render a Summary Preview table: `key | from | to`, then a single confirmation prompt to apply ALL changes atomically.
 - If the user aborts at the summary, discard all in-progress values; do not write anything.
@@ -195,32 +198,28 @@ Used by Step 4 and by each stage of Step 5.
 
 ## Knowledge Inspection (sub-flow used by View All and Edit a Setting)
 - **View**: list global knowledge ids from `registry.yaml > knowledge._all` and project-specific ids from `knowledge.{projectName}`, then per-skill knowledge ids grouped by skill (`registry.yaml > skills.*.knowledge`). Show token estimates from each entry's manifest if available.
-- **Modify**: this skill does NOT mutate knowledge settings; defer to `/mvt-manage-context`. Print the suggested command (`/mvt-manage-context move`, `/mvt-manage-context add`, etc.) instead of doing the work here.
+- **Modify**: this skill does NOT mutate knowledge settings; defer to `/mvt-manage-context`. Print the suggested operation (open `/mvt-manage-context` and choose move or add) instead of doing the work here.
 
 ## Edge Cases & Errors
 
 | Case | Handling |
 |------|----------|
-| `config.yaml` missing | STOP; recommend `mvtt install` or `/mvt-init` |
-| `config.yaml` exists but unparseable YAML | Surface error with line number; refuse to write; recommend manual fix or `mvtt install --refresh` |
-| Editing a deprecated key (`preferences.language`) | Print migration hint: `Run mvtt update --migrate-config` to split into the two language fields. Do not mutate the deprecated key |
+| `config.yaml` missing | STOP; recommend `mvtt install` |
+| `config.yaml` exists but unparseable YAML | Surface error with line number; refuse to write; ask the user to fix it |
+| Editing a deprecated key (`preferences.language`) | Tell the user to set `preferences.interaction_language` and `preferences.document_output_language` instead. Do not mutate the deprecated key |
 | Guided-setup stage receives an empty value | Treat as "accept default for this stage", continue |
 | User aborts mid guided-setup | No partial write; the temp values are discarded |
 | Concurrent edit detected (mtime changed during preview->write) | Abort write, surface a message, ask user to re-run |
 | User asks to edit `knowledge._all` or any knowledge map key | Refuse and route to `/mvt-manage-context`; this skill inspects knowledge settings but does not mutate them |
 
-## State Update
-
-This skill is read-only and does NOT modify `.ai-agents/workspace/session.yaml`.
-
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-config`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`configuration updated`** → `/mvt-status` -- Check project status with new settings
 - **`language changed`** → `/mvt-help` -- Verify output in the new language

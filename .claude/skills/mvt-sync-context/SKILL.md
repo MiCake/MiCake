@@ -19,7 +19,7 @@ You are the **Conductor** -- a Workflow Coordinator.
 - Conflicts with existing project-context.md -> Render conflict table, require user resolution
 - User opts in to code verification -> Run read-only scan; flag artifact entries that cannot be located
 - Code-only entities discovered (in code, not in artifacts) -> Do NOT write; recommend /mvt-analyze-code
-- Artifact references modules/source_paths absent from project-context.yaml -> Propose yaml additions for user confirmation
+- Artifact references source_paths absent from project-context.yaml -> Propose yaml additions for user confirmation
 
 ### Boundaries
 - Do NOT regenerate project-context.md from full code scan (use `/mvt-analyze-code` instead)
@@ -50,20 +50,20 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
 - *Extended Context* (listed below) — once `session.yaml` values such as `{active_change.id}` / `{plan_path}` are known, read the concrete files (e.g. `analysis.md`, `design.md`, `plan.yaml`, template paths) in ONE parallel sub-batch. Discovery directives (e.g. "scan the project root", "load source files per the runtime target or user-provided signals") are NOT files: load them on demand at runtime.
 
 Extended Context entries:
-- .ai-agents/workspace/artifacts/{change-id}/ -- Source artifacts for completed changes
-- .ai-agents/knowledge/project/_generated/project-context.md -- Current semantic context (merge target)
-- .ai-agents/workspace/project-context.yaml -- Current structural index (merge target)
+- .mvtt/workspace/artifacts/{change-id}/ -- Source artifacts for completed changes
+- .mvtt/knowledge/project/_generated/project-context.md -- Current semantic context (merge target)
+- .mvtt/workspace/project-context.yaml -- Current structural index (merge target)
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -73,16 +73,16 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
-| 1 | `session.initialized_at is empty` | BLOCK | Session not initialized. Run `/mvt-init` first. |
-| 2 | `.ai-agents/knowledge/project/_generated/project-context.md does NOT exist or is empty` | BLOCK | project-context.md not found. Run `/mvt-analyze-code` to create the initial document; this skill only handles incremental updates. |
+| 1 | `session.initialized_at is empty` | WARN | Session not initialized. Run `/mvt-init` first. |
+| 2 | `.mvtt/knowledge/project/_generated/project-context.md does NOT exist or is empty` | BLOCK | project-context.md not found. Run `/mvt-analyze-code` to create the initial document; this skill only handles incremental updates. |
 
 ## Language Constraint (Mandatory)
 
@@ -153,25 +153,24 @@ Strip any cross-reference marker (pointers to ADRs, design-document section numb
 
 ## Execution Flow
 
-### Step 1: Per-Project Routing (4-Level Fallback Chain)
+### Step 1: Per-Project Routing (3-Level Fallback Chain)
 
-Before processing any change, determine which project(s) the sync targets. Use this 4-level fallback chain:
+Before processing any change, determine which project(s) the sync targets. Use this 3-level fallback chain:
 
-1. **`task.project` exists** (when syncing within a plan-driven context): route to that project for per-project technical knowledge lookups (project-context.md always uses the flat path). If the task has multiple projects, route to each independently.
-2. **Artifact file paths match** a unique project's `source_paths` or `path` from `project-context.yaml`: route to that project.
-3. **Current operation's file path reverse-lookup**: match the file path against `projects[].path` and `projects[].source_paths` -> route to that project.
-4. **List candidate projects for user selection**: if none of the above resolved a unique project, list the project names and ask the user.
+1. **Artifact file paths match** a unique project's `source_paths` or `path` from `project-context.yaml`: route to that project.
+2. **Current operation's file path reverse-lookup**: match the file path against `projects[].path` and `projects[].source_paths` -> route to that project.
+3. **List candidate projects for user selection**: if none of the above resolved a unique project, list the project names and ask the user.
 
-**Cross-project changes** (task spanning multiple projects): route to each project for per-project technical knowledge lookups. The merge target for `project-context.md` is always the single flat file; per-project knowledge (quadrant 3/4) is routed per project.
+**Cross-project changes** (changes spanning multiple projects): route to each project for per-project technical knowledge lookups. The merge target for `project-context.md` is always the single flat file; per-project knowledge (quadrant 3/4) is routed per project.
 
 ### Step 2: Identify Completed Changes
 - **What**: produce a candidate list of change-ids whose artifacts will be aggregated.
 - **How**:
-   1. Run `node .ai-agents/scripts/artifact-scan.cjs --mode change-dirs`. Its JSON `entries` are the only live artifact directories.
+   1. Run `node .mvtt/scripts/artifact-scan.cjs --mode change-dirs`. Its JSON `entries` are the only live artifact directories.
    2. Collect `changes[]` entries with `status: done` only when their directory is in scanner output and contains `analysis.md` or `implementation.md`. Drop entries with only `plan.yaml` or only `design.md`.
    3. Use scanner-confirmed directories without an index as `unindexed`; do not run a fallback scan.
   4. Exclude irrelevant changes:
-     - **Indexed changes**: exclude any `changes[]` entry with `status: abandoned`. For `status: done` entries, Step 1.2's directory existence check already filters out those whose artifacts have been moved to `artifacts/_archived/` by `/mvt-cleanup`.
+     - **Indexed changes**: exclude any `changes[]` entry with `status: abandoned`. For `status: done` entries, item 2's directory existence check already filters out those whose artifacts have been moved to `artifacts/_archived/` by `/mvt-cleanup`.
   5. Exclude `active_change.id` (work in flight).
 
 - **Present** the list:
@@ -190,7 +189,7 @@ Before processing any change, determine which project(s) the sync targets. Use t
 
 This step establishes the **target structure** that aggregated content must fit into. The structure is NOT assumed -- it is derived from the current document.
 
-1. Read the project-context file: always read `.ai-agents/knowledge/project/_generated/project-context.md` (flat path, regardless of project count).
+1. Read the project-context file: always read `.mvtt/knowledge/project/_generated/project-context.md` (flat path, regardless of project count).
    - **Multi-project**: the file contains `# Project: {name}` sections; use the routing result from Step 1 to identify which project section(s) are relevant for the current sync operation.
    - If the file does not exist, STOP and recommend `/mvt-analyze-code`.
 2. Parse the current `.md` into a section map:
@@ -198,7 +197,7 @@ This step establishes the **target structure** that aggregated content must fit 
    - Record: section title (verbatim), byte range, and a 1-line semantic summary derived from the section's content (e.g., "lists domain terms with definitions" or "describes module dependencies").
    - The summary is what enables matching in Step 6 -- section titles may be in any language and may not match conventional names (Terms / Modules / etc.).
 3. If the document has zero `##` sections (single block) -> STOP. Recommend `/mvt-analyze-code` to establish a sectioned baseline first.
-4. Read `.ai-agents/workspace/project-context.yaml`. Record current `projects[].source_paths`, `modules`, and `tech_stack` for diff comparison in Step 7 (Table 7d).
+4. Read `.mvtt/workspace/project-context.yaml`. Record current `projects[].source_paths` and `tech_stack` for diff comparison in Step 7 (Table 7d).
 
 ### Step 4: Extract Artifact Content
 
@@ -236,9 +235,9 @@ Before classifying extracted items against the section map, normalize each item 
 
 ### Step 6: Classify Artifact Content
 
-- **What**: classify each normalized item against the section map from Step 2.
+- **What**: classify each normalized item against the section map from Step 3.
 - **How**:
-  1. For each item, match to a section from the Step 2 map:
+  1. For each item, match to a section from the Step 3 map:
      - Match by semantic similarity to **section title + 1-line summary**, not by exact string.
      - Confidence levels:
        - **mapped**: exactly one section matches with high confidence
@@ -313,7 +312,7 @@ If user skips verification: proceed directly to Step 10 with Step 7 selections.
 
 - **Update `project-context.yaml`** (structured merge):
   1. Apply accepted entries from Table 7d.
-  2. Add new `source_paths` to matching project entry; add new modules to `modules[]`.
+  2. Add new `source_paths` to matching project entry.
   3. **Never delete** an existing yaml entry in this skill.
 
 - **Atomicity**: temp + rename per file. If `.md` write succeeds but `.yaml` fails (or vice versa) -> restore the failed one from `.bak`, keep the other; report partial success.
@@ -335,28 +334,27 @@ If user skips verification: proceed directly to Step 10 with Step 7 selections.
 ### Step 12: State Update
 Apply the State Update rules defined in the **State Update** section below.
 - The `--set-synced` parameter updates `session.last_synced_at`.
-- When updating a plan that has project attribution, pass `--projects` to `plan-update.cjs`; read `.ai-agents/scripts/plan-update.md` only if the workflow needs flags or value sources not rendered in this skill. Do NOT hand-edit `plan.yaml` or read `.cjs`/`.js` source.
 
 ## Edge Cases & Errors
 
 | Case | Handling |
 |------|----------|
 | `project-context.md` does not exist | Caught at preflight; recommend `/mvt-analyze-code` |
-| `.md` has zero `##` sections | STOP at Step 2; recommend `/mvt-analyze-code` |
-| Selected change-id has only `plan.yaml` | Filtered in Step 1; will not appear |
+| `.md` has zero `##` sections | STOP at Step 3; recommend `/mvt-analyze-code` |
+| Selected change-id has only `plan.yaml` | Filtered in Step 2; will not appear |
 | `modify` with `replace` but the existing line cannot be located deterministically | Fall back to append + flag as duplicate-needs-manual-edit; do NOT silently overwrite the wrong line |
 | `.md.bak` already exists | Overwrite (only the most recent backup matters) |
-| User aborts at Step 7 | Do not write; report "no changes applied" |
+| User aborts at Step 8 | Do not write; report "no changes applied" |
 | Step 9 verification finds zero matches for everything | Strong warning; require explicit confirm before proceeding (artifacts likely describe planned, not delivered, work) |
 | Two artifacts contradict each other (analysis claims rule X, implementation realizes rule Y) | Surface in Table 7b as cross-artifact conflict; user picks |
-| change-id was archived between Step 1 and Step 9 | Skip with note; do not error the run |
+| change-id was archived between Step 2 and Step 9 | Skip with note; do not error the run |
 
 ## State Update
 
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-sync-context --summary "<concise one-line summary>" --set-synced
+node .mvtt/scripts/session-update.cjs --skill mvt-sync-context --summary "<concise one-line summary>" --set-synced
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -375,11 +373,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-sync-context`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`merge applied successfully`** → `/mvt-cleanup` -- Archive aggregated change artifacts now that knowledge is sync'd
 - **`code verification flagged code-only entities`** → `/mvt-analyze-code` -- Regenerate project-context.md from full code scan

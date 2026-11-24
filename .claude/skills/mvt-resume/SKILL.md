@@ -25,12 +25,13 @@ You are the **Conductor** -- a Workflow Coordinator.
 - No plans found -> Report no active plans, suggest `/mvt-analyze` or `/mvt-plan-dev`
 - active_change is empty AND history is empty AND no plans -> Recommend `/mvt-init` or `/mvt-status`
 - Plan exists and has current_tasks -> Use current_tasks entry's skill_hint as next-step recommendation
-- Plan's current_tasks entry has been in_progress for >5 days -> Surface stale warning
+- Any plan task has been in_progress for >5 days -> Surface stale warning
+- A task is in_progress with dispatched_at -> Label it interrupted and give the recovery commands
 - Last skill was interrupted -> Surface the context, suggest retry
 
 ### Boundaries
 - Do NOT read git state (branch, diff, commits) (out of scope -- this skill is session-state only)
-- Do NOT modify files outside deferred epic activation (read-only; only the confirmed deferred-child route may update epic.yaml and session.yaml)
+- Do NOT modify files outside epic activation and change switching (read-only; only the confirmed deferred-child route may update epic.yaml and session.yaml)
 - Do NOT run analyses or tests (use the recommended next skill)
 
 ## Turn Boundary Contract (Mandatory for interactive pauses)
@@ -47,11 +48,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -64,11 +65,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
@@ -103,7 +104,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
 
 ### Step 1: Read Session State
 
-Read `.ai-agents/workspace/session.yaml`. If the file is missing or empty, jump to Step 8 with the "no session" branch.
+Read `.mvtt/workspace/session.yaml`. If the file is missing or empty, jump to Step 8 with the "no session" branch.
 
 Extract:
 - `active_change` -- the current change-id (if any), plan_path, epic_id
@@ -118,32 +119,34 @@ After extracting session data in Step 1, check for epic state:
 | Condition | Action |
 |-----------|--------|
 | `active_change.id` non-empty AND `active_change.epic_id` non-empty | Set `within_epic = true`; resolve the parent epic path from `active_epic` or `session.epics[]`; select `active_change.id`; continue to Step 2 after restoration. |
-| `active_change.id` empty AND `active_epic.id` non-empty (epic-pending) | Read `active_epic.epic_path` and select `epic.yaml.current_change`; if unreadable, use the Step 8 missing-epic branch. After restoration, skip Steps 2-6 and render the simplified Step 7 report. |
+| `active_change.id` empty AND `active_epic.id` non-empty (epic-pending) | Read `active_epic.epic_path` and select `epic.yaml.current_change`; if unreadable, use the Step 8 missing-epic branch. After restoration, skip Steps 2-6 and render the simplified Step 7 report. If that child is paused, also offer `Resume this change`, the other ready children, and paused changes (switch per Step 3, then report per Step 5). |
 | Neither | Continue to Step 2 (normal flow). |
 
 For either epic path, restore the selected child with exactly:
 
 ```bash
-node .ai-agents/scripts/requirement-source.cjs --effective-context <epic_path> --child <change_id>
+node .mvtt/scripts/requirement-source.cjs --effective-context <epic_path> --child <change_id>
 ```
 
 - Consume only `child`, `context`, `sources`, and `warnings`; never traverse references in the prompt.
 - Display warnings and non-`unchanged` source statuses without replacing the snapshot. Report ordered `context` as the baseline, or `child.scope` when empty.
 - On non-zero exit, retain the plan resume path and add a bounded stderr warning; never invent context.
 
-For epic-pending, the simplified report contains: **Epic State** (title, id, status, progress); **Current Sub-change** (title, scope, dependency statuses, restored projection); **Resume Point** (next child and `/mvt-analyze`); and **Recommended Next Step** (`/mvt-analyze`).
+For epic-pending, the simplified report contains: **Epic State** (title, id, status, progress); **Current Sub-change** (title, scope, dependency statuses, restored projection); **Resume Point** (next child); and **Recommended Next Step** (`/mvt-resume` to resume a paused child, otherwise `/mvt-analyze`).
 
 ### Step 2: Discover Pending Plans
 
 Scan for in-progress plans using two sources:
 
-1. Run `node .ai-agents/scripts/artifact-scan.cjs --mode plans`; its JSON `entries` are the only live plan inputs.
+1. Run `node .mvtt/scripts/artifact-scan.cjs --mode plans`; its JSON `entries` are the only live plan inputs.
 2. Enrich scanner-confirmed paths from `changes[]`; do not read indexed paths absent from scanner output and do not perform a fallback glob.
 
 For each found plan.yaml, read and filter:
 - Include only plans where `plan.status == "in_progress"`.
 - Capture: `change_id`, `title`, task progress (`done_count / total_count`), `updated_at`.
 - Sort candidates by `updated_at` descending.
+
+Also add `status: paused` entries from `session.changes[]` (not via the scanner): merged with their scanned plan, else a `paused (no plan)` row with progress `--`.
 
 ### Step 3: Select Target Change
 
@@ -166,13 +169,15 @@ Found {N} active plans. Select which to resume:
 Enter a number, a change-id, or "none" to skip plan context:
 ```
 
-**Explicit argument override**: If the user invoked `/mvt-resume {change-id}`, use that change-id directly — skip the table, locate and load its plan.yaml (error if not found or not in_progress).
+**Explicit target**: If the user named a change id, use it directly — skip the table and load its plan.yaml if it has one (error if the id is neither in_progress nor paused).
 
 After selection, set `selected_change_id` for use in subsequent steps.
 
+**Switching** (only for a paused change or a not-yet-started ready child, with `active_change` empty): offer `Switch to this change` / `View only`; for a child of the active epic first run `node .mvtt/scripts/epic-update.cjs --epic "<active_epic.epic_path>" --switch-active <id>`, then register with the Step 8 command (no `--epic-id` for a plain change). Anything else is view-only; if a change is active, send the user to `/mvt-update-plan` with a pause intent. Change epic.yaml only through epic-update.cjs.
+
 ### Step 4: Inspect Recent Artifacts
 
-List files under `.ai-agents/workspace/artifacts/{selected_change_id}/`, sorted by mtime descending:
+List files under `.mvtt/workspace/artifacts/{selected_change_id}/`, sorted by mtime descending:
 - Exclude `plan.yaml` from the artifact list (it gets its own section)
 - Take the top 5
 
@@ -180,9 +185,13 @@ For each artifact, capture: file path, mtime, size in characters and estimated t
 
 ### Step 5: Determine Resume Point
 
-Read the plan's `current_tasks` map. The resume point = the task(s) referenced by `current_tasks`. Next-step recommendation = the relevant task's `skill_hint` (or infer from task title if skill_hint is absent).
+Read the plan's `current_tasks` map. The resume point = every `in_progress` task, `current_tasks` entries first. Next-step recommendation = the `skill_hint` of each `current_tasks` entry's task (or infer from task title if skill_hint is absent).
+
+A task that is `in_progress` with `dispatched_at` is **interrupted**: a parallel run did not finish. Label it, tell the user to check the working tree for partial edits, then run its `skill_hint` skill with the task id (for example `/mvt-implement <id>`) to finish it serially, or `/mvt-update-plan <id> pending` to re-queue it.
 
 For multi-project workspaces, if `current_tasks` has entries for multiple projects, display each project's current task separately.
+
+For a change with no plan, show "No plan for this change" and resume from its latest `history` entry, recommending the skill that follows it (`/mvt-analyze` if none).
 
 Also filter `history` to entries matching `change_id == selected_change_id` (entries with empty change_id are excluded from this filtered view).
 
@@ -194,8 +203,8 @@ Generate the **Plan Progress** section:
 
 - Read all tasks from plan.yaml.
 - Build a compact status table: `| # | id | title | status | project | skill_hint |`
-- Highlight `current_tasks` rows (prefix with `>>` or bold).
-- Count summary: `Done: {d}, In Progress: {ip}, Pending: {p}, Blocked: {b}, Skipped: {s}`
+- Highlight `in_progress` rows (prefix with `>>` or bold) and append `(interrupted)` to interrupted ones.
+- Count summary: `Done: {d}, In Progress: {ip}, Pending: {p} (ready: {r}), Blocked: {b}, Skipped: {s}`, where ready = pending with every `depends_on` done or skipped.
 - If any task has `deliverables.freshness == "stale"`, append a warning: "Stale deliverables: {task_ids} -- downstream tasks may be out of date. Run `/mvt-implement` to refresh."
 
 And the **Current Task Detail** section:
@@ -220,10 +229,10 @@ Render inline using the seven sections below. No external template is required.
 
 ### Step 8: Edge Cases
 
-- **Deferred epic**: if `active_epic.id` is non-empty, `active_change.id` is empty, and `epic.yaml.current_change` is empty, select the first dependency-ready pending child in array order. Confirm `Activate child` / `Cancel`; on activation call `epic-update.cjs --switch-active <id>`, then register it exactly once with:
+- **Deferred epic**: if `active_epic.id` is non-empty, `active_change.id` is empty, and `epic.yaml.current_change` is empty, list the dependency-ready pending children (paused ones labeled) and let the user pick one or `Cancel`; on activation call `node .mvtt/scripts/epic-update.cjs --epic "<active_epic.epic_path>" --switch-active <id>`, then register it exactly once with:
 
 	```bash
-	node .ai-agents/scripts/session-update.cjs --skill mvt-resume --summary "<concise one-line activation summary>" --new-change "<child.title>" --change-id <child.change_id> --epic-id <active_epic.id>
+	node .mvtt/scripts/session-update.cjs --skill mvt-resume --summary "<concise one-line activation summary>" --new-change "<child.title>" --change-id <child.change_id> --epic-id <active_epic.id>
 	```
 
 	If the session call fails after activation, report divergence and stop without replaying epic-update. Do not run another State Update after this command.
@@ -232,23 +241,23 @@ Render inline using the seven sections below. No external template is required.
 - **No active plans**: report "No active plans found. Start a new change with `/mvt-analyze` or run `/mvt-status` to check project state."
 - **Selected change but referenced artifacts missing**: warn "Artifact directory `{path}` not found -- task state may be stale. Verify with `/mvt-status` or run `/mvt-cleanup`."
 - **Plan exists but plan.yaml is invalid** (parse error or schema violation): warn "plan.yaml is corrupted or invalid. Run `/mvt-plan-dev` to regenerate, or `/mvt-status` to inspect."
-- **Stale task warning**: If plan's `current_tasks` entries reference tasks with status `in_progress` but the plan's `updated_at` is more than 5 days old, append a notice: "Current task has been in_progress for {N} days without updates. Consider running `/mvt-update-plan` to refresh status."
+- **Stale task warning**: If any task is `in_progress` and the plan's `updated_at` is more than 5 days old, append a notice: "Task(s) {ids} have been in_progress for {N} days without updates. Consider running `/mvt-update-plan` to refresh status."
 - **Stale deliverables warning**: If any task has `deliverables.freshness == "stale"`, warn: "Task(s) {ids} have stale deliverables. Downstream tasks may reference outdated contracts. Run `/mvt-implement` to refresh."
 - **Epic-pending but epic.yaml missing**: warn "Epic state references `epic_path` but file not found at `{path}`. Run `/mvt-status` to inspect or `/mvt-cleanup` to archive stale entries."
 - **Epic-pending but current_change empty or invalid**: warn "Epic `current_change` is empty or points to a non-existent child. Run `/mvt-status` to inspect the epic state."
 
 ## State Update
 
-Normal plan resume and report generation are read-only and do not update session history. The confirmed deferred-child activation route performs its one `session-update.cjs` registration inside Step 8; do not run any additional State Update afterward.
+Normal plan resume and report generation are read-only and do not update session history. A confirmed activation or switch performs its one `session-update.cjs` registration (the Step 8 command); do not run any additional State Update afterward.
 
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-resume`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`plan has current_tasks entry with skill_hint`** → `/mvt-implement` -- Continue with the next planned task (use skill_hint)
 - **`no active plans found`** → `/mvt-analyze` -- Start a new feature

@@ -73,11 +73,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -85,8 +85,8 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 Extended Context entries:
 - Scan project source directories for analysis
-- .ai-agents/skills/_templates/project-context.md -- Default template for output structure
-- .ai-agents/skills/_templates/custom/project-context.md -- Custom template (if exists)
+- .mvtt/skills/_templates/project-context.md -- Default template for output structure
+- .mvtt/skills/_templates/custom/project-context.md -- Custom template (if exists)
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -96,11 +96,11 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
@@ -135,7 +135,7 @@ This constraint is NON-NEGOTIABLE and overrides formatting habits inferred from 
 
 This is an independent operation — no workflow prerequisites required.
 - Does NOT create a change-id.
-- Output is written to `.ai-agents/knowledge/project/_generated/project-context.md`.
+- Output is written to `.mvtt/knowledge/project/_generated/project-context.md`.
 
 ## Execution Flow
 
@@ -155,10 +155,9 @@ Identify which project(s) to analyze using interactive routing:
 
 Determine the output template for project-context.md:
 
-1. Check `.ai-agents/skills/_templates/custom/project-context.md` -- if exists, use it
-2. Otherwise, use `.ai-agents/skills/_templates/project-context.md` (default)
+1. Check `.mvtt/skills/_templates/custom/project-context.md` -- if exists, use it
+2. Otherwise, use `.mvtt/skills/_templates/project-context.md` (default)
 3. Read the template to understand the required section structure
-4. The template defines section headings only -- generate content freely for each section based on code analysis
 
 ### Step 3: Scan Code Structure
 
@@ -212,7 +211,7 @@ Identify public interfaces:
    - Fill each template section with analysis results
    - If a section has no relevant content, include the heading with "(No relevant content detected)"
 
-2. Write the output to `.ai-agents/knowledge/project/_generated/project-context.md` (always the flat path, regardless of project count).
+2. Write the output to `.mvtt/knowledge/project/_generated/project-context.md` (always the flat path, regardless of project count).
    - **Single-project**: write the full document.
    - **Multi-project**: use `# Project: {name}` as the top-level heading to separate each project's content sections within the single file.
 
@@ -225,17 +224,17 @@ Identify public interfaces:
 5. Do NOT update other fields in `project-context.yaml` -- only `source_paths` is touched by this skill.
 
 ## Artifact Structure
-Read the document structure template from: `.ai-agents/skills/_templates/project-context.md`
-If a custom version exists at `.ai-agents/skills/_templates/custom/project-context.md`, use the custom version instead.
+Read the document structure template from: `.mvtt/skills/_templates/project-context.md`
+If a custom version exists at `.mvtt/skills/_templates/custom/project-context.md`, use the custom version instead.
 The template defines section structure and guidance comments. Generate applicable content based on code analysis results.
-Write the artifact to: `.ai-agents/knowledge/project/_generated/project-context.md`
+Write the artifact to: `.mvtt/knowledge/project/_generated/project-context.md`
 
 ## State Update
 
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-analyze-code --summary "<concise one-line summary>"
+node .mvtt/scripts/session-update.cjs --skill mvt-analyze-code --summary "<concise one-line summary>"
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -253,11 +252,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-analyze-code`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`project-context.md generated, no active change`** → `/mvt-analyze` -- Analyze requirements for a new feature
 - **`project-context.md generated, active change exists`** → `/mvt-design` -- Design with the updated project context

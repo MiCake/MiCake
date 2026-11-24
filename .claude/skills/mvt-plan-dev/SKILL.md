@@ -16,8 +16,6 @@ You are the **Architect** -- a Development Planner.
 ### Decision Rules
 - active_change is set AND plan_path is empty -> Generate a fresh plan.yaml
 - active_change is set AND plan_path is non-empty -> Confirm before regenerating; default to /mvt-update-plan
-- Requested plan id differs from active_change.id -> Block and resolve lifecycle through /mvt-update-plan
-- Requested plan id equals active_change.id -> Allow plan creation or regeneration
 - Plan grows beyond practical manageability -> Stop, propose phasing the change into multiple plans
 - Dependencies form a cycle -> Reject and ask the user to resolve
 - active_change is empty -> Stop and request /mvt-analyze first
@@ -42,19 +40,19 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
 - *Extended Context* (listed below) — once `session.yaml` values such as `{active_change.id}` / `{plan_path}` are known, read the concrete files (e.g. `analysis.md`, `design.md`, `plan.yaml`, template paths) in ONE parallel sub-batch. Discovery directives (e.g. "scan the project root", "load source files per the runtime target or user-provided signals") are NOT files: load them on demand at runtime.
 
 Extended Context entries:
-- .ai-agents/workspace/artifacts/{active_change.id}/ -- Existing analysis/design artifacts for this change
-- .ai-agents/workspace/artifacts/{active_change.id}/plan.yaml -- Existing plan, if any (regeneration mode)
+- .mvtt/workspace/artifacts/{active_change.id}/ -- Existing analysis/design artifacts for this change
+- .mvtt/workspace/artifacts/{active_change.id}/plan.yaml -- Existing plan, if any (regeneration mode)
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -64,11 +62,11 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
@@ -118,7 +116,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
 
 Collect everything that should inform the plan:
 
-1. The analysis artifact at `.ai-agents/workspace/artifacts/{active_change.id}/` (if any).
+1. The analysis artifact at `.mvtt/workspace/artifacts/{active_change.id}/` (if any).
 2. The design artifact (if `/mvt-design` was run for this change).
 3. Any extra context the user supplies in the current message.
 
@@ -126,7 +124,7 @@ If no analysis or design artifacts exist and the user provides no description, p
 
 ### Step 2: Detect Regeneration
 
-If `active_change.plan_path is non-empty` AND `.ai-agents/workspace/artifacts/{active_change.id}/plan.yaml` already exists:
+If `active_change.plan_path is non-empty` AND `.mvtt/workspace/artifacts/{active_change.id}/plan.yaml` already exists:
 
 - If `preferences.silent.plan_dev` is `true`, do not prompt and do not overwrite. Abort with a notice to use `/mvt-update-plan` or explicitly request regeneration.
 - Read the existing plan.
@@ -138,7 +136,7 @@ If `active_change.plan_path is non-empty` AND `.ai-agents/workspace/artifacts/{a
 
 Decompose the change with the following constraints. These constraints are AI-friendly decomposition rules.
 
-**Granularity guidance** — read from `preferences.planning.granularity` in `.ai-agents/config.yaml`. Default: `medium`.
+**Granularity guidance** — read from `preferences.planning.granularity` in `.mvtt/config.yaml`.
 
 | Level | Decomposition style |
 |-------|---------------------|
@@ -156,7 +154,6 @@ This is **qualitative AI guidance**, not a hard task count constraint. A complex
 | No cycles | Dependency graph must be a DAG. Validation will reject cycles. |
 | Skill hint | Set `skill_hint` to the skill best suited to execute the task (without `/` prefix): `mvt-implement`, `mvt-test`, `mvt-fix`, `mvt-design`, `mvt-review`, `mvt-refactor`, etc. |
 | Project attribution | Each task must have a `project` array listing which projects it belongs to. In a single-project workspace (`projects.length == 1`), use the sole project name from `project-context.yaml > projects[].name`. In a multi-project workspace, auto-infer from the task's file paths matching `projects[].path` and `projects[].source_paths`; if ambiguous, prompt the user. Cross-project tasks list multiple project names. |
-| Invalid value handling | If `granularity` contains a value other than `coarse`, `medium`, `fine`, warn the user and fall back to `medium`. |
 
 ### Step 4: Assemble plan.yaml
 
@@ -231,7 +228,7 @@ For each task, populate:
 - **`depends_on`**: array of task ids. Empty array `[]` means no dependencies.
 - **`project`**: array of project names this task belongs to. In single-project workspaces, use the sole project name from `project-context.yaml > projects[].name`. Cross-project tasks list multiple names. Auto-infer from file paths matching `projects[].path` and `projects[].source_paths`; if ambiguous, prompt the user.
 - **`skill_hint`**: the skill name (without `/`) that will execute this task.
-- **`artifacts`**: structured object. On initial plan creation, set to `null` or pre-populate with planned target files if known:
+- **`artifacts`**: structured object. On initial plan creation, set to `null` or pre-populate with planned target files if known. For `mvt-implement` tasks, list every file the task will create or modify, test files included, whenever they are known; parallel dispatch only batches tasks with a known file scope:
   ```yaml
   artifacts:
     files:
@@ -253,13 +250,12 @@ Before writing, validate the assembled YAML:
 3. **No cycles** — the dependency graph is a DAG (per-project subgraph when multi-project)
 4. **current_tasks validity** — each value references a task with status `pending` or `in_progress`
 5. **Acceptance required** — every task has at least one acceptance criterion
-6. **Per-project in_progress** — at most one `in_progress` task per project (not globally)
-7. **completed_at consistency** — must be `null` for all non-done tasks
-8. **Project attribution** — every task has a `project` array with at least one valid project name
+6. **completed_at consistency** — must be `null` for all non-done tasks
+7. **Project attribution** — every task has a `project` array with at least one valid project name
 
 If validation fails, revise the plan and re-validate (do NOT write a broken plan).
 
-Before writing, write the draft to a temporary path and validate it with `node .ai-agents/scripts/plan-update.cjs --validate <draft-plan-path>`. Only write the final `plan.yaml` when the command exits 0; on failure, surface stderr, revise the draft, and re-run validation.
+Write the draft to `.mvtt/workspace/artifacts/{active_change.id}/plan.draft.yaml` (create the directory if needed) and validate it with `node .mvtt/scripts/plan-update.cjs --validate <draft-plan-path>`. On failure, surface stderr, fix the draft with targeted edits (do not rewrite the file), and re-run validation.
 
 ### Step 6: Confirm Validated Draft
 
@@ -275,13 +271,17 @@ Offer choices `Confirm and write` / `Revise` / `Cancel`.
 
 - `Confirm and write`: continue to Step 7.
 - `Revise`: apply the user's requested changes, repeat Step 5 validation, then repeat this confirmation.
-- `Cancel`: abort without writing `plan.yaml` or updating session state.
+- `Cancel`: delete the draft, then abort without writing `plan.yaml` or updating session state.
 
 ### Step 7: Write plan.yaml
 
-Write to `.ai-agents/workspace/artifacts/{active_change.id}/plan.yaml`. If the artifacts directory does not exist, create it.
+Install the validated draft; do not write the plan content again:
 
-If a previous `plan.yaml` exists and the user chose regeneration in Step 2, overwrite it. Otherwise, this is a fresh write.
+```bash
+node .mvtt/scripts/plan-update.cjs --install-draft "<draft-plan-path>" --plan ".mvtt/workspace/artifacts/{active_change.id}/plan.yaml" [--projects "<comma,separated,project,names>"]
+```
+
+The command re-validates, creates the directory, replaces an existing `plan.yaml` (regeneration was confirmed in Step 2), and deletes the draft. On a non-zero exit, surface stderr, keep the draft, and return to Step 5.
 
 ### Step 8: Update Session State
 
@@ -311,7 +311,7 @@ Render an inline summary (no external template). Structure:
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-plan-dev --summary "<concise one-line summary>" --new-change "<active_change.title>" --change-id <active_change.id> --set-plan-path ".ai-agents/workspace/artifacts/{active_change.id}/plan.yaml" --update-change
+node .mvtt/scripts/session-update.cjs --skill mvt-plan-dev --summary "<concise one-line summary>" --new-change "<active_change.title>" --change-id <active_change.id> --set-plan-path ".mvtt/workspace/artifacts/{active_change.id}/plan.yaml" --update-change
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -319,7 +319,7 @@ Write `--summary` as one concise line in the configured `interaction_language`.
 ### Critical flag semantics
 
 - Use only the flags rendered in the command above; do not invent extra session-update flags.
-- `--new-change` and `--change-id` are required together; they set `active_change.{id,title,created_at}` and snapshot any prior active change into `changes[]`.
+- `--new-change` and `--change-id` are required together; they set `active_change.{id,title,created_at}`. A different active change blocks it (pause, finalize, or abandon first). A `paused` id is restored from its index entry; a `done` or `abandoned` id is refused.
 - `--set-plan-path` must be used with `--update-change`; together they persist the active change's `plan_path` into `changes[]`.
 
 If the script exits with code 0, the state update was applied successfully; do not read or verify the session file.
@@ -331,11 +331,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-plan-dev`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`plan created, first task is implementation`** → `/mvt-implement` -- Start implementing the first task
 - **`plan created, first task is design`** → `/mvt-design` -- Design the architecture for the first task

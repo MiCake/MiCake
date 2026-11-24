@@ -34,12 +34,9 @@ Skill instructions are injected per turn, so after you pause the next reply may 
 
 **Rule 2 — At the start of every turn**, if the previous turn ended with a Role Lock and the current message is a reply to it (not a new `/mvt-*` command), stay in role and honor its Boundaries. Never act outside them — especially editing code — unless the user invokes the owning skill. If unsure, stay in-role and ask.
 
-## Variants
+## Plan Mode
 
-| Variant | Description |
-|---------|-------------|
-| `/mvt-design` | Full architecture design |
-| `/mvt-design --plan` | High-level implementation plan only: skip Step 5 (data flow detail) and Step 6 (full ADR fields). ADRs collapse to one-line `decision: <text>`. Step 8 writes `design.md` with abbreviated content and a top-line `Mode: plan` indicator. If the request is actually small (1 file), downgrade to a 5-line summary in chat and do NOT write `design.md`. |
+When the user asks for a high-level implementation plan only, skip Step 4 (data flow detail) and Step 5 (full ADR fields): ADRs collapse to one-line `decision: <text>`, and Step 7 writes `design.md` with abbreviated content and a top-line `Mode: plan` indicator. If the request is actually small (1 file), downgrade to a 5-line summary in chat and do NOT write `design.md`.
 
 ## Activation Protocol
 
@@ -47,20 +44,19 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
 - *Extended Context* (listed below) — once `session.yaml` values such as `{active_change.id}` / `{plan_path}` are known, read the concrete files (e.g. `analysis.md`, `design.md`, `plan.yaml`, template paths) in ONE parallel sub-batch. Discovery directives (e.g. "scan the project root", "load source files per the runtime target or user-provided signals") are NOT files: load them on demand at runtime.
 
 Extended Context entries:
-- .ai-agents/workspace/artifacts/{active_change.id}/analysis.md -- Analysis from previous phase
-- .ai-agents/knowledge/project/_generated/project-context.md -- Current semantic project context
-- .ai-agents/workspace/artifacts/*/design.md -- Prior design artifacts for related changes (load only relevant matches)
+- .mvtt/workspace/artifacts/{active_change.id}/analysis.md -- Analysis from previous phase
+- .mvtt/knowledge/project/_generated/project-context.md -- Current semantic project context
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -70,18 +66,17 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
-| 1 | `session.initialized_at is empty` | BLOCK | Session not initialized. Run `/mvt-init` first. |
-| 2 | `projects[] in project-context.yaml is empty` | BLOCK | Project not initialized. Run `/mvt-init` first. |
+| 1 | `session.initialized_at is empty` | WARN | Session not initialized. Run `/mvt-init` first. |
+| 2 | `projects[] in project-context.yaml is empty` | WARN | Project not initialized. Run `/mvt-init` first. |
 | 3 | `project-context.md is empty` | WARN | No project-context.md found. Run `/mvt-analyze-code` for better design context. (allow user to proceed) |
-| 4 | `requirements in project-context.md is empty` | WARN | No requirements found. Run `/mvt-analyze` first. (allow user to proceed) |
 
 ## Language Constraint (Mandatory)
 
@@ -123,11 +118,9 @@ Presentation is all that changes — the choices and their meaning stay as writt
 ## Execution Flow
 
 ### Step 1: Load Inputs
-- **Required**:
-  - Existing design artifacts of related prior changes (`artifacts/*/design.md`) -- to stay consistent.
 - **Fallback**:
   - If `analysis.md` is missing, surface a WARN and accept the user's free-text intent as the requirement input.
-  - If `project-context.md` is missing, proceed but mark the design as "context-light" and skip the layer-compliance check in Step 3.
+  - If `project-context.md` is missing, proceed and skip the layer-compliance check in Step 3.
 
 ### Step 2: Frame the Problem
 - **What**: produce a one-paragraph problem statement plus a list of explicit architectural concerns (3-7 items).
@@ -220,23 +213,23 @@ Apply the State Update rules defined in the **State Update** section below.
 |------|----------|
 | `analysis.md` missing entirely | Proceed with user's free-text intent; mark artifact with "Source: conversation only"; recommend `/mvt-analyze` as a follow-up |
 | Requirements are mutually contradictory | STOP at Step 2; surface contradictions; do not invent a resolution |
-| User wants to skip ADRs ("just write the design") | Refuse silently-skipping; produce minimal one-line ADRs (Step 6 abbreviated form) but never zero |
+| User wants to skip ADRs ("just write the design") | Refuse silently-skipping; produce minimal one-line ADRs (Step 5 abbreviated form) but never zero |
 | Design directly contradicts an existing accepted ADR | Treat as superseding; new ADR must reference and `supersedes:` the old one |
-| `--plan` mode but request is actually small (1 file) | Downgrade to a 5-line summary in chat, do NOT write `design.md` |
-| User aborts at Step 7 confirmation | Do not write artifact; keep a conversation-only summary |
+| A high-level plan is requested for a small change (1 file) | Downgrade to a 5-line summary in chat, do NOT write `design.md` |
+| User aborts at Step 6 confirmation | Do not write artifact; keep a conversation-only summary |
 
 ## Artifact Structure
-Read the document structure template from: `.ai-agents/skills/_templates/design-output.md`
-If a custom version exists at `.ai-agents/skills/_templates/custom/design-output.md`, use the custom version instead.
+Read the document structure template from: `.mvtt/skills/_templates/design-output.md`
+If a custom version exists at `.mvtt/skills/_templates/custom/design-output.md`, use the custom version instead.
 The template defines section structure and guidance comments. Generate applicable content based on design results.
-Write the artifact to: `.ai-agents/workspace/artifacts/{change-id}/design.md`
+Write the artifact to: `.mvtt/workspace/artifacts/{change-id}/design.md`
 
 ## State Update
 
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-design --summary "<concise one-line summary>"
+node .mvtt/scripts/session-update.cjs --skill mvt-design --summary "<concise one-line summary>"
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -254,11 +247,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-design`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`design complete, change tracking lists >5 files or >1 new module`** → `/mvt-plan-dev` -- Create a structured implementation plan
 - **`design complete, small scope`** → `/mvt-implement` -- Implement the designed architecture
