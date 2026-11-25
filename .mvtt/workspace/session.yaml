@@ -27,31 +27,6 @@ changes:
     updated_at: 2026-10-08T09:25:47.435Z
     epic_id: ""
 history:
-  - skill: /mvt-update-plan
-    completed_at: 2026-10-08T06:32:59.298Z
-    summary: 完结变更 20260806-uow-transaction-reliability：t8-performance-final-review 经用户确认会话外完成后置为 done，计划 8/8 全部完成，Finalize now 关闭变更，为新变更 20261008-uow-context-agnostic-execution 的规划让路
-    change_id: 20260806-uow-transaction-reliability
-  - skill: /mvt-analyze
-    completed_at: 2026-10-08T06:42:02.409Z
-    summary: 基于两份 issue 报告建立新变更 20261008-uow-context-agnostic-execution 需求基线（analysis.md，19 条需求）：P1 上下文无关 ExecuteIsolatedAsync 语义 R1-R7、严格契约保持 R8-R10、可发现性 R11-R13、可理解性护栏 R14-R16、验证 R17-R19；P2
-      宿主集成包出域；无歧义（治理决策已随设计 ADR-012..015 确认）；design.md 已同目录就位，下一步 mvt-plan-dev
-    change_id: 20261008-uow-context-agnostic-execution
-  - skill: /mvt-plan-dev
-    completed_at: 2026-10-08T07:30:54.990Z
-    summary: 生成变更 20261008-uow-context-agnostic-execution 实施计划（plan.yaml，4 任务 coarse 粒度）：t1 ExecuteIsolatedAsync API+共享核心（in_progress）、t2 四象限对照表+非 HTTP 宿主指南+迁移说明、t3 ambient x 结果矩阵+SQLite 集成行、t4 R1-R19
-      交付评审；依赖 DAG t1→{t2,t3}→t4，校验脚本 exit 0
-    change_id: 20261008-uow-context-agnostic-execution
-  - skill: /mvt-implement
-    completed_at: 2026-10-08T07:48:27.253Z
-    summary: 实施 t1-isolated-execution-api（6 文件）：IsolatedUowExecution 新增共享 ExecuteStandaloneAsync 启动入口、StandaloneUnitOfWorkExecutor 改指共享入口并补 ExecuteIsolatedAsync 指引、IUnitOfWorkManager 新增
-      ExecuteIsolatedAsync 双重载+三入口 seealso 互链、UnitOfWorkManager 同步段 dispatch+缺 ambient 消息列明三条修复路径、测试 fake 同步；构建 0 错误 0 新警告，MiCake.Tests Uow 119/119 + FilterOrder 4/4（严格对契约锁原样通过），Deliverables 已登记并标记
-      t2/t3 stale
-    change_id: 20261008-uow-context-agnostic-execution
-  - skill: /mvt-review
-    completed_at: 2026-10-08T08:30:04.007Z
-    summary: 审查 t1-isolated-execution-api（6 文件 git diff 逐块核验）：Approve with comments，0 Critical/1 Warning/2 Suggestion——W1 新公共 API ExecuteIsolatedAsync 测试待 t3 落地（计划内时序，合并前必补）；S1 IsolatedUowExecution
-      类摘要未覆盖新启动职责、S2 void 重载 return true 重复 2 处未达提取阈值；独立复核 implementation.md 自检全部属实（签名逐字一致/同步段 dispatch 正确/契约锁 119 原样通过）；用户选择 Skip 不写 review.md
-    change_id: 20261008-uow-context-agnostic-execution
   - skill: /mvt-implement
     completed_at: 2026-10-08T08:43:59.405Z
     summary: 实施 t2-comprehension-guardrail-docs（3 文件纯文档）：包 README 新增四象限执行模式对照表+ExecuteIsolatedAsync 小节并把严格双入口重新定位为接线自检、新建 docs/Background-Jobs-and-Non-HTTP-Hosts.md（Hangfire 异步作业基类+IServerFilter
@@ -79,3 +54,23 @@ history:
     summary: 按用户要求将变更 20261008-uow-context-agnostic-execution 全部 4 个子任务标记 done（t1 API+共享核心、t2 文档护栏、t3 测试矩阵、t4 终审），进度 4/4、plan_status done、current_tasks 清空；用户选择不写 notes（已知真实性落差：t2 验收第 2/3 条与 t4 的 ADR-015
       无偏离条件因两份 docs 被删除而失效，已在会话中提示）；随后选择 Finalize now 完结该变更
     change_id: 20261008-uow-context-agnostic-execution
+  - skill: /mvt-review
+    completed_at: 2026-11-25T02:07:34.161Z
+    summary: 审查 docs/net11-compatibility-assessment.md 事实准确性：多数行号与现象属实；新发现 sln 残留 probe 项目致构建失败（推翻 0 错误结论）、E1 命名过滤器方案会与用户未命名过滤器冲突抛异常、B3 仅影响诊断文案、E6/A4/B1 范围或级别有偏差；无 active change 未写 artifact
+    change_id: ""
+  - skill: /mvt-quick-dev
+    completed_at: 2026-11-25T07:07:51.976Z
+    summary: 修正 ExecuteUpdate 命令分类:CommandSource.ExecuteUpdate 映射为 EFWriteOperationKind.ExecuteUpdate,删除过时的 BulkUpdate 注释,并在 Classify_CommandSources_MapsCorrectly 补断言(B3/B4,2 文件)
+    change_id: ""
+  - skill: /mvt-quick-dev
+    completed_at: 2026-11-25T07:24:11.187Z
+    summary: A3:测试包版本集中到 src/tests/Directory.Build.props(18.12.0/4.21.0/4.0.1/10.1.1),删除 5 个测试 csproj 的 PackageReference Update 块;有效版本与改动前一致,sln 构建 0 警告 0 错误
+    change_id: ""
+  - skill: /mvt-quick-dev
+    completed_at: 2026-11-25T07:48:08.674Z
+    summary: A2:README.md 与 README.en.md 的 .NET 版本徽章与支持说明由 10.0 改为 11.0(各 2 处,共 4 处),残留零命中,CRLF 保持
+    change_id: ""
+  - skill: /mvt-quick-dev
+    completed_at: 2026-11-25T07:49:53.962Z
+    summary: A6:确认样例不再使用 user-secrets,保持删除 UserSecretsId 的工作区改动;未修改文件(本机无 secrets 文件,Host.CreateDefaultBuilder 的隐式读取已确认)
+    change_id: ""

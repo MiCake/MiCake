@@ -29,13 +29,13 @@ preferences:
   # Parallel sub-agent dispatch for /mvt-implement and /mvt-review.
   # Empty or 1 = off; 2-8 = maximum sub-agents at once.
   parallel:
-    max_agents:
+    max_agents: 3
 
   # Skip confirmation prompts for selected skills when explicitly enabled.
   silent:
-    plan_dev: false
-    implement: false
+    plan_dev: true
+    implement: true
 
   # Listed skills skip artifact confirmation (conversation-only). Allowed: mvt-review, mvt-test, mvt-fix, mvt-refactor.
   artifacts:
-    skip: []
+    skip: [mvt-review, mvt-test, mvt-fix, mvt-refactor]

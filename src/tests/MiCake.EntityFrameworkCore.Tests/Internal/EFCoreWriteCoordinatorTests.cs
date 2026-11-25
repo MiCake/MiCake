@@ -222,6 +222,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Internal
         {
             Assert.Equal(EFWriteOperationKind.DatabaseInitialization, MiCakeDbCommandInterceptor.Classify(CommandSource.Migrations));
             Assert.Equal(EFWriteOperationKind.RawSql, MiCakeDbCommandInterceptor.Classify(CommandSource.ExecuteSqlRaw));
+            Assert.Equal(EFWriteOperationKind.ExecuteUpdate, MiCakeDbCommandInterceptor.Classify(CommandSource.ExecuteUpdate));
             Assert.Equal(EFWriteOperationKind.ExecuteDelete, MiCakeDbCommandInterceptor.Classify(CommandSource.ExecuteDelete));
             Assert.Equal(EFWriteOperationKind.UnknownNonQuery, MiCakeDbCommandInterceptor.Classify((CommandSource)int.MaxValue));
         }
