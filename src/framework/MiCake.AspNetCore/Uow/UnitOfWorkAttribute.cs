@@ -1,4 +1,3 @@
-using MiCake.DDD.Uow;
 using System;
 using System.Data;
 
@@ -9,46 +8,26 @@ namespace MiCake.AspNetCore.Uow
     /// Applying this attribute enables Unit of Work for the controller or action.
     /// Use <see cref="DisableUnitOfWorkAttribute"/> to explicitly disable UoW.
     /// </summary>
+    /// <remarks>
+    /// <see cref="IsReadOnly"/> marks the operation as read-only. Read-only units of work
+    /// reject resource flush and write activation, so every attempted write fails before
+    /// a command executes. Explicit read-only metadata overrides action-name inference.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class UnitOfWorkAttribute : Attribute
+    public sealed class UnitOfWorkAttribute : Attribute
     {
         /// <summary>
+        /// Whether this operation is read-only.
+        /// When true, the unit of work is marked read-only and rejects every write path.
+        /// When false, the unit of work commits on successful action execution.
+        /// </summary>
+        public bool IsReadOnly { get; set; }
+
+        /// <summary>
         /// Transaction isolation level for this operation.
-        /// Default is ReadCommitted.
+        /// When null, the unit of work default (ReadCommitted) is used.
         /// </summary>
-        public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.ReadCommitted;
-
-        /// <summary>
-        /// Transaction initialization mode (Lazy or Immediate).
-        /// Default is Lazy (transactions start when first resource is accessed).
-        /// </summary>
-        public TransactionInitializationMode InitializationMode { get; set; } = TransactionInitializationMode.Lazy;
-
-        /// <summary>
-        /// Creates a new UnitOfWorkAttribute with default settings
-        /// </summary>
-        public UnitOfWorkAttribute()
-        {
-        }
-
-        /// <summary>
-        /// Creates UnitOfWorkOptions based on this attribute's settings
-        /// </summary>
-        internal UnitOfWorkOptions CreateOptions()
-        {
-            return new UnitOfWorkOptions
-            {
-                IsolationLevel = IsolationLevel,
-                InitializationMode = InitializationMode,
-                Strategy = PersistenceStrategy.TransactionManaged,  
-                IsReadOnly = false
-            };
-        }
-
-        /// <summary>
-        /// Indicates whether this attribute enables UoW (true for base class, false for DisableUnitOfWorkAttribute)
-        /// </summary>
-        internal virtual bool IsUowEnabled => true;
+        public IsolationLevel? IsolationLevel { get; set; }
     }
 
     /// <summary>
@@ -56,18 +35,7 @@ namespace MiCake.AspNetCore.Uow
     /// Use this to explicitly opt-out of UoW when it's enabled globally.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class DisableUnitOfWorkAttribute : UnitOfWorkAttribute
+    public sealed class DisableUnitOfWorkAttribute : Attribute
     {
-        /// <summary>
-        /// Creates a new DisableUnitOfWorkAttribute
-        /// </summary>
-        public DisableUnitOfWorkAttribute()
-        {
-        }
-
-        /// <summary>
-        /// Indicates this attribute disables UoW
-        /// </summary>
-        internal override bool IsUowEnabled => false;
     }
 }

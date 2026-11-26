@@ -1,0 +1,46 @@
+{
+  "schema": "micake-uow-performance-baseline",
+  "recorded_at": "2026-08-07",
+  "runtime": ".NET 10.0 (net10.0)",
+  "provider": "EF Core 10.0.7 / Microsoft.Data.Sqlite, file-backed temporary database, Pooling=False",
+  "configuration": "Debug",
+  "warmup_iterations": 5,
+  "measured_iterations": 200,
+  "scenarios": {
+    "ReadNoUoW": {
+      "median_ms": 2.14,
+      "p90_ms": 3.14,
+      "min_ms": 1.65,
+      "allocated_bytes": 16937232
+    },
+    "TrackedWriteCommit": {
+      "median_ms": 8.87,
+      "p90_ms": 10.64,
+      "min_ms": 7.37,
+      "allocated_bytes": 20128736
+    },
+    "FlushIdentity": {
+      "median_ms": 8.64,
+      "p90_ms": 9.45,
+      "min_ms": 7.49,
+      "allocated_bytes": 22525680
+    },
+    "LifecycleHandlers": {
+      "median_ms": 8.4,
+      "p90_ms": 9.68,
+      "min_ms": 7.26,
+      "allocated_bytes": 20084456
+    },
+    "ImmediateActivation": {
+      "median_ms": 3.4,
+      "p90_ms": 4.53,
+      "min_ms": 2.41,
+      "allocated_bytes": 32022088
+    }
+  },
+  "thresholds": {
+    "throughput_regression_pct": 10,
+    "allocation_increase_pct": 15
+  },
+  "comparison_procedure": "Run `dotnet test src/tests/MiCake.IntegrationTests --filter Category=Performance` WITHOUT the regular runsettings file (which excludes the Performance trait), on the same runtime configuration. Compare the MEDIAN elapsed time and the total allocated bytes of each scenario against this file: the thresholds (10 percent median throughput regression, 15 percent allocation increase) are enforced on median elapsed and allocated bytes only; p90 is recorded for reference and is expected to be noisy on single runs. A threshold breach requires investigation or an accepted ADR amendment before acceptance."
+}

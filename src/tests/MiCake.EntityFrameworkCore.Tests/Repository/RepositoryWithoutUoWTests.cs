@@ -3,6 +3,7 @@ using MiCake.DDD.Uow;
 using MiCake.EntityFrameworkCore.Repository;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
@@ -13,191 +14,125 @@ using Xunit;
 namespace MiCake.EntityFrameworkCore.Tests.Repository
 {
     /// <summary>
-    /// Unit tests for repository DbContext access without explicit Unit of Work
-    /// Tests verify that repositories can fall back to DI-injected DbContext when no UoW is active
+    /// Repository DbContext access without an explicit unit of work.
+    /// Context identity is owned by the frame-stable factory: without an active UoW the
+    /// factory rejects access by default, and explicit AllowDbContextAccessWithoutUoW permits
+    /// read-only fallback access. Writes remain guarded regardless of the option. Repositories
+    /// hold no per-UoW context cache of their own.
     /// </summary>
     public class RepositoryWithoutUoWTests : IDisposable
     {
+        private readonly ServiceProvider _provider;
         private readonly TestDbContext _dbContext;
         private readonly Mock<IUnitOfWorkManager> _mockUnitOfWorkManager;
-        private readonly Mock<IEFCoreContextFactory<TestDbContext>> _mockContextFactory;
-        private readonly Mock<ILogger<TestRepository>> _mockLogger;
         private readonly Mock<ILogger<EFRepositoryDependencies<TestDbContext>>> _mockDependenciesLogger;
-        private readonly TestRepository _repository;
 
         public RepositoryWithoutUoWTests()
         {
-            var options = new DbContextOptionsBuilder<TestDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-
-            _dbContext = new TestDbContext(options);
             _mockUnitOfWorkManager = new Mock<IUnitOfWorkManager>();
-            _mockContextFactory = new Mock<IEFCoreContextFactory<TestDbContext>>();
-            _mockLogger = new Mock<ILogger<TestRepository>>();
+            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
             _mockDependenciesLogger = new Mock<ILogger<EFRepositoryDependencies<TestDbContext>>>();
 
-            var optionsAccessor = new ObjectAccessor<MiCakeEFCoreOptions>(new MiCakeEFCoreOptions(typeof(TestDbContext)));
+            var services = new ServiceCollection();
+            services.AddDbContext<TestDbContext>(opt => opt.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+            services.AddLogging();
+            _provider = services.BuildServiceProvider();
+            _dbContext = _provider.GetRequiredService<TestDbContext>();
+        }
 
-            var dependencies = new EFRepositoryDependencies<TestDbContext>(
-                _mockContextFactory.Object,
+        #region Real Factory Contract Tests (No UoW)
+
+        [Fact]
+        public void DbContext_WithoutActiveUoW_Default_ThrowsWithGuidance()
+        {
+            var repository = CreateRepository(bypass: false);
+
+            var exception = Assert.Throws<InvalidOperationException>(() => repository.DbContext);
+
+            Assert.Contains("No active Unit of Work", exception.Message);
+        }
+
+        [Fact]
+        public async Task GetDbContextAsync_WithoutActiveUoW_Default_Throws()
+        {
+            var repository = CreateRepository(bypass: false);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetDbContextAsync());
+        }
+
+        [Fact]
+        public void DbContext_WithoutActiveUoW_WhenAccessAllowed_ResolvesScopedContext()
+        {
+            var repository = CreateRepository(bypass: true);
+
+            var context = repository.DbContext;
+
+            Assert.Same(_dbContext, context);
+        }
+
+        [Fact]
+        public void DbContext_AccessedMultipleTimes_WhenAccessAllowed_ResolvesSameScopedContext()
+        {
+            var repository = CreateRepository(bypass: true);
+
+            var context1 = repository.DbContext;
+            var context2 = repository.DbContext;
+
+            Assert.Same(_dbContext, context1);
+            Assert.Same(context1, context2);
+        }
+
+        [Fact]
+        public void DbSet_WithoutActiveUoW_WhenAccessAllowed_ReturnsDbSet()
+        {
+            var repository = CreateRepository(bypass: true);
+
+            Assert.NotNull(repository.DbSet);
+        }
+
+        [Fact]
+        public void Entities_WithoutActiveUoW_WhenAccessAllowed_ReturnsQueryable()
+        {
+            var repository = CreateRepository(bypass: true);
+
+            Assert.NotNull(repository.Entities);
+            Assert.NotNull(repository.EntitiesNoTracking);
+        }
+
+        private TestRepository CreateRepository(bool bypass)
+        {
+            var options = new MiCakeEFCoreOptions(typeof(TestDbContext)) { AllowDbContextAccessWithoutUoW = bypass };
+            var factory = new EFCoreContextFactory<TestDbContext>(
+                _provider,
                 _mockUnitOfWorkManager.Object,
-                _mockDependenciesLogger.Object,
-                optionsAccessor);
-
-            _repository = new TestRepository(dependencies);
-        }
-
-        #region Direct DbContext Access Without UoW Tests
-
-        [Fact]
-        public void DbContext_WithoutActiveUoW_ShouldFallbackToDIContainer()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act
-            var result = _repository.DbContext;
-
-            // Assert
-            Assert.Same(_dbContext, result);
-            _mockContextFactory.Verify(f => f.GetDbContext(), Times.AtLeastOnce);
-        }
-
-        [Fact]
-        public async Task GetDbContextAsync_WithoutActiveUoW_ShouldReturnDbContext()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act
-            var result = await _repository.GetDbContextAsync();
-
-            // Assert
-            Assert.Same(_dbContext, result);
-        }
-
-        [Fact]
-        public void DbSet_WithoutActiveUoW_ShouldReturnDbSet()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act
-            var result = _repository.DbSet;
-
-            // Assert
-            Assert.NotNull(result);
-        }
-
-        [Fact]
-        public void Entities_WithoutActiveUoW_ShouldReturnQueryable()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act
-            var result = _repository.Entities;
-
-            // Assert
-            Assert.NotNull(result);
-        }
-
-        [Fact]
-        public void EntitiesNoTracking_WithoutActiveUoW_ShouldReturnAsNoTrackingQueryable()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act
-            var result = _repository.EntitiesNoTracking;
-
-            // Assert
-            Assert.NotNull(result);
+                _provider.GetRequiredService<ILogger<EFCoreContextFactory<TestDbContext>>>(),
+                options);
+            var dependencies = new EFRepositoryDependencies<TestDbContext>(
+                factory, _mockUnitOfWorkManager.Object, _mockDependenciesLogger.Object, options);
+            return new TestRepository(dependencies);
         }
 
         #endregion
 
-        #region DbContext Caching Tests
+        #region Frame-Stable Delegation Tests
 
         [Fact]
-        public void DbContext_AccessedMultipleTimes_ShouldCacheSameInstance()
+        public void DbContext_AccessedMultipleTimes_ResolvesFromFactoryPerAccess()
         {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
+            var mockContextFactory = new Mock<IEFCoreContextFactory<TestDbContext>>();
+            mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
+            var options = new MiCakeEFCoreOptions(typeof(TestDbContext));
+            var dependencies = new EFRepositoryDependencies<TestDbContext>(
+                mockContextFactory.Object, _mockUnitOfWorkManager.Object, _mockDependenciesLogger.Object, options);
+            var repository = new TestRepository(dependencies);
 
-            // Act
-            var result1 = _repository.DbContext;
-            var result2 = _repository.DbContext;
-            var result3 = _repository.DbContext;
+            var result1 = repository.DbContext;
+            var result2 = repository.DbContext;
+            var result3 = repository.DbContext;
 
-            // Assert
             Assert.Same(result1, result2);
             Assert.Same(result2, result3);
-        }
-
-        #endregion
-
-        #region DbContext Factory Fallback Tests
-
-        [Fact]
-        public void DbContext_WithoutUoW_ShouldCallContextFactory()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act
-            var result = _repository.DbContext;
-
-            // Assert
-            _mockContextFactory.Verify(f => f.GetDbContext(), Times.AtLeastOnce);
-        }
-
-        [Fact]
-        public void DbContext_WithoutUoW_ShouldNotThrowWhenDbContextIsAvailable()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act & Assert
-            var exception = Record.Exception(() => _repository.DbContext);
-            Assert.Null(exception);
-        }
-
-        #endregion
-
-        #region Query Operations Without UoW
-
-        [Fact]
-        public void GetAllEntities_WithoutActiveUoW_ShouldWork()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act & Assert
-            var result = _repository.Entities;
-            Assert.NotNull(result);
-        }
-
-        [Fact]
-        public void GetNoTrackingEntities_WithoutActiveUoW_ShouldWork()
-        {
-            // Arrange
-            _mockUnitOfWorkManager.Setup(um => um.Current).Returns((IUnitOfWork)null);
-            _mockContextFactory.Setup(f => f.GetDbContext()).Returns(_dbContext);
-
-            // Act & Assert
-            var result = _repository.EntitiesNoTracking;
-            Assert.NotNull(result);
+            mockContextFactory.Verify(f => f.GetDbContext(), Times.Exactly(3));
         }
 
         #endregion
@@ -234,18 +169,11 @@ namespace MiCake.EntityFrameworkCore.Tests.Repository
             }
         }
 
-        private class ObjectAccessor<T> : MiCake.Core.DependencyInjection.IObjectAccessor<T>
-        {
-            public ObjectAccessor(T value) => Value = value;
-
-            public T Value { get; }
-        }
-
         #endregion
 
         public void Dispose()
         {
-            _dbContext?.Dispose();
+            _provider?.Dispose();
         }
     }
 }

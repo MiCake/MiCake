@@ -9,7 +9,8 @@ on:
 
 # Prevent concurrent preview releases
 concurrency:
-  group: preview-release-${{ github.ref }}
+  # The timestamp-based version is only unique per minute, so serialize runs to avoid two runs stamping the same version number
+  group: preview-release
   cancel-in-progress: false
 
 permissions:
@@ -66,24 +67,27 @@ jobs:
       - name: Get preview version number
         id: preview_version
         run: |
-          # Extract version from branch name if possible (e.g., releases/preview-v1.0.0 -> 1.0.0)
-          BRANCH_NAME=${GITHUB_REF#refs/heads/releases/}
+          # pull_request: GITHUB_BASE_REF is the target branch; dispatch: GITHUB_REF is the branch
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            BRANCH_NAME="${GITHUB_BASE_REF#releases/}"
+          else
+            BRANCH_NAME="${GITHUB_REF#refs/heads/releases/}"
+          fi
 
-          # Try to extract version from branch name (format: preview-v1.0.0 or preview-1.0.0)
+          # Extract version from branch name (format: preview-v1.0.0 or preview-1.0.0)
           if [[ "$BRANCH_NAME" =~ v?([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
             echo "Extracted version from branch name: $MAJOR.$MINOR.$PATCH"
           else
-            # throw error if version cannot be determined
             echo "Error: Cannot determine version from branch name '$BRANCH_NAME'. Ensure it follows 'releases/preview-vX.Y.Z' format."
             exit 1
           fi
 
-          # Use GitHub run number as prerelease identifier for uniqueness
-          # Format: Major.Minor.Patch-preview.RunNumber
-          PREVIEW_VERSION="${MAJOR}.${MINOR}.${PATCH}-preview.${GITHUB_RUN_NUMBER}"
+          # Unique per minute: Major.Minor.Patch-preview.YYMMDDHHMM (e.g. 1.0.0-preview.2612121542)
+          DATE_STAMP=$(date -u +%y%m%d%H%M)
+          PREVIEW_VERSION="${MAJOR}.${MINOR}.${PATCH}-preview.${DATE_STAMP}"
 
           echo "version=${PREVIEW_VERSION}" >> $GITHUB_OUTPUT
           echo "::notice ::Preview version: ${PREVIEW_VERSION}"

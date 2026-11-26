@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using MiCake.DDD.Domain.Helper;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Util.Cache;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -30,16 +30,52 @@ namespace MiCake.EntityFrameworkCore
         /// <param name="modelBuilder">The ModelBuilder instance</param>
         public static void UseMiCakeConventions(this ModelBuilder modelBuilder)
         {
+            modelBuilder.UseMiCakeConventions(null);
+        }
+
+        /// <summary>
+        /// Apply MiCake model conventions to the ModelBuilder and report convention failures
+        /// to the loggers created by <paramref name="loggerFactory"/>.
+        /// Call this in your DbContext.OnModelCreating method.
+        /// </summary>
+        /// <param name="modelBuilder">The ModelBuilder instance</param>
+        /// <param name="loggerFactory">
+        /// Factory used for convention diagnostics. When null, the logger registered by the MiCake
+        /// application is used, and diagnostics are discarded if none is available.
+        /// </param>
+        public static void UseMiCakeConventions(this ModelBuilder modelBuilder, ILoggerFactory? loggerFactory)
+        {
             var domainEntityTypes = GetDomainEntityTypes(modelBuilder);
 
             if (domainEntityTypes.Length > 0)
             {
-                modelBuilder.ApplyMiCakeConventions(domainEntityTypes);
+                var logger = loggerFactory?.CreateLogger(MiCakeConventionEngineProvider.LoggerCategory);
+                ModelBuilderExtensions.ApplyConventions(modelBuilder, domainEntityTypes, logger);
             }
 
             // EFCore will cache the all model configurations, we can clear our internal cache safely.
             ModelBuilderExtensions.ClearConventionCache();
             ClearDomainEntityTypeCache();
+        }
+
+        /// <summary>
+        /// Finds a logger factory that reaches the application's log sinks: the factory configured
+        /// with UseLoggerFactory, or the one from the application service provider of AddDbContext.
+        /// EF Core's own internal factory is never returned because it has no sinks.
+        /// Returns null when neither exists or EF Core's options cannot be read.
+        /// </summary>
+        internal static ILoggerFactory? ResolveLoggerFactory(DbContext context)
+        {
+            try
+            {
+                var coreOptions = context.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>();
+                return coreOptions?.LoggerFactory
+                    ?? coreOptions?.ApplicationServiceProvider?.GetService<ILoggerFactory>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -85,70 +121,21 @@ namespace MiCake.EntityFrameworkCore
         }
 
         /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors.
-        /// Uses the globally configured MiCake interceptor factory.
-        /// Call this in AddDbContext configuration or DbContext.OnConfiguring method.
+        /// Enables MiCake runtime features for this DbContext by installing the per-context
+        /// options (save-operation state and max save cycles). Interceptors are installed
+        /// automatically by the MiCake EF Core module via ConfigureDbContext, so no provider
+        /// is required here. Call this in AddDbContext configuration or DbContext.OnConfiguring.
         /// </summary>
         /// <param name="optionsBuilder">The DbContextOptionsBuilder instance</param>
         /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder)
+        public static DbContextOptionsBuilder UseMiCake(this DbContextOptionsBuilder optionsBuilder)
         {
-            if (!MiCakeInterceptorFactoryHelper.IsConfigured)
+            if (optionsBuilder.Options.FindExtension<MiCakeSaveOperationOptionsExtension>() != null)
             {
                 return optionsBuilder;
             }
 
-            var interceptor = MiCakeInterceptorFactoryHelper.CreateInterceptor();
-            if (interceptor != null)
-            {
-                optionsBuilder.AddInterceptors(interceptor);
-            }
-
-            return optionsBuilder;
-        }
-
-        /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors using a DI-resolved factory.
-        /// This overload is preferred when the DbContext is configured via AddDbContext((sp, options) => ...)
-        /// and you have access to the IServiceProvider.
-        /// </summary>
-        /// <param name="optionsBuilder">The DbContextOptionsBuilder instance.</param>
-        /// <param name="serviceProvider">The service provider from AddDbContext delegate.</param>
-        /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        public static DbContextOptionsBuilder UseMiCakeInterceptors(this DbContextOptionsBuilder optionsBuilder, IServiceProvider serviceProvider)
-        {
-            if (serviceProvider == null)
-                return optionsBuilder;
-
-            var factory = serviceProvider.GetService<IMiCakeInterceptorFactory>();
-            var interceptor = factory?.CreateInterceptor() ?? MiCakeInterceptorFactoryHelper.CreateInterceptor();
-            if (interceptor != null)
-            {
-                optionsBuilder.AddInterceptors(interceptor);
-            }
-
-            return optionsBuilder;
-        }
-
-        /// <summary>
-        /// Configure DbContextOptionsBuilder to use MiCake interceptors with specific lifetime service.
-        /// This overload provides direct control over the lifetime service instance.
-        /// Internal API for advanced scenarios.
-        /// </summary>
-        /// <param name="optionsBuilder">The DbContextOptionsBuilder instance</param>
-        /// <param name="saveChangesLifetime">The save changes lifetime service</param>
-        /// <param name="logger">Optional logger instance for the interceptor (uses NullLogger if not provided)</param>
-        /// <returns>The same DbContextOptionsBuilder for chaining</returns>
-        internal static DbContextOptionsBuilder UseMiCakeInterceptors(
-            this DbContextOptionsBuilder optionsBuilder,
-            IEFSaveChangesLifetime saveChangesLifetime,
-            ILogger<MiCakeEFCoreInterceptor>? logger = null)
-        {
-            if (saveChangesLifetime != null)
-            {
-                logger ??= NullLogger<MiCakeEFCoreInterceptor>.Instance;
-                optionsBuilder.AddInterceptors(new MiCakeEFCoreInterceptor(saveChangesLifetime, logger));
-            }
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(new MiCakeSaveOperationOptionsExtension());
 
             return optionsBuilder;
         }

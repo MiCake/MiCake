@@ -249,31 +249,10 @@ namespace MiCake.IntegrationTests.Uow
 
         #region Transaction Rollback Tests
 
-        [Fact(Skip = "In-memory database doesn't support real transaction rollback. Requires real database for integration testing.")]
-        public async Task Transaction_Rollback_ShouldDiscardChanges()
-        {
-            // Arrange
-            var aggregate = new TestAggregate("Rollback Test");
-            _dbContext.TestAggregates.Add(aggregate);
-            await _dbContext.SaveChangesAsync();
-            var aggregateId = aggregate.Id;
-            _dbContext.ChangeTracker.Clear();
-
-            // Act - Start transaction, make changes, rollback
-            using (var transaction = await _dbContext.Database.BeginTransactionAsync())
-            {
-                var existing = await _dbContext.TestAggregates.FindAsync(aggregateId);
-                existing.ChangeName("Should Be Rolled Back");
-                await _dbContext.SaveChangesAsync();
-                
-                await transaction.RollbackAsync();
-            }
-
-            // Assert
-            _dbContext.ChangeTracker.Clear();
-            var final = await _dbContext.TestAggregates.FindAsync(aggregateId);
-            Assert.Equal("Rollback Test", final.Name); // Should have original name
-        }
+        // The skipped InMemory test "Transaction_Rollback_ShouldDiscardChanges" was removed:
+        // its guarantee (a rolled-back write leaves the original state intact) is now proven
+        // on file-backed SQLite through the MiCake UoW contract by
+        // UnitOfWorkWritePathTests.TrackedUpdate_RolledBackByUoW_KeepsOriginalState.
 
         #endregion
 
@@ -309,6 +288,15 @@ namespace MiCake.IntegrationTests.Uow
         {
             public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
             {
+            }
+
+            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+            {
+                // This file exercises aggregate and domain-event mechanics with plain EF
+                // persistence; it deliberately does not use the MiCake write pipeline.
+                // MiCakeDbContext.OnConfiguring only installs the per-context options
+                // extension (UseMiCake()), so calling the base is harmless here.
+                base.OnConfiguring(optionsBuilder);
             }
 
             public DbSet<TestAggregate> TestAggregates { get; set; }

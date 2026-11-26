@@ -1,5 +1,6 @@
 using MiCake.DDD.Uow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace MiCake.EntityFrameworkCore.Uow
 {
     /// <summary>
     /// Registry for tracking registered DbContext types in the application.
-    /// Used for immediate transaction initialization.
+    /// Consumed by the EF Core module for startup validation.
     /// </summary>
     public interface IDbContextTypeRegistry
     {
@@ -61,21 +62,22 @@ namespace MiCake.EntityFrameworkCore.Uow
 
     /// <summary>
     /// Implementation of immediate transaction initializer that creates DbContext wrappers
-    /// for all registered types when UoW is configured with immediate initialization.
+    /// for all registered factories when UoW is configured with immediate initialization.
+    /// Uses the typed non-generic factory contract - no reflective best-effort probing.
+    /// Custom factory implementations are adapted to the runtime view by
+    /// <see cref="EFCoreContextFactoryAdapter"/> and are validated and registered exactly
+    /// like the framework factory.
     /// </summary>
     public class ImmediateTransactionInitializer : IImmediateTransactionInitializer
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly IDbContextTypeRegistry _typeRegistry;
         private readonly ILogger<ImmediateTransactionInitializer> _logger;
 
         public ImmediateTransactionInitializer(
             IServiceProvider serviceProvider,
-            IDbContextTypeRegistry typeRegistry,
             ILogger<ImmediateTransactionInitializer> logger)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _typeRegistry = typeRegistry ?? throw new ArgumentNullException(nameof(typeRegistry));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -83,66 +85,60 @@ namespace MiCake.EntityFrameworkCore.Uow
         {
             ArgumentNullException.ThrowIfNull(unitOfWork);
 
-            var registeredTypes = _typeRegistry.GetRegisteredTypes();
-            if (registeredTypes.Count == 0)
+            // Every DbContext type registered through AddUowCoreServices contributes one
+            // non-generic IEFCoreContextFactory registration; resolve them all in one typed pass.
+            var factories = _serviceProvider.GetServices<IEFCoreContextFactory>();
+            var factoryList = factories as IReadOnlyList<IEFCoreContextFactory> ?? [.. factories];
+
+            if (factoryList.Count == 0)
             {
                 _logger.LogWarning(
-                    "No DbContext types registered for immediate transaction initialization. " +
-                    "Call services.AddMiCakeEFCore<TDbContext>() to register DbContext types.");
+                    "No DbContext factories registered for immediate transaction initialization. " +
+                    "Register DbContext types through UseEFCore<TDbContext>() or AddUowCoreServices().");
                 return Task.CompletedTask;
             }
 
             _logger.LogDebug(
-                "Initializing transactions immediately for {Count} registered DbContext types in UoW {UowId}",
-                registeredTypes.Count,
+                "Initializing transactions immediately for {Count} registered DbContext factories in UoW {UowId}",
+                factoryList.Count,
                 unitOfWork.Id);
 
-            foreach (var dbContextType in registeredTypes)
+            var initializedContextTypes = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var factory in factoryList)
             {
-                try
-                {
-                    // Get the factory for this DbContext type
-                    var factoryType = typeof(IEFCoreContextFactory<>).MakeGenericType(dbContextType);
-                    var factory = _serviceProvider.GetService(factoryType);
+                var resolution = factory.GetOrCreateWrapperForCurrentUnitOfWork();
 
-                    if (factory == null)
-                    {
-                        _logger.LogWarning(
-                            "No factory registered for DbContext type {DbContextType}. Skipping immediate initialization.",
-                            dbContextType.Name);
-                        continue;
-                    }
-
-                    // Get the DbContext wrapper (this will register it with the UoW and start transaction if configured)
-                    var getWrapperMethod = factoryType.GetMethod(nameof(IEFCoreContextFactory<>.GetDbContextWrapper));
-                    if (getWrapperMethod != null)
-                    {
-                        var wrapper = getWrapperMethod.Invoke(factory, null) as EFCoreDbContextWrapper;
-                        
-                        if (wrapper != null)
-                        {
-                            _logger.LogDebug(
-                                "Initialized transaction for DbContext type {DbContextType} in UoW {UowId}",
-                                dbContextType.Name,
-                                unitOfWork.Id);
-                        }
-                    }
-                }
-                catch (Exception ex)
+                // Repeated AddUowCoreServices calls register one internal factory view per
+                // call; initialize each DbContext type exactly once per unit of work.
+                if (!initializedContextTypes.Add(resolution.Wrapper.ResourceType))
                 {
-                    _logger.LogError(
-                        ex,
-                        "Failed to initialize transaction for DbContext type {DbContextType} in UoW {UowId}",
-                        dbContextType.Name,
+                    _logger.LogDebug(
+                        "Skipping already-initialized DbContext type {DbContextType} in UoW {UowId}",
+                        resolution.Wrapper.ResourceType,
                         unitOfWork.Id);
-                    throw;
+                    continue;
                 }
+
+                // Validate that the wrapper is anchored to the resolved context and register
+                // it with the unit of work; transaction activation is performed by the UoW
+                // pipeline immediately after the lifecycle hooks complete.
+                EFCoreContextResourceAnchor.AnchorResource(
+                    unitOfWork,
+                    resolution.Context,
+                    resolution.Wrapper,
+                    resolution.Context.GetType().Name);
+
+                _logger.LogDebug(
+                    "Initialized resource {ResourceId} ({DbContextType}) in UoW {UowId}",
+                    resolution.Wrapper.Id,
+                    resolution.Wrapper.ResourceType,
+                    unitOfWork.Id);
             }
 
             _logger.LogDebug(
                 "Completed immediate transaction initialization for UoW {UowId}",
                 unitOfWork.Id);
-            
+
             return Task.CompletedTask;
         }
     }

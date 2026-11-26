@@ -1,0 +1,12 @@
+# Project Context Index
+projects:
+  - name: "default"                 # Project identifier (unique within workspace)
+    path: "."                       # Relative path from repo root
+    type: "library"                 # web-frontend,api-service,etc.
+    source_paths: ["src/framework/MiCake.Core", "src/framework/MiCake", "src/framework/MiCake.EntityFrameworkCore", "src/framework/MiCake.AspNetCore", "src/tests", "samples/BaseMiCakeApplication"]
+    tech_stack:
+      primary_language: "C#"
+      secondary_languages: []
+      framework: "ASP.NET Core, EF Core"
+      build_tool: "dotnet CLI / MSBuild"
+      test_framework: "xunit"

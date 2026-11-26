@@ -22,14 +22,16 @@ namespace MiCake.DDD.Uow
     }
 
     /// <summary>
-    /// Options for configuring unit of work behavior
+    /// Options for configuring unit of work behavior.
+    /// Every writable unit of work uses explicit transactions; read-only units of work are the only non-transactional mode.
     /// </summary>
-    public class UnitOfWorkOptions
+    public sealed class UnitOfWorkOptions
     {
         /// <summary>
-        /// Defines the persistence strategy for how data changes are persisted.
+        /// Whether this is a read-only unit of work.
+        /// Read-only units of work reject resource flush and write activation.
         /// </summary>
-        public PersistenceStrategy Strategy { get; set; } = PersistenceStrategy.OptimizeForSingleWrite;
+        public bool IsReadOnly { get; set; }
 
         /// <summary>
         /// Transaction isolation level. Default is ReadCommitted.
@@ -44,33 +46,15 @@ namespace MiCake.DDD.Uow
         public TransactionInitializationMode InitializationMode { get; set; } = TransactionInitializationMode.Lazy;
 
         /// <summary>
-        /// Timeout for the transaction in seconds. Null means no timeout.
+        /// Creates default options with lazy initialization.
         /// </summary>
-        public int? Timeout { get; set; }
+        public static UnitOfWorkOptions Default => new();
 
         /// <summary>
-        /// Whether this is a read-only unit of work (optimization for queries).
-        /// When true, transactions will not be started.
-        /// </summary>
-        public bool IsReadOnly { get; set; } = false;
-
-        /// <summary>
-        /// Creates default options with OptimizeForSingleWrite strategy and lazy initialization.
-        /// This is the recommended default for most operations.
-        /// </summary>
-        public static UnitOfWorkOptions Default => new()
-        {
-            Strategy = PersistenceStrategy.OptimizeForSingleWrite,
-            InitializationMode = TransactionInitializationMode.Lazy
-        };
-
-        /// <summary>
-        /// Creates options with TransactionManaged strategy and immediate transaction initialization.
-        /// Use this for complex multi-operation scenarios requiring explicit transaction control.
+        /// Creates options with immediate transaction initialization.
         /// </summary>
         public static UnitOfWorkOptions Immediate => new()
         {
-            Strategy = PersistenceStrategy.TransactionManaged,
             InitializationMode = TransactionInitializationMode.Immediate
         };
 

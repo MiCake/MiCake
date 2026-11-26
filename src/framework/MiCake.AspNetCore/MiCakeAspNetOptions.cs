@@ -1,5 +1,6 @@
 ﻿using MiCake.AspNetCore.ApiLogging;
 using MiCake.AspNetCore.Responses;
+using MiCake.AspNetCore.Uow;
 using MiCake.DDD.Uow;
 using System.Collections.Generic;
 
@@ -76,15 +77,31 @@ namespace MiCake.AspNetCore
         /// It will be use <see cref="UnitOfWorkOptions.Default"/> as the default configuration for created UoW.
         /// </para>
         /// <para>
-        /// Default: true. This can be overridden at the Controller or Action level using [UnitOfWork] attribute.
+        /// Default: true. This can be overridden at the Controller or Action level using [UnitOfWork] attribute
+        /// or disabled using [DisableUnitOfWork] attribute.
         /// </para>
         /// </summary>
         public bool EnableAutoUnitOfWork { get; set; } = true;
 
         /// <summary>
+        /// Enables compatibility read-only inference from controller action names.
+        /// When true, actions whose names start with one of <see cref="ReadOnlyActionKeywords"/>
+        /// are treated as read-only operations.
+        /// <para>
+        /// Explicit <see cref="UnitOfWorkAttribute.IsReadOnly"/> metadata on the controller or action
+        /// always overrides this inference.
+        /// </para>
+        /// <para>
+        /// Default: false (action-name inference is opt-in; declare read-only intent explicitly).
+        /// </para>
+        /// </summary>
+        public bool EnableReadOnlyActionNameInference { get; set; } = false;
+
+        /// <summary>
         /// Match controller action name start keywords to treat actions as read-only operations.
+        /// Only applies when <see cref="EnableReadOnlyActionNameInference"/> is true.
         /// Actions starting with these keywords will have their UoW marked as read-only,
-        /// which improves performance by skipping transaction commit.
+        /// which rejects write activation and skips transaction commit.
         /// <para>
         /// Default: [Find, Get, Query, Search]
         /// </para>

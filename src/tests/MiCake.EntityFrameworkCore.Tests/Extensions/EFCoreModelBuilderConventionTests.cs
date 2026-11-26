@@ -10,10 +10,7 @@ using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Extensions
 {
-    [CollectionDefinition("ConventionEngineTests", DisableParallelization = true)]
-    public class ConventionEngineTestCollection { }
-
-    [Collection("ConventionEngineTests")]
+    [Collection("MiCakeStaticFactory")]
     public class EFCoreModelBuilderConventionTests : IDisposable
     {
         public EFCoreModelBuilderConventionTests()
@@ -51,8 +48,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
             var softDeletableType = model.FindEntityType(typeof(TestSoftDeletableDbEntity));
             Assert.NotNull(softDeletableType);
             
-            var queryFilter = softDeletableType.GetDeclaredQueryFilters();
-            Assert.NotNull(queryFilter);
+            var queryFilter = Assert.Single(softDeletableType.GetDeclaredQueryFilters());
+            Assert.Equal(MiCakeQueryFilterNames.SoftDelete, queryFilter.Key);
         }
         
         [Fact]
@@ -116,18 +113,20 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
         }
     }
     
-    // Test DbContext for convention testing
-    public class TestConventionDbContext : MiCakeDbContext
+    // Test DbContext for convention testing. Plain DbContext with MiCake conventions:
+    // these tests exercise conventions, not the guarded write pipeline.
+    public class TestConventionDbContext : DbContext
     {
         public TestConventionDbContext(DbContextOptions options) : base(options) { }
-        
+
         public DbSet<TestSoftDeletableDbEntity> SoftDeletableEntities { get; set; }
         public DbSet<TestAuditableDbEntity> AuditableEntities { get; set; }
         public DbSet<TestRegularDbEntity> RegularEntities { get; set; }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.UseMiCakeConventions();
         }
     }
     

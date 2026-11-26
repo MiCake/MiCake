@@ -36,7 +36,7 @@ namespace MiCake.EntityFrameworkCore
         {
             base.OnModelCreating(modelBuilder);
             
-            modelBuilder.UseMiCakeConventions();
+            modelBuilder.UseMiCakeConventions(DbContextExtensions.ResolveLoggerFactory(this));
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace MiCake.EntityFrameworkCore
         {
             base.OnConfiguring(optionsBuilder);
             
-            optionsBuilder.UseMiCakeInterceptors();
+            optionsBuilder.UseMiCake();
         }
     }
 }

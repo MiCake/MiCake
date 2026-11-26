@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 
 namespace MiCake.DDD.Infrastructure.Metadata
 {
@@ -28,7 +29,7 @@ namespace MiCake.DDD.Infrastructure.Metadata
     {
         private readonly Assembly[] _assemblies;
         private DomainMetadata? _cachedMetadata;
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         public DomainMetadataProvider(
             IMiCakeModuleContext moduleContext,

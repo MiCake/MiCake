@@ -1,29 +1,46 @@
 using Microsoft.Extensions.Logging;
+using MiCake.DDD.Uow.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiCake.DDD.Uow.Internal
 {
     /// <summary>
-    /// Implementation of Unit of Work with nested transaction support.
-    /// When created, the UoW is immediately active. Transactions are automatically started if configured.
+    /// Implementation of Unit of Work with explicit transactions, shared nested units of work,
+    /// deterministic registration-order flush, best-effort multi-resource commit, savepoint coverage,
+    /// and asynchronous disposal. The unit of work is the sole persistence owner.
+    /// Not thread-safe: an instance is bound to one execution context through the ambient frame
+    /// stack and must not be shared across concurrent flows. Resource registration and rollback-only
+    /// marking are internally synchronized for the interceptor path; all other operations assume
+    /// single-threaded access.
     /// </summary>
     internal class UnitOfWork : IUnitOfWork, IUnitOfWorkInternal
     {
         #region Fields
 
         private readonly List<IUnitOfWorkResource> _resources = [];
+        private readonly Dictionary<UnitOfWorkResourceId, UnitOfWorkResourceCommitState> _commitStates = [];
+        private readonly Dictionary<UnitOfWorkResourceId, UnitOfWorkResourceCommitState> _rollbackStates = [];
+        private readonly HashSet<UnitOfWorkResourceId> _activatedResources = [];
+        private readonly Dictionary<string, HashSet<UnitOfWorkResourceId>> _savepointCoverage = [];
+        private readonly Dictionary<string, HashSet<UnitOfWorkResourceId>> _savepointAttempted = [];
         private readonly ILogger<UnitOfWork> _logger;
         private readonly UnitOfWorkOptions _options;
+        private readonly AmbientUnitOfWorkAccessor? _ambientAccessor;
+        private readonly UnitOfWorkFrameToken? _frameToken;
+        private readonly IServiceProvider? _serviceProvider;
         private readonly Lock _lock = new();
 
         private bool _disposed;
         private bool _completed;
         private bool _transactionsStarted;
         private bool _shouldRollback;
+        private bool _hasPartialCommit;
 
         #endregion
 
@@ -32,9 +49,25 @@ namespace MiCake.DDD.Uow.Internal
         public Guid Id { get; }
         public bool IsDisposed => _disposed;
         public bool IsCompleted => _completed;
-        public bool HasActiveTransactions => _transactionsStarted;
+        public bool IsReadOnly => _options.IsReadOnly;
+
+        /// <summary>
+        /// True when any registered resource currently holds an active transaction.
+        /// Reflects the real per-resource state even when activation failed partway through.
+        /// </summary>
+        public bool HasActiveTransactions =>
+            _transactionsStarted || _resources.Any(r => r.HasActiveTransaction);
+
         public IsolationLevel? IsolationLevel => _options.IsolationLevel;
         public IUnitOfWork? Parent { get; }
+        public bool IsNested => Parent != null;
+
+        /// <summary>
+        /// The provider of the scope that owns this unit of work. Concrete-class member only,
+        /// not part of <see cref="IUnitOfWorkInternal"/>; runtime lookup of the owning scope
+        /// provider goes through the public <see cref="IUnitOfWorkAmbientAccessor"/>.
+        /// </summary>
+        public IServiceProvider? ServiceProvider => _serviceProvider;
 
         #endregion
 
@@ -50,23 +83,22 @@ namespace MiCake.DDD.Uow.Internal
         public UnitOfWork(
             ILogger<UnitOfWork> logger,
             UnitOfWorkOptions? options = null,
-            IUnitOfWork? parent = null)
+            IUnitOfWork? parent = null,
+            AmbientUnitOfWorkAccessor? ambientAccessor = null,
+            UnitOfWorkFrameToken? frameToken = null,
+            IServiceProvider? serviceProvider = null)
         {
             Id = Guid.NewGuid();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _options = options ?? UnitOfWorkOptions.Default;
             Parent = parent;
+            _ambientAccessor = ambientAccessor;
+            _frameToken = frameToken;
+            _serviceProvider = serviceProvider;
 
-            if (Parent != null)
-            {
-                _logger.LogDebug("Created nested UnitOfWork {UnitOfWorkId} with parent {ParentId}",
-                    Id, Parent.Id);
-            }
-            else
-            {
-                _logger.LogDebug("Created root UnitOfWork {UnitOfWorkId} (IsolationLevel: {IsolationLevel}, InitMode: {InitMode}, ReadOnly: {ReadOnly})",
-                    Id, _options.IsolationLevel, _options.InitializationMode, _options.IsReadOnly);
-            }
+            _logger.LogDebug(
+                "Created UnitOfWork {UnitOfWorkId} (Nested: {Nested}, IsolationLevel: {IsolationLevel}, InitMode: {InitMode}, ReadOnly: {ReadOnly})",
+                Id, Parent != null, _options.IsolationLevel, _options.InitializationMode, _options.IsReadOnly);
         }
 
         #region Public Methods
@@ -77,7 +109,7 @@ namespace MiCake.DDD.Uow.Internal
             ThrowIfCompleted("Cannot register resource after unit of work is completed");
             ArgumentNullException.ThrowIfNull(resource);
 
-            // If nested, register with parent instead
+            // Nested UoWs delegate resource ownership to the root.
             if (Parent is IUnitOfWorkInternal parentInternal)
             {
                 parentInternal.RegisterResource(resource);
@@ -86,53 +118,61 @@ namespace MiCake.DDD.Uow.Internal
 
             lock (_lock)
             {
-                if (TryFindExistingResource(resource.ResourceIdentifier, out _))
+                if (_commitStates.ContainsKey(resource.Id))
                 {
-                    _logger.LogDebug("Resource with identifier {ResourceIdentifier} already registered with UnitOfWork {UnitOfWorkId}",
-                        resource.ResourceIdentifier, Id);
+                    _logger.LogDebug("Resource {ResourceId} already registered with UnitOfWork {UnitOfWorkId}",
+                        resource.Id, Id);
                     return;
                 }
 
-                _resources.Add(resource);
-                _logger.LogDebug("Resource with identifier {ResourceIdentifier} registered with UnitOfWork {UnitOfWorkId}",
-                    resource.ResourceIdentifier, Id);
-
-                // Phase 1 - Prepare: Let resource store complete UoW configuration (synchronous, no I/O)
                 try
                 {
-                    resource.PrepareForTransaction(_options);
-                    _logger.LogDebug("Resource {ResourceIdentifier} prepared with Strategy={Strategy}, IsolationLevel={IsolationLevel}",
-                        resource.ResourceIdentifier, _options.Strategy, _options.IsolationLevel);
+                    resource.Prepare(new UnitOfWorkResourceContext(Id, _options.IsolationLevel, _options.IsReadOnly));
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to prepare resource {ResourceIdentifier} for transaction", resource.ResourceIdentifier);
-                    _resources.Remove(resource);
+                    _logger.LogError(ex, "Failed to prepare resource {ResourceId} for UnitOfWork {UnitOfWorkId}",
+                        resource.Id, Id);
                     throw;
                 }
+
+                _resources.Add(resource);
+                _commitStates[resource.Id] = UnitOfWorkResourceCommitState.Pending;
+                _logger.LogDebug("Resource {ResourceId} ({ResourceType}) registered with UnitOfWork {UnitOfWorkId}",
+                    resource.Id, resource.ResourceType, Id);
+            }
+        }
+
+        public bool TryGetResource(Func<IUnitOfWorkResource, bool> predicate, out IUnitOfWorkResource? resource)
+        {
+            ArgumentNullException.ThrowIfNull(predicate);
+
+            // Nested UoWs delegate resource ownership to the root.
+            if (Parent is IUnitOfWorkInternal parentInternal)
+            {
+                return parentInternal.TryGetResource(predicate, out resource);
+            }
+
+            lock (_lock)
+            {
+                resource = _resources.FirstOrDefault(predicate);
+                return resource != null;
             }
         }
 
         /// <summary>
-        /// Activates all pending resources asynchronously (Phase 2 of two-phase registration).
-        /// This starts actual database transactions for all registered resources.
+        /// Ensures every registered resource has an active transaction (idempotent per resource).
+        /// Rejected on read-only units of work. Nested units of work delegate to the root.
+        /// Resources registered after an earlier activation pass are still activated here
+        /// (the global short-circuit was removed because it let late resources flush untransacted).
         /// </summary>
         public async Task ActivatePendingResourcesAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
-            if (_transactionsStarted)
-            {
-                _logger.LogDebug("Transactions already started for UnitOfWork {UnitOfWorkId}", Id);
-                return;
-            }
-
             // Nested UoW: delegate to parent
             if (Parent != null)
             {
-                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} delegating activation to parent {ParentId}",
-                    Id, Parent.Id);
-
                 if (Parent is IUnitOfWorkInternal parentInternal)
                 {
                     await parentInternal.ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
@@ -140,167 +180,343 @@ namespace MiCake.DDD.Uow.Internal
                 return;
             }
 
-            // Skip activation for read-only UoW or if no resources
-            if (_options.IsReadOnly || _resources.Count == 0)
+            if (_resources.Count == 0)
             {
-                _logger.LogDebug("Skipping activation for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly}, Resources: {Count})",
-                    Id, _options.IsReadOnly, _resources.Count);
+                _logger.LogDebug("Skipping activation for UnitOfWork {UnitOfWorkId} (no resources registered)", Id);
                 return;
             }
 
-            _logger.LogDebug("Activating {Count} pending resources for UnitOfWork {UnitOfWorkId}",
-                _resources.Count, Id);
-
-            var exceptions = new List<Exception>();
-
-            // Activate all resources that haven't been initialized yet
-            foreach (var resource in _resources)
+            if (_options.IsReadOnly)
             {
-                if (!resource.IsInitialized)
-                {
-                    try
-                    {
-                        await resource.ActivateTransactionAsync(cancellationToken).ConfigureAwait(false);
-                        _logger.LogDebug("Successfully activated resource {ResourceIdentifier}",
-                            resource.ResourceIdentifier);
-                    }
-                    catch (Exception ex)
-                    {
-                        exceptions.Add(ex);
-                        _logger.LogError(ex, "Failed to activate resource {ResourceIdentifier} in UnitOfWork {UnitOfWorkId}",
-                            resource.ResourceIdentifier, Id);
-                    }
-                }
+                throw new InvalidOperationException($"Unit of work {Id} is read-only and cannot activate transactions.");
             }
 
-            if (exceptions.Count > 0)
+            foreach (var resource in _resources)
             {
-                throw new AggregateException("Failed to activate one or more resources", exceptions);
+                // Idempotent per resource; only unactivated resources call EnsureTransactionAsync.
+                if (_activatedResources.Contains(resource.Id))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await resource.EnsureTransactionAsync(cancellationToken).ConfigureAwait(false);
+                    _activatedResources.Add(resource.Id);
+                    _logger.LogDebug("Activated resource {ResourceId} ({ResourceType}) in UnitOfWork {UnitOfWorkId}",
+                        resource.Id, resource.ResourceType, Id);
+                }
+                catch (Exception)
+                {
+                    // Compensation: the resource failed to activate, so the unit of work must
+                    // not commit. The failure is logged once at the boundary that observes it.
+                    _shouldRollback = true;
+                    throw;
+                }
             }
 
             _transactionsStarted = true;
             _logger.LogDebug("Successfully activated all resources for UnitOfWork {UnitOfWorkId}", Id);
         }
 
-        public async Task CommitAsync(CancellationToken cancellationToken = default)
+        public async Task<int> FlushAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot flush after unit of work is completed");
+
+            // Nested UoW: delegate to parent
+            if (Parent != null)
+            {
+                return await Parent.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (_options.IsReadOnly)
+            {
+                throw new InvalidOperationException($"Unit of work {Id} is read-only and rejects resource flush.");
+            }
+
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_resources.Count == 0)
+            {
+                return 0;
+            }
+
+            _logger.LogDebug("Flushing {Count} resources for UnitOfWork {UnitOfWorkId}", _resources.Count, Id);
+
+            var totalAffected = 0;
+            foreach (var resource in _resources)
+            {
+                try
+                {
+                    totalAffected += await resource.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    _logger.LogDebug("Flushed resource {ResourceId} ({ResourceType}) in UnitOfWork {UnitOfWorkId}",
+                        resource.Id, resource.ResourceType, Id);
+                }
+                catch (Exception)
+                {
+                    // Compensation: the resource failed to flush, so the unit of work must
+                    // not commit. The failure is logged once at the boundary that observes it.
+                    _shouldRollback = true;
+                    throw;
+                }
+            }
+
+            return totalAffected;
+        }
+
+        /// <summary>
+        /// Commits the unit of work. Completion and ambient-frame changes that must be visible to the
+        /// caller happen in this synchronous segment; physical commit runs in <see cref="CommitCoreAsync"/>.
+        /// </summary>
+        public Task CommitAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfCompleted("Unit of work has already been completed");
 
-            // Raise OnCommitting event
-            RaiseEvent(OnCommitting, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitting));
+            // A partial commit is a terminal state: some resources are durable, so the UoW
+            // cannot be committed again. Only the boundary may dispose it.
+            if (_hasPartialCommit)
+            {
+                throw new InvalidOperationException(
+                    $"Unit of work {Id} is in a partial-commit state and cannot be committed again; dispose it to release resources.");
+            }
 
+            // Shared nested commit performs no physical commit, raises no transaction events,
+            // and completes in the caller's execution context.
+            if (Parent != null)
+            {
+                _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} completed successfully", Id);
+                MarkAsCompleted();
+                return Task.CompletedTask;
+            }
+
+            // Read-only units of work and units of work without resources have nothing physical to commit.
+            if (_options.IsReadOnly || _resources.Count == 0)
+            {
+                _logger.LogDebug("Skipping physical commit for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly}, Resources: {Count})",
+                    Id, _options.IsReadOnly, _resources.Count);
+                MarkAsCompleted();
+                return Task.CompletedTask;
+            }
+
+            return CommitCoreAsync(cancellationToken);
+        }
+
+        private async Task CommitCoreAsync(CancellationToken cancellationToken)
+        {
+            await EnsureCommitableAsync().ConfigureAwait(false);
+
+            // OnCommitting is raised once before the first physical commit; a handler failure aborts the commit.
+            await RaiseOnCommittingWithCompensationAsync().ConfigureAwait(false);
+
+            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
+
+            // Flush every resource before committing; a flush failure rolls back eligible resources.
+            await FlushAllResourcesAsync(cancellationToken).ConfigureAwait(false);
+
+            // Commit resources in deterministic registration order with structured outcome tracking.
+            // CommitState and RollbackState are tracked separately so a commit-failed resource is
+            // never conflated with a resource that was never committed.
+            var commitFailures = await CommitAllResourcesAsync(cancellationToken).ConfigureAwait(false);
+            if (commitFailures.Count > 0)
+            {
+                await ThrowCommitFailureAsync(commitFailures).ConfigureAwait(false);
+            }
+
+            MarkAsCompleted();
+            _transactionsStarted = false;
+            _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
+
+            // Raise OnCommitted event
+            RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
+        }
+
+        /// <summary>
+        /// Rejects the commit when the unit of work is marked rollback-only: eligible
+        /// resources are rolled back first and the outcome is surfaced as a boundary failure.
+        /// </summary>
+        private async Task EnsureCommitableAsync()
+        {
+            if (!_shouldRollback)
+            {
+                return;
+            }
+
+            _logger.LogWarning("UnitOfWork {UnitOfWorkId} is marked rollback-only; rolling back", Id);
+            var rollbackOnlyFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+            if (rollbackOnlyFailures.Count > 0)
+            {
+                throw UnitOfWorkBoundaryException.ForRollbackFailureOnly(rollbackOnlyFailures);
+            }
+            throw new InvalidOperationException("Cannot commit: the unit of work is marked rollback-only.");
+        }
+
+        /// <summary>
+        /// Raises the OnCommitting event; a handler failure aborts the commit and triggers
+        /// a compensation rollback (which must not be cancelled by the operation's token).
+        /// </summary>
+        private async Task RaiseOnCommittingWithCompensationAsync()
+        {
             try
             {
-                // If nested UoW, just mark as completed (parent will do actual commit)
-                if (Parent != null)
-                {
-                    _logger.LogDebug("Nested UnitOfWork {UnitOfWorkId} completed successfully", Id);
-                    MarkAsCompleted();
-
-                    // Raise OnCommitted event for nested UoW
-                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
-                    return;
-                }
-
-                // Root UoW: do actual commit
-                if (_options.IsReadOnly)
-                {
-                    _logger.LogDebug("Skipping commit for UnitOfWork {UnitOfWorkId} (ReadOnly: {ReadOnly})", Id, _options.IsReadOnly);
-                    MarkAsCompleted();
-
-                    // Raise OnCommitted event even for skipped commit
-                    RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
-                    return;
-                }
-
-                if (_shouldRollback)
-                {
-                    _logger.LogWarning("UnitOfWork {UnitOfWorkId} marked for rollback by nested UoW, performing rollback", Id);
-                    await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
-                    throw new InvalidOperationException("Cannot commit: nested unit of work requested rollback");
-                }
-
-                //  Activate all pending resources (lazy initialization - Phase 2 of two-phase pattern)
-                await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
-
-                _logger.LogDebug("Committing UnitOfWork {UnitOfWorkId} with {ResourceCount} resources", Id, _resources.Count);
-
-                var exceptions = await ExecuteCommitOperationsAsync(cancellationToken).ConfigureAwait(false);
-
-                if (exceptions.Count > 0)
-                {
-                    if (_transactionsStarted)
-                    {
-                        await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
-                    }
-
-                    // If only one exception, unwrap it; otherwise wrap in aggregate
-                    if (exceptions.Count == 1)
-                    {
-                        throw exceptions[0];
-                    }
-                    throw new AggregateException("Failed to commit unit of work", exceptions);
-                }
-
-                MarkAsCompleted();
-                _logger.LogDebug("Successfully committed UnitOfWork {UnitOfWorkId}", Id);
-
-                // Raise OnCommitted event
-                RaiseEvent(OnCommitted, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitted));
+                RaiseEvent(OnCommitting, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnCommitting), throwOnFailure: true);
             }
             catch (Exception ex)
             {
-                // Raise OnRolledBack event with exception
-                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null, ex));
+                var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+                if (rollbackFailures.Count > 0)
+                {
+                    throw UnitOfWorkBoundaryException.ForRollbackFailure(ex, rollbackFailures);
+                }
                 throw;
             }
         }
 
-        public async Task RollbackAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Flushes every registered resource; the first flush failure rolls back eligible
+        /// resources (with a token that must not be cancelled by the operation's token).
+        /// </summary>
+        private async Task FlushAllResourcesAsync(CancellationToken cancellationToken)
         {
-            if (_disposed) return;
-
-            ThrowIfCompleted("Cannot rollback a completed unit of work");
-
-            // Raise OnRollingBack event
-            RaiseEvent(OnRollingBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRollingBack));
-
-            try
+            foreach (var resource in _resources)
             {
-                // If nested UoW, signal parent to rollback
-                if (Parent != null)
+                try
                 {
-                    _logger.LogWarning("Nested UnitOfWork {UnitOfWorkId} requesting parent {ParentId} to rollback",
-                        Id, Parent.Id);
-
-                    // Signal parent via its internal state
-                    if (Parent is UnitOfWork parentUow)
+                    await resource.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // Compensation rollback must not be cancelled by the operation's token.
+                    // The flush failure is logged once at the boundary that observes it.
+                    var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+                    if (rollbackFailures.Count > 0)
                     {
-                        parentUow._shouldRollback = true;
+                        throw UnitOfWorkBoundaryException.ForRollbackFailure(ex, rollbackFailures);
                     }
+                    throw;
+                }
+            }
+        }
 
-                    MarkAsCompleted();
+        /// <summary>
+        /// Commits every registered resource in registration order, recording per-resource
+        /// commit state and collecting failures. Stops at the first failure.
+        /// </summary>
+        private async Task<IReadOnlyList<Exception>> CommitAllResourcesAsync(CancellationToken cancellationToken)
+        {
+            var commitFailures = new List<Exception>();
 
-                    // Raise OnRolledBack event for nested UoW
-                    RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRolledBack));
-                    return;
+            foreach (var resource in _resources)
+            {
+                try
+                {
+                    await resource.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    _commitStates[resource.Id] = UnitOfWorkResourceCommitState.Committed;
+                }
+                catch (Exception ex)
+                {
+                    _commitStates[resource.Id] = UnitOfWorkResourceCommitState.Failed;
+                    commitFailures.Add(ex);
+                    _logger.LogError(ex, "Failed to commit resource {ResourceId} in UnitOfWork {UnitOfWorkId}", resource.Id, Id);
+                    break;
+                }
+            }
+
+            return commitFailures;
+        }
+
+        /// <summary>
+        /// Composes a commit failure into the appropriate boundary exception and always
+        /// throws: a plain failure when nothing committed, or a terminal partial-commit state
+        /// when some resources are already durable. Compensation rollback uses a token that
+        /// must not be cancelled by the operation's token.
+        /// </summary>
+        private async Task ThrowCommitFailureAsync(IReadOnlyList<Exception> commitFailures)
+        {
+            var rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+            var finalOutcomes = BuildOutcomes();
+
+            if (!finalOutcomes.Any(o => o.CommitState == UnitOfWorkResourceCommitState.Committed))
+            {
+                // No resource committed: this is a plain commit failure, not a partial commit.
+                if (rollbackFailures.Count > 0)
+                {
+                    throw UnitOfWorkBoundaryException.ForRollbackFailure(commitFailures[0], rollbackFailures);
                 }
 
-                // Root UoW: do actual rollback
-                await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+                ExceptionDispatchInfo.Capture(commitFailures[0]).Throw();
+            }
+
+            // Partial commit: the UoW is not rolled back as a whole and cannot be later
+            // reported as such; it becomes a terminal state until the boundary disposes it.
+            _hasPartialCommit = true;
+            throw new PartialUnitOfWorkCommitException(
+                "Unit of work commit partially failed; inspect the outcome for per-resource state. The unit of work is not rolled back as a whole.",
+                new UnitOfWorkCommitOutcome(Id, finalOutcomes),
+                commitFailures,
+                rollbackFailures);
+        }
+
+        /// <summary>
+        /// Rolls back the unit of work. Shared nested completion and ambient-frame changes that must be
+        /// visible to the caller happen in this synchronous segment; physical rollback runs in
+        /// <see cref="RollbackCoreAsync"/>.
+        /// </summary>
+        public Task RollbackAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCompleted("Cannot roll back a completed unit of work");
+
+            // A partial commit is a terminal state: some resources are durable, so the UoW
+            // cannot be reported as rolled back as a whole. Only the boundary may dispose it.
+            if (_hasPartialCommit)
+            {
+                throw new InvalidOperationException(
+                    $"Unit of work {Id} is in a partial-commit state and cannot be rolled back as a whole; dispose it to release resources.");
+            }
+
+            // Shared nested rollback marks the root rollback-only, raises no physical transaction events,
+            // and completes in the caller's execution context.
+            if (Parent != null)
+            {
+                // Mark the root rollback-only through the internal contract so custom parent
+                // implementations participate in the same propagation as framework units of work.
+                if (Parent is IUnitOfWorkInternal parentInternal)
+                {
+                    parentInternal.MarkRollbackOnly();
+                }
 
                 MarkAsCompleted();
+                _logger.LogWarning("Nested UnitOfWork {UnitOfWorkId} requested rollback of parent {ParentId}",
+                    Id, Parent.Id);
+                return Task.CompletedTask;
+            }
 
-                // Raise OnRolledBack event
-                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRolledBack));
-            }
-            catch (Exception ex)
+            if (_options.IsReadOnly || _resources.Count == 0)
             {
-                // Raise OnRolledBack event with exception
-                RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null, ex), nameof(OnRolledBack));
-                throw;
+                MarkAsCompleted();
+                return Task.CompletedTask;
             }
+
+            return RollbackCoreAsync(cancellationToken);
+        }
+
+        private async Task RollbackCoreAsync(CancellationToken cancellationToken)
+        {
+            var failures = await RollbackInternalAsync(cancellationToken).ConfigureAwait(false);
+
+            if (failures.Count > 0)
+            {
+                _logger.LogError("Rollback of UnitOfWork {UnitOfWorkId} failed for {Count} resources", Id, failures.Count);
+                throw UnitOfWorkBoundaryException.ForRollbackFailureOnly(failures);
+            }
+
+            MarkAsCompleted();
+            _logger.LogDebug("Successfully rolled back UnitOfWork {UnitOfWorkId}", Id);
+
+            // Raise OnRolledBack event
+            RaiseEvent(OnRolledBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRolledBack));
         }
 
         public Task MarkAsCompletedAsync(CancellationToken cancellationToken = default)
@@ -338,28 +554,56 @@ namespace MiCake.DDD.Uow.Internal
                 return await Parent.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
             }
 
+            if (_options.IsReadOnly)
+            {
+                throw new InvalidOperationException($"Unit of work {Id} is read-only and cannot create savepoints.");
+            }
+
             await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
 
-            if (!_transactionsStarted)
+            if (!_transactionsStarted || _resources.Count == 0)
             {
                 throw new InvalidOperationException("Cannot create savepoint: no active transaction");
             }
 
             _logger.LogDebug("Creating savepoint '{SavepointName}' in UnitOfWork {UnitOfWorkId}", name, Id);
 
+            // Validate before changing state: every registered resource must support savepoints.
+            foreach (var resource in _resources)
+            {
+                if (!resource.SupportsSavepoints)
+                {
+                    throw new NotSupportedException($"Resource {resource.Id} ({resource.ResourceType}) does not support savepoints.");
+                }
+            }
+
             var exceptions = new List<Exception>();
+            var createdFor = new List<IUnitOfWorkResource>();
+
+            // All resources present at creation time were attempted; this distinguishes them from
+            // resources registered later (which are rejected by coverage validation).
+            _savepointAttempted[name] = new HashSet<UnitOfWorkResourceId>(_resources.Select(r => r.Id));
+
             foreach (var resource in _resources)
             {
                 try
                 {
                     await resource.CreateSavepointAsync(name, cancellationToken).ConfigureAwait(false);
+                    createdFor.Add(resource);
                 }
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    _logger.LogError(ex, "Failed to create savepoint '{SavepointName}' for resource {ResourceIdentifier}",
-                        name, resource.ResourceIdentifier);
+                    _logger.LogError(ex, "Failed to create savepoint '{SavepointName}' for resource {ResourceId}",
+                        name, resource.Id);
                 }
+            }
+
+            // Record partial coverage so savepoints that were actually created on some resources
+            // remain usable; resources that failed are simply not covered.
+            if (createdFor.Count > 0)
+            {
+                _savepointCoverage[name] = new HashSet<UnitOfWorkResourceId>(createdFor.Select(r => r.Id));
             }
 
             if (exceptions.Count > 0)
@@ -373,7 +617,7 @@ namespace MiCake.DDD.Uow.Internal
         public async Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfCompleted("Cannot rollback to savepoint after unit of work is completed");
+            ThrowIfCompleted("Cannot roll back to savepoint after unit of work is completed");
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
             if (Parent != null)
@@ -383,17 +627,12 @@ namespace MiCake.DDD.Uow.Internal
                 return;
             }
 
-            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
-
-            if (!_transactionsStarted)
-            {
-                throw new InvalidOperationException("Cannot rollback to savepoint: no active transaction");
-            }
+            ValidateSavepointCoverage(name);
 
             _logger.LogDebug("Rolling back to savepoint '{SavepointName}' in UnitOfWork {UnitOfWorkId}", name, Id);
 
             var exceptions = new List<Exception>();
-            foreach (var resource in _resources)
+            foreach (var resource in GetCoveredResources(name))
             {
                 try
                 {
@@ -402,14 +641,14 @@ namespace MiCake.DDD.Uow.Internal
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    _logger.LogError(ex, "Failed to rollback to savepoint '{SavepointName}' for resource {ResourceIdentifier}",
-                        name, resource.ResourceIdentifier);
+                    _logger.LogError(ex, "Failed to roll back to savepoint '{SavepointName}' for resource {ResourceId}",
+                        name, resource.Id);
                 }
             }
 
             if (exceptions.Count > 0)
             {
-                throw new AggregateException($"Failed to rollback to savepoint '{name}'", exceptions);
+                throw new AggregateException($"Failed to roll back to savepoint '{name}'", exceptions);
             }
         }
 
@@ -426,17 +665,12 @@ namespace MiCake.DDD.Uow.Internal
                 return;
             }
 
-            await ActivatePendingResourcesAsync(cancellationToken).ConfigureAwait(false);
-
-            if (!_transactionsStarted)
-            {
-                throw new InvalidOperationException("Cannot release savepoint: no active transaction");
-            }
+            ValidateSavepointCoverage(name);
 
             _logger.LogDebug("Releasing savepoint '{SavepointName}' in UnitOfWork {UnitOfWorkId}", name, Id);
 
             var exceptions = new List<Exception>();
-            foreach (var resource in _resources)
+            foreach (var resource in GetCoveredResources(name))
             {
                 try
                 {
@@ -445,8 +679,8 @@ namespace MiCake.DDD.Uow.Internal
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    _logger.LogError(ex, "Failed to release savepoint '{SavepointName}' for resource {ResourceIdentifier}",
-                        name, resource.ResourceIdentifier);
+                    _logger.LogError(ex, "Failed to release savepoint '{SavepointName}' for resource {ResourceId}",
+                        name, resource.Id);
                 }
             }
 
@@ -454,6 +688,9 @@ namespace MiCake.DDD.Uow.Internal
             {
                 throw new AggregateException($"Failed to release savepoint '{name}'", exceptions);
             }
+
+            _savepointCoverage.Remove(name);
+            _savepointAttempted.Remove(name);
         }
 
         #endregion
@@ -461,31 +698,96 @@ namespace MiCake.DDD.Uow.Internal
         public void Dispose()
         {
             Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed) return;
 
+            List<Exception>? rollbackFailures = null;
+            List<Exception>? cleanupFailures = null;
+
             if (disposing)
             {
                 _logger.LogDebug("Disposing UnitOfWork {UnitOfWorkId} (Completed: {Completed}, Nested: {Nested})",
                     Id, _completed, Parent != null);
 
-                HandleDisposalCleanup();
-
-                // Only dispose resources if this is root UoW
                 if (Parent == null)
                 {
-                    DisposeAllResources();
+                    if (!_completed && !_hasPartialCommit && (_transactionsStarted || _resources.Any(r => r.HasActiveTransaction)))
+                    {
+                        // Best-effort rollback of still-active transactions on synchronous disposal,
+                        // matching the asynchronous boundary contract.
+                        _logger.LogWarning(
+                            "UnitOfWork {UnitOfWorkId} disposed without being completed; rolling back active transactions best-effort",
+                            Id);
+                        rollbackFailures = RollbackInternalAsync(CancellationToken.None).GetAwaiter().GetResult();
+                        if (rollbackFailures.Count == 0)
+                        {
+                            MarkAsCompleted();
+                        }
+                    }
+
+                    cleanupFailures = DisposeResourcesSync();
                     _resources.Clear();
+                    _commitStates.Clear();
+                    _rollbackStates.Clear();
                 }
 
+                PopFrame();
                 _logger.LogDebug("Disposed UnitOfWork {UnitOfWorkId}", Id);
             }
 
             _disposed = true;
+
+            if (rollbackFailures is { Count: > 0 } || cleanupFailures is { Count: > 0 })
+            {
+                throw new UnitOfWorkBoundaryException(
+                    "Unit of work disposal failed while rolling back active transactions or disposing resources.",
+                    rollbackExceptions: rollbackFailures,
+                    cleanupExceptions: cleanupFailures);
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_disposed) return;
+
+            List<Exception>? rollbackFailures = null;
+            List<Exception>? cleanupFailures = null;
+
+            if (Parent == null)
+            {
+                if (!_completed && !_hasPartialCommit && (_transactionsStarted || _resources.Any(r => r.HasActiveTransaction)))
+                {
+                    // Best-effort rollback of still-active transactions on asynchronous disposal.
+                    // Failures are collected and surfaced instead of being swallowed (boundary contract).
+                    _logger.LogWarning(
+                        "UnitOfWork {UnitOfWorkId} disposed without being completed; rolling back active transactions best-effort",
+                        Id);
+                    rollbackFailures = await RollbackInternalAsync(CancellationToken.None).ConfigureAwait(false);
+                    if (rollbackFailures.Count == 0)
+                    {
+                        MarkAsCompleted();
+                    }
+                }
+
+                cleanupFailures = await DisposeResourcesAsync().ConfigureAwait(false);
+                _resources.Clear();
+                _commitStates.Clear();
+                _rollbackStates.Clear();
+            }
+
+            PopFrame();
+            _disposed = true;
+
+            if (rollbackFailures is { Count: > 0 } || cleanupFailures is { Count: > 0 })
+            {
+                throw new UnitOfWorkBoundaryException(
+                    "Unit of work disposal failed while rolling back active transactions or disposing resources.",
+                    rollbackExceptions: rollbackFailures,
+                    cleanupExceptions: cleanupFailures);
+            }
         }
 
         #endregion
@@ -503,18 +805,41 @@ namespace MiCake.DDD.Uow.Internal
                 throw new InvalidOperationException(message);
         }
 
-        private bool TryFindExistingResource(string resourceIdentifier, out IUnitOfWorkResource? resource)
-        {
-            resource = _resources.Find(w => w.ResourceIdentifier == resourceIdentifier);
-            return resource != null;
-        }
-
         private void MarkAsCompleted()
         {
             _completed = true;
+            PopFrame();
         }
 
-        private void RaiseEvent(EventHandler<UnitOfWorkEventArgs>? eventHandler, UnitOfWorkEventArgs args, string eventName = "Unknown")
+        /// <summary>
+        /// Marks the root unit of work as rollback-only. Called by a nested unit of work on rollback
+        /// or by framework components when a save operation cannot proceed safely.
+        /// </summary>
+        public void MarkRollbackOnly()
+        {
+            lock (_lock)
+            {
+                _shouldRollback = true;
+            }
+        }
+
+        private void PopFrame()
+        {
+            if (_ambientAccessor != null && _frameToken.HasValue)
+            {
+                _ambientAccessor.Pop(_frameToken.Value);
+            }
+        }
+
+        /// <summary>
+        /// Raises a unit of work event. Handler failures are logged; with
+        /// <paramref name="throwOnFailure"/> they also propagate (used for events that must
+        /// abort the operation, such as <see cref="OnCommitting"/> and <see cref="OnRollingBack"/>).
+        /// Events raised after the operation completed (<see cref="OnCommitted"/>, <see cref="OnRolledBack"/>)
+        /// swallow handler failures deliberately: the transaction outcome is already durable and cannot
+        /// be undone, so the exception is logged and the boundary continues.
+        /// </summary>
+        private void RaiseEvent(EventHandler<UnitOfWorkEventArgs>? eventHandler, UnitOfWorkEventArgs args, string eventName, bool throwOnFailure = false)
         {
             if (eventHandler == null)
                 return;
@@ -525,125 +850,159 @@ namespace MiCake.DDD.Uow.Internal
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Error raising {EventName} event in UnitOfWork {UnitOfWorkId}. " +
-                    "Event handlers should handle their own exceptions to avoid disrupting UoW flow. " +
-                    "This error has been logged but will not prevent the UnitOfWork from completing.",
-                    eventName, Id);
-                // Don't throw - event handler errors shouldn't break UoW flow
+                _logger.LogError(ex, "Error raising {EventName} event in UnitOfWork {UnitOfWorkId}", eventName, Id);
+                if (throwOnFailure)
+                    throw;
             }
         }
 
-        private async Task<List<Exception>> ExecuteOnAllResourcesAsync(
-            Func<IUnitOfWorkResource, Task> action,
-            string errorMessageTemplate)
+        /// <summary>
+        /// Rolls back all eligible (not committed, not already rolled back) resources in registration order.
+        /// Raises <see cref="OnRollingBack"/> once before the rollback attempts. Never throws;
+        /// all failures are returned so callers can combine them with the primary failure.
+        /// </summary>
+        private async Task<List<Exception>> RollbackInternalAsync(CancellationToken cancellationToken)
         {
-            var exceptions = new List<Exception>();
+            var failures = new List<Exception>();
 
-            foreach (var resource in _resources)
+            var eligible = _resources
+                .Where(r => _commitStates.TryGetValue(r.Id, out var commitState) &&
+                            commitState != UnitOfWorkResourceCommitState.Committed &&
+                            !_rollbackStates.ContainsKey(r.Id))
+                .ToList();
+
+            if (eligible.Count == 0)
+            {
+                return failures;
+            }
+
+            try
+            {
+                RaiseEvent(OnRollingBack, new UnitOfWorkEventArgs(Id, Parent != null), nameof(OnRollingBack), throwOnFailure: true);
+            }
+            catch (Exception ex)
+            {
+                failures.Add(ex);
+                _logger.LogError(ex, "OnRollingBack handler failed in UnitOfWork {UnitOfWorkId}; continuing rollback", Id);
+            }
+
+            foreach (var resource in eligible)
             {
                 try
                 {
-                    await action(resource).ConfigureAwait(false);
+                    await resource.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                    _rollbackStates[resource.Id] = UnitOfWorkResourceCommitState.RolledBack;
+                    _logger.LogDebug("Rolled back resource {ResourceId} in UnitOfWork {UnitOfWorkId}", resource.Id, Id);
                 }
                 catch (Exception ex)
                 {
-                    exceptions.Add(ex);
-                    _logger.LogError(ex, errorMessageTemplate, resource.ResourceIdentifier, Id);
+                    _rollbackStates[resource.Id] = UnitOfWorkResourceCommitState.RollbackFailed;
+                    failures.Add(ex);
+                    _logger.LogError(ex, "Failed to roll back resource {ResourceId} in UnitOfWork {UnitOfWorkId}", resource.Id, Id);
                 }
             }
 
-            return exceptions;
+            if (failures.Count == 0)
+            {
+                _transactionsStarted = false;
+            }
+
+            return failures;
         }
 
-        private async Task<List<Exception>> ExecuteCommitOperationsAsync(CancellationToken cancellationToken)
-        {
-            var exceptions = new List<Exception>();
+        /// <summary>
+        /// Builds the structured per-resource outcome. CommitState reflects the commit attempt and is
+        /// never overwritten by a later rollback; RollbackState is null when no rollback was attempted.
+        /// </summary>
+        private List<UnitOfWorkResourceOutcome> BuildOutcomes()
+            => _resources
+                .Select(r => new UnitOfWorkResourceOutcome(
+                    r.Id,
+                    r.ResourceType,
+                    _commitStates.TryGetValue(r.Id, out var commitState)
+                        ? commitState
+                        : UnitOfWorkResourceCommitState.Pending,
+                    _rollbackStates.TryGetValue(r.Id, out var rollbackState)
+                        ? rollbackState
+                        : null))
+                .ToList();
 
+        private void ValidateSavepointCoverage(string name)
+        {
+            if (!_savepointCoverage.TryGetValue(name, out _))
+            {
+                throw new InvalidOperationException($"Savepoint '{name}' does not exist in unit of work {Id}.");
+            }
+
+            // Resources registered after the savepoint was created are not covered and must be
+            // rejected before any state change. Resources that were present at creation time
+            // but failed to create the savepoint are simply skipped, not treated as late registrations.
+            var attempted = _savepointAttempted[name];
             foreach (var resource in _resources)
+            {
+                if (!attempted.Contains(resource.Id))
+                {
+                    throw new InvalidOperationException(
+                        $"Savepoint '{name}' does not cover resource {resource.Id} ({resource.ResourceType}) registered after the savepoint was created.");
+                }
+
+                if (!resource.SupportsSavepoints)
+                {
+                    throw new NotSupportedException($"Resource {resource.Id} ({resource.ResourceType}) does not support savepoints.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the resources covered by the savepoint, in registration order.
+        /// Resources that failed to create the savepoint are excluded.
+        /// </summary>
+        private List<IUnitOfWorkResource> GetCoveredResources(string name)
+        {
+            var covered = _savepointCoverage[name];
+            return _resources.Where(r => covered.Contains(r.Id)).ToList();
+        }
+
+        /// <summary>
+        /// Disposes all resources in reverse registration order. Never throws; all failures are
+        /// returned so the boundary can report them (synchronous counterpart of <see cref="DisposeResourcesAsync"/>).
+        /// </summary>
+        private List<Exception> DisposeResourcesSync()
+        {
+            var failures = new List<Exception>();
+            for (var i = _resources.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    await resource.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                    // Only commit transaction if we have active transactions
-                    if (_transactionsStarted && resource.HasActiveTransaction)
-                    {
-                        await resource.CommitAsync(cancellationToken).ConfigureAwait(false);
-                    }
+                    _resources[i].Dispose();
                 }
                 catch (Exception ex)
                 {
-                    exceptions.Add(ex);
-                    _logger.LogError(ex, "Failed to commit resource {ResourceIdentifier} in UnitOfWork {UnitOfWorkId}",
-                        resource.ResourceIdentifier, Id);
+                    failures.Add(ex);
+                    _logger.LogError(ex, "Failed to dispose resource {ResourceId} in UnitOfWork {UnitOfWorkId}", _resources[i].Id, Id);
                 }
             }
 
-            return exceptions;
+            return failures;
         }
 
-        private async Task RollbackInternalAsync(CancellationToken cancellationToken)
+        private async Task<List<Exception>> DisposeResourcesAsync()
         {
-            _logger.LogDebug("Rolling back UnitOfWork {UnitOfWorkId}", Id);
-
-            var exceptions = await ExecuteOnAllResourcesAsync(
-                async resource =>
-                {
-                    // Only rollback if we have active transactions
-                    if (_transactionsStarted && resource.HasActiveTransaction)
-                    {
-                        await resource.RollbackAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                },
-                "Failed to rollback resource {0} in UnitOfWork {1}").ConfigureAwait(false);
-
-            if (exceptions.Count > 0)
-            {
-                _logger.LogWarning("Some resources failed to rollback in UnitOfWork {UnitOfWorkId}", Id);
-
-                // If only one exception, unwrap it; otherwise wrap in aggregate
-                if (exceptions.Count == 1)
-                {
-                    throw exceptions[0];
-                }
-                throw new AggregateException("Failed to rollback unit of work", exceptions);
-            }
-
-            _transactionsStarted = false;
-        }
-
-        private void HandleDisposalCleanup()
-        {
-            // If not completed, log warning
-            // We cannot call async RollbackAsync from synchronous Dispose
-            // Users should explicitly call CommitAsync() or RollbackAsync() before disposal
-            if (!_completed && Parent == null)
-            {
-                _logger.LogWarning(
-                    "UnitOfWork {UnitOfWorkId} disposed without being completed. " +
-                    "Transactions may not have been committed or rolled back. " +
-                    "Always explicitly call CommitAsync() or RollbackAsync() before disposal.",
-                    Id);
-
-                // Mark as completed to prevent further operations
-                MarkAsCompleted();
-            }
-        }
-
-        private void DisposeAllResources()
-        {
-            foreach (var resource in _resources)
+            var failures = new List<Exception>();
+            for (var i = _resources.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    resource.Dispose();
+                    await _resources[i].DisposeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to dispose resource in UnitOfWork {UnitOfWorkId}", Id);
+                    failures.Add(ex);
+                    _logger.LogError(ex, "Failed to dispose resource {ResourceId} in UnitOfWork {UnitOfWorkId}", _resources[i].Id, Id);
                 }
             }
+
+            return failures;
         }
 
         #endregion

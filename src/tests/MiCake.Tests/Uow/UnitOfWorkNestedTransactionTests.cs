@@ -1,84 +1,50 @@
 using MiCake.DDD.Uow;
 using MiCake.DDD.Uow.Internal;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Moq;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace MiCake.Tests.Uow
 {
     /// <summary>
-    /// Unit tests for nested Unit of Work scenarios
-    /// Tests cover parent-child relationships, rollback propagation, and resource sharing
+    /// Unit tests for shared nested Unit of Work scenarios:
+    /// parent-child relationships, rollback propagation, resource sharing, and savepoint delegation.
     /// </summary>
     public class UnitOfWorkNestedTransactionTests
     {
-        private readonly ILogger<UnitOfWork> _uowLogger;
-        private readonly ILogger<UnitOfWorkManager> _managerLogger;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly UnitOfWorkManager _manager;
+        private readonly ILogger<UnitOfWork> _logger;
 
         public UnitOfWorkNestedTransactionTests()
         {
             var loggerFactory = LoggerFactory.Create(builder => { });
-            _uowLogger = loggerFactory.CreateLogger<UnitOfWork>();
-            _managerLogger = loggerFactory.CreateLogger<UnitOfWorkManager>();
-            
-            var services = new ServiceCollection();
-            services.AddSingleton(_uowLogger);
-            services.AddSingleton(_managerLogger);
-            _serviceProvider = services.BuildServiceProvider();
-            
-            _manager = new UnitOfWorkManager(_serviceProvider, _managerLogger);
+            _logger = loggerFactory.CreateLogger<UnitOfWork>();
         }
 
         #region Nested UoW Creation Tests
 
         [Fact]
-        public async Task NestedUoW_ShouldHaveParentReference()
+        public void NestedUoW_ShouldHaveParentReference()
         {
-            // Arrange
-            using var parent = await _manager.BeginAsync();
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
 
-            // Act
-            using var child = await _manager.BeginAsync();
-
-            // Assert
             Assert.NotNull(child.Parent);
             Assert.Equal(parent.Id, child.Parent.Id);
             Assert.True(child.IsNested);
+            Assert.False(parent.IsNested);
         }
 
         [Fact]
-        public async Task MultiLevelNestedUoW_ShouldMaintainHierarchy()
+        public void MultiLevelNestedUoW_ShouldMaintainHierarchy()
         {
-            // Arrange & Act
-            using var level1 = await _manager.BeginAsync();
-            using var level2 = await _manager.BeginAsync();
-            using var level3 = await _manager.BeginAsync();
+            var level1 = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var level2 = new UnitOfWork(_logger, new UnitOfWorkOptions(), level1);
+            var level3 = new UnitOfWork(_logger, new UnitOfWorkOptions(), level2);
 
-            // Assert
             Assert.Null(level1.Parent);
             Assert.Equal(level1.Id, level2.Parent?.Id);
             Assert.Equal(level2.Id, level3.Parent?.Id);
-        }
-
-        [Fact]
-        public async Task NestedUoW_WithRequiresNew_ShouldCreateNewRoot()
-        {
-            // Arrange
-            using var parent = await _manager.BeginAsync();
-
-            // Act
-            using var newRoot = await _manager.BeginAsync(requiresNew: true);
-
-            // Assert
-            Assert.Null(newRoot.Parent);
-            Assert.False(newRoot.IsNested);
-            Assert.NotEqual(parent.Id, newRoot.Id);
         }
 
         #endregion
@@ -88,42 +54,54 @@ namespace MiCake.Tests.Uow
         [Fact]
         public async Task NestedUoW_Commit_ShouldOnlyMarkAsCompleted()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            parent.RegisterResource(mockResource.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
 
-            // Act
             await child.CommitAsync();
 
-            // Assert
             Assert.True(child.IsCompleted);
             Assert.False(parent.IsCompleted);
-            // Resource should not be committed by child
-            mockResource.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+            Assert.Equal(0, resource.CommitCount);
+        }
+
+        [Fact]
+        public async Task NestedUoW_Commit_ShouldRaiseNoTransactionEvents()
+        {
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var committingRaised = false;
+            var committedRaised = false;
+            var rollingBackRaised = false;
+            var rolledBackRaised = false;
+            child.OnCommitting += (s, e) => committingRaised = true;
+            child.OnCommitted += (s, e) => committedRaised = true;
+            child.OnRollingBack += (s, e) => rollingBackRaised = true;
+            child.OnRolledBack += (s, e) => rolledBackRaised = true;
+
+            await child.CommitAsync();
+
+            Assert.False(committingRaised);
+            Assert.False(committedRaised);
+            Assert.False(rollingBackRaised);
+            Assert.False(rolledBackRaised);
         }
 
         [Fact]
         public async Task ParentUoW_CommitAfterChildCommit_ShouldCommitResources()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true);
-            parent.RegisterResource(mockResource.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
 
-            // Act
             await child.CommitAsync();
             await parent.CommitAsync();
 
-            // Assert
             Assert.True(child.IsCompleted);
             Assert.True(parent.IsCompleted);
-            mockResource.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal(1, resource.CommitCount);
         }
 
         #endregion
@@ -131,68 +109,57 @@ namespace MiCake.Tests.Uow
         #region Nested UoW Rollback Tests
 
         [Fact]
-        public async Task NestedUoW_Rollback_ShouldMarkParentForRollback()
+        public async Task NestedUoW_Rollback_ShouldMarkParentRollbackOnly()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true);
-            parent.RegisterResource(mockResource.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
 
-            // Act
             await child.RollbackAsync();
 
-            // Assert
             Assert.True(child.IsCompleted);
-            
-            // Parent commit should fail because child rolled back
-            await Assert.ThrowsAsync<InvalidOperationException>(() => parent.CommitAsync());
+            Assert.False(parent.IsCompleted);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => parent.CommitAsync());
+            Assert.Contains("rollback", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(1, resource.RollbackCount);
+            Assert.Equal(0, resource.CommitCount);
         }
 
         [Fact]
-        public async Task ParentUoW_CommitAfterChildRollback_ShouldThrowException()
+        public async Task NestedUoW_Rollback_ShouldRaiseNoTransactionEvents()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true);
-            parent.RegisterResource(mockResource.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var rollingBackRaised = false;
+            var rolledBackRaised = false;
+            child.OnRollingBack += (s, e) => rollingBackRaised = true;
+            child.OnRolledBack += (s, e) => rolledBackRaised = true;
 
-            // Act
             await child.RollbackAsync();
 
-            // Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => parent.CommitAsync());
-            Assert.Contains("rollback", exception.Message.ToLower());
+            Assert.False(rollingBackRaised);
+            Assert.False(rolledBackRaised);
         }
 
         [Fact]
         public async Task MultiLevelNested_MiddleLevelRollback_ShouldPropagateToRoot()
         {
-            // Arrange
-            var root = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var middle = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, root);
-            var leaf = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, middle);
-            
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true);
-            root.RegisterResource(mockResource.Object);
+            var root = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var middle = new UnitOfWork(_logger, new UnitOfWorkOptions(), root);
+            var leaf = new UnitOfWork(_logger, new UnitOfWorkOptions(), middle);
+            var resource = new TestUowResource();
+            root.RegisterResource(resource);
 
-            // Act
-            await leaf.CommitAsync();  // Leaf commits
-            await middle.RollbackAsync();  // Middle rolls back
+            await leaf.CommitAsync();
+            await middle.RollbackAsync();
 
-            // Assert
             Assert.True(leaf.IsCompleted);
             Assert.True(middle.IsCompleted);
-            
-            // Root should fail to commit
+
             await Assert.ThrowsAsync<InvalidOperationException>(() => root.CommitAsync());
+            Assert.Equal(1, resource.RollbackCount);
         }
 
         #endregion
@@ -202,35 +169,43 @@ namespace MiCake.Tests.Uow
         [Fact]
         public void NestedUoW_RegisterResource_ShouldRegisterToParent()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
 
-            // Act
-            child.RegisterResource(mockResource.Object);
+            child.RegisterResource(resource);
 
-            // Assert
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
+            Assert.Equal(1, resource.PrepareCount);
+            Assert.Equal(parent.Id, resource.PrepareContext!.UnitOfWorkId);
         }
 
         [Fact]
-        public void MultipleNestedUoW_RegisteringSameResource_ShouldOnlyRegisterOnce()
+        public void MultipleNestedUoW_RegisteringSameResource_ShouldOnlyPrepareOnce()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child1 = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            var child2 = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child1 = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var child2 = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
 
-            // Act
-            child1.RegisterResource(mockResource.Object);
-            child2.RegisterResource(mockResource.Object);
+            child1.RegisterResource(resource);
+            child2.RegisterResource(resource);
 
-            // Assert - Should only prepare once (deduplicated by resource identifier)
-            mockResource.Verify(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()), Times.Once);
+            Assert.Equal(1, resource.PrepareCount);
+        }
+
+        [Fact]
+        public async Task NestedUoW_Flush_ShouldDelegateToParent()
+        {
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
+
+            var affected = await child.FlushAsync();
+
+            Assert.Equal(1, affected);
+            Assert.Equal(1, resource.FlushCount);
+            Assert.False(parent.IsCompleted);
         }
 
         #endregion
@@ -240,42 +215,29 @@ namespace MiCake.Tests.Uow
         [Fact]
         public async Task NestedUoW_CreateSavepoint_ShouldDelegateToParent()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            parent.RegisterResource(mockResource.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
 
-            // Act
-            var savepointName = await child.CreateSavepointAsync("test_sp");
+            var name = await child.CreateSavepointAsync("test_sp");
 
-            // Assert
-            Assert.Equal("test_sp", savepointName);
-            mockResource.Verify(
-                r => r.CreateSavepointAsync("test_sp", It.IsAny<CancellationToken>()), 
-                Times.Once);
+            Assert.Equal("test_sp", name);
+            Assert.Contains("test_sp", resource.Savepoints);
         }
 
         [Fact]
         public async Task NestedUoW_RollbackToSavepoint_ShouldDelegateToParent()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            parent.RegisterResource(mockResource.Object);
-            
-            var savepointName = await parent.CreateSavepointAsync("test_sp");
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
+            await parent.CreateSavepointAsync("test_sp");
 
-            // Act
-            await child.RollbackToSavepointAsync(savepointName);
+            await child.RollbackToSavepointAsync("test_sp");
 
-            // Assert
-            mockResource.Verify(
-                r => r.RollbackToSavepointAsync("test_sp", It.IsAny<CancellationToken>()), 
-                Times.Once);
+            Assert.Contains("test_sp", resource.RolledBackTo);
         }
 
         #endregion
@@ -285,131 +247,36 @@ namespace MiCake.Tests.Uow
         [Fact]
         public async Task ComplexScenario_MultipleChildrenCommit_ParentShouldCommitAll()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child1 = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            var child2 = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource1 = CreateMockResource();
-            var mockResource2 = CreateMockResource();
-            mockResource1.Setup(r => r.HasActiveTransaction).Returns(true);
-            mockResource2.Setup(r => r.HasActiveTransaction).Returns(true);
-            
-            child1.RegisterResource(mockResource1.Object);
-            child2.RegisterResource(mockResource2.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child1 = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var child2 = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource1 = new TestUowResource();
+            var resource2 = new TestUowResource();
+            child1.RegisterResource(resource1);
+            child2.RegisterResource(resource2);
 
-            // Act
             await child1.CommitAsync();
             await child2.CommitAsync();
             await parent.CommitAsync();
 
-            // Assert
-            mockResource1.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
-            mockResource2.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal(1, resource1.CommitCount);
+            Assert.Equal(1, resource2.CommitCount);
         }
 
         [Fact]
         public async Task ComplexScenario_OneChildRollback_ShouldPreventParentCommit()
         {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child1 = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            var child2 = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var mockResource = CreateMockResource();
-            mockResource.Setup(r => r.HasActiveTransaction).Returns(true);
-            parent.RegisterResource(mockResource.Object);
+            var parent = new UnitOfWork(_logger, new UnitOfWorkOptions(), null);
+            var child1 = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var child2 = new UnitOfWork(_logger, new UnitOfWorkOptions(), parent);
+            var resource = new TestUowResource();
+            parent.RegisterResource(resource);
 
-            // Act
             await child1.CommitAsync();
-            await child2.RollbackAsync();  // One child rolls back
+            await child2.RollbackAsync();
 
-            // Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => parent.CommitAsync());
-            mockResource.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        #endregion
-
-        #region Event Propagation Tests
-
-        [Fact]
-        public async Task NestedUoW_CommitEvents_ShouldRaiseForNestedUoW()
-        {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var committingRaised = false;
-            var committedRaised = false;
-
-            child.OnCommitting += (sender, args) =>
-            {
-                committingRaised = true;
-                Assert.True(args.IsNested);
-            };
-
-            child.OnCommitted += (sender, args) =>
-            {
-                committedRaised = true;
-                Assert.True(args.IsNested);
-            };
-
-            // Act
-            await child.CommitAsync();
-
-            // Assert
-            Assert.True(committingRaised);
-            Assert.True(committedRaised);
-        }
-
-        [Fact]
-        public async Task NestedUoW_RollbackEvents_ShouldRaiseForNestedUoW()
-        {
-            // Arrange
-            var parent = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, null);
-            var child = new UnitOfWork(_uowLogger, UnitOfWorkOptions.Default, parent);
-            
-            var rolledBackRaised = false;
-
-            child.OnRolledBack += (sender, args) =>
-            {
-                rolledBackRaised = true;
-                Assert.True(args.IsNested);
-            };
-
-            // Act
-            await child.RollbackAsync();
-
-            // Assert
-            Assert.True(rolledBackRaised);
-        }
-
-        #endregion
-
-        #region Helper Methods
-
-        private static Mock<IUnitOfWorkResource> CreateMockResource()
-        {
-            var mock = new Mock<IUnitOfWorkResource>();
-            var uniqueId = Guid.NewGuid().ToString();
-            
-            mock.Setup(r => r.ResourceIdentifier).Returns(uniqueId);
-            mock.Setup(r => r.PrepareForTransaction(It.IsAny<UnitOfWorkOptions>()));
-            mock.Setup(r => r.IsInitialized).Returns(true);
-            mock.Setup(r => r.HasActiveTransaction).Returns(false);
-            mock.Setup(r => r.ActivateTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            mock.Setup(r => r.CreateSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns<string, CancellationToken>((name, ct) => Task.FromResult(name ?? "sp_default"));
-            mock.Setup(r => r.RollbackToSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-            mock.Setup(r => r.ReleaseSavepointAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-            
-            return mock;
+            Assert.Equal(0, resource.CommitCount);
         }
 
         #endregion

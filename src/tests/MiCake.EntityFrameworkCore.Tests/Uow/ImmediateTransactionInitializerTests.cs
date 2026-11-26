@@ -1,10 +1,12 @@
 using MiCake.DDD.Uow;
+using MiCake.DDD.Uow.Internal;
 using MiCake.EntityFrameworkCore.Uow;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,19 +14,18 @@ using Xunit;
 namespace MiCake.EntityFrameworkCore.Tests.Uow
 {
     /// <summary>
-    /// Unit tests for ImmediateTransactionInitializer.
-    /// Tests immediate transaction initialization for registered DbContext types.
+    /// Unit tests for ImmediateTransactionInitializer: typed enumeration of every registered
+    /// non-generic context factory view (custom factories adapted via
+    /// <see cref="EFCoreContextFactoryAdapter"/>), deduplication, and resource anchoring.
     /// </summary>
     public class ImmediateTransactionInitializerTests
     {
         private readonly Mock<IServiceProvider> _mockServiceProvider;
-        private readonly Mock<IDbContextTypeRegistry> _mockTypeRegistry;
         private readonly Mock<ILogger<ImmediateTransactionInitializer>> _mockLogger;
 
         public ImmediateTransactionInitializerTests()
         {
             _mockServiceProvider = new Mock<IServiceProvider>();
-            _mockTypeRegistry = new Mock<IDbContextTypeRegistry>();
             _mockLogger = new Mock<ILogger<ImmediateTransactionInitializer>>();
         }
 
@@ -36,7 +37,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange & Act
             var initializer = new ImmediateTransactionInitializer(
                 _mockServiceProvider.Object,
-                _mockTypeRegistry.Object,
                 _mockLogger.Object);
 
             // Assert
@@ -48,21 +48,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                new ImmediateTransactionInitializer(
-                    null!,
-                    _mockTypeRegistry.Object,
-                    _mockLogger.Object));
-        }
-
-        [Fact]
-        public void Constructor_WithNullTypeRegistry_ShouldThrowArgumentNullException()
-        {
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
-                new ImmediateTransactionInitializer(
-                    _mockServiceProvider.Object,
-                    null!,
-                    _mockLogger.Object));
+                new ImmediateTransactionInitializer(null!, _mockLogger.Object));
         }
 
         [Fact]
@@ -70,10 +56,7 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         {
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                new ImmediateTransactionInitializer(
-                    _mockServiceProvider.Object,
-                    _mockTypeRegistry.Object,
-                    null!));
+                new ImmediateTransactionInitializer(_mockServiceProvider.Object, null!));
         }
 
         #endregion
@@ -86,7 +69,6 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
             // Arrange
             var initializer = new ImmediateTransactionInitializer(
                 _mockServiceProvider.Object,
-                _mockTypeRegistry.Object,
                 _mockLogger.Object);
 
             // Act & Assert
@@ -95,18 +77,17 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
         }
 
         [Fact]
-        public async Task InitializeTransactionsAsync_WithNoRegisteredTypes_ShouldLogWarning()
+        public async Task InitializeTransactionsAsync_WithNoFactories_ShouldLogWarning()
         {
             // Arrange
-            _mockTypeRegistry.Setup(r => r.GetRegisteredTypes())
-                .Returns(Array.Empty<Type>());
+            _mockServiceProvider.Setup(sp => sp.GetService(typeof(IEnumerable<IEFCoreContextFactory>)))
+                .Returns(Array.Empty<IEFCoreContextFactory>());
 
             var mockUow = new Mock<IUnitOfWork>();
             mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
 
             var initializer = new ImmediateTransactionInitializer(
                 _mockServiceProvider.Object,
-                _mockTypeRegistry.Object,
                 _mockLogger.Object);
 
             // Act
@@ -117,174 +98,222 @@ namespace MiCake.EntityFrameworkCore.Tests.Uow
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No DbContext types registered")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No DbContext factories registered")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
         }
 
         [Fact]
-        public async Task InitializeTransactionsAsync_WithRegisteredTypes_ShouldCallFactoryForEachType()
+        public async Task InitializeTransactionsAsync_WithRegisteredFactories_ShouldActivateEachRegisteredFactory()
         {
             // Arrange
-            var dbContextType = typeof(TestInitializerDbContext);
-            _mockTypeRegistry.Setup(r => r.GetRegisteredTypes())
-                .Returns(new[] { dbContextType });
+            var wrapper = CreateMockWrapper();
+
+            var factory1 = new FakeContextFactory { Wrapper = wrapper.Object };
+            var factory2 = new FakeContextFactory { Wrapper = wrapper.Object };
+
+            _mockServiceProvider.Setup(sp => sp.GetService(typeof(IEnumerable<IEFCoreContextFactory>)))
+                .Returns(new IEFCoreContextFactory[] { factory1, factory2 });
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            mockUow.As<IUnitOfWorkInternal>();
+
+            var initializer = new ImmediateTransactionInitializer(
+                _mockServiceProvider.Object,
+                _mockLogger.Object);
+
+            // Act
+            await initializer.InitializeTransactionsAsync(mockUow.Object);
+
+            // Assert
+            Assert.Equal(1, factory1.ResolveCount);
+            Assert.Equal(1, factory2.ResolveCount);
+        }
+
+        [Fact]
+        public async Task InitializeTransactionsAsync_ShouldPassTheUnitOfWorkToDiagnostics()
+        {
+            // Arrange
+            var wrapper = CreateMockWrapper();
+            var factory = new FakeContextFactory { Wrapper = wrapper.Object };
+
+            _mockServiceProvider.Setup(sp => sp.GetService(typeof(IEnumerable<IEFCoreContextFactory>)))
+                .Returns(new IEFCoreContextFactory[] { factory });
+
+            var uowId = Guid.NewGuid();
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(uowId);
+            mockUow.As<IUnitOfWorkInternal>();
+
+            var initializer = new ImmediateTransactionInitializer(
+                _mockServiceProvider.Object,
+                _mockLogger.Object);
+
+            // Act
+            await initializer.InitializeTransactionsAsync(mockUow.Object, CancellationToken.None);
+
+            // Assert
+            Assert.Equal(1, factory.ResolveCount);
+        }
+
+        [Fact]
+        public async Task InitializeTransactionsAsync_WithDuplicateFactoriesForSameContextType_ShouldRegisterResourceOnce()
+        {
+            // Arrange - two internal factory views (e.g. from repeated AddUowCoreServices
+            // calls) wrapping the same DbContext type must initialize the resource once.
+            var wrapper = CreateMockWrapper();
+            var factory1 = new FakeContextFactory { Wrapper = wrapper.Object };
+            var factory2 = new FakeContextFactory { Wrapper = wrapper.Object };
+
+            _mockServiceProvider.Setup(sp => sp.GetService(typeof(IEnumerable<IEFCoreContextFactory>)))
+                .Returns(new IEFCoreContextFactory[] { factory1, factory2 });
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            var mockInternalUow = mockUow.As<IUnitOfWorkInternal>();
+
+            var initializer = new ImmediateTransactionInitializer(
+                _mockServiceProvider.Object,
+                _mockLogger.Object);
+
+            // Act
+            await initializer.InitializeTransactionsAsync(mockUow.Object);
+
+            // Assert - every internal view is enumerated, but the resource is registered
+            // exactly once because both views resolve the same DbContext type.
+            Assert.Equal(1, factory1.ResolveCount);
+            Assert.Equal(1, factory2.ResolveCount);
+            mockInternalUow.Verify(u => u.RegisterResource(It.IsAny<EFCoreDbContextWrapper>()), Times.Once);
+        }
+
+        [Fact]
+        public void AnchorResource_WithUoWNotImplementingInternal_ShouldThrow()
+        {
+            // Arrange - a live UoW that cannot own resources fails fast with the same
+            // diagnostic the framework factory uses, instead of silently skipping registration.
+            var options = new DbContextOptionsBuilder<TestInitializerDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var context = new TestInitializerDbContext(options);
+            var wrapper = new EFCoreDbContextWrapper(context, NullLogger<EFCoreDbContextWrapper>.Instance);
+
+            var mockUow = new Mock<IUnitOfWork>();
+            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                EFCoreContextResourceAnchor.AnchorResource(
+                    mockUow.Object,
+                    context,
+                    wrapper,
+                    nameof(TestInitializerDbContext)));
+            Assert.Contains(nameof(IUnitOfWorkInternal), exception.Message);
+
+            context.Dispose();
+        }
+
+        [Fact]
+        public void Adapter_WhenCustomFactoryThrows_PreservesOriginalException()
+        {
+            // Arrange - a custom factory that fails to resolve its context must surface
+            // the original exception, not a reflection wrapper.
+            var mockFactory = new Mock<IEFCoreContextFactory<TestInitializerDbContext>>();
+            mockFactory.Setup(f => f.GetDbContext())
+                .Throws(new InvalidOperationException("custom failure"));
+
+            var adapter = new EFCoreContextFactoryAdapter(
+                mockFactory.Object,
+                typeof(IEFCoreContextFactory<TestInitializerDbContext>));
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => adapter.GetOrCreateWrapperForCurrentUnitOfWork());
+            Assert.Equal("custom failure", exception.Message);
+        }
+
+        [Fact]
+        public void Adapter_WhenCustomFactoryReturnsDifferentContext_AnchorRejects()
+        {
+            // Arrange - the adapter exposes the resolved context alongside the wrapper so
+            // the initializer can reject a wrapper bound to a different context instance.
+            var options = new DbContextOptionsBuilder<TestInitializerDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var resolvedContext = new TestInitializerDbContext(options);
+            var otherContext = new TestInitializerDbContext(options);
+            var otherWrapper = new EFCoreDbContextWrapper(otherContext, NullLogger<EFCoreDbContextWrapper>.Instance);
 
             var mockFactory = new Mock<IEFCoreContextFactory<TestInitializerDbContext>>();
-            var mockWrapper = new Mock<EFCoreDbContextWrapper>(MockBehavior.Loose,
-                CreateTestDbContext(),
-                Mock.Of<ILogger<EFCoreDbContextWrapper>>(),
-                new MiCakeEFCoreOptions(dbContextType),
-                false);
+            mockFactory.Setup(f => f.GetDbContext()).Returns(resolvedContext);
+            mockFactory.Setup(f => f.GetOrCreateWrapperFor(It.IsAny<DbContext>())).Returns(otherWrapper);
 
-            mockFactory.Setup(f => f.GetDbContextWrapper())
-                .Returns(mockWrapper.Object);
-
-            var factoryType = typeof(IEFCoreContextFactory<>).MakeGenericType(dbContextType);
-            _mockServiceProvider.Setup(sp => sp.GetService(factoryType))
-                .Returns(mockFactory.Object);
-
-            var mockUow = new Mock<IUnitOfWork>();
-            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
-
-            var initializer = new ImmediateTransactionInitializer(
-                _mockServiceProvider.Object,
-                _mockTypeRegistry.Object,
-                _mockLogger.Object);
+            var adapter = new EFCoreContextFactoryAdapter(
+                mockFactory.Object,
+                typeof(IEFCoreContextFactory<TestInitializerDbContext>));
 
             // Act
-            await initializer.InitializeTransactionsAsync(mockUow.Object);
-
-            // Assert
-            mockFactory.Verify(f => f.GetDbContextWrapper(), Times.Once);
-        }
-
-        [Fact]
-        public async Task InitializeTransactionsAsync_WhenFactoryNotRegistered_ShouldLogWarningAndContinue()
-        {
-            // Arrange
-            _mockTypeRegistry.Setup(r => r.GetRegisteredTypes())
-                .Returns(new[] { typeof(TestInitializerDbContext) });
-
-            var factoryType = typeof(IEFCoreContextFactory<>).MakeGenericType(typeof(TestInitializerDbContext));
-            _mockServiceProvider.Setup(sp => sp.GetService(factoryType))
-                .Returns(null);
-
+            var resolution = adapter.GetOrCreateWrapperForCurrentUnitOfWork();
             var mockUow = new Mock<IUnitOfWork>();
-            mockUow.Setup(u => u.Id).Returns(Guid.NewGuid());
+            mockUow.As<IUnitOfWorkInternal>();
 
-            var initializer = new ImmediateTransactionInitializer(
-                _mockServiceProvider.Object,
-                _mockTypeRegistry.Object,
-                _mockLogger.Object);
+            // Assert - the anchor rejects the mismatch before any transaction can activate
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                EFCoreContextResourceAnchor.AnchorResource(
+                    mockUow.Object,
+                    resolution.Context,
+                    resolution.Wrapper,
+                    nameof(TestInitializerDbContext)));
+            Assert.Contains("different DbContext instance", exception.Message, StringComparison.OrdinalIgnoreCase);
 
-            // Act
-            await initializer.InitializeTransactionsAsync(mockUow.Object);
-
-            // Assert
-            _mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Warning,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No factory registered")),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task InitializeTransactionsAsync_WithCancellationToken_ShouldRespectCancellation()
-        {
-            // Arrange
-            _mockTypeRegistry.Setup(r => r.GetRegisteredTypes())
-                .Returns(Array.Empty<Type>());
-
-            var mockUow = new Mock<IUnitOfWork>();
-
-            var initializer = new ImmediateTransactionInitializer(
-                _mockServiceProvider.Object,
-                _mockTypeRegistry.Object,
-                _mockLogger.Object);
-
-            using var cts = new CancellationTokenSource();
-            cts.Cancel();
-
-            // Act - Should complete without throwing (no actual async work when no types)
-            await initializer.InitializeTransactionsAsync(mockUow.Object, cts.Token);
-
-            // Assert - No exception thrown
+            otherContext.Dispose();
+            resolvedContext.Dispose();
         }
 
         #endregion
 
-        #region Integration Tests
-
-        [Fact]
-        public async Task Integration_InitializeTransactionsAsync_WithRealRegistry()
+        /// <summary>
+        /// Hand-written fake of the internal non-generic factory view (Moq cannot proxy
+        /// internal interfaces without DynamicProxyGenAssembly2 friend access).
+        /// </summary>
+        private sealed class FakeContextFactory : IEFCoreContextFactory
         {
-            // Arrange
-            var services = new ServiceCollection();
-            var dbName = Guid.NewGuid().ToString();
-            services.AddDbContext<TestInitializerDbContext>(opt => opt.UseInMemoryDatabase(dbName));
-            services.AddLogging();
+            public EFCoreDbContextWrapper? Wrapper { get; set; }
 
-            // Register real components
-            var registry = new DbContextTypeRegistry();
-            registry.RegisterDbContextType(typeof(TestInitializerDbContext));
-            services.AddSingleton<IDbContextTypeRegistry>(registry);
+            public int ResolveCount { get; private set; }
 
-            var efCoreOptions = new MiCakeEFCoreOptions(typeof(TestInitializerDbContext))
+            public EFCoreDbContextWrapper GetOrCreateWrapperFor(DbContext context)
             {
-                BypassUnitOfWorkCheck = true
-            };
-            services.AddSingleton<Core.DependencyInjection.IObjectAccessor<MiCakeEFCoreOptions>>(efCoreOptions);
+                ResolveCount++;
+                return Wrapper!;
+            }
 
-            var uowManagerType = typeof(IUnitOfWorkManager).Assembly.GetType("MiCake.DDD.Uow.Internal.UnitOfWorkManager");
-            services.AddScoped(typeof(IUnitOfWorkManager), uowManagerType!);
-            services.AddScoped(typeof(IEFCoreContextFactory<TestInitializerDbContext>), typeof(EFCoreContextFactory<TestInitializerDbContext>));
-            services.AddScoped<IImmediateTransactionInitializer, ImmediateTransactionInitializer>();
-
-            var provider = services.BuildServiceProvider();
-            var initializer = provider.GetRequiredService<IImmediateTransactionInitializer>();
-            var uowManager = provider.GetRequiredService<IUnitOfWorkManager>();
-
-            // Act
-            using var uow = await uowManager.BeginAsync();
-            await initializer.InitializeTransactionsAsync(uow);
-
-            // Assert - No exception thrown
+            public EFCoreContextResourceResolution GetOrCreateWrapperForCurrentUnitOfWork()
+            {
+                ResolveCount++;
+                return new EFCoreContextResourceResolution(Wrapper!.DbContext, Wrapper);
+            }
         }
 
-        #endregion
-
-        #region Helper Methods
-
-        private TestInitializerDbContext CreateTestDbContext()
+        private static Mock<EFCoreDbContextWrapper> CreateMockWrapper()
         {
             var options = new DbContextOptionsBuilder<TestInitializerDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
-            return new TestInitializerDbContext(options);
+            var context = new TestInitializerDbContext(options);
+
+            return new Mock<EFCoreDbContextWrapper>(
+                context,
+                Mock.Of<ILogger<EFCoreDbContextWrapper>>(),
+                false);
         }
+    }
 
-        #endregion
-
-        #region Helper Classes
-
-        public class TestInitializerDbContext : DbContext
+    public class TestInitializerDbContext : DbContext
+    {
+        public TestInitializerDbContext(DbContextOptions<TestInitializerDbContext> options) : base(options)
         {
-            public TestInitializerDbContext(DbContextOptions<TestInitializerDbContext> options) : base(options) { }
-
-            public DbSet<TestInitializerEntity> TestEntities { get; set; } = null!;
         }
-
-        public class TestInitializerEntity
-        {
-            public int Id { get; set; }
-            public string Name { get; set; } = string.Empty;
-        }
-
-        #endregion
     }
 }

@@ -21,7 +21,11 @@ $alltestproj = Get-Item "$testprojectdir\**\*.csproj"
 Write-Output $alltestproj | Format-List -Property Name
 
 foreach ($item in $alltestproj) {
-    dotnet test $item --collect:"XPlat Code Coverage" --results-directory "$reporttargetdir\source" --settings "$testprojectdir\runsettings.xml"  --no-build --no-restore
+    # The performance baseline scenarios (Category=Performance) are excluded from the
+    # regular suite: they are serialized and their elapsed measurements are sensitive to
+    # machine state. Run them on demand with --filter "Category=Performance" against the
+    # MiCake.IntegrationTests project, without this filter.
+    dotnet test $item --collect:"XPlat Code Coverage" --results-directory "$reporttargetdir\source" --settings "$testprojectdir\runsettings.xml" --filter "Category!=Performance" --no-build --no-restore
 }
 
 # reportgenerator

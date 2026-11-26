@@ -1,0 +1,60 @@
+session:
+  initialized_at: 2026-08-06T03:34:39.998Z
+  last_synced_at: ""
+active_epic:
+  id: ""
+  title: ""
+  created_at: ""
+  epic_path: ""
+epics: []
+active_change:
+  id: ""
+  title: ""
+  created_at: ""
+  plan_path: ""
+  epic_id: ""
+changes: []
+history:
+  - skill: /mvt-review
+    completed_at: 2026-11-25T10:15:21.716Z
+    summary: 复核问题清单:K1/K2 加对照组确认属实(HEAD 样例 [<anonymous>] → 工作区 []);U3 已查明(10.0.0 插入时 IsDeleted 被重置、11.x 无 UoW 写入走原生 EF 语义);更正 4 处——K1 已随 preview 分支发布到 NuGet(推断)、R4 多 DbContext 场景相对 10.0.0 有可见变化、U1 不成立(样例
+      dotnet ef 走 DesignTimeDbContextFactory)、S1 共享 owned 类型确实走到并会抛异常被记为 Warning
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-fix
+    completed_at: 2026-11-25T10:28:51.453Z
+    summary: 修复代码审查发现的问题:K1 约定引擎与 logger 改在 DbContext 校验之前注册(宿主内软删过滤器恢复);K2 样例保留命名过滤器 MiCake.SoftDelete;S1 按 CLR 类型识别 owned(共享 owned 不再报 Warning);S3 不在扫描范围的软删根类型经派生类型补齐过滤器;S4 测试释放服务提供者;README 补软删前提与多
+      DbContext 迁移说明;更正 analysis/design/implementation 记录;新增 4 个回归测试(均先确认失败),全量 1705 通过,构建 0 警告 0 错误,打包 4 个 nupkg+snupkg 仅 net11.0
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-review
+    completed_at: 2026-11-25T10:33:17.349Z
+    summary: 复核修复轮次(7 个文件):Approve with comments,0 Critical/1 Warning/3 Suggestion——K1/K2/S1/S3/S4 修复属实且有先失败后通过的回归测试;W1 README 让未开启 UseSoftDeletion 的用户手写命名过滤器,但没说明此时 Remove 会物理删除;S 设计文档 ADR-6
+      与数据流仍写派生类型直接跳过、根类型 EnableSoftDeletion 但无过滤器表达式时异常文案误导、测试数确认 1705;未写 review.md(配置跳过)
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-fix
+    completed_at: 2026-11-25T10:38:11.223Z
+    summary: 按复核意见修复:README 补软删未开启时 Remove 会物理删除的警告(已用宿主+UoW 探针验证);design.md 的 ADR-6 与数据流改为由派生类型给根类型补过滤器;根类型启用软删但无过滤器时异常文案准确(新增回归测试先失败后通过);全量 1706 通过,构建 0 警告 0 错误
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-fix
+    completed_at: 2026-11-25T10:55:29.041Z
+    summary: 样例改为内置软删开关:Startup 设置 AuditConfig.UseSoftDeletion,删除 BaseAppDbContext 手写命名过滤器;宿主探针确认 User 仅有 MiCake.SoftDelete、无约定警告,UoW 内 Remove 保留行并 IsDeleted=true;构建 0 警告 0 错误,全量 1706 通过
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-update-plan
+    completed_at: 2026-11-26T01:44:28.772Z
+    summary: 标记 t3-named-softdelete-filter 完成(3/4),current_tasks 前进到 t4-delivery-review;代码审查与修复轮次的问题全部处理
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-fix
+    completed_at: 2026-11-26T01:53:55.248Z
+    summary: S2:ApplyConventionsInternal 循环前一次性收集 owned 的 CLR 类型集合,删除逐类型扫描的 IsOwnedType;各 owned 形态结果一致,真实约定遍历 250/500/1000/2000 类型分别约 8→4、27→9、85→32、113→85 ms;全量 1706 通过,构建 0 警告 0 错误
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-update-plan
+    completed_at: 2026-11-26T02:03:20.917Z
+    summary: 标记 t4-delivery-review 完成(4/4),计划状态 done;交付评审确认 R1-R20 与 ADR-1..11 全部落地,公共表面仅新增一个重载与两个公共类型,全量 1706 测试通过
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-cleanup
+    completed_at: 2026-11-26T02:06:54.467Z
+    summary: 归档 3 个已完成变更的工件目录(未生成 summary.md),移除对应 changes[] 索引,工件体量从约 83,485 token 降至 0
+    change_id: ""
+  - skill: /mvt-review
+    completed_at: 2026-11-26T02:16:56.275Z
+    summary: 复核 docs/net11-compatibility-assessment.md 的 41 项问题:9 项已解决(A2/A3/B1/B3/B4/E1/E6 大部分/A0),A1 无法验证,A4/A5/A6/A7/E5/E7 仍在,文档已滞后(测试数 1678→1706);0 Critical/8 Warning/5 Suggestion,无 review.md(配置跳过)
+    change_id: ""
