@@ -34,17 +34,23 @@ Skill instructions are injected per turn, so after you pause the next reply may 
 
 **Rule 2 — At the start of every turn**, if the previous turn ended with a Role Lock and the current message is a reply to it (not a new `/mvt-*` command), stay in role and honor its Boundaries. Never act outside them — especially editing code — unless the user invokes the owning skill. If unsure, stay in-role and ask.
 
+## Parallel Dispatch Gate
+
+- If your prompt starts with `MVTT_SUBAGENT_MODE: v1`, read `.mvtt/scripts/subagent-contract.md`, follow it for the whole run, then continue with this skill; the contract says which steps to skip.
+- Otherwise, after the Activation Protocol, use parallel dispatch only if all hold: `preferences.parallel.max_agents` is an integer from 2 to 8; `active_change.plan_path` is set; the user named no task id or file paths; you can start sub-agents that run this skill and wait for all their results in this turn. Then run `node .mvtt/scripts/plan-update.cjs --dispatch-plan "<active_change.plan_path>" --skill-hint mvt-implement --max-agents <N>`. If `batch` has 2 or more tasks, read `.mvtt/scripts/parallel-dispatch.md` and follow it in place of the Execution Flow, State Update, and Suggested Next Steps.
+- If `max_agents` is set but invalid, warn once. In every other case, continue as usual.
+
 ## Activation Protocol
 
 Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide). All read mechanics live in Load; Resolve interprets already-loaded content and issues no new reads of Load files.
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -57,16 +63,16 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
-| 1 | `session.initialized_at is empty` | BLOCK | Session not initialized. Run `/mvt-init` first. |
-| 2 | `projects[] in project-context.yaml is empty` | BLOCK | Project not initialized. Run `/mvt-init` first. |
+| 1 | `session.initialized_at is empty` | WARN | Session not initialized. Run `/mvt-init` first. |
+| 2 | `projects[] in project-context.yaml is empty` | WARN | Project not initialized. Run `/mvt-init` first. |
 
 ## Language Constraint (Mandatory)
 
@@ -123,7 +129,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
   4. For async/event flows: event schemas first; then producers and consumers after shared contracts. Put producers before consumers only when consumers import producer-side types.
   5. Group consecutive files that share a single conceptual change into one commit boundary.
   6. For each file, decide: `create | modify | delete`, and write a one-line intent.
-- **Plan-aware behavior**: if `plan.yaml` exists, resolve one active task before planning. Candidate task ids come from deduplicated `current_tasks`; if one remains, use it. If several remain, prefer an explicit user task id, then match current paths against each candidate's `artifacts.files` and project paths; if still ambiguous, ask the user. Treat the resolved task's `artifacts.files` as a starting-scope hint only; `design.md` Change Tracking remains authoritative. Confirm Step 3 before touching files beyond the hint, and never absorb files that belong to another task.
+- **Plan-aware behavior**: if `plan.yaml` exists, resolve one active task before planning. Candidates are the tasks with `status: in_progress` and no `dispatched_at` (a dispatched task is used only when the user names it); if there is exactly one, use it. If several remain, prefer an explicit user task id, then match current paths against each candidate's `artifacts.files` and project paths; if still ambiguous, ask the user. Treat the resolved task's `artifacts.files` as a starting-scope hint only; `design.md` Change Tracking remains authoritative. Confirm Step 3 before touching files beyond the hint, and never absorb files that belong to another task.
 - **Output of this step**: an in-conversation list shown to user as a preview, with no write yet.
 - **Silent mode**: if `preferences.silent.implement` is `true`, skip the preview confirmation and proceed directly to Step 4, noting the planned files in conversation.
 
@@ -172,7 +178,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
   3. UI/frontend changes: per project rules, ask user to verify in browser; do NOT claim "tested" if you only ran type-check.
 
 ### Step 7: Write Artifact
-- **Path**: `.ai-agents/workspace/artifacts/{change-id}/implementation.md` — always this filename, one file per change. Never per-task suffixed names.
+- **Path**: `.mvtt/workspace/artifacts/{change-id}/implementation.md` — always this filename, one file per change. Never per-task suffixed names.
 - **Template**: load from the **Artifact Structure** section below. Follow the HTML comments for what each section should contain; strip comments from the final artifact.
 - **Multi-task accumulation**: if `plan.yaml` drives implementation across separate invocations, append a `## Task: {id} — {title}` section per task — never overwrite a *different* task's section. If `## Task: {id}` for the *same* task already exists (re-implementation after `blocked` or rescope), replace that section's content in place — preserve any `### Deliverables` subsection within it. Single-task or plan-less: write at top level without a task wrapper.
 - **Required coverage**: cover only content that is applicable to this implementation. Preserve enough information for downstream skills to understand what changed, files touched, design compliance, deviations, validation results, and open TODOs. Do not create empty or artificial sections just because an item is named here; if the template omits or renames a section, place applicable content in the closest relevant section.
@@ -206,7 +212,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
 
 - **After writing deliverables**, call `plan-update.cjs` with both deliverables flags in a single invocation. Use the command below as authoritative:
   ```bash
-  node .ai-agents/scripts/plan-update.cjs \
+  node .mvtt/scripts/plan-update.cjs \
     --plan "<active_change.plan_path>" \
     --task <current_task_id> \
     --deliverables-pointer current \
@@ -219,7 +225,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
 - **Error handling**: if `plan-update.cjs` rejects (e.g., malformed freshness), surface stderr and leave `implementation.md` as written. The deliverables content is the source of truth; the pointer can be retried via `/mvt-update-plan`.
 
 ### Step 9: Plan-Aware Progress Hint (if applicable)
-- If `plan.yaml` exists and `current_tasks` identifies the active task for this implementation, suggest the user run `/mvt-update-plan <task-id> done` (or `blocked` with reason).
+- If a plan task was resolved in Step 2, suggest the user run `/mvt-update-plan <task-id> done` (or `blocked` with reason).
 - If the files actually touched differ from the active task's `artifacts.files` (extra files added during Step 3, or planned files left untouched), explicitly remind the user to run `/mvt-update-plan` so the plan's `artifacts.files` reflects reality for `/mvt-resume` and future sessions.
 - Do NOT modify `plan.yaml` directly from this skill; it is owned by `/mvt-update-plan`.
 - Do NOT modify `changes` directly; it is owned by `/mvt-plan-dev` / `/mvt-update-plan`.
@@ -234,21 +240,21 @@ Presentation is all that changes — the choices and their meaning stay as writt
 | User aborts at Step 3 confirmation | Do not write any source files or artifact |
 | File listed in `Change Tracking` no longer exists in the working tree | Surface, ask user whether design is stale or file was deleted in a parallel change |
 | Implementation must touch a file outside the active project (other repo / submodule) | STOP -- this is out of scope for `/mvt-implement`; surface and ask user to plan it as a separate change |
-| Plan task is `blocked` or `done` already | Refuse to implement that task; ask user to pick another task from `current_tasks` or run `/mvt-update-plan` |
+| Plan task is `blocked` or `done` already | Refuse to implement that task; ask user to pick another `in_progress` task or run `/mvt-update-plan` |
 | Deliverables already exist and user declines to update | Leave existing deliverables in place; do not call `plan-update.cjs` with deliverables flags |
 | `plan-update.cjs` rejects deliverables pointer | Surface error; leave `implementation.md` as written (content is source of truth, pointer can be retried) |
 | Re-implementing a task whose `## Task: {id}` section already exists in `implementation.md` | Immediately before editing, re-read `implementation.md` and verify there is exactly one matching `## Task: {id}` heading. Replace that section's content in place; preserve any `### Deliverables` subsection within it. Do NOT create a second `## Task: {id}` section. If zero or multiple matching headings exist, stop and ask the user to resolve the artifact manually. |
 
 ## Artifact Structure
-Template location: `.ai-agents/skills/_templates/implement-output.md`
-Custom override: `.ai-agents/skills/_templates/custom/implement-output.md` (takes precedence if present)
+Template location: `.mvtt/skills/_templates/implement-output.md`
+Custom override: `.mvtt/skills/_templates/custom/implement-output.md` (takes precedence if present)
 
 ## State Update
 
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-implement --summary "<concise one-line summary>"
+node .mvtt/scripts/session-update.cjs --skill mvt-implement --summary "<concise one-line summary>"
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -266,11 +272,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-implement`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`implementation complete, no tests written yet`** → `/mvt-test` -- Generate tests for the implementation
 - **`implementation deviates from design`** → `/mvt-review` -- Review code for design compliance

@@ -68,9 +68,7 @@ namespace MiCake.EntityFrameworkCore.Internal
             => commandSource switch
             {
                 CommandSource.SaveChanges => EFWriteOperationKind.SaveChanges,
-                // EF Core 10 reports ExecuteDelete/ExecuteUpdate commands as BulkUpdate,
-                // which shares the ExecuteUpdate constant value.
-                CommandSource.ExecuteUpdate => EFWriteOperationKind.ExecuteDelete,
+                CommandSource.ExecuteUpdate => EFWriteOperationKind.ExecuteUpdate,
                 CommandSource.ExecuteDelete => EFWriteOperationKind.ExecuteDelete,
                 CommandSource.ExecuteSqlRaw => EFWriteOperationKind.RawSql,
                 CommandSource.FromSqlQuery => EFWriteOperationKind.RawSql,

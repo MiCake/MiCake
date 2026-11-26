@@ -38,11 +38,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -55,11 +55,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
@@ -109,7 +109,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
 ### Step 1: Load Requirements
 - If one or more file paths are supplied, fingerprint each file before analysis:
   ```bash
-  node .ai-agents/scripts/requirement-source.cjs --fingerprint <source_path>
+  node .mvtt/scripts/requirement-source.cjs --fingerprint <source_path>
   ```
   Record each normalized `reference` and `fingerprint`, then read the file. If fingerprinting fails, identify the file and stop before preview; never substitute conversation provenance.
 - Treat requirement text supplied directly in the user message as a conversation source with `reference: conversation` and no fingerprint.
@@ -137,7 +137,6 @@ Presentation is all that changes — the choices and their meaning stay as writt
 - Extract the **vision**: one-sentence summary of the overall goal
 - Define **scope and out-of-scope**: what the epic delivers vs. explicitly excludes
 - Identify **cross-cutting concerns**: themes spanning multiple children (auth, logging, error handling, data migration)
-- Identify **actors and stakeholders**
 - Normalize the durable requirement baseline into bounded context items:
   - Assign first-seen IDs (`ctx-001`, `ctx-002`, ...); use one category: `goal`, `in_scope`, `out_of_scope`, `business_rule`, `constraint`, `example`, or `decision`.
   - Keep summaries concise and self-contained, link each item to captured `source_ids`, and do not copy complete documents.
@@ -167,28 +166,28 @@ Presentation is all that changes — the choices and their meaning stay as writt
   3. **Requirement sources**: source ID, kind, normalized reference, and fingerprint availability
   4. **Context coverage**: one context catalog (ID and summary), followed by `global_refs` and each child's ordered context IDs
   5. **Suggested starting child**: "Start with: `{first_child_title}` (`{first_child_id}`)"
-- **Wait for user confirmation** — choices `Yes` / `No`: "Proceed with this decomposition?". Default to **Yes** if the user does not respond.
+- **Wait for user confirmation** — choices `Yes` / `No`: "Proceed with this decomposition?".
 - **On decline or revision request**: do NOT write any files. Revise the decomposition based on user feedback and re-present, or abort if the user chooses to cancel.
 - **On confirmation**: proceed to Step 6.
 
 ### Step 6: Write Artifacts
 Write two artifacts:
 
-Before writing, derive `epic_id` and check whether `.ai-agents/workspace/artifacts/{epic_id}/` already exists. If it exists, do NOT overwrite it; warn the user and ask for a disambiguating slug, then re-run the preview from Step 5 with the new id.
+Before writing, derive `epic_id` and check whether `.mvtt/workspace/artifacts/{epic_id}/` already exists. If it exists, do NOT overwrite it; warn the user and ask for a disambiguating slug, then re-run the preview from Step 5 with the new id.
 
-1. **epic.md** (narrative) -- `.ai-agents/workspace/artifacts/{epic_id}/epic.md`
+1. **epic.md** (narrative) -- `.mvtt/workspace/artifacts/{epic_id}/epic.md`
   - Render applicable content with the `decompose-output` template and strip its HTML comments.
   - This file is a derived human-readable view. `epic.yaml` is authoritative for requirement provenance, context items, and child mappings.
   - Preserve the epic vision, boundaries, cross-cutting concerns, child stories, dependencies, and unresolved questions; do not create empty sections.
 
-2. **epic.yaml** (structured) -- `.ai-agents/workspace/artifacts/{epic_id}/epic.yaml`
+2. **epic.yaml** (structured) -- `.mvtt/workspace/artifacts/{epic_id}/epic.yaml`
   - Follows the new-epic creation contract defined in Artifact Structure, including `requirement_context` and every child's `context_refs`.
   - Set first child `status: active`, all others `status: pending`
   - Set `current_change` to the first child's `change_id`
 
 **Self-validation checklist** (verify before writing):
 - [ ] All `change_id` values are unique
-- [ ] `.ai-agents/workspace/artifacts/{epic_id}/` does not already exist
+- [ ] `.mvtt/workspace/artifacts/{epic_id}/` does not already exist
 - [ ] All `depends_on` references exist in `children[]`
 - [ ] No cycles in the dependency graph
 - [ ] Exactly one child has `status: active`
@@ -198,21 +197,25 @@ Before writing, derive `epic_id` and check whether `.ai-agents/workspace/artifac
 
 After writing both artifacts, validate the authoritative epic before session activation:
 ```bash
-node .ai-agents/scripts/epic-update.cjs --validate .ai-agents/workspace/artifacts/{epic_id}/epic.yaml
+node .mvtt/scripts/epic-update.cjs --validate .mvtt/workspace/artifacts/{epic_id}/epic.yaml
 ```
 
 If validation fails, report the structural errors and stop before Step 7. Do not activate an invalid epic or rewrite captured fingerprints to make validation pass.
 
+If it passes with `warnings` (unknown `project` names), show them and offer `epic-update.cjs --epic <epic_path> --set-child-project <id> --child-project "<names>"` per child; warnings do not block activation.
+
 If the epic needs children added later (e.g. a missed sub-change discovered during analysis), use `--add-child`:
 ```bash
-node .ai-agents/scripts/epic-update.cjs --epic .ai-agents/workspace/artifacts/{epic_id}/epic.yaml \
+node .mvtt/scripts/epic-update.cjs --epic .mvtt/workspace/artifacts/{epic_id}/epic.yaml \
   --add-child <new_child_id> --child-title "<title>" --child-scope "<scope>" \
-  --child-context-refs "<ctx-id-1>,<ctx-id-2>"
+  --child-project "<project-name>" --child-context-refs "<ctx-id-1>,<ctx-id-2>"
 ```
+
+`--child-project` is required in a multi-project workspace and follows the same `project` rule as children written in the epic; it may be omitted in a single-project workspace.
 
 To advance the epic after a child change completes, use `--complete-child`:
 ```bash
-node .ai-agents/scripts/epic-update.cjs --epic .ai-agents/workspace/artifacts/{epic_id}/epic.yaml \
+node .mvtt/scripts/epic-update.cjs --epic .mvtt/workspace/artifacts/{epic_id}/epic.yaml \
   --complete-child <completed_child_id>
 ```
 
@@ -231,13 +234,13 @@ Display to the user:
 ## Artifact Structure
 
 **epic.md** (narrative):
-Read the document structure template from: `.ai-agents/skills/_templates/decompose-output.md`
-If a custom version exists at `.ai-agents/skills/_templates/custom/decompose-output.md`, use the custom version instead.
+Read the document structure template from: `.mvtt/skills/_templates/decompose-output.md`
+If a custom version exists at `.mvtt/skills/_templates/custom/decompose-output.md`, use the custom version instead.
 The template defines section structure and guidance comments. Generate applicable content based on decomposition results.
-Write to: `.ai-agents/workspace/artifacts/{epic_id}/epic.md`
+Write to: `.mvtt/workspace/artifacts/{epic_id}/epic.md`
 
 **epic.yaml** (structured):
-Write to: `.ai-agents/workspace/artifacts/{epic_id}/epic.yaml`
+Write to: `.mvtt/workspace/artifacts/{epic_id}/epic.yaml`
 New-epic creation contract (`epic.yaml` is authoritative):
 ```yaml
 version: 2
@@ -270,7 +273,7 @@ children:
     context_refs: ["ctx-002"]
     status: active       # first child: active, rest: pending
     depends_on: []       # DAG dependencies
-    project: ["<project-name>"] # use the sole project name from project-context.yaml > projects[].name
+    project: ["<project-name>"] # names from project-context.yaml > projects[].name; single-project: the sole name
     completed_at: null
 ```
 
@@ -281,7 +284,7 @@ children:
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-decompose --summary "<concise one-line summary>" --new-epic "<epic_title>" --epic-id <epic_id> --set-epic-path <epic_path>
+node .mvtt/scripts/session-update.cjs --skill mvt-decompose --summary "<concise one-line summary>" --new-epic "<epic_title>" --epic-id <epic_id> --set-epic-path <epic_path>
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -301,11 +304,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-decompose`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`decomposition complete`** → `/mvt-analyze` -- Start analyzing the first (active) sub-change
 - **`default`** → `/mvt-analyze` -- Begin the analyze-design-implement cycle for the current child

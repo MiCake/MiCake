@@ -57,11 +57,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -78,9 +78,9 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
 ## Language Constraint (Mandatory)
 
@@ -132,7 +132,6 @@ This skill operates as a shortcut — it can execute at any time without checkin
   - User-specified target (file path, symbol name, module, or "the code I just wrote").
 - **Recommended**:
   - Existing tests covering the target (search by file path, by symbol name, and by sibling test files).
-  - `git status` / `git diff` -- to know what is already modified before refactoring.
 - **Fallback**: if no target was specified, ask the user. Do not refactor speculatively.
 
 ### Step 2: Locate and Understand Target
@@ -151,8 +150,8 @@ This step applies only when the workspace has multiple projects (`projects.lengt
   - A file whose path starts with a project's `path` prefix belongs to that project.
   - A file under a project's `source_paths` entry also belongs to that project.
   - Collect the set of unique project names from all matched files. This is the **active project scope** for this invocation.
-- **On-demand knowledge loading**: for each project P in the active project scope, read `.ai-agents/registry.yaml` and load:
-  1. Every entry under `knowledge.{P}` -- load each entry's referenced files (resolve relative to `.ai-agents/{source}`).
+- **On-demand knowledge loading**: for each project P in the active project scope, read `.mvtt/registry.yaml` and load:
+  1. Every entry under `knowledge.{P}` -- load each entry's referenced files (resolve relative to `.mvtt/{source}`).
   2. Every entry under `skills.mvt-refactor.knowledge.{P}` -- load each entry's referenced files.
   3. Skip any key absent from the registry (no project-specific knowledge is valid; do not warn).
 - **Multi-project scenario**: if files span multiple projects, load each project's knowledge sequentially. The skill operates with the union of all loaded project-specific knowledge plus the `_all` knowledge already loaded at activation.
@@ -220,11 +219,12 @@ This step applies only when the workspace has multiple projects (`projects.lengt
 - If anything regresses: revert the most recent sub-step, surface the regression, return to Step 8. Do not declare success.
 
 ### Step 10: Write Refactor Notes
+- **Skip without asking**: if `mvt-refactor` is listed in `preferences.artifacts.skip`, skip the confirmation below (conversation-only, no artifact). Then continue to Step 11.
 - **Confirm before writing**: when an `active_change` exists (so an artifact would be written), present the refactor notes content in the conversation first, then confirm — choices `Write` / `Skip`: "Write the refactor notes to {path}?"
   - If the user chooses Skip, do NOT write any file under `artifacts/`. Keep the refactor notes in the conversation only, and note that no artifact was persisted. Then continue to Step 11.
   - If the user chooses Write, write the artifact as described below.
   - When no `active_change` exists, there is no artifact to write — skip the prompt and keep the notes inline (existing shortcut behavior).
-- **Path**: `.ai-agents/workspace/artifacts/{change-id}/refactor-notes.md` if `active_change` exists; otherwise inline summary in conversation only (shortcut mode).
+- **Path**: `.mvtt/workspace/artifacts/{change-id}/refactor-notes.md` if `active_change` exists; otherwise inline summary in conversation only (shortcut mode).
 - **Required content**:
   - `Target` -- file/symbol list, current-behavior paragraph.
   - `Refactoring Type` and final risk level.
@@ -256,7 +256,7 @@ Apply the State Update rules defined in the **State Update** section below.
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-refactor --summary "<concise one-line summary>"
+node .mvtt/scripts/session-update.cjs --skill mvt-refactor --summary "<concise one-line summary>"
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -274,11 +274,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-refactor`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`refactoring complete, tests exist`** → `/mvt-test` -- Run tests to verify behavior is preserved
 - **`refactoring complete, no tests exist`** → `/mvt-review` -- Review the refactored code

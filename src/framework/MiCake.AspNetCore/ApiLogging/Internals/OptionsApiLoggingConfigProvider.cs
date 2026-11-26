@@ -12,7 +12,7 @@ namespace MiCake.AspNetCore.ApiLogging.Internals
     {
         private readonly IOptionsMonitor<MiCakeAspNetOptions> _optionsMonitor;
         private volatile ApiLoggingEffectiveConfig? _cachedConfig;
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         public OptionsApiLoggingConfigProvider(IOptionsMonitor<MiCakeAspNetOptions> optionsMonitor)
         {

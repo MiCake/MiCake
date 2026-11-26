@@ -7,7 +7,7 @@ description: 'Initialize or refresh a project by scanning its structure, detecti
 
 ## Purpose
 
-Initialize a project by scanning its structure, detecting tech stack, inferring project type, and writing the lean project index. This is the entry point for the MVTT framework.
+Initialize a project by scanning its structure, detecting tech stack, inferring project type, and writing the lean project index. This is the entry point for the MVTT framework. On an existing project, re-run it for an interactive refresh: scan, detect and rewrite the index after user confirmation.
 
 ## Role
 
@@ -36,23 +36,17 @@ Skill instructions are injected per turn, so after you pause the next reply may 
 
 **Rule 2 — At the start of every turn**, if the previous turn ended with a Role Lock and the current message is a reply to it (not a new `/mvt-*` command), stay in role and honor its Boundaries. Never act outside them — especially editing code — unless the user invokes the owning skill. If unsure, stay in-role and ask.
 
-## Variants
-
-| Variant | Description |
-|---------|-------------|
-| `/mvt-init` | Standard initialization or interactive refresh (scan + detect + write index; re-scan on existing project with user confirmation) |
-
 ## Activation Protocol
 
 Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide). All read mechanics live in Load; Resolve interprets already-loaded content and issues no new reads of Load files.
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -70,11 +64,11 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
@@ -227,7 +221,7 @@ For each target file, check if it already exists:
 
 #### 5.2 Write files
 
-1. Write `.ai-agents/workspace/project-context.yaml` with lean index schema:
+1. Write `.mvtt/workspace/project-context.yaml` with lean index schema:
    ```yaml
    projects:
      - name: "{project_name}"
@@ -267,9 +261,7 @@ When `mvt-init` is executed and existing MVTT artifacts are detected:
    - Confirm before writing.
 
 4. **Preserve** the following from existing files:
-   - `session.yaml` > `history`
    - `project-context.yaml` > any user-added custom fields (fields not in the standard schema)
-   - `config.yaml` > `preferences` section
 
 5. **Update** only auto-detectable fields:
    - `tech_stack` (re-scan and update)
@@ -278,7 +270,7 @@ When `mvt-init` is executed and existing MVTT artifacts are detected:
 
 6. **After writing** -> prompt: "Project structure updated. Recommend running `/mvt-analyze-code` to sync semantic context."
 
-7. **Orphan knowledge entries**: After refresh, if any knowledge entries in `registry.yaml` reference a project name not in the updated `projects[]`, prompt: "N orphan knowledge entries found for project(s) not in projects list: {names}. Consider `/mvt-manage-context remove` to clean up."
+7. **Orphan knowledge entries**: After refresh, if any knowledge entries in `registry.yaml` reference a project name not in the updated `projects[]`, prompt: "N orphan knowledge entries found for project(s) not in projects list: {names}. Consider `/mvt-manage-context` to clean up."
 
 ### Step 7: Determine Project State (drives next-step recommendation)
 
@@ -297,7 +289,7 @@ Use the resolved condition to render the matching branch in the **Suggested Next
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-init --summary "<concise one-line summary>" --set-initialized
+node .mvtt/scripts/session-update.cjs --skill mvt-init --summary "<concise one-line summary>" --set-initialized
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -316,11 +308,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-init`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`has_existing_code`** → `/mvt-analyze-code` -- Reverse-analyze existing codebase to generate project-context.md
 - **`empty_project`** → `/mvt-manage-context` -- Manually add project context, requirements, or team conventions

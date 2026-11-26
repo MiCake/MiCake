@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace MiCake.EntityFrameworkCore.Modules
 {
@@ -25,6 +26,8 @@ namespace MiCake.EntityFrameworkCore.Modules
     [RelyOn(typeof(MiCakeEssentialModule))]
     public class MiCakeEFCoreModule : MiCakeModuleAdvanced
     {
+        private ILogger? _conventionLogger;
+
         /// <summary>
         /// Indicates this is a framework-level module
         /// </summary>
@@ -99,6 +102,19 @@ namespace MiCake.EntityFrameworkCore.Modules
             var efcoreOptions = context.ServiceProvider.GetService<IObjectAccessor<MiCakeEFCoreOptions>>()?.Value
                                         ?? throw new InvalidOperationException("Invalid Operation. Please make sure you have configured MiCake EFCore module through UseEFCore() method when building MiCake application.");
 
+            // The validations below resolve the DbContext and build its model, which EF Core then caches
+            // for the process, so conventions must be registered before them.
+            var storeConventionRegistry = context.ApplicationOptions.BuildPhaseData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
+            if (storeConventionRegistry != null)
+                RegisterMiCakeConventions(storeConventionRegistry);
+
+            var loggerFactory = context.ServiceProvider.GetService<ILoggerFactory>();
+            if (loggerFactory != null)
+            {
+                _conventionLogger = loggerFactory.CreateLogger(MiCakeConventionEngineProvider.LoggerCategory);
+                MiCakeConventionEngineProvider.SetLogger(_conventionLogger);
+            }
+
             var registry = context.ServiceProvider.GetService<IDbContextTypeRegistry>();
             if (registry != null)
             {
@@ -106,10 +122,6 @@ namespace MiCake.EntityFrameworkCore.Modules
                 ValidateDbContextLifetimes(context.ServiceProvider, registry);
                 ValidateExecutionStrategies(context.ServiceProvider, registry);
             }
-
-            var storeConventionRegistry = context.ApplicationOptions.BuildPhaseData.TakeOut<StoreConventionRegistry>(MiCakeEssentialModuleInternalKeys.StoreConventionRegistry);
-            if (storeConventionRegistry != null)
-                RegisterMiCakeConventions(storeConventionRegistry);
         }
 
         /// <summary>
@@ -163,6 +175,12 @@ namespace MiCake.EntityFrameworkCore.Modules
         public override void OnApplicationShutdown(ModuleShutdownContext context)
         {
             base.OnApplicationShutdown(context);
+
+            if (_conventionLogger != null)
+            {
+                MiCakeConventionEngineProvider.ClearLogger(_conventionLogger);
+                _conventionLogger = null;
+            }
         }
 
         // Registers the MiCake store conventions into the convention engine(static class)

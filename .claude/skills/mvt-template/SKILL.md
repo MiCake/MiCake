@@ -39,17 +39,17 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
 - *Extended Context* (listed below) — once `session.yaml` values such as `{active_change.id}` / `{plan_path}` are known, read the concrete files (e.g. `analysis.md`, `design.md`, `plan.yaml`, template paths) in ONE parallel sub-batch. Discovery directives (e.g. "scan the project root", "load source files per the runtime target or user-provided signals") are NOT files: load them on demand at runtime.
 
 Extended Context entries:
-- Scan `.ai-agents/skills/_templates/custom/` for existing customizations
+- Scan `.mvtt/skills/_templates/custom/` for existing customizations
 
 ### Resolve (interpret loaded content — no new reads of Load files)
 
@@ -59,9 +59,9 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
 ## Language Constraint (Mandatory)
 
@@ -92,7 +92,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
 
 ### Step 1: Load Inputs
 - **Recommended**:
-  - `.ai-agents/skills/_templates/` -- default templates (read-only from this skill).
+  - `.mvtt/skills/_templates/` -- default templates (read-only from this skill).
 
 ### Step 2: Build Template Inventory
 - **What**: produce the canonical list of templates with their status.
@@ -100,8 +100,8 @@ Presentation is all that changes — the choices and their meaning stay as writt
   1. From `registry.yaml`, collect every `skills.<name>.template` value that is not null.
   2. For each entry, derive the basename (e.g., `analyze-output.md`).
   3. For each basename:
-     - `default` exists if the file is present under `.ai-agents/skills/_templates/`.
-     - `custom` exists if the file is present under `.ai-agents/skills/_templates/custom/` with the same basename.
+     - `default` exists if the file is present under `.mvtt/skills/_templates/`.
+     - `custom` exists if the file is present under `.mvtt/skills/_templates/custom/` with the same basename.
   4. Status:
      - `Default` if only default exists.
      - `Customized` if both exist.
@@ -132,7 +132,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
   3. No write.
 
 #### 4b. Customize
-- **What**: create or update the custom override while preserving the headings-only document structure used by MVTT output templates.
+- **What**: create or update the custom override while preserving the document structure used by MVTT output templates.
 - **How** (4-step subflow):
   1. **Show baseline**: print the current active version (custom if exists, otherwise default).
   2. **Collect modifications from the user**: ask for one of these explicit input forms (do not improvise):
@@ -147,7 +147,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
       - If the default template had frontmatter, the customized version must keep a parseable frontmatter block and retain the original frontmatter keys. If the default template had no frontmatter, do not require one.
       - If the default template had Mustache placeholders, retain them unless the user explicitly removed them. If the default template had no placeholders, do not require placeholders.
      - Validation failures -> abort write, surface the failed checks, return to step 2 of this subflow.
-  5. **Confirm and write** — choices `Save` / `Cancel`: "Save customized template to .ai-agents/skills/_templates/custom/<name>?" On `Save`, write atomically (temp + rename). Backup any existing custom file as `<name>.bak` first.
+  5. **Confirm and write** — choices `Save` / `Cancel`: "Save customized template to .mvtt/skills/_templates/custom/<name>?" On `Save`, write atomically (temp + rename). Backup any existing custom file as `<name>.bak` first.
 
 #### 4c. Reset
 - **What**: revert to the default template.
@@ -168,7 +168,7 @@ Presentation is all that changes — the choices and their meaning stay as writt
      |------------|-------------|
      | No path given | Print the content as a fenced code block in chat |
      | Relative or absolute file path | Write to that path; if file exists, ask for confirmation before overwriting |
-     | Literal string `custom` | Copy default to `.ai-agents/skills/_templates/custom/<name>` (use as starting point for customization) |
+     | Literal string `custom` | Copy default to `.mvtt/skills/_templates/custom/<name>` (use as starting point for customization) |
 
   3. Never write outside the project root unless an absolute path was explicitly provided by the user.
 
@@ -183,18 +183,14 @@ Presentation is all that changes — the choices and their meaning stay as writt
 | User aborts at any confirmation prompt | Do not modify any file; report "no changes" |
 | External process modified the file between preview and write | Detect via mtime check just before write; abort and re-run preview |
 
-## State Update
-
-This skill is read-only and does NOT modify `.ai-agents/workspace/session.yaml`.
-
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-template`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`template customized`** → `/mvt-status` -- Check project status
 - **`template reset to default`** → `/mvt-help` -- Review available skills and templates

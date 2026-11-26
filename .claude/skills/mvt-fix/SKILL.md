@@ -40,11 +40,11 @@ Two blocks: **Load** (what to read, and when) then **Resolve** (what to decide).
 
 ### Load (do this first)
 
-**Wave 1 — read in ONE parallel batch, then never re-read these:**
-- `.ai-agents/workspace/project-context.yaml`
-- `.ai-agents/registry.yaml`
-- `.ai-agents/config.yaml`
-- `.ai-agents/workspace/session.yaml`
+**Wave 1 — read in ONE parallel batch:**
+- `.mvtt/workspace/project-context.yaml`
+- `.mvtt/registry.yaml`
+- `.mvtt/config.yaml`
+- `.mvtt/workspace/session.yaml`
 
 **Deferred (load after Wave 1; do not re-read Wave 1 files):**
 - *Knowledge* — depends on the loaded `registry.yaml`; resolve and load per the rule in Resolve. May be serial (manifest-driven).
@@ -61,11 +61,11 @@ Extended Context entries:
   - *Mode A (active plan):* PS = the `current_tasks` project values that exist in `projects[]`; otherwise match current paths against `projects[].path` / `source_paths`; if still unresolved, list candidates and ask. Never silently load all.
   - *Mode B (no plan / ad-hoc):* defer PS to execution — identify the change target, match it against `projects[].path` / `source_paths`.
 
-**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.ai-agents/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
+**Knowledge** — always load `knowledge._all` + `skills.<current-skill>.knowledge._all`. In multi-project Mode A/B, additionally load `knowledge[P]` + `skills.<current-skill>.knowledge[P]` for each resolved P. For every entry: base dir = `.mvtt/` + its `source` field; load that entry's `files`; if `files_from_manifest: true`, read `manifest.yaml` in that dir and load entries with `auto_load: true`. Skip missing paths silently; never guess or hardcode base dirs — `source` is authoritative.
 
-**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`, `preferences.output.data_format`, `preferences.context_routing.relevance_threshold`.
+**Config** — apply `config.yaml` preferences for the whole session: `preferences.interaction_language` (chat/prompts/tables), `preferences.document_output_language` (files on disk), `preferences.output.no_emojis`.
 
-**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** / **REQUIRED** = emit and stop until satisfied; **INFO** = emit and proceed.
+**Pre-flight** — evaluate each check below against the loaded `session.yaml` / `project-context.yaml`. Levels: **WARN** = emit message, confirm — choices `Continue` / `Cancel`, default **Continue**; **BLOCK** = emit and stop until satisfied; **INFO** = emit and proceed.
 
 | # | Condition | Level | Message |
 |---|-----------|-------|---------|
@@ -120,12 +120,12 @@ This skill operates as a shortcut — it can execute at any time without checkin
 
   | Priority | Source | Condition | What to Load |
   |----------|--------|-----------|--------------|
-  | 1 | Review artifact | `review.md` exists in active change artifacts | Critical + Warning findings as fix targets |
+  | 1 | Direct user input | User provided bug description in conversation | Bug description text |
   | 2 | Bug detection result | `/mvt-bug-detect` was executed in the current conversation | Root cause, affected files, severity, reproduction status from conversation history |
-  | 3 | Direct user input | User provided bug description in conversation | Bug description text |
+  | 3 | Review artifact | `review.md` exists in active change artifacts | Critical + Warning findings as fix targets |
 
 - **1a. Review artifact (mvt-review output)**
-  - Read `.ai-agents/workspace/artifacts/{active_change.id}/review.md`
+  - Read `.mvtt/workspace/artifacts/{active_change.id}/review.md`
   - Extract Critical + Warning findings as fix targets. For each finding: file, line range, observation, recommendation serve as pre-verified diagnosis.
   - If multiple Critical findings exist, ask user which to address first.
   - Skip Steps 2-4, proceed directly to Step 5.
@@ -136,13 +136,11 @@ This skill operates as a shortcut — it can execute at any time without checkin
   - If Status is `NotABug` or `Inconclusive` — STOP, report finding, do not proceed to fix.
   - Skip Steps 2-4, proceed directly to Step 5 with extracted context.
 
-- **1c. Direct user input (no upstream artifact)**
+- **1c. Direct user input**
   - Read bug description from user message.
   - Execute Steps 2-4 for self-contained diagnosis.
 
 - **Fallback**: If no source yields content, ask user to describe the bug or run `/mvt-bug-detect` first.
-- **Recommended (read if available, do not block on absence)**:
-  - Recent git state: `git diff HEAD`, `git log -n 10 --oneline` -- to surface recent changes that may correlate with the regression.
 
 ### Step 2: Reproduce & Localize (only for source 1c)
 **Skip this step if Step 1 resolved to source 1a (review artifact) or 1b (bug detection).**
@@ -151,7 +149,8 @@ This skill operates as a shortcut — it can execute at any time without checkin
   1. Extract concrete signals from the bug description: error message text, stack trace frames, file paths, function/class names, input data.
   2. For each signal, locate matching code (Grep / Glob).
   3. Build a candidate file list with one-line justification per file.
-  4. If reproduction steps are provided, attempt to reproduce (run command, write minimal repro snippet) before forming hypotheses.
+  4. Recommended (read if available, do not block on absence): recent git state for the candidate files only, `git log -n 10 --oneline -- <candidate-files>` and `git diff HEAD -- <candidate-files>`, to surface recent changes that may correlate with the regression.
+  5. If reproduction steps are provided, attempt to reproduce (run command, write minimal repro snippet) before forming hypotheses.
 - **Branches**:
 
   | Condition | Action |
@@ -213,8 +212,8 @@ This step applies only when the workspace has multiple projects (`projects.lengt
   - A file whose path starts with a project's `path` prefix belongs to that project.
   - A file under a project's `source_paths` entry also belongs to that project.
   - Collect the set of unique project names from all matched files. This is the **active project scope** for this invocation.
-- **On-demand knowledge loading**: for each project P in the active project scope, read `.ai-agents/registry.yaml` and load:
-  1. Every entry under `knowledge.{P}` -- load each entry's referenced files (resolve relative to `.ai-agents/{source}`).
+- **On-demand knowledge loading**: for each project P in the active project scope, read `.mvtt/registry.yaml` and load:
+  1. Every entry under `knowledge.{P}` -- load each entry's referenced files (resolve relative to `.mvtt/{source}`).
   2. Every entry under `skills.mvt-fix.knowledge.{P}` -- load each entry's referenced files.
   3. Skip any key absent from the registry (no project-specific knowledge is valid; do not warn).
 - **Multi-project scenario**: if affected files span multiple projects, load each project's knowledge sequentially. The skill operates with the union of all loaded project-specific knowledge plus the `_all` knowledge already loaded at activation.
@@ -238,11 +237,12 @@ This step applies only when the workspace has multiple projects (`projects.lengt
 - If repro still fails -> revert, return to Step 3 with the new evidence.
 
 ### Step 9: Write Fix Notes
+- **Skip without asking**: if `mvt-fix` is listed in `preferences.artifacts.skip`, skip the confirmation below (conversation-only, no artifact). Then continue to Step 10.
 - **Confirm before writing**: when an `active_change` exists (so an artifact would be written), present the fix notes content in the conversation first, then confirm — choices `Write` / `Skip`: "Write the fix notes to {path}?"
   - If the user chooses Skip, do NOT write any file under `artifacts/`. Keep the fix notes in the conversation only, and note that no artifact was persisted. Then continue to Step 10.
   - If the user chooses Write, write the artifact as described below.
   - When no `active_change` exists, there is no artifact to write — skip the prompt and keep the notes inline (existing shortcut behavior).
-- **Path**: `.ai-agents/workspace/artifacts/{change-id}/fix-notes.md` if an `active_change` exists; otherwise inline in the conversation only (no artifact -- shortcut operation).
+- **Path**: `.mvtt/workspace/artifacts/{change-id}/fix-notes.md` if an `active_change` exists; otherwise inline in the conversation only (no artifact -- shortcut operation).
 - **Structure** (each section is a single paragraph or list):
   - `Symptom` -- what the user saw / reported.
   - `Input Source` -- "Review artifact" | "Bug detection result" | "Direct user input".
@@ -273,7 +273,7 @@ Apply the State Update rules defined in the **State Update** section below.
 After the skill's main task, run the session update script **exactly once**:
 
 ```bash
-node .ai-agents/scripts/session-update.cjs --skill mvt-fix --summary "<concise one-line summary>"
+node .mvtt/scripts/session-update.cjs --skill mvt-fix --summary "<concise one-line summary>"
 ```
 
 Write `--summary` as one concise line in the configured `interaction_language`.
@@ -291,11 +291,11 @@ If the script fails (non-zero exit), do NOT abort the skill's main task. Continu
 ## Suggested Next Steps
 
 Recommend 2-3 relevant next skills based on the skill just completed (`mvt-fix`) and the current project state.
-**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.ai-agents/registry.yaml`.
+**Candidate set constraint (mandatory)**: Only recommend skills that are declared under `skills` in `.mvtt/registry.yaml`.
 
 ### Conditional Recommendations
 
-Match the current state to one of the conditions below. If none match, use `default`.
+Match the current state to one of the conditions below.
 
 - **`fix applied, root cause had wide impact`** → `/mvt-review` -- Review the fix for side effects
 - **`fix applied, needs test coverage`** → `/mvt-test` -- Add regression tests
