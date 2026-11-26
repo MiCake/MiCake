@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using MiCake.DDD.Domain.Helper;
 using MiCake.EntityFrameworkCore.Internal;
 using MiCake.Util.Cache;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 
@@ -28,16 +30,52 @@ namespace MiCake.EntityFrameworkCore
         /// <param name="modelBuilder">The ModelBuilder instance</param>
         public static void UseMiCakeConventions(this ModelBuilder modelBuilder)
         {
+            modelBuilder.UseMiCakeConventions(null);
+        }
+
+        /// <summary>
+        /// Apply MiCake model conventions to the ModelBuilder and report convention failures
+        /// to the loggers created by <paramref name="loggerFactory"/>.
+        /// Call this in your DbContext.OnModelCreating method.
+        /// </summary>
+        /// <param name="modelBuilder">The ModelBuilder instance</param>
+        /// <param name="loggerFactory">
+        /// Factory used for convention diagnostics. When null, the logger registered by the MiCake
+        /// application is used, and diagnostics are discarded if none is available.
+        /// </param>
+        public static void UseMiCakeConventions(this ModelBuilder modelBuilder, ILoggerFactory? loggerFactory)
+        {
             var domainEntityTypes = GetDomainEntityTypes(modelBuilder);
 
             if (domainEntityTypes.Length > 0)
             {
-                modelBuilder.ApplyMiCakeConventions(domainEntityTypes);
+                var logger = loggerFactory?.CreateLogger(MiCakeConventionEngineProvider.LoggerCategory);
+                ModelBuilderExtensions.ApplyConventions(modelBuilder, domainEntityTypes, logger);
             }
 
             // EFCore will cache the all model configurations, we can clear our internal cache safely.
             ModelBuilderExtensions.ClearConventionCache();
             ClearDomainEntityTypeCache();
+        }
+
+        /// <summary>
+        /// Finds a logger factory that reaches the application's log sinks: the factory configured
+        /// with UseLoggerFactory, or the one from the application service provider of AddDbContext.
+        /// EF Core's own internal factory is never returned because it has no sinks.
+        /// Returns null when neither exists or EF Core's options cannot be read.
+        /// </summary>
+        internal static ILoggerFactory? ResolveLoggerFactory(DbContext context)
+        {
+            try
+            {
+                var coreOptions = context.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>();
+                return coreOptions?.LoggerFactory
+                    ?? coreOptions?.ApplicationServiceProvider?.GetService<ILoggerFactory>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>

@@ -10,10 +10,7 @@ using Xunit;
 
 namespace MiCake.EntityFrameworkCore.Tests.Extensions
 {
-    [CollectionDefinition("ConventionEngineTests", DisableParallelization = true)]
-    public class ConventionEngineTestCollection { }
-
-[Collection("MiCakeStaticFactory")]
+    [Collection("MiCakeStaticFactory")]
     public class EFCoreModelBuilderConventionTests : IDisposable
     {
         public EFCoreModelBuilderConventionTests()
@@ -51,8 +48,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Extensions
             var softDeletableType = model.FindEntityType(typeof(TestSoftDeletableDbEntity));
             Assert.NotNull(softDeletableType);
             
-            var queryFilter = softDeletableType.GetDeclaredQueryFilters();
-            Assert.NotNull(queryFilter);
+            var queryFilter = Assert.Single(softDeletableType.GetDeclaredQueryFilters());
+            Assert.Equal(MiCakeQueryFilterNames.SoftDelete, queryFilter.Key);
         }
         
         [Fact]

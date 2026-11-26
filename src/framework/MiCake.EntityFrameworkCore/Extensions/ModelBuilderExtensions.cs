@@ -2,8 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MiCake.DDD.Infrastructure.Store;
 using MiCake.Util.Cache;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
 
 namespace MiCake.EntityFrameworkCore
 {
@@ -56,7 +60,10 @@ namespace MiCake.EntityFrameworkCore
     /// </summary>
     internal static class MiCakeConventionEngineProvider
     {
-        private static StoreConventionEngine? _conventionEngine;
+        internal const string LoggerCategory = "MiCake.EntityFrameworkCore.Conventions";
+
+        private static volatile StoreConventionEngine? _conventionEngine;
+        private static ILogger? _logger;
 
         internal static void SetConventionEngine(StoreConventionEngine engine)
         {
@@ -68,9 +75,29 @@ namespace MiCake.EntityFrameworkCore
             return _conventionEngine;
         }
 
+        internal static void SetLogger(ILogger logger)
+        {
+            Volatile.Write(ref _logger, logger);
+        }
+
+        internal static ILogger GetLogger()
+        {
+            return Volatile.Read(ref _logger) ?? NullLogger.Instance;
+        }
+
+        /// <summary>
+        /// Clears the stored logger only when it is still the given instance,
+        /// so a logger stored by a newer initialization is left untouched.
+        /// </summary>
+        internal static void ClearLogger(ILogger expected)
+        {
+            Interlocked.CompareExchange(ref _logger, null, expected);
+        }
+
         internal static void Clear()
         {
             _conventionEngine = null;
+            Volatile.Write(ref _logger, null);
         }
     }
 
@@ -81,23 +108,38 @@ namespace MiCake.EntityFrameworkCore
         /// </summary>
         public static void ApplyMiCakeConventions(this ModelBuilder modelBuilder, params Type[] entityTypes)
         {
+            ApplyConventions(modelBuilder, entityTypes, null);
+        }
+
+        internal static void ApplyConventions(ModelBuilder modelBuilder, Type[] entityTypes, ILogger? logger)
+        {
             if (entityTypes == null || entityTypes.Length == 0)
                 return;
+
+            logger ??= MiCakeConventionEngineProvider.GetLogger();
 
             // Get the configured convention engine from MiCake container
             var engine = MiCakeConventionEngineProvider.GetConventionEngine();
             if (engine == null)
             {
-                // No conventions configured, skip processing
+                logger.Log(
+                    EF.IsDesignTime ? LogLevel.Debug : LogLevel.Warning,
+                    "No MiCake convention engine is configured; conventions, including the soft-delete query filter, were not applied to {EntityTypeCount} entity types",
+                    entityTypes.Length);
                 return;
             }
 
-            ApplyConventionsInternal(modelBuilder, entityTypes, engine);
+            ApplyConventionsInternal(modelBuilder, entityTypes, engine, logger);
         }
 
-        private static void ApplyConventionsInternal(ModelBuilder modelBuilder, Type[] entityTypes, StoreConventionEngine engine)
+        private static void ApplyConventionsInternal(ModelBuilder modelBuilder, Type[] entityTypes, StoreConventionEngine engine, ILogger logger)
         {
             var engineKey = engine.GetHashCode().ToString();
+
+            var ownedTypes = modelBuilder.Model.GetEntityTypes()
+                .Where(t => t.IsOwned())
+                .Select(t => t.ClrType)
+                .ToHashSet();
 
             foreach (var entityType in entityTypes)
             {
@@ -107,18 +149,27 @@ namespace MiCake.EntityFrameworkCore
                     if (!CanAnyConventionApply(engine, entityType))
                         continue;
 
-                    ApplyEntityLevelConventions(modelBuilder, entityType, engine, engineKey);
-                    ApplyPropertyLevelConventions(modelBuilder, entityType, engine, engineKey);
+                    if (ownedTypes.Contains(entityType))
+                    {
+                        logger.LogDebug("Skipping conventions for {EntityType}: configured as owned or complex type", entityType.Name);
+                        continue;
+                    }
+
+                    ApplyEntityLevelConventions(modelBuilder, entityType, engine, engineKey, logger);
+                    ApplyPropertyLevelConventions(modelBuilder, entityType, engine, engineKey, logger);
+                }
+                catch (MiCakeConventionException)
+                {
+                    throw;
                 }
                 catch (InvalidOperationException ex) when (ex.Message.Contains("cannot be configured as an entity"))
                 {
-                    // Entity is configured as owned/complex type by user - skip
-                    System.Diagnostics.Debug.WriteLine($"Skipping conventions for {entityType.Name} - configured as owned/complex type");
+                    // Defensive: owned types are skipped above; this covers EF reporting another owned or complex configuration conflict
+                    logger.LogDebug("Skipping conventions for {EntityType}: configured as owned or complex type", entityType.Name);
                 }
                 catch (Exception ex)
                 {
-                    // Log other exceptions but continue processing
-                    System.Diagnostics.Debug.WriteLine($"Failed to apply conventions for {entityType.Name}: {ex.Message}");
+                    logger.LogWarning(ex, "Failed to apply conventions for {EntityType}", entityType.Name);
                 }
             }
         }
@@ -133,7 +184,8 @@ namespace MiCake.EntityFrameworkCore
             ModelBuilder modelBuilder,
             Type entityType,
             StoreConventionEngine engine,
-            string engineKey)
+            string engineKey,
+            ILogger logger)
         {
             try
             {
@@ -145,20 +197,16 @@ namespace MiCake.EntityFrameworkCore
                 if (!shouldResolveEntity)
                     return;
 
-                // Check if entity exists in the model after user configuration
-                var existingEntityType = modelBuilder.Model.FindEntityType(entityType);
-                var isOwnedEntity = existingEntityType?.IsOwned() == true;
-                if (isOwnedEntity)
-                {
-                    // Skip owned entities for entity-level conventions
-                    return;
-                }
-
                 EntityTypeBuilder? entityBuilder = modelBuilder.Entity(entityType);
-                // Apply soft deletion query filter
                 if (entityContext.EnableSoftDeletion && entityContext.QueryFilter != null)
                 {
-                    entityBuilder.HasQueryFilter(entityContext.QueryFilter);
+                    ApplySoftDeleteFilter(modelBuilder, entityBuilder, entityType, entityContext.QueryFilter, engine, engineKey, logger);
+                }
+                else if (entityContext.QueryFilter != null)
+                {
+                    logger.LogWarning(
+                        "A convention produced a query filter for {EntityType} without enabling soft deletion; the filter was not applied",
+                        entityType.Name);
                 }
 
                 // Apply ignored properties at entity level
@@ -171,17 +219,76 @@ namespace MiCake.EntityFrameworkCore
                     }
                 }
             }
+            catch (MiCakeConventionException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to apply entity-level conventions: {ex.Message}");
+                logger.LogWarning(ex, "Failed to apply entity-level conventions for {EntityType}", entityType.Name);
             }
+        }
+
+        private static void ApplySoftDeleteFilter(
+            ModelBuilder modelBuilder,
+            EntityTypeBuilder entityBuilder,
+            Type entityType,
+            LambdaExpression queryFilter,
+            StoreConventionEngine engine,
+            string engineKey,
+            ILogger logger)
+        {
+            var metadata = entityBuilder.Metadata;
+
+            // EF Core accepts query filters on the root of a hierarchy only; the root's filter covers derived types.
+            if (metadata.BaseType != null)
+            {
+                var root = metadata.GetRootType();
+                var rootContext = EntityConventionCache.GetOrCreateEntityContext(engineKey, root.ClrType,
+                    () => engine.ApplyEntityConventions(root.ClrType));
+                if (rootContext.EnableSoftDeletion && rootContext.QueryFilter != null)
+                {
+                    // The root may not be one of the scanned domain types, so make sure it carries the filter.
+                    ApplySoftDeleteFilter(modelBuilder, modelBuilder.Entity(root.ClrType), root.ClrType, rootContext.QueryFilter, engine, engineKey, logger);
+                    return;
+                }
+
+                var rootProblem = rootContext.EnableSoftDeletion
+                    ? "enables soft deletion but its conventions did not produce a query filter"
+                    : "is not soft-deletable";
+                throw new MiCakeConventionException(
+                    $"Entity type '{entityType.Name}' is soft-deletable but its hierarchy root '{root.ClrType.Name}' {rootProblem}. " +
+                    "EF Core only allows query filters on the root entity type. " +
+                    $"Make '{root.ClrType.Name}' soft-deletable with a query filter or remove soft deletion from '{entityType.Name}'.",
+                    entityType);
+            }
+
+            var declaredFilters = metadata.GetDeclaredQueryFilters();
+            if (declaredFilters.Any(filter => filter.IsAnonymous))
+            {
+                throw new MiCakeConventionException(
+                    $"Entity type '{entityType.Name}' is soft-deletable and already has an anonymous query filter. " +
+                    "EF Core does not allow anonymous and named query filters on the same entity type. " +
+                    "Configure your own filters with a name, for example HasQueryFilter(\"MyApp.Tenant\", expression), " +
+                    "and remove the anonymous HasQueryFilter call.",
+                    entityType);
+            }
+
+            if (declaredFilters.Any(filter => filter.Key == MiCakeQueryFilterNames.SoftDelete))
+            {
+                logger.LogDebug("Query filter {FilterName} is already present on {EntityType}; leaving it unchanged", MiCakeQueryFilterNames.SoftDelete, entityType.Name);
+                return;
+            }
+
+            entityBuilder.HasQueryFilter(MiCakeQueryFilterNames.SoftDelete, queryFilter);
         }
 
         private static void ApplyPropertyLevelConventions(
             ModelBuilder modelBuilder,
             Type entityType,
             StoreConventionEngine engine,
-            string engineKey)
+            string engineKey,
+            ILogger logger)
         {
             var properties = entityType.GetProperties();
 
@@ -191,9 +298,13 @@ namespace MiCake.EntityFrameworkCore
                 {
                     ApplyConventionsForProperty(modelBuilder, entityType, property, engine, engineKey);
                 }
+                catch (MiCakeConventionException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to apply property conventions for {entityType.Name}.{property.Name}: {ex.Message}");
+                    logger.LogWarning(ex, "Failed to apply property conventions for {EntityType}.{PropertyName}", entityType.Name, property.Name);
                 }
             }
         }
@@ -259,12 +370,12 @@ namespace MiCake.EntityFrameworkCore
         }
 
         /// <summary>
-        /// Clear all cached convention data (useful for testing)
+        /// Clear all cached convention results (useful for testing).
+        /// The configured convention engine is kept so later model builds still receive conventions.
         /// </summary>
         public static void ClearConventionCache()
         {
             EntityConventionCache.Clear();
-            MiCakeConventionEngineProvider.Clear();
         }
     }
 }

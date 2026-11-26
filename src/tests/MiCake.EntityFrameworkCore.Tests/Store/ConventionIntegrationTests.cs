@@ -153,8 +153,8 @@ namespace MiCake.EntityFrameworkCore.Tests.Store
             Assert.NotNull(softDeletableType);
             
             // Check if the query filter was applied (this would be set by SoftDeletionConvention)
-            var queryFilter = softDeletableType.GetDeclaredQueryFilters();
-            Assert.NotNull(queryFilter);
+            var queryFilter = Assert.Single(softDeletableType.GetDeclaredQueryFilters());
+            Assert.Equal(MiCakeQueryFilterNames.SoftDelete, queryFilter.Key);
         }
     }
     

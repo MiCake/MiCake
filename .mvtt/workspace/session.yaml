@@ -13,64 +13,48 @@ active_change:
   created_at: ""
   plan_path: ""
   epic_id: ""
-changes:
-  - id: 20260806-uow-transaction-reliability
-    title: UoW Transaction Reliability
-    plan_path: .ai-agents/workspace/artifacts/20260806-uow-transaction-reliability/plan.yaml
-    status: done
-    updated_at: 2026-10-08T06:32:59.298Z
-    epic_id: ""
-  - id: 20261008-uow-context-agnostic-execution
-    title: Context-Agnostic Isolated UoW Execution
-    plan_path: .ai-agents/workspace/artifacts/20261008-uow-context-agnostic-execution/plan.yaml
-    status: done
-    updated_at: 2026-10-08T09:25:47.435Z
-    epic_id: ""
+changes: []
 history:
-  - skill: /mvt-implement
-    completed_at: 2026-10-08T08:43:59.405Z
-    summary: 实施 t2-comprehension-guardrail-docs（3 文件纯文档）：包 README 新增四象限执行模式对照表+ExecuteIsolatedAsync 小节并把严格双入口重新定位为接线自检、新建 docs/Background-Jobs-and-Non-HTTP-Hosts.md（Hangfire 异步作业基类+IServerFilter
-      双参考实现、entry-agnostic 写法、AsyncLocal 同步段约束、opt-out/取消/重试语义、验证清单）、Breaking-Changes 补 v11 preview 增补（2 成员 source-breaking 实现者指引）+清单项+速查行；t2 验收 4/4 逐条达成、设计合规零偏差、Deliverables 已登记并标记 t4 stale
-    change_id: 20261008-uow-context-agnostic-execution
   - skill: /mvt-review
-    completed_at: 2026-10-08T09:16:22.263Z
-    summary: 深度审查 uow-context-agnostic-execution 全部实施（t1+t2+t3，11 文件 git diff 逐块核验）：Approve with comments，0 Critical/0 Warning/3 Suggestion——S1 README 指南相对链接少上一级（../../docs 应为 ../../../docs，死链待修）；S2
-      requiresNew 泛型重载 cref 指向 void 版 ExecuteIsolatedAsync（可选润色）；S3 单元矩阵 8 处同构样板未达提取阈值（可接受）；独立复核 implementation.md 自检属实、签名与 Key Interfaces 一致、同步段 dispatch 正确、strict-pair 契约锁原样通过、全量 1678/1678
-      绿；亮点：集成回滚证明先 flush 再抛错、取消用例复刻 W2 范式；用户选择 Skip 不写 review.md
-    change_id: 20261008-uow-context-agnostic-execution
+    completed_at: 2026-11-25T10:15:21.716Z
+    summary: 复核问题清单:K1/K2 加对照组确认属实(HEAD 样例 [<anonymous>] → 工作区 []);U3 已查明(10.0.0 插入时 IsDeleted 被重置、11.x 无 UoW 写入走原生 EF 语义);更正 4 处——K1 已随 preview 分支发布到 NuGet(推断)、R4 多 DbContext 场景相对 10.0.0 有可见变化、U1 不成立(样例
+      dotnet ef 走 DesignTimeDbContextFactory)、S1 共享 owned 类型确实走到并会抛异常被记为 Warning
+    change_id: 20261125-convention-softdelete-filter
   - skill: /mvt-fix
-    completed_at: 2026-10-08T09:20:54.625Z
-    summary: 修复 review/API 评估发现（5 处纯文档，零行为变更）：IUnitOfWorkManager.cs 接口摘要补 context-agnostic 入口（W1）、Current 注释补 null 时推荐入口指引（S1）、BeginAsync 措辞修正为按 options 开启+嵌套继承只读/隔离委托 root+调用方 dispose
-      责任（S2/S3）、requiresNew 泛型重载 cref 改指 ExecuteIsolatedAsync<TResult>（S4）；README.md 指南链接 ../../docs 修为 ../../../docs 消除死链（上轮 S1）。验证：MiCake 构建 0 错误 0 警告（cref 解析通过）、UnitOfWorkManagerTests
-      33/33；fix-notes 未落盘
-    change_id: 20261008-uow-context-agnostic-execution
+    completed_at: 2026-11-25T10:28:51.453Z
+    summary: 修复代码审查发现的问题:K1 约定引擎与 logger 改在 DbContext 校验之前注册(宿主内软删过滤器恢复);K2 样例保留命名过滤器 MiCake.SoftDelete;S1 按 CLR 类型识别 owned(共享 owned 不再报 Warning);S3 不在扫描范围的软删根类型经派生类型补齐过滤器;S4 测试释放服务提供者;README 补软删前提与多
+      DbContext 迁移说明;更正 analysis/design/implementation 记录;新增 4 个回归测试(均先确认失败),全量 1705 通过,构建 0 警告 0 错误,打包 4 个 nupkg+snupkg 仅 net11.0
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-review
+    completed_at: 2026-11-25T10:33:17.349Z
+    summary: 复核修复轮次(7 个文件):Approve with comments,0 Critical/1 Warning/3 Suggestion——K1/K2/S1/S3/S4 修复属实且有先失败后通过的回归测试;W1 README 让未开启 UseSoftDeletion 的用户手写命名过滤器,但没说明此时 Remove 会物理删除;S 设计文档 ADR-6
+      与数据流仍写派生类型直接跳过、根类型 EnableSoftDeletion 但无过滤器表达式时异常文案误导、测试数确认 1705;未写 review.md(配置跳过)
+    change_id: 20261125-convention-softdelete-filter
   - skill: /mvt-fix
-    completed_at: 2026-10-08T09:24:06.194Z
-    summary: 按用户确认删除 docs 下两份文档（Background-Jobs-and-Non-HTTP-Hosts.md 新建指南 + Breaking-Changes-and-Migration-v2.md 既有 400+ 行迁移文档）并移除 README 中指向指南的引用句；docs/ 目录已空并删除；验证无残留引用（git grep 零命中）、构建/CI/打包无 docs
-      耦合；注意：此举使 t2 验收第 2/3 条与 analysis R15/R16 失效、ADR-015 护栏交付物不再存在，plan/analysis/design 产物仍引用被删文件，需经 mvt-update-plan 或 mvt-design 重新裁定
-    change_id: 20261008-uow-context-agnostic-execution
+    completed_at: 2026-11-25T10:38:11.223Z
+    summary: 按复核意见修复:README 补软删未开启时 Remove 会物理删除的警告(已用宿主+UoW 探针验证);design.md 的 ADR-6 与数据流改为由派生类型给根类型补过滤器;根类型启用软删但无过滤器时异常文案准确(新增回归测试先失败后通过);全量 1706 通过,构建 0 警告 0 错误
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-fix
+    completed_at: 2026-11-25T10:55:29.041Z
+    summary: 样例改为内置软删开关:Startup 设置 AuditConfig.UseSoftDeletion,删除 BaseAppDbContext 手写命名过滤器;宿主探针确认 User 仅有 MiCake.SoftDelete、无约定警告,UoW 内 Remove 保留行并 IsDeleted=true;构建 0 警告 0 错误,全量 1706 通过
+    change_id: 20261125-convention-softdelete-filter
   - skill: /mvt-update-plan
-    completed_at: 2026-10-08T09:25:47.435Z
-    summary: 按用户要求将变更 20261008-uow-context-agnostic-execution 全部 4 个子任务标记 done（t1 API+共享核心、t2 文档护栏、t3 测试矩阵、t4 终审），进度 4/4、plan_status done、current_tasks 清空；用户选择不写 notes（已知真实性落差：t2 验收第 2/3 条与 t4 的 ADR-015
-      无偏离条件因两份 docs 被删除而失效，已在会话中提示）；随后选择 Finalize now 完结该变更
-    change_id: 20261008-uow-context-agnostic-execution
+    completed_at: 2026-11-26T01:44:28.772Z
+    summary: 标记 t3-named-softdelete-filter 完成(3/4),current_tasks 前进到 t4-delivery-review;代码审查与修复轮次的问题全部处理
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-fix
+    completed_at: 2026-11-26T01:53:55.248Z
+    summary: S2:ApplyConventionsInternal 循环前一次性收集 owned 的 CLR 类型集合,删除逐类型扫描的 IsOwnedType;各 owned 形态结果一致,真实约定遍历 250/500/1000/2000 类型分别约 8→4、27→9、85→32、113→85 ms;全量 1706 通过,构建 0 警告 0 错误
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-update-plan
+    completed_at: 2026-11-26T02:03:20.917Z
+    summary: 标记 t4-delivery-review 完成(4/4),计划状态 done;交付评审确认 R1-R20 与 ADR-1..11 全部落地,公共表面仅新增一个重载与两个公共类型,全量 1706 测试通过
+    change_id: 20261125-convention-softdelete-filter
+  - skill: /mvt-cleanup
+    completed_at: 2026-11-26T02:06:54.467Z
+    summary: 归档 3 个已完成变更的工件目录(未生成 summary.md),移除对应 changes[] 索引,工件体量从约 83,485 token 降至 0
+    change_id: ""
   - skill: /mvt-review
-    completed_at: 2026-11-25T02:07:34.161Z
-    summary: 审查 docs/net11-compatibility-assessment.md 事实准确性：多数行号与现象属实；新发现 sln 残留 probe 项目致构建失败（推翻 0 错误结论）、E1 命名过滤器方案会与用户未命名过滤器冲突抛异常、B3 仅影响诊断文案、E6/A4/B1 范围或级别有偏差；无 active change 未写 artifact
-    change_id: ""
-  - skill: /mvt-quick-dev
-    completed_at: 2026-11-25T07:07:51.976Z
-    summary: 修正 ExecuteUpdate 命令分类:CommandSource.ExecuteUpdate 映射为 EFWriteOperationKind.ExecuteUpdate,删除过时的 BulkUpdate 注释,并在 Classify_CommandSources_MapsCorrectly 补断言(B3/B4,2 文件)
-    change_id: ""
-  - skill: /mvt-quick-dev
-    completed_at: 2026-11-25T07:24:11.187Z
-    summary: A3:测试包版本集中到 src/tests/Directory.Build.props(18.12.0/4.21.0/4.0.1/10.1.1),删除 5 个测试 csproj 的 PackageReference Update 块;有效版本与改动前一致,sln 构建 0 警告 0 错误
-    change_id: ""
-  - skill: /mvt-quick-dev
-    completed_at: 2026-11-25T07:48:08.674Z
-    summary: A2:README.md 与 README.en.md 的 .NET 版本徽章与支持说明由 10.0 改为 11.0(各 2 处,共 4 处),残留零命中,CRLF 保持
-    change_id: ""
-  - skill: /mvt-quick-dev
-    completed_at: 2026-11-25T07:49:53.962Z
-    summary: A6:确认样例不再使用 user-secrets,保持删除 UserSecretsId 的工作区改动;未修改文件(本机无 secrets 文件,Host.CreateDefaultBuilder 的隐式读取已确认)
+    completed_at: 2026-11-26T02:16:56.275Z
+    summary: 复核 docs/net11-compatibility-assessment.md 的 41 项问题:9 项已解决(A2/A3/B1/B3/B4/E1/E6 大部分/A0),A1 无法验证,A4/A5/A6/A7/E5/E7 仍在,文档已滞后(测试数 1678→1706);0 Critical/8 Warning/5 Suggestion,无 review.md(配置跳过)
     change_id: ""

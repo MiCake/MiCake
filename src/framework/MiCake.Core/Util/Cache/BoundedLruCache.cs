@@ -210,7 +210,7 @@ namespace MiCake.Util.Cache
             // lock-based
             private readonly ConcurrentDictionary<TKey, LinkedListNode<CacheItem>> _cache = new();
             private readonly LinkedList<CacheItem> _accessOrder = new();
-            private readonly object _segLock = new();
+            private readonly Lock _segLock = new();
 
             // lock-free - uses timestamp-based eviction for accurate LRU tracking
             private readonly ConcurrentDictionary<TKey, TimestampedValue> _lfCache = new();

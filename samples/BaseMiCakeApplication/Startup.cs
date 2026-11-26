@@ -84,6 +84,10 @@ namespace BaseMiCakeApplication
                     // Application configuration
                 };
 
+                // Enable MiCake soft deletion: ISoftDeletable entities get the MiCake.SoftDelete query filter,
+                // and Remove() inside a unit of work is converted into a soft delete
+                options.AuditConfig = audit => audit.UseSoftDeletion = true;
+
                 // Configure MiCake ASP.NET Core options (including API Logging)
                 options.AspNetConfig = asp =>
                 {

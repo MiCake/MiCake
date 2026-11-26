@@ -113,9 +113,6 @@ namespace BaseMiCakeApplication.EFCore
                 // Add an index on Phone for faster lookups
                 entity.HasIndex(u => u.Phone)
                     .IsUnique();
-
-                // Configure soft deletion
-                entity.HasQueryFilter(u => !u.IsDeleted);
             });
 
             // Apply MiCake's DDD entity configuration

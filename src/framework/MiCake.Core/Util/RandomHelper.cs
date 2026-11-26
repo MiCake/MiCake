@@ -6,8 +6,6 @@ namespace MiCake.Util
 {
     public static class RandomHelper
     {
-        private static readonly Random Rnd = new();
-
         /// <summary>
         /// Returns a random number within a specified range.
         /// </summary>
@@ -20,10 +18,7 @@ namespace MiCake.Util
         /// </returns>
         public static int GetRandom(int minValue, int maxValue)
         {
-            lock (Rnd)
-            {
-                return Rnd.Next(minValue, maxValue);
-            }
+            return Random.Shared.Next(minValue, maxValue);
         }
 
         /// <summary>
@@ -37,10 +32,7 @@ namespace MiCake.Util
         /// </returns>
         public static int GetRandom(int maxValue)
         {
-            lock (Rnd)
-            {
-                return Rnd.Next(maxValue);
-            }
+            return Random.Shared.Next(maxValue);
         }
 
         /// <summary>
@@ -49,10 +41,7 @@ namespace MiCake.Util
         /// <returns>A 32-bit signed integer greater than or equal to zero and less than <see cref="int.MaxValue"/>.</returns>
         public static int GetRandom()
         {
-            lock (Rnd)
-            {
-                return Rnd.Next();
-            }
+            return Random.Shared.Next();
         }
 
         /// <summary>
